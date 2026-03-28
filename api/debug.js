@@ -3,36 +3,19 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
 
   try {
-    // Get recent matches to find SRH vs RCB match ID
-    const r = await fetch("https://cricbuzz-cricket.p.rapidapi.com/matches/v1/recent", {
+    // Test scorecard for match 149618 (SRH vs RCB)
+    const r = await fetch("https://cricbuzz-cricket.p.rapidapi.com/mcenter/v1/149618/full-scorecard", {
       headers: {
         "x-rapidapi-host": "cricbuzz-cricket.p.rapidapi.com",
         "x-rapidapi-key": process.env.RAPIDAPI_KEY,
       },
     });
     const data = await r.json();
-
-    // Find all IPL matches
-    const iplMatches = [];
-    const walk = (obj) => {
-      if (!obj || typeof obj !== "object") return;
-      if (Array.isArray(obj)) { obj.forEach(walk); return; }
-      if (obj.matchId && obj.seriesName && obj.seriesName.includes("Premier")) {
-        iplMatches.push({
-          matchId: obj.matchId,
-          desc: obj.matchDesc,
-          team1: obj.team1?.teamSName,
-          team2: obj.team2?.teamSName,
-          state: obj.state,
-          status: obj.status,
-          date: obj.startDate,
-        });
-      }
-      Object.values(obj).forEach(walk);
-    };
-    walk(data);
-
-    res.json({ iplMatches });
+    // Return first innings batting summary
+    const inning1 = data.scoreCard?.[0];
+    const batsmen = inning1?.batTeamDetails?.batsmenData ? Object.values(inning1.batTeamDetails.batsmenData).slice(0,3) : [];
+    const bowlers = inning1?.bowlTeamDetails?.bowlersData ? Object.values(inning1.bowlTeamDetails.bowlersData).slice(0,3) : [];
+    res.json({ topLevelKeys: Object.keys(data), inningKeys: inning1 ? Object.keys(inning1) : [], batsmen, bowlers });
   } catch(e) {
     res.status(500).json({ error: e.message });
   }
