@@ -43,7 +43,7 @@ async function cricbuzz(path) {
 }
 
 async function fetchIPLMatches() {
-  // Get all series — find IPL 2025
+  // Get all series — find IPL 2026
   const data = await cricbuzz("series/v1/get-matches?seriesId=7607");
   return data;
 }
@@ -349,14 +349,14 @@ export default function App() {
 
   // Fetch players team by team to avoid truncation
   const fetchPlayers=async()=>{
-    setLoading("Fetching IPL 2025 players… (this may take a minute)");
+    setLoading("Fetching IPL 2026 players… (this may take a minute)");
     try {
       let allPlayers = [];
       for (let i = 0; i < IPL_TEAMS.length; i++) {
         const team = IPL_TEAMS[i];
         setLoading(`Fetching ${team} squad… (${i+1}/10)`);
         const text = await callAI(
-          `List all players in the ${team} squad for IPL 2025. Return ONLY a raw JSON array: [{"id":"firstname-lastname","name":"Full Name","iplTeam":"${team}","role":"Batsman|Bowler|All-Rounder|Wicket-Keeper"}]. Include all 20-25 players.`,
+          `List all players in the ${team} squad for IPL 2026. Return ONLY a raw JSON array: [{"id":"firstname-lastname","name":"Full Name","iplTeam":"${team}","role":"Batsman|Bowler|All-Rounder|Wicket-Keeper"}]. Include all 20-25 players.`,
           "You are a cricket expert. Return ONLY a raw JSON array. No markdown, no explanation."
         );
         const squad = parseJSON(text);
@@ -391,7 +391,7 @@ export default function App() {
       if (ipl.length === 0) {
         // fallback to AI if no live matches found
         const text=await callAI(
-          `List all 74 matches of IPL 2025. Return ONLY a raw JSON array: [{"id":"m1","matchNum":1,"date":"2025-03-22","team1":"CSK","team2":"MI","venue":"Chepauk","status":"upcoming|completed","result":"winner or null"}].`,
+          `List all 74 matches of IPL 2026. Return ONLY a raw JSON array: [{"id":"m1","matchNum":1,"date":"2025-03-22","team1":"CSK","team2":"MI","venue":"Chepauk","status":"upcoming|completed","result":"winner or null"}].`,
           "Cricket expert. Return ONLY a raw JSON array. No markdown."
         );
         updMatches(parseJSON(text));
@@ -413,7 +413,7 @@ export default function App() {
       alert("Cricbuzz error: "+e.message+". Falling back to AI data.");
       try {
         const text=await callAI(
-          `List all 74 matches of IPL 2025. Return ONLY a raw JSON array: [{"id":"m1","matchNum":1,"date":"2025-03-22","team1":"CSK","team2":"MI","venue":"Chepauk","status":"upcoming|completed","result":"winner or null"}].`,
+          `List all 74 matches of IPL 2026. Return ONLY a raw JSON array: [{"id":"m1","matchNum":1,"date":"2025-03-22","team1":"CSK","team2":"MI","venue":"Chepauk","status":"upcoming|completed","result":"winner or null"}].`,
           "Cricket expert. Return ONLY a raw JSON array. No markdown."
         );
         updMatches(parseJSON(text));
@@ -423,7 +423,7 @@ export default function App() {
   };
 
   const syncPoints=async(match)=>{
-    setLoading(`Syncing Match ${match.matchNum} from Cricbuzz…`);
+    setLoading(`Syncing Match ${match.matchNum}……`);
     try {
       let stats = [];
       if (match.cricbuzzId) {
@@ -441,7 +441,7 @@ export default function App() {
         setLoading(`Syncing Match ${match.matchNum} via AI…`);
         const playerIndex=players.map(p=>`${p.name}::${p.id}`).join("|");
         const text=await callAI(
-          `Scorecard for IPL 2025 Match ${match.matchNum}: ${match.team1} vs ${match.team2} on ${match.date} at ${match.venue}. Match names to IDs from: ${playerIndex}. Return ONLY a JSON array: [{"playerId":"id","name":"name","runs":0,"fours":0,"sixes":0,"wickets":0,"economy":null,"overs":0,"catches":0,"stumpings":0,"runouts":0,"longestSix":false}].`,
+          `Scorecard for IPL 2026 Match ${match.matchNum}: ${match.team1} vs ${match.team2} on ${match.date} at ${match.venue}. Match names to IDs from: ${playerIndex}. Return ONLY a JSON array: [{"playerId":"id","name":"name","runs":0,"fours":0,"sixes":0,"wickets":0,"economy":null,"overs":0,"catches":0,"stumpings":0,"runouts":0,"longestSix":false}].`,
           "Cricket expert. Return ONLY a raw JSON array."
         );
         stats = parseJSON(text);
@@ -692,7 +692,7 @@ export default function App() {
                 <Btn variant="blue" onClick={fetchMatches}>{matches.length>0?`↻ REFRESH (${matches.length})`:"🌐 FETCH SCHEDULE"}</Btn>
               </div>
               {matches.length===0?(
-                <Card sx={{padding:60,textAlign:"center"}}><div style={{fontSize:56}}>📅</div><div style={{color:"#4A5E78",marginTop:16,fontSize:16}}>Click "Fetch Schedule" to load IPL 2025 matches</div></Card>
+                <Card sx={{padding:60,textAlign:"center"}}><div style={{fontSize:56}}>📅</div><div style={{color:"#4A5E78",marginTop:16,fontSize:16}}>Click "Fetch Schedule" to load IPL 2026 matches</div></Card>
               ):(
                 <div style={{display:"flex",flexDirection:"column",gap:8}}>
                   {matches.map(match=>{
