@@ -1072,6 +1072,7 @@ export default function App() {
     {id:"setup",label:"Setup",icon:"⚙️"},
     {id:"draft",label:"Draft",icon:"📋",disabled:teams.length===0},
     {id:"matches",label:"Matches",icon:"🏏",disabled:players.length===0},
+    {id:"results",label:"Results",icon:"📊",disabled:teams.length===0||matches.length===0},
     {id:"leaderboard",label:"Leaderboard",icon:"🏆",disabled:teams.length===0},
   ];
 
@@ -1359,14 +1360,14 @@ export default function App() {
                                       <div style={{display:"flex",gap:14,flexWrap:"wrap"}}>
                                         <div>
                                           <div style={{fontSize:11,color:"#4A5E78",marginBottom:5}}>⭐ CAPTAIN (2×)</div>
-                                          <select value={cap.captain||""} onChange={e=>setCap(match.id,team.id,"captain",e.target.value)} style={{background:"#0E1521",border:"1px solid #1E2D45",borderRadius:6,padding:"7px 12px",color:"#E2EAF4",fontSize:13,fontFamily:"Barlow Condensed",maxWidth:200}}>
+                                          <select value={cap.captain||""} onChange={e=>withPassword(()=>setCap(match.id,team.id,"captain",e.target.value))} style={{background:"#0E1521",border:"1px solid #1E2D45",borderRadius:6,padding:"7px 12px",color:"#E2EAF4",fontSize:13,fontFamily:"Barlow Condensed",maxWidth:200}}>
                                             <option value="">— Select Captain —</option>
                                             {teamPlayers.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
                                           </select>
                                         </div>
                                         <div>
                                           <div style={{fontSize:11,color:"#4A5E78",marginBottom:5}}>🥈 VICE CAPTAIN (1.5×)</div>
-                                          <select value={cap.vc||""} onChange={e=>setCap(match.id,team.id,"vc",e.target.value)} style={{background:"#0E1521",border:"1px solid #1E2D45",borderRadius:6,padding:"7px 12px",color:"#E2EAF4",fontSize:13,fontFamily:"Barlow Condensed",maxWidth:200}}>
+                                          <select value={cap.vc||""} onChange={e=>withPassword(()=>setCap(match.id,team.id,"vc",e.target.value))} style={{background:"#0E1521",border:"1px solid #1E2D45",borderRadius:6,padding:"7px 12px",color:"#E2EAF4",fontSize:13,fontFamily:"Barlow Condensed",maxWidth:200}}>
                                             <option value="">— Select V. Captain —</option>
                                             {teamPlayers.filter(p=>p.id!==cap.captain).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
                                           </select>
@@ -1390,6 +1391,101 @@ export default function App() {
                           </div>
                         )}
                       </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+
+          {page==="results" && (
+            <div className="fade-in">
+              <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2,marginBottom:24}}>MATCH RESULTS</h2>
+
+              {matches.filter(m=>m.status==="completed"&&Object.keys(points).some(pid=>points[pid][m.id])).length===0 ? (
+                <div style={{textAlign:"center",padding:60,color:"#4A5E78"}}>
+                  <div style={{fontSize:56}}>📊</div>
+                  <div style={{marginTop:16,fontSize:16}}>No match results yet. Sync stats from the Matches tab first.</div>
+                </div>
+              ) : (
+                <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                  {matches.filter(m=>m.status==="completed"&&Object.keys(points).some(pid=>points[pid][m.id])).map(match=>{
+                    const open = expandedMatch===match.id;
+
+                    // Build per-team breakdown for this match
+                    const teamBreakdowns = teams.map(team=>{
+                      const teamPts = players
+                        .filter(p=>assignments[p.id]===team.id&&points[p.id]?.[match.id])
+                        .map(p=>{
+                          const d = points[p.id][match.id];
+                          const cap = captains[`${match.id}_${team.id}`]||{};
+                          let pts = d.base;
+                          let mult = 1;
+                          if(cap.captain===p.id){pts*=2;mult=2;}
+                          else if(cap.vc===p.id){pts*=1.5;mult=1.5;}
+                          return {...p, base:d.base, pts:Math.round(pts), mult, stats:d.stats, breakdown:calcBreakdown(d.stats)};
+                        }).sort((a,b)=>b.pts-a.pts);
+                      const total = teamPts.reduce((s,p)=>s+p.pts,0);
+                      return {team, players:teamPts, total};
+                    }).sort((a,b)=>b.total-a.total);
+
+                    return (
+                      <div key={match.id} style={{background:"#0E1521",borderRadius:12,border:"1px solid #1E2D45",overflow:"hidden"}}>
+                        {/* Match header */}
+                        <div style={{display:"flex",alignItems:"center",padding:"14px 18px",cursor:"pointer",gap:14}} onClick={()=>setExpandedMatch(open?null:match.id)}>
+                          <div style={{background:"#080C14",borderRadius:6,padding:"4px 10px",minWidth:44,textAlign:"center"}}>
+                            <div style={{fontSize:11,color:"#4A5E78"}}>M</div>
+                            <div style={{fontSize:18,fontWeight:800,color:"#F5A623",fontFamily:"Rajdhani"}}>{match.matchNum}</div>
+                          </div>
+                          <div style={{flex:1}}>
+                            <div style={{fontWeight:700,fontSize:15,color:"#E2EAF4"}}>{match.team1} <span style={{color:"#4A5E78"}}>vs</span> {match.team2}</div>
+                            <div style={{fontSize:12,color:"#4A5E78",marginTop:2}}>{match.date} • {match.result||match.venue}</div>
+                          </div>
+                          <span style={{color:"#4A5E78",fontSize:12}}>{open?"▲":"▼"}</span>
+                        </div>
+
+                        {/* Expanded breakdown */}
+                        {open && (
+                          <div style={{borderTop:"1px solid #1E2D45",padding:"16px 18px",display:"flex",flexDirection:"column",gap:14}}>
+                            {teamBreakdowns.map((tb,rank)=>(
+                              <div key={tb.team.id} style={{background:"#080C14",borderRadius:10,border:`1px solid ${tb.team.color}33`,overflow:"hidden"}}>
+                                {/* Team header */}
+                                <div style={{padding:"10px 16px",borderBottom:"1px solid #1E2D4544",display:"flex",alignItems:"center",justifyContent:"space-between",background:tb.team.color+"11"}}>
+                                  <div style={{display:"flex",alignItems:"center",gap:10}}>
+                                    <span style={{fontSize:20}}>{["🥇","🥈","🥉"][rank]||`#${rank+1}`}</span>
+                                    <span style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:16,color:tb.team.color,letterSpacing:1}}>{tb.team.name}</span>
+                                  </div>
+                                  <span style={{fontFamily:"Rajdhani,sans-serif",fontWeight:800,fontSize:22,color:"#F5A623"}}>{tb.total} pts</span>
+                                </div>
+
+                                {/* Players */}
+                                {tb.players.length===0 ? (
+                                  <div style={{padding:"12px 16px",color:"#4A5E78",fontSize:13}}>No players scored in this match</div>
+                                ) : (
+                                  tb.players.map(p=>(
+                                    <div key={p.id} style={{padding:"10px 16px",borderBottom:"1px solid #1E2D4522",display:"flex",alignItems:"flex-start",gap:12}}>
+                                      <div style={{flex:1,minWidth:0}}>
+                                        <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                                          <span style={{fontWeight:700,fontSize:14,color:"#E2EAF4"}}>{p.name}</span>
+                                          {p.mult>1 && <span style={{background:p.mult===2?"#F5A62322":"#94A3B822",color:p.mult===2?"#F5A623":"#94A3B8",border:`1px solid ${p.mult===2?"#F5A62344":"#94A3B844"}`,fontSize:10,padding:"1px 7px",borderRadius:10,fontWeight:700}}>
+                                            {p.mult===2?"⭐ CAPTAIN 2×":"🥈 VC 1.5×"}
+                                          </span>}
+                                        </div>
+                                        <div style={{fontSize:11,color:"#4A5E78",marginTop:3}}>{p.breakdown.join(" • ")||"No contributions"}</div>
+                                      </div>
+                                      <div style={{textAlign:"right",flexShrink:0}}>
+                                        <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:800,fontSize:20,color:p.pts>0?"#F5A623":"#4A5E78"}}>{p.pts}</div>
+                                        {p.mult>1&&<div style={{fontSize:10,color:"#4A5E78"}}>base: {p.base}</div>}
+                                      </div>
+                                    </div>
+                                  ))
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     );
                   })}
                 </div>
