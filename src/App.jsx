@@ -653,6 +653,7 @@ export default function App() {
   const [squadView, setSquadView] = useState(false); // toggle squad view
   const [teamFilter, setTeamFilter] = useState(null); // filter by fantasy team
   const [sortOrder, setSortOrder] = useState('default'); // default | az | za
+  const [teamLogos, setTeamLogos] = useState({});
 
   useEffect(() => {
     const t=storeGet("teams"),p=storeGet("players"),a=storeGet("assignments"),m=storeGet("matches"),
@@ -661,6 +662,7 @@ export default function App() {
     if(t)setTeams(t);if(p)setPlayers(p);if(a)setAssignments(a);if(m)setMatches(m);
     if(c)setCaptains(c);if(pts)setPoints(pts);if(pg)setPage(pg);if(tn)setTNames(tn);
     if(nt)setNumTeams(nt);if(ph)setPwHash(ph);
+    const tl=storeGet('teamLogos');if(tl)setTeamLogos(tl);
   }, []);
 
   const nav=(pg)=>{setPage(pg);storeSet("page",pg);};
@@ -668,6 +670,16 @@ export default function App() {
   const updTeams=upd(setTeams,"teams"),updAssign=upd(setAssignments,"assignments"),
         updMatches=upd(setMatches,"matches"),updCaptains=upd(setCaptains,"captains"),
         updPoints=upd(setPoints,"points");
+
+  const uploadTeamLogo=(teamId, file)=>{
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const newLogos = {...teamLogos, [teamId]: e.target.result};
+      setTeamLogos(newLogos);
+      storeSet('teamLogos', newLogos);
+    };
+    reader.readAsDataURL(file);
+  };
 
   const withPassword=(action)=>{
     if(unlocked){action();return;}
@@ -741,10 +753,13 @@ export default function App() {
             else if (role.includes("bowling allrounder") || role.includes("batting allrounder")) mappedRole = "All-Rounder";
             else if (role.includes("bowler") || role.includes("fast") || role.includes("spin")) mappedRole = "Bowler";
             else if (role.includes("batsman") || role.includes("batter")) mappedRole = "Batsman";
-            allPlayers.push({
-              id: name.toLowerCase().replace(/\s+/g,"-").replace(/[^a-z0-9-]/g,"") + "-" + p.id,
-              name, iplTeam: shortName, role: mappedRole, cricbuzzId: p.id,
-            });
+            const pid = (p.id ? String(p.id) : name.toLowerCase().replace(/\s+/g,"-").replace(/[^a-z0-9-]/g,""));
+            // Skip duplicates
+            if (!allPlayers.find(x => x.id === pid)) {
+              allPlayers.push({
+                id: pid, name, iplTeam: shortName, role: mappedRole, cricbuzzId: p.id,
+              });
+            }
           }
         }
         if (allPlayers.length > 30) cricbuzzSuccess = true;
@@ -1044,14 +1059,21 @@ export default function App() {
               </div>
               <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
                 {teams.map(t=>{
-                  const cnt=Object.values(assignments).filter(v=>v===t.id).length;
+                  const cnt=players.filter(p=>assignments[p.id]===t.id).length;
                   const active=teamFilter===t.id;
                   return(
-                    <div key={t.id} onClick={()=>setTeamFilter(active?null:t.id)}
-                      style={{background:active?t.color+"22":"#0E1521",borderRadius:8,padding:"7px 14px",borderLeft:`3px solid ${t.color}`,fontSize:13,cursor:"pointer",border:active?`1px solid ${t.color}`:"1px solid transparent",transition:"all .15s"}}>
-                      <span style={{color:t.color,fontWeight:700}}>{t.name}</span>
-                      <span style={{color:"#4A5E78",marginLeft:8}}>{cnt}p</span>
-                      {active&&<span style={{color:t.color,marginLeft:6,fontSize:11}}>✓</span>}
+                    <div key={t.id} style={{position:"relative",display:"flex",alignItems:"center",background:active?t.color+"22":"#0E1521",borderRadius:8,borderLeft:`3px solid ${t.color}`,fontSize:13,border:active?`1px solid ${t.color}`:"1px solid transparent",transition:"all .15s",overflow:"hidden"}}>
+                      {teamLogos[t.id]&&<img src={teamLogos[t.id]} style={{position:"absolute",right:0,top:0,height:"100%",opacity:0.15,objectFit:"contain",pointerEvents:"none"}} />}
+                      <div onClick={()=>setTeamFilter(active?null:t.id)} style={{padding:"7px 10px",cursor:"pointer",display:"flex",alignItems:"center",gap:6,flex:1}}>
+                        {teamLogos[t.id]&&<img src={teamLogos[t.id]} style={{width:22,height:22,objectFit:"contain",borderRadius:4}} />}
+                        <span style={{color:t.color,fontWeight:700}}>{t.name}</span>
+                        <span style={{color:"#4A5E78"}}>{cnt}p</span>
+                        {active&&<span style={{color:t.color,fontSize:11}}>✓</span>}
+                      </div>
+                      <label title="Upload team logo" style={{padding:"7px 8px",cursor:"pointer",color:"#4A5E78",fontSize:12,borderLeft:"1px solid #1E2D4555"}}>
+                        📷
+                        <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>e.target.files[0]&&uploadTeamLogo(t.id,e.target.files[0])} />
+                      </label>
                     </div>
                   );
                 })}
@@ -1128,7 +1150,10 @@ export default function App() {
                       <option value="za">Z → A</option>
                     </select>
                   </div>
-                  <div style={{maxHeight:560,overflowY:"auto",display:"flex",flexDirection:"column",gap:5}}>
+                  <div style={{position:"relative",maxHeight:560,overflowY:"auto",display:"flex",flexDirection:"column",gap:5}}>
+                    {teamFilter&&teamFilter!=="unassigned"&&teamLogos[teamFilter]&&(
+                      <img src={teamLogos[teamFilter]} style={{position:"sticky",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:280,opacity:0.06,pointerEvents:"none",zIndex:0,objectFit:"contain",margin:"0 auto",display:"block"}} />
+                    )}
                     {filteredPlayers.map(p=>{
                       const aTeam=teams.find(t=>t.id===assignments[p.id]);
                       const isAssigned=!!assignments[p.id];
@@ -1249,7 +1274,7 @@ export default function App() {
                           <div style={{fontSize:28,minWidth:36}}>{medals[i]||`#${i+1}`}</div>
                           <div style={{flex:1}}>
                             <div style={{fontWeight:700,fontSize:18,color:team.color,fontFamily:"Rajdhani",letterSpacing:1}}>{team.name}</div>
-                            <div style={{fontSize:12,color:"#4A5E78"}}>{Object.values(assignments).filter(v=>v===team.id).length} players drafted</div>
+                            <div style={{fontSize:12,color:"#4A5E78"}}>{players.filter(p=>assignments[p.id]===team.id).length} players drafted</div>
                           </div>
                           <div style={{textAlign:"right"}}>
                             <div style={{fontSize:32,fontWeight:800,color:i<3?mc[i]:"#E2EAF4",fontFamily:"Rajdhani"}}>{team.total}</div>
