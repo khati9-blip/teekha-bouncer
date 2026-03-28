@@ -1168,28 +1168,34 @@ export default function App() {
         {showPwModal&&<PasswordModal storedHash={pwHash} recoveryHash={recoveryHash} onSuccess={handlePwSuccess} onClose={()=>{setShowPwModal(false);setPendingAction(null);}} />}
         {editPlayer&&<EditPlayerModal player={editPlayer} onSave={(updated)=>{const updated_players=players.map(p=>p.id===updated.id?updated:p);setPlayers(updated_players);storeSet("players",updated_players);setEditPlayer(null);}} onAdd={(np)=>{const all=[...players,np];setPlayers(all);storeSet("players",all);setEditPlayer(null);}} onClose={()=>setEditPlayer(null)} />}
 
-        <div style={{background:"linear-gradient(180deg,#0E1521 0%,#080C14 100%)",borderBottom:"1px solid #1E2D45",padding:"0 20px",display:"flex",alignItems:"stretch",position:"sticky",top:0,zIndex:50}}>
-          <div style={{padding:"8px 16px 8px 0",borderRight:"1px solid #1E2D45",marginRight:8,display:"flex",alignItems:"center"}}>
-            <img src="/logo.png" alt="Teekha Bouncer" style={{height:44,width:44,objectFit:"contain",borderRadius:6}} />
-            <div style={{marginLeft:10}}>
-              <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:18,color:"#F5A623",letterSpacing:2,lineHeight:1}}>TEEKHA</div>
-              <div style={{fontSize:10,color:"#4A5E78",letterSpacing:3,textTransform:"uppercase"}}>Bouncer League</div>
+        {/* TOP BAR */}
+        <div style={{background:"linear-gradient(180deg,#0E1521 0%,#080C14 100%)",borderBottom:"1px solid #1E2D45",padding:"10px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:50}}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <img src="/logo.png" alt="Teekha Bouncer" style={{height:36,width:36,objectFit:"contain",borderRadius:6}} />
+            <div>
+              <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:17,color:"#F5A623",letterSpacing:2,lineHeight:1}}>TEEKHA</div>
+              <div style={{fontSize:9,color:"#4A5E78",letterSpacing:2,textTransform:"uppercase"}}>Bouncer League</div>
             </div>
           </div>
-          <div style={{display:"flex",overflowX:"auto"}}>
-            {navItems.map(n=>(
-              <button key={n.id} onClick={()=>!n.disabled&&nav(n.id)} style={{background:"transparent",border:"none",cursor:n.disabled?"not-allowed":"pointer",padding:"0 20px",fontSize:14,fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,letterSpacing:1,textTransform:"uppercase",color:page===n.id?"#F5A623":n.disabled?"#1E2D45":"#4A5E78",borderBottom:page===n.id?"2px solid #F5A623":"2px solid transparent",whiteSpace:"nowrap"}}>
-                {n.icon} {n.label}
-              </button>
-            ))}
-          </div>
-          <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:8,padding:"0 0 0 12px"}}>
-            <button onClick={()=>{if(unlocked)setUnlocked(false);else{setPendingAction(null);setShowPwModal(true);}}} style={{background:unlocked?"#2ECC7122":"transparent",border:`1px solid ${unlocked?"#2ECC71":"#1E2D45"}`,color:unlocked?"#2ECC71":"#4A5E78",fontSize:11,borderRadius:6,padding:"4px 10px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif"}}>
-              {unlocked?"🔓 UNLOCKED":"🔒 LOCKED"}
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <button onClick={()=>{if(unlocked)setUnlocked(false);else{setPendingAction(null);setShowPwModal(true);}}}
+              style={{background:unlocked?"#2ECC7122":"transparent",border:`1px solid ${unlocked?"#2ECC71":"#1E2D45"}`,color:unlocked?"#2ECC71":"#4A5E78",fontSize:13,borderRadius:6,padding:"6px 12px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>
+              {unlocked?"🔓 ON":"🔒 OFF"}
             </button>
-            {!recoveryHash&&pwHash&&<button onClick={()=>setShowPwModal(true)} title="Set recovery phrase" style={{background:"#F5A62322",border:"1px solid #F5A62344",color:"#F5A623",fontSize:11,borderRadius:6,padding:"4px 10px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif"}}>🛡️ SET RECOVERY</button>}
-            <button onClick={()=>withPassword(()=>{if(!confirm("Reset ALL data? This cannot be undone!"))return;["teams","players","assignments","matches","captains","points","page","pwhash"].forEach(k=>storeDel(k));window.location.reload();})} style={{background:"transparent",border:"1px solid #1E2D45",color:"#4A5E78",fontSize:11,borderRadius:6,padding:"4px 10px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif"}}>RESET</button>
+            <button onClick={()=>withPassword(()=>{if(!confirm("Reset ALL data? This cannot be undone!"))return;["teams","players","assignments","matches","captains","points","page","pwhash"].forEach(k=>storeDel(k));window.location.reload();})}
+              style={{background:"transparent",border:"1px solid #1E2D45",color:"#4A5E78",fontSize:13,borderRadius:6,padding:"6px 10px",cursor:"pointer"}}>⚙️</button>
           </div>
+        </div>
+
+        {/* BOTTOM NAV */}
+        <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:50,background:"#0E1521",borderTop:"1px solid #1E2D45",display:"flex",paddingBottom:"max(8px, env(safe-area-inset-bottom))"}}>
+          {navItems.map(n=>(
+            <button key={n.id} onClick={()=>!n.disabled&&nav(n.id)}
+              style={{flex:1,background:"transparent",border:"none",cursor:n.disabled?"not-allowed":"pointer",padding:"10px 2px 6px",display:"flex",flexDirection:"column",alignItems:"center",gap:3,opacity:n.disabled?0.25:1,borderTop:page===n.id?"2px solid #F5A623":"2px solid transparent",transition:"all .15s"}}>
+              <span style={{fontSize:22,lineHeight:1}}>{n.icon}</span>
+              <span style={{fontSize:9,fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,letterSpacing:0.5,color:page===n.id?"#F5A623":"#4A5E78",textTransform:"uppercase"}}>{n.label}</span>
+            </button>
+          ))}
         </div>
 
         {loading&&(
@@ -1200,7 +1206,7 @@ export default function App() {
           </div>
         )}
 
-        <div style={{maxWidth:860,margin:"0 auto",padding:"24px 16px"}}>
+        <div style={{maxWidth:860,margin:"0 auto",padding:"20px 16px 90px"}}>
 
           {page==="setup"&&(
             <div className="fade-in">
