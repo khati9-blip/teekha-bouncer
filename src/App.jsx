@@ -652,6 +652,7 @@ export default function App() {
   const [smartStatsMatch, setSmartStatsMatch] = useState(null);
   const [squadView, setSquadView] = useState(false); // toggle squad view
   const [teamFilter, setTeamFilter] = useState(null); // filter by fantasy team
+  const [sortOrder, setSortOrder] = useState('default'); // default | az | za
 
   useEffect(() => {
     const t=storeGet("teams"),p=storeGet("players"),a=storeGet("assignments"),m=storeGet("matches"),
@@ -803,6 +804,10 @@ export default function App() {
     const matchesRole=(roleFilter==="All"||p.role===roleFilter);
     const matchesTeam=!teamFilter||(teamFilter==="unassigned"?!assignments[p.id]:assignments[p.id]===teamFilter);
     return matchesSearch&&matchesRole&&matchesTeam;
+  }).sort((a,b)=>{
+    if(sortOrder==="az") return a.name.localeCompare(b.name);
+    if(sortOrder==="za") return b.name.localeCompare(a.name);
+    return 0;
   });
 
   const fetchMatches=async()=>{
@@ -1113,6 +1118,11 @@ export default function App() {
                     <input placeholder="Search name or franchise…" value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:180,background:"#0E1521",border:"1px solid #1E2D45",borderRadius:8,padding:"10px 14px",color:"#E2EAF4",fontSize:14,fontFamily:"Barlow Condensed"}} />
                     <select value={roleFilter} onChange={e=>setRoleFilter(e.target.value)} style={{background:"#0E1521",border:"1px solid #1E2D45",borderRadius:8,padding:"10px 14px",color:"#E2EAF4",fontSize:14,fontFamily:"Barlow Condensed"}}>
                       {ROLES.map(r=><option key={r}>{r}</option>)}
+                    </select>
+                    <select value={sortOrder} onChange={e=>setSortOrder(e.target.value)} style={{background:"#0E1521",border:"1px solid #1E2D45",borderRadius:8,padding:"10px 14px",color:"#E2EAF4",fontSize:14,fontFamily:"Barlow Condensed"}}>
+                      <option value="default">Default</option>
+                      <option value="az">A → Z</option>
+                      <option value="za">Z → A</option>
                     </select>
                   </div>
                   <div style={{maxHeight:560,overflowY:"auto",display:"flex",flexDirection:"column",gap:5}}>
