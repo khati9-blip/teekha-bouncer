@@ -11,10 +11,11 @@ export default async function handler(req, res) {
     });
     const data = await r.json();
     const inning1 = data.scorecard?.[0];
+    const batArr = Array.isArray(inning1?.batsman) ? inning1.batsman : Object.values(inning1?.batsman||{});
+    const bowlArr = Array.isArray(inning1?.bowler) ? inning1.bowler : Object.values(inning1?.bowler||{});
     res.json({
-      sampleBatsman: inning1?.batsman?.slice(0,2) || [],
-      sampleBowler: inning1?.bowler?.slice(0,2) || [],
-      sampleFow: inning1?.fow?.slice(0,2) || [],
+      sampleBatsman: batArr.slice(0,2),
+      sampleBowler: bowlArr.slice(0,2),
     });
   } catch(e) {
     res.status(500).json({ error: e.message });
