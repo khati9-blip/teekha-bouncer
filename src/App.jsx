@@ -218,14 +218,49 @@ function calcBreakdown(s) {
   return items;
 }
 
-function storeGet(key) {
-  try { const v = localStorage.getItem(`tbl_${key}`); return v ? JSON.parse(v) : null; } catch { return null; }
+const SUPABASE_URL = "https://rmcxhorijitrhqyrvvkn.supabase.co";
+const SUPABASE_KEY = "sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm";
+const SB_HEADERS = {
+  "Content-Type": "application/json",
+  "apikey": SUPABASE_KEY,
+  "Authorization": `Bearer ${SUPABASE_KEY}`,
+};
+
+// Local cache to avoid slow reads
+const localCache = {};
+
+async function storeGet(key) {
+  if (localCache[key] !== undefined) return localCache[key];
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/league_data?key=eq.${encodeURIComponent(key)}&select=value`, {
+      headers: SB_HEADERS,
+    });
+    const data = await res.json();
+    const val = data?.[0]?.value ?? null;
+    localCache[key] = val;
+    return val;
+  } catch { return null; }
 }
-function storeSet(key, val) {
-  try { localStorage.setItem(`tbl_${key}`, JSON.stringify(val)); } catch {}
+
+async function storeSet(key, val) {
+  localCache[key] = val;
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/league_data`, {
+      method: "POST",
+      headers: { ...SB_HEADERS, "Prefer": "resolution=merge-duplicates" },
+      body: JSON.stringify({ key, value: val, updated_at: new Date().toISOString() }),
+    });
+  } catch(e) { console.warn("storeSet failed:", e.message); }
 }
-function storeDel(key) {
-  try { localStorage.removeItem(`tbl_${key}`); } catch {}
+
+async function storeDel(key) {
+  delete localCache[key];
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/league_data?key=eq.${encodeURIComponent(key)}`, {
+      method: "DELETE",
+      headers: SB_HEADERS,
+    });
+  } catch(e) { console.warn("storeDel failed:", e.message); }
 }
 
 async function hashPw(str) {
