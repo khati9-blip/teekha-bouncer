@@ -1299,7 +1299,7 @@ export default function App() {
                             </div>
                             {completed&&(
                               <div style={{marginTop:16,display:"flex",gap:8,flexDirection:"column"}}>
-                                <button onClick={()=>setSmartStatsMatch(match)}
+                                <button onClick={()=>withPassword(()=>setSmartStatsMatch(match))}
                                   style={{width:"100%",background:synced?"#1E2D45":"linear-gradient(135deg,#F5A623,#FF8C00)",color:synced?"#4A5E78":"#080C14",border:"none",borderRadius:8,padding:13,fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"Barlow Condensed",letterSpacing:1}}>
                                   {synced?"↻ EDIT / RE-SYNC STATS":"📊 SYNC STATS & CALCULATE POINTS"}
                                 </button>
