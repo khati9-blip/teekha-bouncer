@@ -33,6 +33,121 @@ function parseJSON(text) {
   throw new Error("Could not parse response as JSON");
 }
 
+
+// ── CRICBUZZ API ──────────────────────────────────────────────────────────────
+async function cricbuzz(path) {
+  const res = await fetch(`/api/cricbuzz?path=${encodeURIComponent(path)}`);
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data;
+}
+
+async function fetchIPLMatches() {
+  // Get all series — find IPL 2025
+  const data = await cricbuzz("series/v1/get-matches?seriesId=7607");
+  return data;
+}
+
+async function fetchLiveScorecard(matchId) {
+  const data = await cricbuzz(`mcenter/v1/${matchId}/full-scorecard`);
+  return data;
+}
+
+async function fetchRecentIPLMatches() {
+  const data = await cricbuzz("matches/v1/recent");
+  // Filter for IPL matches
+  const ipl = [];
+  if (data.typeMatches) {
+    for (const type of data.typeMatches) {
+      for (const series of (type.seriesMatches || [])) {
+        const sm = series.seriesAdWrapper || series;
+        if (sm.seriesName && sm.seriesName.includes("Indian Premier League")) {
+          for (const match of (sm.matches || [])) {
+            ipl.push(match.matchInfo);
+          }
+        }
+      }
+    }
+  }
+  return ipl;
+}
+
+function parseScorecardToStats(scorecard, playerIndex) {
+  // playerIndex: [{name, id}]
+  const stats = {};
+  const nameToId = {};
+  for (const p of playerIndex) {
+    nameToId[p.name.toLowerCase()] = p.id;
+    // also try last name match
+    const parts = p.name.toLowerCase().split(" ");
+    if (parts.length > 1) nameToId[parts[parts.length-1]] = p.id;
+  }
+
+  const findId = (name) => {
+    if (!name) return null;
+    const n = name.toLowerCase().trim();
+    if (nameToId[n]) return nameToId[n];
+    // partial match
+    for (const [key, id] of Object.entries(nameToId)) {
+      if (n.includes(key) || key.includes(n)) return id;
+    }
+    return null;
+  };
+
+  const ensure = (pid, name) => {
+    if (!stats[pid]) stats[pid] = { playerId: pid, name, runs:0, fours:0, sixes:0, wickets:0, economy:null, overs:0, catches:0, stumpings:0, runouts:0, longestSix:false };
+  };
+
+  try {
+    for (const inning of (scorecard.scoreCard || [])) {
+      // Batting
+      for (const batter of (inning.batTeamDetails?.batsmenData ? Object.values(inning.batTeamDetails.batsmenData) : [])) {
+        const pid = findId(batter.batName);
+        if (!pid) continue;
+        ensure(pid, batter.batName);
+        stats[pid].runs += batter.runs || 0;
+        stats[pid].fours += batter.fours || 0;
+        stats[pid].sixes += batter.sixes || 0;
+      }
+      // Bowling
+      for (const bowler of (inning.bowlTeamDetails?.bowlersData ? Object.values(inning.bowlTeamDetails.bowlersData) : [])) {
+        const pid = findId(bowler.bowlName);
+        if (!pid) continue;
+        ensure(pid, bowler.bowlName);
+        stats[pid].wickets += bowler.wickets || 0;
+        stats[pid].overs += parseFloat(bowler.overs) || 0;
+        const eco = parseFloat(bowler.economy);
+        if (!isNaN(eco)) stats[pid].economy = stats[pid].economy ? (stats[pid].economy + eco) / 2 : eco;
+      }
+      // Fielding from wickets
+      for (const batter of (inning.batTeamDetails?.batsmenData ? Object.values(inning.batTeamDetails.batsmenData) : [])) {
+        const wkt = batter.outDesc || "";
+        if (wkt.startsWith("c ")) {
+          const fielder = wkt.split("c ")[1]?.split(" b ")[0]?.trim();
+          const pid = findId(fielder);
+          if (pid) { ensure(pid, fielder); stats[pid].catches += 1; }
+        }
+        if (wkt.startsWith("st ")) {
+          const keeper = wkt.split("st ")[1]?.split(" b ")[0]?.trim();
+          const pid = findId(keeper);
+          if (pid) { ensure(pid, keeper); stats[pid].stumpings += 1; }
+        }
+        if (wkt.toLowerCase().includes("run out")) {
+          const match = wkt.match(/run out \(([^)]+)\)/i);
+          if (match) {
+            for (const name of match[1].split("/")) {
+              const pid = findId(name.trim());
+              if (pid) { ensure(pid, name.trim()); stats[pid].runouts += 1; }
+            }
+          }
+        }
+      }
+    }
+  } catch(e) { console.error("Scorecard parse error:", e); }
+
+  return Object.values(stats);
+}
+
 function calcPoints(s) {
   let p = 0;
   const runs = s.runs || 0, fours = s.fours || 0, sixes = s.sixes || 0;
@@ -270,26 +385,67 @@ export default function App() {
   });
 
   const fetchMatches=async()=>{
-    setLoading("Fetching IPL 2025 schedule…");
+    setLoading("Fetching live IPL matches from Cricbuzz…");
     try {
-      const text=await callAI(
-        `List all 74 matches of IPL 2025. Return ONLY a raw JSON array: [{"id":"m1","matchNum":1,"date":"2025-03-22","team1":"CSK","team2":"MI","venue":"Chepauk","status":"upcoming|completed","result":"winner or null"}].`,
-        "Cricket expert. Return ONLY a raw JSON array. No markdown."
-      );
-      updMatches(parseJSON(text));
-    } catch(e){alert("Error: "+e.message);}
+      const ipl = await fetchRecentIPLMatches();
+      if (ipl.length === 0) {
+        // fallback to AI if no live matches found
+        const text=await callAI(
+          `List all 74 matches of IPL 2025. Return ONLY a raw JSON array: [{"id":"m1","matchNum":1,"date":"2025-03-22","team1":"CSK","team2":"MI","venue":"Chepauk","status":"upcoming|completed","result":"winner or null"}].`,
+          "Cricket expert. Return ONLY a raw JSON array. No markdown."
+        );
+        updMatches(parseJSON(text));
+      } else {
+        const formatted = ipl.map((m, i) => ({
+          id: "m" + (m.matchId || i+1),
+          cricbuzzId: m.matchId,
+          matchNum: i+1,
+          date: m.startDate ? new Date(parseInt(m.startDate)).toISOString().split("T")[0] : "TBD",
+          team1: m.team1?.teamSName || m.team1?.teamName || "TBA",
+          team2: m.team2?.teamSName || m.team2?.teamName || "TBA",
+          venue: m.venueInfo?.ground || m.venueInfo?.city || "TBD",
+          status: m.state === "Complete" ? "completed" : "upcoming",
+          result: m.status || null,
+        }));
+        updMatches(formatted);
+      }
+    } catch(e){
+      alert("Cricbuzz error: "+e.message+". Falling back to AI data.");
+      try {
+        const text=await callAI(
+          `List all 74 matches of IPL 2025. Return ONLY a raw JSON array: [{"id":"m1","matchNum":1,"date":"2025-03-22","team1":"CSK","team2":"MI","venue":"Chepauk","status":"upcoming|completed","result":"winner or null"}].`,
+          "Cricket expert. Return ONLY a raw JSON array. No markdown."
+        );
+        updMatches(parseJSON(text));
+      } catch(e2){alert("Error: "+e2.message);}
+    }
     setLoading("");
   };
 
   const syncPoints=async(match)=>{
-    setLoading(`Syncing Match ${match.matchNum}…`);
+    setLoading(`Syncing Match ${match.matchNum} from Cricbuzz…`);
     try {
-      const playerIndex=players.map(p=>`${p.name}::${p.id}`).join("|");
-      const text=await callAI(
-        `Scorecard for IPL 2025 Match ${match.matchNum}: ${match.team1} vs ${match.team2} on ${match.date} at ${match.venue}. Match names to IDs from: ${playerIndex}. Return ONLY a JSON array: [{"playerId":"id","name":"name","runs":0,"fours":0,"sixes":0,"wickets":0,"economy":null,"overs":0,"catches":0,"stumpings":0,"runouts":0,"longestSix":false}].`,
-        "Cricket expert. Return ONLY a raw JSON array."
-      );
-      const stats=parseJSON(text);
+      let stats = [];
+      if (match.cricbuzzId) {
+        // Use real Cricbuzz scorecard
+        try {
+          const scorecard = await fetchLiveScorecard(match.cricbuzzId);
+          const playerIndex = players.map(p=>({name:p.name, id:p.id}));
+          stats = parseScorecardToStats(scorecard, playerIndex);
+        } catch(e) {
+          console.warn("Cricbuzz scorecard failed, falling back to AI:", e.message);
+        }
+      }
+      // Fallback to AI if Cricbuzz fails or no cricbuzzId
+      if (stats.length === 0) {
+        setLoading(`Syncing Match ${match.matchNum} via AI…`);
+        const playerIndex=players.map(p=>`${p.name}::${p.id}`).join("|");
+        const text=await callAI(
+          `Scorecard for IPL 2025 Match ${match.matchNum}: ${match.team1} vs ${match.team2} on ${match.date} at ${match.venue}. Match names to IDs from: ${playerIndex}. Return ONLY a JSON array: [{"playerId":"id","name":"name","runs":0,"fours":0,"sixes":0,"wickets":0,"economy":null,"overs":0,"catches":0,"stumpings":0,"runouts":0,"longestSix":false}].`,
+          "Cricket expert. Return ONLY a raw JSON array."
+        );
+        stats = parseJSON(text);
+      }
       const newPts={...points};
       for(const s of stats){
         if(!s.playerId)continue;
