@@ -783,12 +783,24 @@ export default function App() {
         for (let i = 0; i < IPL_TEAMS.length; i++) {
           const team = IPL_TEAMS[i];
           setLoading(`AI: Fetching ${team} squad… (${i+1}/10)`);
-          const text = await callAI(
-            `List all players in the ${team} squad for IPL 2026. Return ONLY a raw JSON array: [{"id":"firstname-lastname","name":"Full Name","iplTeam":"${team}","role":"Batsman|Bowler|All-Rounder|Wicket-Keeper"}]. Include all 20-25 players.`,
-            "You are a cricket expert. Return ONLY a raw JSON array. No markdown, no explanation."
-          );
-          const squad = parseJSON(text);
-          allPlayers = [...allPlayers, ...squad];
+          try {
+            const text = await callAI(
+              `List exactly 20 players in the ${team} IPL 2026 squad. Return ONLY a JSON array, nothing else: [{"id":"name-slug","name":"Full Name","iplTeam":"${team}","role":"Batsman|Bowler|All-Rounder|Wicket-Keeper"}]`,
+              "Return ONLY a valid JSON array. No markdown. No explanation. No extra text."
+            );
+            // Try to salvage even truncated JSON
+            let squad = [];
+            try { squad = parseJSON(text); }
+            catch {
+              const lastBrace = text.lastIndexOf("}");
+              if (lastBrace > 0) {
+                try { squad = JSON.parse(text.slice(0, lastBrace+1) + "]"); } catch {}
+              }
+            }
+            allPlayers = [...allPlayers, ...squad];
+          } catch(e) {
+            console.warn(`Failed to fetch ${team}:`, e.message);
+          }
         }
       }
 
