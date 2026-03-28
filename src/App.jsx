@@ -404,11 +404,41 @@ function SmartStatsModal({ match, players, assignments, existingStats, onSave, o
       const findPlayer = (name) => {
         if (!name) return null;
         const n = name.toLowerCase().trim();
+
+        // 1. Exact full name match — always trust this
         if (nameToPlayer[n]) return nameToPlayer[n];
-        // Try partial match
-        for (const [key, pl] of Object.entries(nameToPlayer)) {
-          if (n.includes(key) || key.includes(n)) return pl;
+
+        // 2. Match by FULL last name (surname) — must be 5+ chars
+        // e.g. Cricbuzz "Shivam Dube" → last name "dube" → find "Shivam Dube" in our list
+        const nParts = n.split(" ");
+        const nLast = nParts[nParts.length - 1];
+
+        // Only match by last name if it's unique enough (5+ chars)
+        if (nLast.length >= 5) {
+          // Find all players with this last name
+          const candidates = Object.entries(nameToPlayer).filter(([key]) => {
+            const kParts = key.split(" ");
+            return kParts[kParts.length - 1] === nLast;
+          });
+          // Only use if exactly ONE candidate — avoids false matches between similarly surnamed players
+          if (candidates.length === 1) return candidates[0][1];
         }
+
+        // 3. Full name starts-with match (handles nickname vs full name)
+        // e.g. "virat" matching "virat kohli" — only if 6+ chars
+        for (const [key, pl] of Object.entries(nameToPlayer)) {
+          if (key.length >= 6 && n.length >= 6) {
+            if (key === n) return pl;
+            // Both must share first AND last name tokens
+            const kParts = key.split(" ");
+            if (kParts.length >= 2 && nParts.length >= 2) {
+              const firstMatch = kParts[0] === nParts[0];
+              const lastMatch = kParts[kParts.length-1] === nParts[nParts.length-1];
+              if (firstMatch && lastMatch) return pl;
+            }
+          }
+        }
+
         return null;
       };
 
