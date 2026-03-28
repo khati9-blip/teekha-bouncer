@@ -669,13 +669,13 @@ export default function App() {
 
   const withPassword=(action)=>{
     if(unlocked){action();return;}
-    setPendingAction(()=>action);setShowPwModal(true);
+    setPendingAction({fn:action});setShowPwModal(true);
   };
   const handlePwSuccess=(newHash,isSetting)=>{
     if(isSetting&&newHash){setPwHash(newHash);storeSet("pwhash",newHash);}
     if(!isSetting)setUnlocked(true);
     setShowPwModal(false);
-    if(!isSetting&&pendingAction){pendingAction();setPendingAction(null);}
+    if(!isSetting&&pendingAction){pendingAction.fn();setPendingAction(null);}
   };
 
   const createTeams=()=>{
