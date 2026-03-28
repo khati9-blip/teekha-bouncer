@@ -684,76 +684,101 @@ export default function App() {
   };
 
   const fetchPlayers=async()=>{
-    setLoading("Searching for IPL 2026 series on Cricbuzz…");
+    setLoading("Finding IPL 2026 on Cricbuzz…");
     try {
       let allPlayers = [];
       let cricbuzzSuccess = false;
+      let seriesId = null;
 
-      // Step 1: Search for IPL series
+      // Step 1: Find IPL series ID from current/recent matches
       try {
-        const searchRes = await fetch(`/api/cricbuzz?path=${encodeURIComponent("series/v1/search?text=indian+premier+league")}`);
-        const searchData = await searchRes.json();
-
-        // Find latest IPL series ID
-        let seriesId = null;
-        const seriesList = searchData.seriesMatches || searchData.series || [];
-        for (const s of seriesList) {
-          const name = (s.seriesName || s.name || "").toLowerCase();
-          if (name.includes("indian premier league") || name.includes("ipl")) {
-            seriesId = s.seriesId || s.id;
-            break;
+        const recentRes = await fetch(`/api/cricbuzz?path=${encodeURIComponent("matches/v1/live")}`);
+        const recentData = await recentRes.json();
+        // Walk all match types to find IPL
+        const walk = (obj) => {
+          if (!obj || typeof obj !== "object") return;
+          if (Array.isArray(obj)) { obj.forEach(walk); return; }
+          const name = (obj.seriesName || obj.name || "").toLowerCase();
+          if ((name.includes("indian premier") || name.includes("ipl")) && (obj.seriesId || obj.id)) {
+            seriesId = obj.seriesId || obj.id;
           }
+          Object.values(obj).forEach(walk);
+        };
+        walk(recentData);
+
+        // Also try upcoming if not found in live
+        if (!seriesId) {
+          const upRes = await fetch(`/api/cricbuzz?path=${encodeURIComponent("matches/v1/upcoming")}`);
+          const upData = await upRes.json();
+          walk(upData);
         }
 
-        if (seriesId) {
-          setLoading(`Found IPL series (ID: ${seriesId}). Fetching squads…`);
+        // Also try recent
+        if (!seriesId) {
+          const recRes = await fetch(`/api/cricbuzz?path=${encodeURIComponent("matches/v1/recent")}`);
+          const recData = await recRes.json();
+          walk(recData);
+        }
 
-          // Step 2: Get all teams in the series
+        console.log("Found IPL series ID:", seriesId);
+      } catch(e) {
+        console.warn("Series ID search failed:", e.message);
+      }
+
+      // Step 2: Fetch squads using series ID
+      if (seriesId) {
+        try {
+          setLoading(`Found IPL 2026 (series ${seriesId}) — fetching squads…`);
           const squadsRes = await fetch(`/api/cricbuzz?path=${encodeURIComponent("series/v1/" + seriesId + "/squads")}`);
           const squadsData = await squadsRes.json();
-          const squadList = squadsData.squads || squadsData.squadItems || [];
 
-          // Step 3: Fetch each team's squad
+          // Try multiple possible keys for squad list
+          const squadList = squadsData.squads || squadsData.squadItems ||
+            squadsData.squadDetailsList || squadsData.teamSquadList || [];
+
+          console.log("Squad list length:", squadList.length, "Keys:", Object.keys(squadsData));
+
           for (let i = 0; i < squadList.length; i++) {
             const squad = squadList[i];
             const squadId = squad.squadId || squad.id;
-            const teamName = squad.squadName || squad.name || "";
-            setLoading(`Fetching ${teamName} squad… (${i+1}/${squadList.length})`);
+            const teamName = squad.squadName || squad.name || squad.teamName || "";
+            setLoading(`Cricbuzz: Fetching ${teamName || "squad " + (i+1)}… (${i+1}/${squadList.length})`);
 
             const teamRes = await fetch(`/api/cricbuzz?path=${encodeURIComponent("series/v1/" + seriesId + "/squads/" + squadId)}`);
             const teamData = await teamRes.json();
-            const players = teamData.players || teamData.squad || [];
 
-            // Map short team name
-            const shortName = IPL_TEAMS.find(t => teamName.toUpperCase().includes(t)) || teamName.slice(0,3).toUpperCase();
+            // Try all possible player list keys
+            const playerList = teamData.players || teamData.squad ||
+              teamData.playerDetails || teamData.squadPlayerDetails || [];
 
-            for (const p of players) {
-              const name = p.fullName || p.name || "";
+            const shortName = IPL_TEAMS.find(t =>
+              teamName.toUpperCase().includes(t) ||
+              (squad.shortName||"").toUpperCase().includes(t)
+            ) || teamName.slice(0,3).toUpperCase();
+
+            for (const p of playerList) {
+              const name = p.fullName || p.name || p.playerName || "";
               if (!name) continue;
-              const role = p.role || p.playingRole || "";
+              const role = (p.role || p.playingRole || p.playerRole || "").toLowerCase();
               let mappedRole = "Batsman";
-              if (role.toLowerCase().includes("bowl")) mappedRole = "Bowler";
-              else if (role.toLowerCase().includes("all")) mappedRole = "All-Rounder";
-              else if (role.toLowerCase().includes("keep") || role.toLowerCase().includes("wk")) mappedRole = "Wicket-Keeper";
-              else if (role.toLowerCase().includes("bat")) mappedRole = "Batsman";
+              if (role.includes("bowl")) mappedRole = "Bowler";
+              else if (role.includes("all")) mappedRole = "All-Rounder";
+              else if (role.includes("keep") || role.includes("wk") || role.includes("wicket")) mappedRole = "Wicket-Keeper";
               allPlayers.push({
                 id: name.toLowerCase().replace(/\s+/g,"-").replace(/[^a-z0-9-]/g,"") + "-" + (p.id||i),
-                name,
-                iplTeam: shortName,
-                role: mappedRole,
-                cricbuzzId: p.id,
+                name, iplTeam: shortName, role: mappedRole, cricbuzzId: p.id,
               });
             }
           }
-          if (allPlayers.length > 0) cricbuzzSuccess = true;
+          if (allPlayers.length > 30) cricbuzzSuccess = true;
+        } catch(e) {
+          console.warn("Squad fetch failed:", e.message);
         }
-      } catch(e) {
-        console.warn("Cricbuzz squad fetch failed:", e.message);
       }
 
-      // Fallback to AI if Cricbuzz failed or returned nothing
-      if (!cricbuzzSuccess || allPlayers.length < 50) {
-        setLoading("Cricbuzz squad data unavailable — fetching via AI…");
+      // Fallback to AI
+      if (!cricbuzzSuccess || allPlayers.length < 30) {
+        setLoading("Using AI for squad data…");
         allPlayers = [];
         for (let i = 0; i < IPL_TEAMS.length; i++) {
           const team = IPL_TEAMS[i];
@@ -769,10 +794,9 @@ export default function App() {
 
       setPlayers(allPlayers);
       storeSet("players", allPlayers);
-      const src = cricbuzzSuccess ? "Cricbuzz ✅" : "AI (Cricbuzz unavailable)";
-      alert(`Loaded ${allPlayers.length} players from ${src}`);
+      alert(`✅ Loaded ${allPlayers.length} players from ${cricbuzzSuccess ? "Cricbuzz 🏏" : "AI (Cricbuzz fallback)"}`);
     } catch(e) {
-      alert("Failed: "+e.message);
+      alert("Failed: " + e.message);
     }
     setLoading("");
   };
