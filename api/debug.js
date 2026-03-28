@@ -11,18 +11,10 @@ export default async function handler(req, res) {
     });
     const data = await r.json();
     const inning1 = data.scorecard?.[0];
-    const batsmen = inning1?.batTeamDetails?.batsmenData 
-      ? Object.values(inning1.batTeamDetails.batsmenData).slice(0,2)
-      : [];
-    const bowlers = inning1?.bowlTeamDetails?.bowlersData
-      ? Object.values(inning1.bowlTeamDetails.bowlersData).slice(0,2)
-      : [];
-    res.json({ 
-      scorecardKeys: data.scorecard?.[0] ? Object.keys(data.scorecard[0]) : [],
-      batTeamDetailsKeys: inning1?.batTeamDetails ? Object.keys(inning1.batTeamDetails) : [],
-      sampleBatsman: batsmen[0] || null,
-      sampleBowler: bowlers[0] || null,
-      innings: data.scorecard?.length
+    res.json({
+      sampleBatsman: inning1?.batsman?.slice(0,2) || [],
+      sampleBowler: inning1?.bowler?.slice(0,2) || [],
+      sampleFow: inning1?.fow?.slice(0,2) || [],
     });
   } catch(e) {
     res.status(500).json({ error: e.message });
