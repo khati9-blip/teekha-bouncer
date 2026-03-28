@@ -954,9 +954,12 @@ export default function App() {
         {editPlayer&&<EditPlayerModal player={editPlayer} onSave={(updated)=>{const updated_players=players.map(p=>p.id===updated.id?updated:p);setPlayers(updated_players);storeSet("players",updated_players);setEditPlayer(null);}} onAdd={(np)=>{const all=[...players,np];setPlayers(all);storeSet("players",all);setEditPlayer(null);}} onClose={()=>setEditPlayer(null)} />}
 
         <div style={{background:"linear-gradient(180deg,#0E1521 0%,#080C14 100%)",borderBottom:"1px solid #1E2D45",padding:"0 20px",display:"flex",alignItems:"stretch",position:"sticky",top:0,zIndex:50}}>
-          <div style={{padding:"16px 24px 0 0",borderRight:"1px solid #1E2D45",marginRight:8}}>
-            <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:18,color:"#F5A623",letterSpacing:2,lineHeight:1}}>🏏 TEEKHA</div>
-            <div style={{fontSize:11,color:"#4A5E78",letterSpacing:3,textTransform:"uppercase"}}>Bouncer League</div>
+          <div style={{padding:"8px 16px 8px 0",borderRight:"1px solid #1E2D45",marginRight:8,display:"flex",alignItems:"center"}}>
+            <img src="/logo.png" alt="Teekha Bouncer" style={{height:44,width:44,objectFit:"contain",borderRadius:6}} />
+            <div style={{marginLeft:10}}>
+              <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:18,color:"#F5A623",letterSpacing:2,lineHeight:1}}>TEEKHA</div>
+              <div style={{fontSize:10,color:"#4A5E78",letterSpacing:3,textTransform:"uppercase"}}>Bouncer League</div>
+            </div>
           </div>
           <div style={{display:"flex",overflowX:"auto"}}>
             {navItems.map(n=>(
