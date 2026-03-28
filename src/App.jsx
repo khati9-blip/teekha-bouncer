@@ -651,6 +651,7 @@ export default function App() {
   const [editPlayer, setEditPlayer] = useState(null); // player being edited
   const [smartStatsMatch, setSmartStatsMatch] = useState(null);
   const [squadView, setSquadView] = useState(false); // toggle squad view
+  const [teamFilter, setTeamFilter] = useState(null); // filter by fantasy team
 
   useEffect(() => {
     const t=storeGet("teams"),p=storeGet("players"),a=storeGet("assignments"),m=storeGet("matches"),
@@ -798,7 +799,10 @@ export default function App() {
 
   const filteredPlayers=players.filter(p=>{
     const s=search.toLowerCase();
-    return(p.name.toLowerCase().includes(s)||(p.iplTeam||"").toLowerCase().includes(s))&&(roleFilter==="All"||p.role===roleFilter);
+    const matchesSearch=(p.name.toLowerCase().includes(s)||(p.iplTeam||"").toLowerCase().includes(s));
+    const matchesRole=(roleFilter==="All"||p.role===roleFilter);
+    const matchesTeam=!teamFilter||(teamFilter==="unassigned"?!assignments[p.id]:assignments[p.id]===teamFilter);
+    return matchesSearch&&matchesRole&&matchesTeam;
   });
 
   const fetchMatches=async()=>{
@@ -1031,8 +1035,24 @@ export default function App() {
                 </button>
               </div>
               <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
-                {teams.map(t=>{const cnt=Object.values(assignments).filter(v=>v===t.id).length;return<div key={t.id} style={{background:"#0E1521",borderRadius:8,padding:"7px 14px",borderLeft:`3px solid ${t.color}`,fontSize:13}}><span style={{color:t.color,fontWeight:700}}>{t.name}</span><span style={{color:"#4A5E78",marginLeft:8}}>{cnt}p</span></div>;})}
-                <div style={{background:"#0E1521",borderRadius:8,padding:"7px 14px",fontSize:13}}><span style={{color:"#4A5E78"}}>Unassigned: </span><span style={{color:"#E2EAF4"}}>{players.filter(p=>!assignments[p.id]).length}</span></div>
+                {teams.map(t=>{
+                  const cnt=Object.values(assignments).filter(v=>v===t.id).length;
+                  const active=teamFilter===t.id;
+                  return(
+                    <div key={t.id} onClick={()=>setTeamFilter(active?null:t.id)}
+                      style={{background:active?t.color+"22":"#0E1521",borderRadius:8,padding:"7px 14px",borderLeft:`3px solid ${t.color}`,fontSize:13,cursor:"pointer",border:active?`1px solid ${t.color}`:"1px solid transparent",transition:"all .15s"}}>
+                      <span style={{color:t.color,fontWeight:700}}>{t.name}</span>
+                      <span style={{color:"#4A5E78",marginLeft:8}}>{cnt}p</span>
+                      {active&&<span style={{color:t.color,marginLeft:6,fontSize:11}}>✓</span>}
+                    </div>
+                  );
+                })}
+                <div onClick={()=>setTeamFilter("unassigned")}
+                  style={{background:teamFilter==="unassigned"?"#4A5E7833":"#0E1521",borderRadius:8,padding:"7px 14px",fontSize:13,cursor:"pointer",border:teamFilter==="unassigned"?"1px solid #4A5E78":"1px solid transparent",transition:"all .15s"}}>
+                  <span style={{color:"#4A5E78"}}>Unassigned: </span>
+                  <span style={{color:"#E2EAF4"}}>{players.filter(p=>!assignments[p.id]).length}</span>
+                  {teamFilter==="unassigned"&&<span style={{color:"#4A5E78",marginLeft:6,fontSize:11}}>✓</span>}
+                </div>
               </div>
               {players.length===0?(
                 <Card sx={{padding:60,textAlign:"center"}}>
