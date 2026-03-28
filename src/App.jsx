@@ -810,6 +810,7 @@ export default function App() {
   const [expandedTeam, setExpandedTeam] = useState(null);
   const [pwHash, setPwHash] = useState(null);
   const [recoveryHash, setRecoveryHash] = useState(null);
+  const [appReady, setAppReady] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
   const [showPwModal, setShowPwModal] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
@@ -828,6 +829,7 @@ export default function App() {
     if(c)setCaptains(c);if(pts)setPoints(pts);if(pg)setPage(pg);if(tn)setTNames(tn);
     if(nt)setNumTeams(nt);if(ph)setPwHash(ph);
     const rh=storeGet('recoveryHash');if(rh)setRecoveryHash(rh);
+    setAppReady(true);
     const tl=storeGet('teamLogos');if(tl)setTeamLogos(tl);
   }, []);
 
@@ -1110,6 +1112,17 @@ export default function App() {
     {id:"results",label:"Results",icon:"📊",disabled:teams.length===0||matches.length===0},
     {id:"leaderboard",label:"Leaderboard",icon:"🏆",disabled:teams.length===0},
   ];
+
+  if (!appReady) return (
+    <>
+      <style>{css}</style>
+      <div style={{minHeight:"100vh",background:"var(--bg)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16}}>
+        <img src="/logo.png" style={{width:80,height:80,objectFit:"contain",borderRadius:12,animation:"spin 2s linear infinite"}} />
+        <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,fontWeight:700,color:"#F5A623",letterSpacing:3}}>TEEKHA BOUNCER</div>
+        <div style={{color:"#4A5E78",fontSize:14,letterSpacing:1}}>Loading league data…</div>
+      </div>
+    </>
+  );
 
   return (
     <>
