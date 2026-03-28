@@ -822,15 +822,29 @@ export default function App() {
   const [teamLogos, setTeamLogos] = useState({});
 
   useEffect(() => {
-    const t=storeGet("teams"),p=storeGet("players"),a=storeGet("assignments"),m=storeGet("matches"),
-          c=storeGet("captains"),pts=storeGet("points"),pg=storeGet("page"),tn=storeGet("tnames"),
-          nt=storeGet("numteams"),ph=storeGet("pwhash");
-    if(t)setTeams(t);if(p)setPlayers(p);if(a)setAssignments(a);if(m)setMatches(m);
-    if(c)setCaptains(c);if(pts)setPoints(pts);if(pg)setPage(pg);if(tn)setTNames(tn);
-    if(nt)setNumTeams(nt);if(ph)setPwHash(ph);
-    const rh=storeGet('recoveryHash');if(rh)setRecoveryHash(rh);
-    setAppReady(true);
-    const tl=storeGet('teamLogos');if(tl)setTeamLogos(tl);
+    (async () => {
+      try {
+        const keys = ["teams","players","assignments","matches","captains","points","page","tnames","numteams","pwhash","recoveryHash","teamLogos"];
+        const results = await Promise.all(keys.map(k => storeGet(k)));
+        const [t,p,a,m,c,pts,pg,tn,nt,ph,rh,tl] = results;
+        if(t) setTeams(t);
+        if(p) setPlayers(p);
+        if(a) setAssignments(a);
+        if(m) setMatches(m);
+        if(c) setCaptains(c);
+        if(pts) setPoints(pts);
+        if(pg) setPage(pg);
+        if(tn) setTNames(tn);
+        if(nt) setNumTeams(nt);
+        if(ph) setPwHash(ph);
+        if(rh) setRecoveryHash(rh);
+        if(tl) setTeamLogos(tl);
+      } catch(e) {
+        console.error("Load error:", e);
+      } finally {
+        setAppReady(true);
+      }
+    })();
   }, []);
 
   const nav=(pg)=>{setPage(pg);storeSet("page",pg);};
