@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 async function callAI(userPrompt, system = "Return only valid JSON.") {
   const body = {
     model: "claude-sonnet-4-6",
-    max_tokens: 1000,
+    max_tokens: 4000,
     system,
     messages: [{ role: "user", content: userPrompt }],
   };
@@ -18,8 +18,19 @@ async function callAI(userPrompt, system = "Return only valid JSON.") {
 }
 
 function parseJSON(text) {
+  // Try to extract a JSON array even if the response is truncated
   const clean = text.replace(/^```json\s*/m, "").replace(/^```\s*/m, "").replace(/```\s*$/m, "").trim();
-  return JSON.parse(clean);
+  try { return JSON.parse(clean); } catch {}
+  // Try to salvage truncated JSON by finding last complete object
+  const lastBrace = clean.lastIndexOf("},");
+  if (lastBrace > 0) {
+    try { return JSON.parse(clean.slice(0, lastBrace + 1) + "]"); } catch {}
+  }
+  const lastBrace2 = clean.lastIndexOf("}");
+  if (lastBrace2 > 0) {
+    try { return JSON.parse(clean.slice(0, lastBrace2 + 1) + "]"); } catch {}
+  }
+  throw new Error("Could not parse response as JSON");
 }
 
 function calcPoints(s) {
@@ -96,6 +107,7 @@ function PasswordModal({ onSuccess, onClose, storedHash }) {
 const PALETTE = ["#FF3D5A","#4F8EF7","#2ECC71","#F5A623","#A855F7","#06B6D4","#FF6B35","#EC4899","#84CC16","#64748B"];
 const ROLE_COLORS = { Batsman:"#4F8EF7", Bowler:"#FF3D5A", "All-Rounder":"#2ECC71", "Wicket-Keeper":"#F5A623" };
 const ROLES = ["All","Batsman","Bowler","All-Rounder","Wicket-Keeper"];
+const IPL_TEAMS = ["CSK","MI","RCB","KKR","SRH","RR","PBKS","DC","GT","LSG"];
 
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Barlow+Condensed:wght@400;600;700;800&display=swap');
@@ -171,17 +183,28 @@ export default function App() {
     updTeams(t);storeSet("tnames",tNames);storeSet("numteams",numTeams);nav("draft");
   };
 
+  // Fetch players team by team to avoid truncation
   const fetchPlayers=async()=>{
-    setLoading("Fetching IPL 2025 player list…");
+    setLoading("Fetching IPL 2025 players… (this may take a minute)");
     try {
-      const text=await callAI(
-        `List all players across all 10 IPL 2025 franchises (CSK, MI, RCB, KKR, SRH, RR, PBKS, DC, GT, LSG). Return ONLY a raw JSON array: [{"id":"firstname-lastname","name":"Full Name","iplTeam":"Franchise Short Name","role":"Batsman|Bowler|All-Rounder|Wicket-Keeper"}]. Include 180+ players.`,
-        "You are a cricket expert. Respond with ONLY a raw JSON array. No markdown, no explanation."
-      );
-      const json=parseJSON(text);
-      setPlayers(json);storeSet("players",json);
-    } catch(e){alert("Failed: "+e.message);}
-    setLoading("");
+      let allPlayers = [];
+      for (let i = 0; i < IPL_TEAMS.length; i++) {
+        const team = IPL_TEAMS[i];
+        setLoading(`Fetching ${team} squad… (${i+1}/10)`);
+        const text = await callAI(
+          `List all players in the ${team} squad for IPL 2025. Return ONLY a raw JSON array: [{"id":"firstname-lastname","name":"Full Name","iplTeam":"${team}","role":"Batsman|Bowler|All-Rounder|Wicket-Keeper"}]. Include all 20-25 players.`,
+          "You are a cricket expert. Return ONLY a raw JSON array. No markdown, no explanation."
+        );
+        const squad = parseJSON(text);
+        allPlayers = [...allPlayers, ...squad];
+      }
+      setPlayers(allPlayers);
+      storeSet("players", allPlayers);
+      setLoading("");
+    } catch(e) {
+      setLoading("");
+      alert("Failed: "+e.message);
+    }
   };
 
   const assignPlayer=(pid,tid)=>withPassword(()=>{const a={...assignments};if(!tid)delete a[pid];else a[pid]=tid;updAssign(a);});
@@ -196,8 +219,8 @@ export default function App() {
     setLoading("Fetching IPL 2025 schedule…");
     try {
       const text=await callAI(
-        `List all 74 matches of IPL 2025 with dates, venues and results where known. Return ONLY a raw JSON array: [{"id":"m1","matchNum":1,"date":"2025-03-22","team1":"CSK","team2":"MI","venue":"Chepauk","status":"upcoming|completed","result":"winner or null"}].`,
-        "You are a cricket expert. Return ONLY a raw JSON array. No markdown."
+        `List all 74 matches of IPL 2025. Return ONLY a raw JSON array: [{"id":"m1","matchNum":1,"date":"2025-03-22","team1":"CSK","team2":"MI","venue":"Chepauk","status":"upcoming|completed","result":"winner or null"}].`,
+        "Cricket expert. Return ONLY a raw JSON array. No markdown."
       );
       updMatches(parseJSON(text));
     } catch(e){alert("Error: "+e.message);}
@@ -209,7 +232,7 @@ export default function App() {
     try {
       const playerIndex=players.map(p=>`${p.name}::${p.id}`).join("|");
       const text=await callAI(
-        `Scorecard for IPL 2025 Match ${match.matchNum}: ${match.team1} vs ${match.team2} on ${match.date} at ${match.venue}. Match player names to IDs from: ${playerIndex}. Return ONLY a JSON array: [{"playerId":"id","name":"name","runs":0,"fours":0,"sixes":0,"wickets":0,"economy":null,"overs":0,"catches":0,"stumpings":0,"runouts":0,"longestSix":false}].`,
+        `Scorecard for IPL 2025 Match ${match.matchNum}: ${match.team1} vs ${match.team2} on ${match.date} at ${match.venue}. Match names to IDs from: ${playerIndex}. Return ONLY a JSON array: [{"playerId":"id","name":"name","runs":0,"fours":0,"sixes":0,"wickets":0,"economy":null,"overs":0,"catches":0,"stumpings":0,"runouts":0,"longestSix":false}].`,
         "Cricket expert. Return ONLY a raw JSON array."
       );
       const stats=parseJSON(text);
@@ -293,7 +316,7 @@ export default function App() {
         {loading&&(
           <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.92)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",zIndex:200,backdropFilter:"blur(4px)"}}>
             <Spinner />
-            <div style={{marginTop:16,color:"#F5A623",fontWeight:700,fontSize:16}}>{loading}</div>
+            <div style={{marginTop:16,color:"#F5A623",fontWeight:700,fontSize:16,textAlign:"center",padding:"0 20px"}}>{loading}</div>
             <div style={{marginTop:6,color:"#4A5E78",fontSize:13}}>Please wait…</div>
           </div>
         )}
@@ -357,7 +380,11 @@ export default function App() {
                 <div style={{background:"#0E1521",borderRadius:8,padding:"7px 14px",fontSize:13}}><span style={{color:"#4A5E78"}}>Unassigned: </span><span style={{color:"#E2EAF4"}}>{players.filter(p=>!assignments[p.id]).length}</span></div>
               </div>
               {players.length===0?(
-                <Card sx={{padding:60,textAlign:"center"}}><div style={{fontSize:56}}>🏏</div><div style={{color:"#4A5E78",marginTop:16,fontSize:16}}>Click "Fetch IPL Players" to load the player pool</div></Card>
+                <Card sx={{padding:60,textAlign:"center"}}>
+                  <div style={{fontSize:56}}>🏏</div>
+                  <div style={{color:"#4A5E78",marginTop:16,fontSize:16}}>Click "Fetch IPL Players" to load all 10 squads</div>
+                  <div style={{color:"#4A5E78",marginTop:8,fontSize:13}}>This fetches each team one by one — takes about 30 seconds</div>
+                </Card>
               ):(
                 <>
                   <div style={{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap"}}>
