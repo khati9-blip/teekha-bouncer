@@ -132,6 +132,53 @@ function Card({ children, style:sx={}, accent }) {
   return <div style={{background:"var(--card)",borderRadius:12,border:"1px solid var(--border)",...(accent?{borderTop:`3px solid ${accent}`}:{}),...sx}}>{children}</div>;
 }
 
+
+// ── EDIT PLAYER MODAL ────────────────────────────────────────────────────────
+function EditPlayerModal({ player, onSave, onAdd, onClose }) {
+  const isNew = !player.id;
+  const [name, setName] = useState(player.name || "");
+  const [iplTeam, setIplTeam] = useState(player.iplTeam || "");
+  const [role, setRole] = useState(player.role || "Batsman");
+  const IPL_FRANCHISE = ["CSK","MI","RCB","KKR","SRH","RR","PBKS","DC","GT","LSG"];
+
+  const submit = () => {
+    if (!name.trim()) { alert("Enter player name"); return; }
+    if (!iplTeam.trim()) { alert("Select IPL franchise"); return; }
+    const id = name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") + "-" + Date.now();
+    if (isNew) onAdd({ id, name: name.trim(), iplTeam: iplTeam.trim(), role });
+    else onSave({ ...player, name: name.trim(), iplTeam: iplTeam.trim(), role });
+  };
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.95)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,backdropFilter:"blur(6px)"}}>
+      <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #1E2D45",padding:32,width:"100%",maxWidth:400,margin:"0 16px"}}>
+        <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,fontWeight:700,color:"#F5A623",letterSpacing:2,marginBottom:24}}>{isNew ? "✚ ADD PLAYER" : "✏️ EDIT PLAYER"}</div>
+        <div style={{marginBottom:14}}>
+          <div style={{fontSize:11,color:"#4A5E78",letterSpacing:1,marginBottom:6}}>PLAYER NAME</div>
+          <input value={name} onChange={e=>setName(e.target.value)} placeholder="Full Name" style={{width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"10px 14px",color:"#E2EAF4",fontSize:15,fontFamily:"Barlow Condensed,sans-serif",outline:"none",boxSizing:"border-box"}} />
+        </div>
+        <div style={{marginBottom:14}}>
+          <div style={{fontSize:11,color:"#4A5E78",letterSpacing:1,marginBottom:6}}>IPL FRANCHISE</div>
+          <select value={iplTeam} onChange={e=>setIplTeam(e.target.value)} style={{width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"10px 14px",color:"#E2EAF4",fontSize:15,fontFamily:"Barlow Condensed,sans-serif",outline:"none"}}>
+            <option value="">— Select Franchise —</option>
+            {IPL_FRANCHISE.map(t=><option key={t} value={t}>{t}</option>)}
+          </select>
+        </div>
+        <div style={{marginBottom:24}}>
+          <div style={{fontSize:11,color:"#4A5E78",letterSpacing:1,marginBottom:6}}>ROLE</div>
+          <select value={role} onChange={e=>setRole(e.target.value)} style={{width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"10px 14px",color:"#E2EAF4",fontSize:15,fontFamily:"Barlow Condensed,sans-serif",outline:"none"}}>
+            {["Batsman","Bowler","All-Rounder","Wicket-Keeper"].map(r=><option key={r} value={r}>{r}</option>)}
+          </select>
+        </div>
+        <div style={{display:"flex",gap:10}}>
+          <button onClick={onClose} style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:11,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
+          <button onClick={submit} style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:11,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>{isNew ? "ADD PLAYER" : "SAVE CHANGES"}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [page, setPage] = useState("setup");
   const [teams, setTeams] = useState([]);
@@ -151,6 +198,7 @@ export default function App() {
   const [unlocked, setUnlocked] = useState(false);
   const [showPwModal, setShowPwModal] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
+  const [editPlayer, setEditPlayer] = useState(null); // player being edited
 
   useEffect(() => {
     const t=storeGet("teams"),p=storeGet("players"),a=storeGet("assignments"),m=storeGet("matches"),
@@ -291,7 +339,12 @@ export default function App() {
     <>
       <style>{css}</style>
       <div style={{minHeight:"100vh",background:"var(--bg)"}}>
+        {editPlayer&&<EditPlayerModal player={editPlayer}
+          onSave={(updated)=>{const up=players.map(p=>p.id===updated.id?updated:p);setPlayers(up);storeSet("players",up);setEditPlayer(null);}}
+          onAdd={(np)=>{const all=[...players,np];setPlayers(all);storeSet("players",all);setEditPlayer(null);}}
+          onClose={()=>setEditPlayer(null)} />}
         {showPwModal&&<PasswordModal storedHash={pwHash} onSuccess={handlePwSuccess} onClose={()=>{setShowPwModal(false);setPendingAction(null);}} />}
+        {editPlayer&&<EditPlayerModal player={editPlayer} onSave={(updated)=>{const updated_players=players.map(p=>p.id===updated.id?updated:p);setPlayers(updated_players);storeSet("players",updated_players);setEditPlayer(null);}} onAdd={(np)=>{const all=[...players,np];setPlayers(all);storeSet("players",all);setEditPlayer(null);}} onClose={()=>setEditPlayer(null)} />}
 
         <div style={{background:"linear-gradient(180deg,#0E1521 0%,#080C14 100%)",borderBottom:"1px solid #1E2D45",padding:"0 20px",display:"flex",alignItems:"stretch",position:"sticky",top:0,zIndex:50}}>
           <div style={{padding:"16px 24px 0 0",borderRight:"1px solid #1E2D45",marginRight:8}}>
@@ -364,7 +417,10 @@ export default function App() {
             <div className="fade-in">
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:12}}>
                 <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2}}>PLAYER DRAFT</h2>
+                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                 <Btn variant="blue" onClick={fetchPlayers}>{players.length>0?`↻ REFRESH (${players.length})`:"🌐 FETCH IPL PLAYERS"}</Btn>
+                <Btn variant="ghost" onClick={()=>withPassword(()=>setEditPlayer({name:"",iplTeam:"",role:"Batsman"}))}>✚ ADD PLAYER</Btn>
+              </div>
               </div>
               <div style={{background:unlocked?"#2ECC7112":"#F5A62310",border:`1px solid ${unlocked?"#2ECC7133":"#F5A62333"}`,borderRadius:10,padding:"12px 16px",marginBottom:16,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
                 <div>
@@ -408,6 +464,7 @@ export default function App() {
                             {teams.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
                           </select>
                           {isAssigned&&<button onClick={()=>removePlayer(p.id)} style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:"#FF3D5A",borderRadius:6,padding:"6px 10px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,flexShrink:0}}>✕</button>}
+                          <button onClick={()=>withPassword(()=>setEditPlayer(p))} style={{background:"#4F8EF722",border:"1px solid #4F8EF744",color:"#4F8EF7",borderRadius:6,padding:"6px 10px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,flexShrink:0}}>✏️</button>
                         </div>
                       );
                     })}
