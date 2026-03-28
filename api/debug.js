@@ -3,11 +3,12 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
 
   try {
-    // Try different scorecard endpoints
     const endpoints = [
-      "mcenter/v1/149618/full-scorecard",
-      "mcenter/v1/149618/scorecard",
-      "matches/v1/149618/scorecard",
+      "mcenter/v1/149618/commentary",
+      "mcenter/v1/149618/hscard",
+      "mcenter/v1/149618/leanback",
+      "matches/v1/recent",
+      "series/v1/9241/matches",
     ];
 
     const results = {};
