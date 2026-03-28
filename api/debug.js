@@ -3,15 +3,36 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
 
   try {
-    // Check one squad in detail - CSK squadId 99705
-    const r = await fetch("https://cricbuzz-cricket.p.rapidapi.com/series/v1/9241/squads/99705", {
+    // Get recent matches to find SRH vs RCB match ID
+    const r = await fetch("https://cricbuzz-cricket.p.rapidapi.com/matches/v1/recent", {
       headers: {
         "x-rapidapi-host": "cricbuzz-cricket.p.rapidapi.com",
         "x-rapidapi-key": process.env.RAPIDAPI_KEY,
       },
     });
     const data = await r.json();
-    res.json({ keys: Object.keys(data), sample: JSON.stringify(data).slice(0, 2000) });
+
+    // Find all IPL matches
+    const iplMatches = [];
+    const walk = (obj) => {
+      if (!obj || typeof obj !== "object") return;
+      if (Array.isArray(obj)) { obj.forEach(walk); return; }
+      if (obj.matchId && obj.seriesName && obj.seriesName.includes("Premier")) {
+        iplMatches.push({
+          matchId: obj.matchId,
+          desc: obj.matchDesc,
+          team1: obj.team1?.teamSName,
+          team2: obj.team2?.teamSName,
+          state: obj.state,
+          status: obj.status,
+          date: obj.startDate,
+        });
+      }
+      Object.values(obj).forEach(walk);
+    };
+    walk(data);
+
+    res.json({ iplMatches });
   } catch(e) {
     res.status(500).json({ error: e.message });
   }
