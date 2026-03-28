@@ -700,35 +700,47 @@ export default function App() {
 
         console.log("Squads response keys:", Object.keys(squadsData), "List length:", squadList.length);
 
-        if (squadList.length === 0) throw new Error("No squads found — keys: " + Object.keys(squadsData).join(", "));
+        // Filter out header rows (isHeader:true), keep only real squads
+        const realSquads = squadList.filter(s => !s.isHeader && s.squadId);
+        if (realSquads.length === 0) throw new Error("No real squads found");
 
-        for (let i = 0; i < squadList.length; i++) {
-          const squad = squadList[i];
-          const squadId = squad.squadId || squad.id;
-          const teamName = squad.squadName || squad.name || squad.teamName || "";
-          setLoading(`Cricbuzz: Fetching ${teamName || "squad " + (i+1)}… (${i+1}/${squadList.length})`);
+        for (let i = 0; i < realSquads.length; i++) {
+          const squad = realSquads[i];
+          const squadId = squad.squadId;
+          // squadType holds the full team name e.g. "Chennai Super Kings"
+          const teamName = squad.squadType || "";
+          setLoading(`Cricbuzz: Fetching ${teamName}… (${i+1}/${realSquads.length})`);
 
           const teamRes = await fetch(`/api/cricbuzz?path=${encodeURIComponent("series/v1/" + IPL_SERIES_ID + "/squads/" + squadId)}`);
           const teamData = await teamRes.json();
 
-          const playerList = teamData.players || teamData.squad ||
-            teamData.playerDetails || teamData.squadPlayerDetails || [];
+          // Players are under "player" key, with isHeader rows mixed in
+          const playerList = (teamData.player || []).filter(p => !p.isHeader && p.id);
 
-          const shortName = IPL_TEAMS.find(t =>
-            teamName.toUpperCase().includes(t) ||
-            (squad.shortName||"").toUpperCase().includes(t)
-          ) || teamName.slice(0,3).toUpperCase();
+          // Map full team name to short code
+          const TEAM_MAP = {
+            "Chennai Super Kings": "CSK", "Mumbai Indians": "MI",
+            "Royal Challengers Bengaluru": "RCB", "Royal Challengers Bangalore": "RCB",
+            "Kolkata Knight Riders": "KKR", "Sunrisers Hyderabad": "SRH",
+            "Rajasthan Royals": "RR", "Punjab Kings": "PBKS",
+            "Delhi Capitals": "DC", "Gujarat Titans": "GT",
+            "Lucknow Super Giants": "LSG",
+          };
+          const shortName = TEAM_MAP[teamName] ||
+            IPL_TEAMS.find(t => teamName.toUpperCase().includes(t)) ||
+            teamName.slice(0,3).toUpperCase();
 
           for (const p of playerList) {
-            const name = p.fullName || p.name || p.playerName || "";
+            const name = p.name || "";
             if (!name) continue;
-            const role = (p.role || p.playingRole || p.playerRole || "").toLowerCase();
+            const role = (p.role || "").toLowerCase();
             let mappedRole = "Batsman";
-            if (role.includes("bowl")) mappedRole = "Bowler";
-            else if (role.includes("all")) mappedRole = "All-Rounder";
-            else if (role.includes("keep") || role.includes("wk") || role.includes("wicket")) mappedRole = "Wicket-Keeper";
+            if (role.includes("wk") || role.includes("wicket")) mappedRole = "Wicket-Keeper";
+            else if (role.includes("bowling allrounder") || role.includes("batting allrounder")) mappedRole = "All-Rounder";
+            else if (role.includes("bowler") || role.includes("fast") || role.includes("spin")) mappedRole = "Bowler";
+            else if (role.includes("batsman") || role.includes("batter")) mappedRole = "Batsman";
             allPlayers.push({
-              id: name.toLowerCase().replace(/\s+/g,"-").replace(/[^a-z0-9-]/g,"") + "-" + (p.id||i),
+              id: name.toLowerCase().replace(/\s+/g,"-").replace(/[^a-z0-9-]/g,"") + "-" + p.id,
               name, iplTeam: shortName, role: mappedRole, cricbuzzId: p.id,
             });
           }
