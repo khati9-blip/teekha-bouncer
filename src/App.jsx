@@ -199,6 +199,7 @@ export default function App() {
   const [showPwModal, setShowPwModal] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
   const [editPlayer, setEditPlayer] = useState(null); // player being edited
+  const [squadView, setSquadView] = useState(false); // toggle squad view
 
   useEffect(() => {
     const t=storeGet("teams"),p=storeGet("players"),a=storeGet("assignments"),m=storeGet("matches"),
@@ -425,6 +426,7 @@ export default function App() {
                 <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                 <Btn variant="blue" onClick={fetchPlayers}>{players.length>0?`↻ REFRESH (${players.length})`:"🌐 FETCH IPL PLAYERS"}</Btn>
                 <Btn variant="ghost" onClick={()=>withPassword(()=>setEditPlayer({name:"",iplTeam:"",role:"Batsman"}))}>✚ ADD PLAYER</Btn>
+                <Btn variant={squadView?"primary":"ghost"} onClick={()=>setSquadView(v=>!v)}>{squadView?"📋 LIST VIEW":"👥 SQUAD VIEW"}</Btn>
               </div>
               </div>
               <div style={{background:unlocked?"#2ECC7112":"#F5A62310",border:`1px solid ${unlocked?"#2ECC7133":"#F5A62333"}`,borderRadius:10,padding:"12px 16px",marginBottom:16,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
@@ -446,6 +448,53 @@ export default function App() {
                   <div style={{color:"#4A5E78",marginTop:16,fontSize:16}}>Click "Fetch IPL Players" to load all 10 squads</div>
                   <div style={{color:"#4A5E78",marginTop:8,fontSize:13}}>This fetches each team one by one — takes about 30 seconds</div>
                 </Card>
+              ):squadView?(
+                <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                  {teams.map(team=>{
+                    const teamPlayers=players.filter(p=>assignments[p.id]===team.id);
+                    const unassignedCount=players.filter(p=>!assignments[p.id]).length;
+                    return(
+                      <Card key={team.id} accent={team.color} sx={{overflow:"hidden"}}>
+                        <div style={{padding:"14px 18px",borderBottom:"1px solid #1E2D45",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                          <div>
+                            <span style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:18,color:team.color,letterSpacing:1}}>{team.name}</span>
+                            <span style={{color:"#4A5E78",fontSize:13,marginLeft:10}}>{teamPlayers.length} players</span>
+                          </div>
+                        </div>
+                        {teamPlayers.length===0?(
+                          <div style={{padding:"16px 18px",color:"#4A5E78",fontSize:13}}>No players assigned yet</div>
+                        ):(
+                          <div style={{padding:"8px 0"}}>
+                            {["Batsman","Wicket-Keeper","All-Rounder","Bowler"].map(role=>{
+                              const rp=teamPlayers.filter(p=>p.role===role);
+                              if(rp.length===0) return null;
+                              return(
+                                <div key={role}>
+                                  <div style={{padding:"6px 18px",fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,background:"#0E152188"}}>{role.toUpperCase()}S ({rp.length})</div>
+                                  {rp.map(p=>(
+                                    <div key={p.id} style={{display:"flex",alignItems:"center",padding:"8px 18px",borderBottom:"1px solid #1E2D4522",gap:10}}>
+                                      <div style={{flex:1}}>
+                                        <span style={{fontSize:14,fontWeight:600,color:"#E2EAF4"}}>{p.name}</span>
+                                        <span style={{fontSize:12,color:"#4A5E78",marginLeft:8}}>{p.iplTeam}</span>
+                                      </div>
+                                      <button onClick={()=>withPassword(()=>setEditPlayer(p))} style={{background:"#4F8EF722",border:"1px solid #4F8EF744",color:"#4F8EF7",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:12}}>✏️</button>
+                                      <button onClick={()=>removePlayer(p.id)} style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:"#FF3D5A",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:12}}>✕</button>
+                                    </div>
+                                  ))}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </Card>
+                    );
+                  })}
+                  <Card sx={{padding:16}}>
+                    <div style={{color:"#4A5E78",fontSize:13,textAlign:"center"}}>
+                      <span style={{color:"#E2EAF4",fontWeight:700}}>{players.filter(p=>!assignments[p.id]).length}</span> players unassigned
+                    </div>
+                  </Card>
+                </div>
               ):(
                 <>
                   <div style={{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap"}}>
