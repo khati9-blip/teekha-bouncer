@@ -150,18 +150,72 @@ function parseScorecardToStats(scorecard, playerIndex) {
 
 function calcPoints(s) {
   let p = 0;
-  const runs = s.runs || 0, fours = s.fours || 0, sixes = s.sixes || 0;
-  const wkts = s.wickets || 0, eco = s.economy, ovs = s.overs || 0;
-  const catches = s.catches || 0, stump = s.stumpings || 0, ro = s.runouts || 0;
-  p += runs; p += fours * 8; p += sixes * 12;
-  if (runs >= 100) p += 20; else if (runs >= 50) p += 10;
-  p += wkts * 25;
-  if (wkts >= 5) p += 15; else if (wkts >= 4) p += 8;
-  if (ovs >= 2 && eco != null && eco < 6) p += 10;
-  p += catches * 8; p += (stump + ro) * 12;
-  if (runs >= 30 && wkts >= 2) p += 15;
-  if (s.longestSix) p += 50;
+  const runs   = +s.runs      || 0;
+  const fours  = +s.fours     || 0;
+  const sixes  = +s.sixes     || 0;
+  const wkts   = +s.wickets   || 0;
+  const eco    = s.economy !== "" && s.economy != null ? +s.economy : null;
+  const ovs    = +s.overs     || 0;
+  const catches= +s.catches   || 0;
+  const stump  = +s.stumpings || 0;
+  const ro     = +s.runouts   || 0;
+
+  // ── BATTING ──────────────────────────────────────────────────────────────
+  p += runs;           // 1 pt per run
+  p += fours * 8;      // +8 per four
+  p += sixes * 12;     // +12 per six
+  // Milestone — only highest counts
+  if      (runs >= 100) p += 20;   // +20 for century
+  else if (runs >= 50)  p += 10;   // +10 for half-century
+
+  // ── BOWLING ──────────────────────────────────────────────────────────────
+  p += wkts * 25;      // 25 pts per wicket
+  // Milestone — only highest counts
+  if      (wkts >= 5) p += 15;   // +15 for 5-wkt haul
+  else if (wkts >= 4) p += 8;    // +8 for 4-wkt haul
+  // Economy bonus — min 2 overs bowled
+  if (ovs >= 2 && eco !== null && eco < 6) p += 10;
+
+  // ── FIELDING ─────────────────────────────────────────────────────────────
+  p += catches * 8;          // +8 per catch
+  p += (stump + ro) * 12;   // +12 per stumping or run-out
+
+  // ── ALL-ROUND BONUS ──────────────────────────────────────────────────────
+  if (runs >= 30 && wkts >= 2) p += 15;  // 30+ runs AND 2+ wickets
+
+  // ── SPECIAL BONUS ────────────────────────────────────────────────────────
+  if (s.longestSix) p += 50;   // Longest six of the match
+
   return Math.round(p);
+}
+
+// Point breakdown for display
+function calcBreakdown(s) {
+  const runs   = +s.runs      || 0;
+  const fours  = +s.fours     || 0;
+  const sixes  = +s.sixes     || 0;
+  const wkts   = +s.wickets   || 0;
+  const eco    = s.economy !== "" && s.economy != null ? +s.economy : null;
+  const ovs    = +s.overs     || 0;
+  const catches= +s.catches   || 0;
+  const stump  = +s.stumpings || 0;
+  const ro     = +s.runouts   || 0;
+  const items = [];
+  if (runs)    items.push(`${runs} runs = +${runs}`);
+  if (fours)   items.push(`${fours}×4 = +${fours*8}`);
+  if (sixes)   items.push(`${sixes}×6 = +${sixes*12}`);
+  if (runs>=100) items.push(`Century bonus = +20`);
+  else if (runs>=50) items.push(`Half-century bonus = +10`);
+  if (wkts)    items.push(`${wkts} wkts = +${wkts*25}`);
+  if (wkts>=5) items.push(`5-wkt haul = +15`);
+  else if (wkts>=4) items.push(`4-wkt haul = +8`);
+  if (ovs>=2 && eco!==null && eco<6) items.push(`Economy <6 = +10`);
+  if (catches) items.push(`${catches} catch${catches>1?"es":""} = +${catches*8}`);
+  if (stump)   items.push(`${stump} stumping${stump>1?"s":""} = +${stump*12}`);
+  if (ro)      items.push(`${ro} run-out${ro>1?"s":""} = +${ro*12}`);
+  if (runs>=30&&wkts>=2) items.push(`All-round bonus = +15`);
+  if (s.longestSix) items.push(`Longest six = +50`);
+  return items;
 }
 
 function storeGet(key) {
@@ -294,6 +348,287 @@ function EditPlayerModal({ player, onSave, onAdd, onClose }) {
   );
 }
 
+
+
+// ── SMART STATS MODAL (Cricbuzz auto-fill + manual edit) ────────────────────
+function SmartStatsModal({ match, players, assignments, existingStats, onSave, onClose }) {
+  const matchPlayers = players.filter(p => assignments[p.id]);
+  const emptyStats = (p) => ({ runs:0, fours:0, sixes:0, wickets:0, economy:"", overs:0, catches:0, stumpings:0, runouts:0, longestSix:false, played:false });
+
+  const [stats, setStats] = React.useState(() => {
+    const s = {};
+    matchPlayers.forEach(p => {
+      const existing = existingStats?.[p.id];
+      s[p.id] = existing ? { ...existing, played:true } : emptyStats(p);
+    });
+    return s;
+  });
+
+  const [search, setSearch] = React.useState("");
+  const [activeTab, setActiveTab] = React.useState("batting");
+  const [fetching, setFetching] = React.useState(false);
+  const [fetchStatus, setFetchStatus] = React.useState("");
+
+  const upd = (pid, field, val) => setStats(s => ({...s, [pid]: {...s[pid], [field]: val}}));
+
+  const playingPlayers = matchPlayers.filter(p => stats[p.id]?.played);
+
+  const filteredPlayers = matchPlayers.filter(p => {
+    const s = search.toLowerCase();
+    return p.name.toLowerCase().includes(s) || (p.iplTeam||"").toLowerCase().includes(s);
+  });
+
+  // ── Fetch from Cricbuzz ──
+  const fetchFromCricbuzz = async () => {
+    if (!match.cricbuzzId) {
+      setFetchStatus("⚠️ No Cricbuzz ID for this match. Please enter stats manually.");
+      return;
+    }
+    setFetching(true);
+    setFetchStatus("Fetching scorecard from Cricbuzz…");
+    try {
+      const res = await fetch(`/api/cricbuzz?path=${encodeURIComponent("mcenter/v1/" + match.cricbuzzId + "/full-scorecard")}`);
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+
+      const nameToPlayer = {};
+      matchPlayers.forEach(p => {
+        nameToPlayer[p.name.toLowerCase()] = p;
+        const parts = p.name.toLowerCase().split(" ");
+        parts.forEach(part => { if (part.length > 3) nameToPlayer[part] = p; });
+      });
+
+      const findPlayer = (name) => {
+        if (!name) return null;
+        const n = name.toLowerCase().trim();
+        if (nameToPlayer[n]) return nameToPlayer[n];
+        for (const [key, pl] of Object.entries(nameToPlayer)) {
+          if (n.includes(key) || key.includes(n)) return pl;
+        }
+        return null;
+      };
+
+      const newStats = {...stats};
+      let matched = 0;
+
+      for (const inning of (data.scoreCard || [])) {
+        // Batting
+        const batsmen = inning.batTeamDetails?.batsmenData ? Object.values(inning.batTeamDetails.batsmenData) : [];
+        for (const b of batsmen) {
+          const pl = findPlayer(b.batName);
+          if (!pl) continue;
+          newStats[pl.id] = { ...newStats[pl.id], played:true, runs:+b.runs||0, fours:+b.fours||0, sixes:+b.sixes||0 };
+          matched++;
+        }
+        // Bowling
+        const bowlers = inning.bowlTeamDetails?.bowlersData ? Object.values(inning.bowlTeamDetails.bowlersData) : [];
+        for (const b of bowlers) {
+          const pl = findPlayer(b.bowlName);
+          if (!pl) continue;
+          const prev = newStats[pl.id] || emptyStats(pl);
+          newStats[pl.id] = { ...prev, played:true, wickets:+b.wickets||0, overs:+b.overs||0, economy:b.economy||"" };
+          matched++;
+        }
+        // Fielding from dismissal descriptions
+        for (const b of batsmen) {
+          const out = b.outDesc || "";
+          if (out.startsWith("c ") && out.includes(" b ")) {
+            const fielder = out.slice(2, out.indexOf(" b ")).trim();
+            const pl = findPlayer(fielder);
+            if (pl) { newStats[pl.id] = {...(newStats[pl.id]||emptyStats(pl)), played:true, catches:(+newStats[pl.id]?.catches||0)+1}; }
+          }
+          if (out.startsWith("st ")) {
+            const keeper = out.slice(3, out.indexOf(" b ")).trim();
+            const pl = findPlayer(keeper);
+            if (pl) { newStats[pl.id] = {...(newStats[pl.id]||emptyStats(pl)), played:true, stumpings:(+newStats[pl.id]?.stumpings||0)+1}; }
+          }
+          if (out.toLowerCase().includes("run out")) {
+            const m = out.match(/run out \(([^)]+)\)/i);
+            if (m) {
+              for (const name of m[1].split("/")) {
+                const pl = findPlayer(name.trim());
+                if (pl) { newStats[pl.id] = {...(newStats[pl.id]||emptyStats(pl)), played:true, runouts:(+newStats[pl.id]?.runouts||0)+1}; }
+              }
+            }
+          }
+        }
+      }
+
+      setStats(newStats);
+      setFetchStatus(`✅ Fetched! ${matched} player records auto-filled. Review and correct if needed.`);
+    } catch(e) {
+      setFetchStatus("❌ Cricbuzz fetch failed: " + e.message + ". Enter stats manually below.");
+    }
+    setFetching(false);
+  };
+
+  const submit = () => {
+    const result = Object.entries(stats)
+      .filter(([pid, s]) => s.played)
+      .map(([pid, s]) => ({ playerId:pid, ...s }));
+    if (result.length === 0) { alert("Mark at least one player as played"); return; }
+    onSave(result);
+  };
+
+  const tabBtn = (tab, label) => (
+    <button onClick={()=>setActiveTab(tab)} style={{padding:"8px 16px",border:"none",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,letterSpacing:1,background:activeTab===tab?"#F5A623":"transparent",color:activeTab===tab?"#080C14":"#4A5E78",borderRadius:6}}>
+      {label}
+    </button>
+  );
+
+  const inp = {width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:6,padding:"6px 4px",color:"#E2EAF4",fontSize:14,fontFamily:"Barlow Condensed,sans-serif",textAlign:"center"};
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,backdropFilter:"blur(6px)"}}>
+      <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #1E2D45",width:"100%",maxWidth:720,margin:"0 12px",maxHeight:"92vh",display:"flex",flexDirection:"column"}}>
+
+        {/* Header */}
+        <div style={{padding:"18px 24px",borderBottom:"1px solid #1E2D45",flexShrink:0}}>
+          <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:"#F5A623",letterSpacing:2}}>📊 MATCH STATS — M{match.matchNum}</div>
+          <div style={{color:"#4A5E78",fontSize:13,marginTop:2}}>{match.team1} vs {match.team2} • {match.date} • {match.venue}</div>
+          <div style={{marginTop:12,display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
+            <button onClick={fetchFromCricbuzz} disabled={fetching}
+              style={{background:"linear-gradient(135deg,#4F8EF7,#1a5fb4)",border:"none",borderRadius:8,padding:"9px 18px",color:"#fff",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:fetching?"not-allowed":"pointer",opacity:fetching?0.6:1,letterSpacing:1}}>
+              {fetching?"⏳ FETCHING…":"🌐 AUTO-FILL FROM CRICBUZZ"}
+            </button>
+            {fetchStatus && <span style={{fontSize:12,color:fetchStatus.startsWith("✅")?"#2ECC71":fetchStatus.startsWith("❌")?"#FF3D5A":"#F5A623"}}>{fetchStatus}</span>}
+          </div>
+        </div>
+
+        {/* Step 1: Mark players */}
+        <div style={{padding:"14px 24px",borderBottom:"1px solid #1E2D45",flexShrink:0}}>
+          <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginBottom:8}}>
+            STEP 1 — MARK WHO PLAYED &nbsp;<span style={{color:"#2ECC71"}}>({playingPlayers.length} selected)</span>
+          </div>
+          <input placeholder="Search…" value={search} onChange={e=>setSearch(e.target.value)}
+            style={{width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"7px 12px",color:"#E2EAF4",fontSize:13,fontFamily:"Barlow Condensed",marginBottom:8,boxSizing:"border-box"}} />
+          <div style={{maxHeight:100,overflowY:"auto",display:"flex",flexWrap:"wrap",gap:5}}>
+            {filteredPlayers.map(p=>(
+              <button key={p.id} onClick={()=>upd(p.id,"played",!stats[p.id]?.played)}
+                style={{padding:"4px 10px",borderRadius:20,border:`1px solid ${stats[p.id]?.played?"#2ECC71":"#1E2D45"}`,background:stats[p.id]?.played?"#2ECC7122":"transparent",color:stats[p.id]?.played?"#2ECC71":"#4A5E78",fontSize:12,fontFamily:"Barlow Condensed,sans-serif",cursor:"pointer",fontWeight:600}}>
+                {stats[p.id]?.played?"✓ ":""}{p.name} <span style={{opacity:0.5,fontSize:10}}>({p.iplTeam})</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Step 2: Stats tabs */}
+        {playingPlayers.length > 0 && (
+          <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column"}}>
+            <div style={{padding:"10px 24px",borderBottom:"1px solid #1E2D45",flexShrink:0,display:"flex",gap:6,alignItems:"center"}}>
+              <span style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginRight:8}}>STEP 2 — ENTER / VERIFY STATS:</span>
+              {tabBtn("batting","🏏 BATTING")}
+              {tabBtn("bowling","🎳 BOWLING")}
+              {tabBtn("fielding","🧤 FIELDING")}
+              {tabBtn("preview","👁 PREVIEW")}
+            </div>
+
+            <div style={{overflowY:"auto",flex:1,padding:"8px 24px 16px"}}>
+
+              {activeTab==="batting" && (
+                <table style={{width:"100%",borderCollapse:"collapse",marginTop:8}}>
+                  <thead>
+                    <tr style={{fontSize:11,color:"#4A5E78",letterSpacing:1,background:"#0E152188"}}>
+                      <th style={{textAlign:"left",padding:"8px 6px",fontWeight:700}}>PLAYER</th>
+                      <th style={{padding:"8px 4px",fontWeight:700,minWidth:55}}>RUNS</th>
+                      <th style={{padding:"8px 4px",fontWeight:700,minWidth:45}}>4s</th>
+                      <th style={{padding:"8px 4px",fontWeight:700,minWidth:45}}>6s</th>
+                      <th style={{padding:"8px 4px",fontWeight:700,minWidth:70}}>LONGEST 6</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {playingPlayers.map(p=>(
+                      <tr key={p.id} style={{borderBottom:"1px solid #1E2D4533"}}>
+                        <td style={{padding:"7px 6px",fontSize:13,color:"#E2EAF4",fontWeight:600}}>{p.name}<br/><span style={{fontSize:10,color:"#4A5E78"}}>{p.iplTeam} • {p.role}</span></td>
+                        <td style={{padding:"4px"}}><input type="number" min="0" value={stats[p.id]?.runs||0} onChange={e=>upd(p.id,"runs",e.target.value)} style={inp} /></td>
+                        <td style={{padding:"4px"}}><input type="number" min="0" value={stats[p.id]?.fours||0} onChange={e=>upd(p.id,"fours",e.target.value)} style={inp} /></td>
+                        <td style={{padding:"4px"}}><input type="number" min="0" value={stats[p.id]?.sixes||0} onChange={e=>upd(p.id,"sixes",e.target.value)} style={inp} /></td>
+                        <td style={{padding:"4px",textAlign:"center"}}><input type="checkbox" checked={!!stats[p.id]?.longestSix} onChange={e=>upd(p.id,"longestSix",e.target.checked)} style={{width:18,height:18,accentColor:"#F5A623"}} /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+
+              {activeTab==="bowling" && (
+                <table style={{width:"100%",borderCollapse:"collapse",marginTop:8}}>
+                  <thead>
+                    <tr style={{fontSize:11,color:"#4A5E78",letterSpacing:1,background:"#0E152188"}}>
+                      <th style={{textAlign:"left",padding:"8px 6px",fontWeight:700}}>PLAYER</th>
+                      <th style={{padding:"8px 4px",fontWeight:700,minWidth:60}}>WICKETS</th>
+                      <th style={{padding:"8px 4px",fontWeight:700,minWidth:60}}>OVERS</th>
+                      <th style={{padding:"8px 4px",fontWeight:700,minWidth:70}}>ECONOMY</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {playingPlayers.map(p=>(
+                      <tr key={p.id} style={{borderBottom:"1px solid #1E2D4533"}}>
+                        <td style={{padding:"7px 6px",fontSize:13,color:"#E2EAF4",fontWeight:600}}>{p.name}<br/><span style={{fontSize:10,color:"#4A5E78"}}>{p.iplTeam} • {p.role}</span></td>
+                        <td style={{padding:"4px"}}><input type="number" min="0" value={stats[p.id]?.wickets||0} onChange={e=>upd(p.id,"wickets",e.target.value)} style={inp} /></td>
+                        <td style={{padding:"4px"}}><input type="number" min="0" step="0.1" value={stats[p.id]?.overs||0} onChange={e=>upd(p.id,"overs",e.target.value)} style={inp} /></td>
+                        <td style={{padding:"4px"}}><input type="number" min="0" step="0.01" placeholder="—" value={stats[p.id]?.economy||""} onChange={e=>upd(p.id,"economy",e.target.value)} style={inp} /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+
+              {activeTab==="fielding" && (
+                <table style={{width:"100%",borderCollapse:"collapse",marginTop:8}}>
+                  <thead>
+                    <tr style={{fontSize:11,color:"#4A5E78",letterSpacing:1,background:"#0E152188"}}>
+                      <th style={{textAlign:"left",padding:"8px 6px",fontWeight:700}}>PLAYER</th>
+                      <th style={{padding:"8px 4px",fontWeight:700,minWidth:65}}>CATCHES</th>
+                      <th style={{padding:"8px 4px",fontWeight:700,minWidth:75}}>STUMPINGS</th>
+                      <th style={{padding:"8px 4px",fontWeight:700,minWidth:70}}>RUN OUTS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {playingPlayers.map(p=>(
+                      <tr key={p.id} style={{borderBottom:"1px solid #1E2D4533"}}>
+                        <td style={{padding:"7px 6px",fontSize:13,color:"#E2EAF4",fontWeight:600}}>{p.name}<br/><span style={{fontSize:10,color:"#4A5E78"}}>{p.iplTeam} • {p.role}</span></td>
+                        <td style={{padding:"4px"}}><input type="number" min="0" value={stats[p.id]?.catches||0} onChange={e=>upd(p.id,"catches",e.target.value)} style={inp} /></td>
+                        <td style={{padding:"4px"}}><input type="number" min="0" value={stats[p.id]?.stumpings||0} onChange={e=>upd(p.id,"stumpings",e.target.value)} style={inp} /></td>
+                        <td style={{padding:"4px"}}><input type="number" min="0" value={stats[p.id]?.runouts||0} onChange={e=>upd(p.id,"runouts",e.target.value)} style={inp} /></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+
+              {activeTab==="preview" && (
+                <div style={{marginTop:8}}>
+                  <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,marginBottom:10}}>POINTS PREVIEW (before captain multiplier)</div>
+                  {playingPlayers.sort((a,b)=>calcPoints(stats[b.id]||{})-calcPoints(stats[a.id]||{})).map(p => {
+                    const s = stats[p.id] || {};
+                    const pts = calcPoints(s);
+                    const bd = calcBreakdown(s);
+                    return (
+                      <div key={p.id} style={{background:"#0E1521",borderRadius:8,padding:"10px 14px",marginBottom:6,display:"flex",alignItems:"flex-start",gap:12}}>
+                        <div style={{flex:1}}>
+                          <div style={{fontWeight:700,fontSize:14,color:"#E2EAF4"}}>{p.name}</div>
+                          <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>{bd.length>0?bd.join(" • "):"No stats"}</div>
+                        </div>
+                        <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:24,fontWeight:800,color:pts>0?"#F5A623":"#4A5E78"}}>{pts}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Footer */}
+        <div style={{padding:"14px 24px",borderTop:"1px solid #1E2D45",display:"flex",gap:10,flexShrink:0}}>
+          <button onClick={onClose} style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:11,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
+          <button onClick={submit} style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:11,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>✅ SAVE POINTS ({playingPlayers.length} players)</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const [page, setPage] = useState("setup");
   const [teams, setTeams] = useState([]);
@@ -314,6 +649,7 @@ export default function App() {
   const [showPwModal, setShowPwModal] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
   const [editPlayer, setEditPlayer] = useState(null); // player being edited
+  const [smartStatsMatch, setSmartStatsMatch] = useState(null);
   const [squadView, setSquadView] = useState(false); // toggle squad view
 
   useEffect(() => {
@@ -505,6 +841,25 @@ export default function App() {
           onSave={(updated)=>{const up=players.map(p=>p.id===updated.id?updated:p);setPlayers(up);storeSet("players",up);setEditPlayer(null);}}
           onAdd={(np)=>{const all=[...players,np];setPlayers(all);storeSet("players",all);setEditPlayer(null);}}
           onClose={()=>setEditPlayer(null)} />}
+        {smartStatsMatch&&<SmartStatsModal
+          match={smartStatsMatch}
+          players={players}
+          assignments={assignments}
+          existingStats={Object.fromEntries(Object.entries(points).map(([pid,m])=>m[smartStatsMatch.id]?[pid,m[smartStatsMatch.id].stats]:null).filter(Boolean))}
+          onSave={(statsList)=>{
+            const newPts={...points};
+            for(const s of statsList){
+              if(!s.playerId)continue;
+              const pts=calcPoints(s);
+              if(!newPts[s.playerId])newPts[s.playerId]={};
+              newPts[s.playerId][smartStatsMatch.id]={base:pts,stats:s};
+            }
+            updPoints(newPts);
+            setSmartStatsMatch(null);
+            alert("✅ Points saved for " + statsList.length + " players!");
+          }}
+          onClose={()=>setSmartStatsMatch(null)}
+        />}
         {showPwModal&&<PasswordModal storedHash={pwHash} onSuccess={handlePwSuccess} onClose={()=>{setShowPwModal(false);setPendingAction(null);}} />}
         {editPlayer&&<EditPlayerModal player={editPlayer} onSave={(updated)=>{const updated_players=players.map(p=>p.id===updated.id?updated:p);setPlayers(updated_players);storeSet("players",updated_players);setEditPlayer(null);}} onAdd={(np)=>{const all=[...players,np];setPlayers(all);storeSet("players",all);setEditPlayer(null);}} onClose={()=>setEditPlayer(null)} />}
 
@@ -745,7 +1100,15 @@ export default function App() {
                                 })}
                               </div>
                             </div>
-                            {completed&&<button onClick={()=>syncPoints(match)} style={{marginTop:16,width:"100%",background:synced?"#1E2D45":"linear-gradient(135deg,#F5A623,#FF8C00)",color:synced?"#4A5E78":"#080C14",border:"none",borderRadius:8,padding:13,fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"Barlow Condensed"}}>{synced?"↻ RE-SYNC POINTS":"🔄 SYNC POINTS FROM SCORECARD"}</button>}
+                            {completed&&(
+                              <div style={{marginTop:16,display:"flex",gap:8,flexDirection:"column"}}>
+                                <button onClick={()=>setSmartStatsMatch(match)}
+                                  style={{width:"100%",background:synced?"#1E2D45":"linear-gradient(135deg,#F5A623,#FF8C00)",color:synced?"#4A5E78":"#080C14",border:"none",borderRadius:8,padding:13,fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"Barlow Condensed",letterSpacing:1}}>
+                                  {synced?"↻ EDIT / RE-SYNC STATS":"📊 SYNC STATS & CALCULATE POINTS"}
+                                </button>
+                                {!synced&&<div style={{fontSize:11,color:"#4A5E78",textAlign:"center"}}>Auto-fills from Cricbuzz • manually editable • 100% accurate</div>}
+                              </div>
+                            )}
                             {!completed&&<div style={{marginTop:16,padding:"12px 16px",background:"#080C14",borderRadius:8,fontSize:13,color:"#4A5E78",textAlign:"center"}}>Points sync available once match is completed</div>}
                           </div>
                         )}
