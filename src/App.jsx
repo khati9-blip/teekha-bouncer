@@ -387,21 +387,25 @@ function SmartStatsModal({ match, players, assignments, existingStats, onSave, o
     setFetching(true);
     setFetchStatus("Fetching scorecard from Cricbuzz…");
     try {
-      const res = await fetch(`/api/cricbuzz?path=${encodeURIComponent("mcenter/v1/" + match.cricbuzzId + "/full-scorecard")}`);
+      // Use hscard endpoint (available on free plan)
+      const res = await fetch(`/api/cricbuzz?path=${encodeURIComponent("mcenter/v1/" + match.cricbuzzId + "/hscard")}`);
       const data = await res.json();
-      if (data.error) throw new Error(data.error);
+      if (data.message) throw new Error(data.message);
 
+      // Build name lookup from our players
       const nameToPlayer = {};
       matchPlayers.forEach(p => {
-        nameToPlayer[p.name.toLowerCase()] = p;
+        nameToPlayer[p.name.toLowerCase().trim()] = p;
+        // Also index by last name and first name
         const parts = p.name.toLowerCase().split(" ");
-        parts.forEach(part => { if (part.length > 3) nameToPlayer[part] = p; });
+        parts.forEach(part => { if (part.length > 2) nameToPlayer[part.trim()] = p; });
       });
 
       const findPlayer = (name) => {
         if (!name) return null;
         const n = name.toLowerCase().trim();
         if (nameToPlayer[n]) return nameToPlayer[n];
+        // Try partial match
         for (const [key, pl] of Object.entries(nameToPlayer)) {
           if (n.includes(key) || key.includes(n)) return pl;
         }
@@ -411,46 +415,70 @@ function SmartStatsModal({ match, players, assignments, existingStats, onSave, o
       const newStats = {...stats};
       let matched = 0;
 
-      for (const inning of (data.scoreCard || [])) {
-        // Batting
-        const batsmen = inning.batTeamDetails?.batsmenData ? Object.values(inning.batTeamDetails.batsmenData) : [];
-        for (const b of batsmen) {
-          const pl = findPlayer(b.batName);
+      for (const inning of (data.scorecard || [])) {
+        // Batting — data is array or object of batsmen
+        const batArr = Array.isArray(inning.batsman)
+          ? inning.batsman
+          : Object.values(inning.batsman || {});
+
+        for (const b of batArr) {
+          if (!b.name) continue;
+          const pl = findPlayer(b.name);
           if (!pl) continue;
-          newStats[pl.id] = { ...newStats[pl.id], played:true, runs:+b.runs||0, fours:+b.fours||0, sixes:+b.sixes||0 };
+          newStats[pl.id] = {
+            ...newStats[pl.id],
+            played: true,
+            runs: +b.runs || 0,
+            fours: +b.fours || 0,
+            sixes: +b.sixes || 0,
+          };
           matched++;
-        }
-        // Bowling
-        const bowlers = inning.bowlTeamDetails?.bowlersData ? Object.values(inning.bowlTeamDetails.bowlersData) : [];
-        for (const b of bowlers) {
-          const pl = findPlayer(b.bowlName);
-          if (!pl) continue;
-          const prev = newStats[pl.id] || emptyStats(pl);
-          newStats[pl.id] = { ...prev, played:true, wickets:+b.wickets||0, overs:+b.overs||0, economy:b.economy||"" };
-          matched++;
-        }
-        // Fielding from dismissal descriptions
-        for (const b of batsmen) {
-          const out = b.outDesc || "";
+
+          // Fielding from outdec e.g. "c Phil Salt b Jacob Duffy"
+          const out = b.outdec || "";
           if (out.startsWith("c ") && out.includes(" b ")) {
-            const fielder = out.slice(2, out.indexOf(" b ")).trim();
-            const pl = findPlayer(fielder);
-            if (pl) { newStats[pl.id] = {...(newStats[pl.id]||emptyStats(pl)), played:true, catches:(+newStats[pl.id]?.catches||0)+1}; }
-          }
-          if (out.startsWith("st ")) {
-            const keeper = out.slice(3, out.indexOf(" b ")).trim();
-            const pl = findPlayer(keeper);
-            if (pl) { newStats[pl.id] = {...(newStats[pl.id]||emptyStats(pl)), played:true, stumpings:(+newStats[pl.id]?.stumpings||0)+1}; }
-          }
-          if (out.toLowerCase().includes("run out")) {
-            const m = out.match(/run out \(([^)]+)\)/i);
-            if (m) {
-              for (const name of m[1].split("/")) {
-                const pl = findPlayer(name.trim());
-                if (pl) { newStats[pl.id] = {...(newStats[pl.id]||emptyStats(pl)), played:true, runouts:(+newStats[pl.id]?.runouts||0)+1}; }
+            const fielderName = out.slice(2, out.indexOf(" b ")).trim();
+            const fp = findPlayer(fielderName);
+            if (fp) {
+              newStats[fp.id] = {...(newStats[fp.id]||emptyStats(fp)), played:true, catches:(+(newStats[fp.id]?.catches)||0)+1};
+            }
+          } else if (out.startsWith("st ")) {
+            const keeperName = out.slice(3, out.indexOf(" b ")).trim();
+            const kp = findPlayer(keeperName);
+            if (kp) {
+              newStats[kp.id] = {...(newStats[kp.id]||emptyStats(kp)), played:true, stumpings:(+(newStats[kp.id]?.stumpings)||0)+1};
+            }
+          } else if (out.toLowerCase().includes("run out")) {
+            const roMatch = out.match(/run out \(([^)]+)\)/i);
+            if (roMatch) {
+              for (const rname of roMatch[1].split("/")) {
+                const rp = findPlayer(rname.trim());
+                if (rp) {
+                  newStats[rp.id] = {...(newStats[rp.id]||emptyStats(rp)), played:true, runouts:(+(newStats[rp.id]?.runouts)||0)+1};
+                }
               }
             }
           }
+        }
+
+        // Bowling
+        const bowlArr = Array.isArray(inning.bowler)
+          ? inning.bowler
+          : Object.values(inning.bowler || {});
+
+        for (const b of bowlArr) {
+          if (!b.name) continue;
+          const pl = findPlayer(b.name);
+          if (!pl) continue;
+          const prev = newStats[pl.id] || emptyStats(pl);
+          newStats[pl.id] = {
+            ...prev,
+            played: true,
+            wickets: (+(prev.wickets)||0) + (+b.wickets||0),
+            overs: (+(prev.overs)||0) + (+b.overs||0),
+            economy: b.economy || prev.economy || "",
+          };
+          matched++;
         }
       }
 
@@ -1204,7 +1232,7 @@ export default function App() {
                           </div>
                           <div style={{display:"flex",alignItems:"center",gap:8}}>
                             {synced&&<Badge label="✓ SYNCED" color="#2ECC71" />}
-                            <Badge label={completed?(match.result?`✓ ${match.result}`:"DONE"):"UPCOMING"} color={completed?"#2ECC71":"#F5A623"} />
+                            <Badge label={completed?(match.result?`✓ ${match.result}`:"DONE"):match.status==="live"?"🔴 LIVE":"UPCOMING"} color={completed?"#2ECC71":match.status==="live"?"#FF3D5A":"#F5A623"} />
                             <span style={{color:"#4A5E78",fontSize:12}}>{open?"▲":"▼"}</span>
                           </div>
                         </div>
