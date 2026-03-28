@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 
 async function callAI(userPrompt, system = "Return only valid JSON.") {
   const body = {
@@ -950,7 +950,7 @@ export default function App() {
           match={smartStatsMatch}
           players={players}
           assignments={assignments}
-          existingStats={Object.fromEntries(Object.entries(points).map(([pid,m])=>m[smartStatsMatch.id]?[pid,m[smartStatsMatch.id].stats]:null).filter(Boolean))}
+          existingStats={Object.fromEntries(Object.entries(points).filter(([pid,m])=>m[smartStatsMatch.id]).map(([pid,m])=>[pid,m[smartStatsMatch.id].stats]))}
           onSave={(statsList)=>{
             const newPts={...points};
             for(const s of statsList){
