@@ -1287,7 +1287,7 @@ function App({ pitch, onLeave, user, onLogout }) {
         if(m) setMatches(m);
         if(c) setCaptains(c);
         if(pts) setPoints(pts);
-        if(pg) setPage(pg);
+        if(pg && typeof pg === 'string') setPage(pg);
         if(tn) setTNames(tn);
         if(nt) setNumTeams(nt);
         if(ph) setPwHash(ph);
@@ -1295,11 +1295,11 @@ function App({ pitch, onLeave, user, onLogout }) {
         if(tl) setTeamLogos(tl);
         if(sp) setSafePlayers(sp);
         if(up) setUnsoldPool(up);
-        if(tr) setTransfers(tr);
-        if(sn) setSnatch(sn);
-        if(ol) setOwnershipLog(ol);
+        if(tr && typeof tr === 'object') setTransfers(tr);
+        if(sn && typeof sn === 'object') setSnatch(sn);
+        if(ol && typeof ol === 'object') setOwnershipLog(ol);
       } catch(e) {
-        console.error("Load error:", e);
+        console.error("Load error:", e.message);
       } finally {
         setAppReady(true);
       }
@@ -2603,7 +2603,12 @@ function Root() {
     try { const s = localStorage.getItem('tb_user'); return s ? JSON.parse(s) : null; } catch { return null; }
   });
   const [currentPitch, setCurrentPitch] = useState(() => {
-    try { const s = localStorage.getItem('tb_pitch'); return s ? JSON.parse(s) : null; } catch { return null; }
+    try {
+      const s = localStorage.getItem('tb_pitch');
+      const p = s ? JSON.parse(s) : null;
+      if (p) _pitchId = p.id; // Set immediately, not in useEffect
+      return p;
+    } catch { return null; }
   });
 
   const handleLogin = (user) => {
@@ -2625,10 +2630,6 @@ function Root() {
     try { localStorage.removeItem('tb_pitch'); } catch {}
   };
 
-  // Restore pitchId on mount if pitch is already saved
-  useEffect(() => {
-    if (currentPitch) _pitchId = currentPitch.id;
-  }, []);
 
   try {
     if (!currentUser) return <SplashScreen onLogin={handleLogin} />;
