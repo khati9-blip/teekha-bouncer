@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import FormChart from "./FormChart";
 
 async function callAI(userPrompt, system = "Return only valid JSON.") {
   const body = {
@@ -1242,8 +1241,6 @@ function App({ pitch, onLeave, user, onLogout }) {
   const [pwHash, setPwHash] = useState(null);
   const [recoveryHash, setRecoveryHash] = useState(null);
   const [appReady, setAppReady] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [drawerPage, setDrawerPage] = useState('');
   const [unlocked, setUnlocked] = useState(false);
   const isAdmin = user && pitch && (pitch.creatorEmail === user.email || !pitch.creatorEmail);
   const [showPwModal, setShowPwModal] = useState(false);
@@ -1899,20 +1896,12 @@ function App({ pitch, onLeave, user, onLogout }) {
 
         {/* TOP BAR */}
         <div style={{background:"linear-gradient(180deg,#0E1521 0%,#080C14 100%)",borderBottom:"1px solid #1E2D45",padding:"10px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:50}}>
-          <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <button onClick={()=>setDrawerOpen(true)}
-              style={{background:"transparent",border:"none",cursor:"pointer",padding:"4px 6px",display:"flex",flexDirection:"column",gap:5,flexShrink:0}}>
-              <div style={{width:20,height:2,background:"#E2EAF4",borderRadius:2}}></div>
-              <div style={{width:20,height:2,background:"#E2EAF4",borderRadius:2}}></div>
-              <div style={{width:20,height:2,background:"#E2EAF4",borderRadius:2}}></div>
-            </button>
-            <div style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={onLeave} title="Back to pitches">
+          <div style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={onLeave} title="Back to pitches">
             <img src="/logo.png" alt="Teekha Bouncer" style={{height:36,width:36,objectFit:"contain",borderRadius:6}} />
             <div>
               <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:14,color:"#F5A623",letterSpacing:1,lineHeight:1}}>TEEKHA BOUNCER LEAGUE</div>
               <div style={{fontSize:9,color:"#4A5E78",letterSpacing:1,marginTop:2}}>{pitch ? pitch.name : ""} {user ? "• "+user.email.split("@")[0] : ""}</div>
             </div>
-          </div>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             <button onClick={()=>{if(unlocked)setUnlocked(false);else{setPendingAction(null);setShowPwModal(true);}}} style={{background:unlocked?"#2ECC7122":"transparent",border:"1px solid "+(unlocked?"#2ECC71":"#1E2D45"),color:unlocked?"#2ECC71":"#4A5E78",fontSize:13,borderRadius:6,padding:"6px 12px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>{unlocked?"🔓 ON":"🔒 OFF"}</button>
@@ -2538,16 +2527,6 @@ function App({ pitch, onLeave, user, onLogout }) {
             </div>
           )}
 
-          {page==="form" && (
-            <div className="fade-in">
-              <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
-                <button onClick={()=>nav("leaderboard")} style={{background:"transparent",border:"none",color:"#4A5E78",fontSize:20,cursor:"pointer",padding:"4px 8px"}}>←</button>
-                <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2}}>PLAYER FORM</h2>
-              </div>
-              <FormChart players={players} assignments={assignments} points={points} teams={teams} />
-            </div>
-          )}
-
           {page==="leaderboard"&&(
             <div className="fade-in">
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:8}}>
@@ -2610,32 +2589,6 @@ function App({ pitch, onLeave, user, onLogout }) {
             </div>
           )}
         </div>
-        {/* DRAWER MENU */}
-        {drawerOpen && (
-          <div style={{position:"fixed",inset:0,zIndex:200,display:"flex"}}>
-            <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.6)"}} onClick={()=>setDrawerOpen(false)} />
-            <div style={{position:"relative",width:260,background:"#0E1521",borderRight:"1px solid #1E2D45",display:"flex",flexDirection:"column",zIndex:1,height:"100%",overflowY:"auto"}}>
-              <div style={{padding:"20px 16px",borderBottom:"1px solid #1E2D45"}}>
-                <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:16,color:"#F5A623",letterSpacing:2}}>MENU</div>
-                <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>{pitch ? pitch.name : ""}</div>
-              </div>
-              <div style={{flex:1,padding:"12px 8px"}}>
-                <button onClick={()=>{ nav("form"); setDrawerOpen(false); }} style={{width:"100%",background:page==="form"?"#F5A62322":"transparent",border:"1px solid "+(page==="form"?"#F5A62366":"transparent"),borderRadius:10,padding:"12px 14px",marginBottom:6,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12}}>
-                  <span style={{fontSize:22}}>📈</span>
-                  <div>
-                    <div style={{fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,color:page==="form"?"#F5A623":"#E2EAF4"}}>Player Form Chart</div>
-                    <div style={{fontSize:11,color:"#4A5E78",marginTop:1}}>Last 5 matches per player</div>
-                  </div>
-                </button>
-              </div>
-              <div style={{padding:"12px 16px",borderTop:"1px solid #1E2D45"}}>
-                <button onClick={onLogout} style={{width:"100%",background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:8,padding:"10px",color:"#FF3D5A",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>LOGOUT</button>
-              </div>
-            </div>
-          </div>
-        </div>
-        )}
-
       </div>
     </>
   );
