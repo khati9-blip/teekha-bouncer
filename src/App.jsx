@@ -809,6 +809,8 @@ function PitchHome({ onEnter }) {
   const [enterPitchId, setEnterPitchId] = useState(null);
   const [enterPw, setEnterPw] = useState("");
   const [enterErr, setEnterErr] = useState("");
+  const [settingPasswordFor, setSettingPasswordFor] = useState(null);
+  const [newPitchPw, setNewPitchPw] = useState("");
 
   useEffect(() => {
     (async () => {
@@ -842,8 +844,12 @@ function PitchHome({ onEnter }) {
   };
 
   const tryEnter = async (pitch) => {
-    // If no password set yet, enter directly
-    if (!pitch.hash) { _pitchId = pitch.id; onEnter(pitch); return; }
+    if (!pitch.hash) {
+      // No pitch password set yet — prompt to set one
+      setSettingPasswordFor(pitch.id);
+      setEnterPw(""); setEnterErr("");
+      return;
+    }
     setEnterPitchId(pitch.id);
     setEnterPw(""); setEnterErr("");
   };
@@ -859,6 +865,20 @@ function PitchHome({ onEnter }) {
       setEnterErr("Wrong password");
       setEnterPw("");
     }
+  };
+
+  const setFirstPassword = async () => {
+    if (!newPitchPw.trim()) { setEnterErr("Enter a password"); return; }
+    const pitch = pitches.find(p => p.id === settingPasswordFor);
+    if (!pitch) return;
+    const h = await hashPw(newPitchPw);
+    const updated = pitches.map(p => p.id === settingPasswordFor ? {...p, hash: h} : p);
+    await sbSet("pitches", updated);
+    setPitches(updated);
+    _pitchId = pitch.id;
+    onEnter({...pitch, hash: h});
+    setSettingPasswordFor(null);
+    setNewPitchPw("");
   };
 
   const COLORS = ["#FF3D5A","#4F8EF7","#2ECC71","#F5A623","#A855F7","#06B6D4","#FF6B35","#EC4899"];
@@ -927,6 +947,30 @@ function PitchHome({ onEnter }) {
           </div>
         )}
       </div>
+
+      {/* Set first password modal */}
+      {settingPasswordFor && (
+        <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.95)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300}}>
+          <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #1E2D45",padding:32,width:"100%",maxWidth:340,margin:"0 16px"}}>
+            <div style={{fontSize:32,textAlign:"center",marginBottom:8}}>🔐</div>
+            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,fontWeight:700,color:"#F5A623",textAlign:"center",letterSpacing:2,marginBottom:4}}>
+              SET PITCH PASSWORD
+            </div>
+            <div style={{fontSize:13,color:"#4A5E78",textAlign:"center",marginBottom:20}}>
+              {pitches.find(p=>p.id===settingPasswordFor)?.name} — set a password to protect this pitch
+            </div>
+            <input type="password" value={newPitchPw} onChange={e=>{setNewPitchPw(e.target.value);setEnterErr("");}} onKeyDown={e=>e.key==="Enter"&&setFirstPassword()} placeholder="Choose pitch password..." autoFocus
+              style={{width:"100%",background:"#080C14",border:"1px solid "+(enterErr?"#FF3D5A":"#1E2D45"),borderRadius:8,padding:"12px 16px",color:"#E2EAF4",fontSize:16,fontFamily:"Barlow Condensed,sans-serif",outline:"none",marginBottom:enterErr?8:20,boxSizing:"border-box"}} />
+            {enterErr && <div style={{color:"#FF3D5A",fontSize:13,marginBottom:16,textAlign:"center"}}>{enterErr}</div>}
+            <div style={{display:"flex",gap:10}}>
+              <button onClick={()=>{setSettingPasswordFor(null);setNewPitchPw("");setEnterErr("");}}
+                style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:11,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
+              <button onClick={setFirstPassword}
+                style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:11,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>SET & ENTER</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Enter password modal */}
       {enterPitchId && (
