@@ -388,6 +388,7 @@ const css = `
   @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Barlow+Condensed:wght@400;600;700;800&display=swap');
   *{box-sizing:border-box;margin:0;padding:0;}
   :root{--bg:#080C14;--surface:#0E1521;--card:#141E2E;--border:#1E2D45;--gold:#F5A623;--text:#E2EAF4;--muted:#4A5E78;--accent:#4F8EF7;}
+  .light-mode{--bg:#F0F4F8;--surface:#FFFFFF;--card:#FFFFFF;--border:#E2E8F0;--text:#1A202C;--muted:#718096;}
   body{font-family:'Barlow Condensed',sans-serif;background:var(--bg);color:var(--text);}
   select,input{font-family:inherit;}
   ::-webkit-scrollbar{width:6px;}::-webkit-scrollbar-track{background:var(--surface);}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
@@ -811,6 +812,27 @@ export default function App() {
   const [pwHash, setPwHash] = useState(null);
   const [recoveryHash, setRecoveryHash] = useState(null);
   const [appReady, setAppReady] = useState(false);
+  const [darkMode, setDarkMode] = useState(true);
+  // PWA install prompt
+  const [installPrompt, setInstallPrompt] = useState(null);
+  useEffect(() => {
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      setInstallPrompt(e);
+    });
+  }, []);
+  const installPWA = async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    if (outcome === 'accepted') setInstallPrompt(null);
+  };
+
+  const [statsPage, setStatsPage] = useState('top'); // top | h2h | form | mvp
+  const [h2hTeam1, setH2hTeam1] = useState('');
+  const [h2hTeam2, setH2hTeam2] = useState('');
+  const [nextMatch, setNextMatch] = useState(null);
+  const [countdown, setCountdown] = useState('');
   const [unlocked, setUnlocked] = useState(false);
   const [showPwModal, setShowPwModal] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
@@ -839,6 +861,27 @@ export default function App() {
     active: null, // {byTeamId, pid, fromTeamId, pointsAtSnatch, startDate}
     history: [],
   });
+
+  // Countdown to next match
+  useEffect(() => {
+    const upcoming = matches.find(m => m.status !== 'completed');
+    if (!upcoming) return;
+    setNextMatch(upcoming);
+    const tick = () => {
+      const now = Date.now();
+      const matchTime = new Date(upcoming.date + 'T14:00:00+05:30').getTime();
+      const diff = matchTime - now;
+      if (diff <= 0) { setCountdown('MATCH IN PROGRESS'); return; }
+      const d = Math.floor(diff/86400000);
+      const h = Math.floor((diff%86400000)/3600000);
+      const m = Math.floor((diff%3600000)/60000);
+      const s = Math.floor((diff%60000)/1000);
+      setCountdown(`${d>0?d+'d ':''} ${h}h ${m}m ${s}s`);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [matches]);
 
   useEffect(() => {
     (async () => {
@@ -1413,6 +1456,95 @@ export default function App() {
     return [...active, ...historical, ...(snatchedIn?[snatchedIn]:[])].sort((a,b)=>b.total-a.total);
   };
 
+  // ── WHATSAPP SHARE ───────────────────────────────────────────────────────────
+  const shareToWhatsApp = (text) => {
+    const encoded = encodeURIComponent(text);
+    window.open(`https://wa.me/?text=${encoded}`, '_blank');
+  };
+
+
+  const exportToPDF = async () => {
+    const { jsPDF } = await import("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js");
+    const doc = new jsPDF();
+    doc.setFillColor(8, 12, 20);
+    doc.rect(0, 0, 210, 297, 'F');
+    doc.setTextColor(245, 166, 35);
+    doc.setFontSize(22);
+    doc.setFont("helvetica", "bold");
+    doc.text("TEEKHA BOUNCER LEAGUE", 105, 20, {align:"center"});
+    doc.setFontSize(12);
+    doc.setTextColor(74, 94, 120);
+    doc.text("Leaderboard — " + new Date().toLocaleDateString(), 105, 30, {align:"center"});
+    let y = 50;
+    leaderboard.forEach((team, i) => {
+      doc.setFillColor(20, 30, 46);
+      doc.roundedRect(15, y-8, 180, 18, 3, 3, 'F');
+      doc.setTextColor(226, 234, 244);
+      doc.setFontSize(14);
+      doc.setFont("helvetica", "bold");
+      doc.text(`#${i+1} ${team.name}`, 25, y+4);
+      doc.setTextColor(245, 166, 35);
+      doc.text(`${team.total} pts`, 185, y+4, {align:"right"});
+      y += 24;
+    });
+    doc.save("teekha-bouncer-leaderboard.pdf");
+  };
+
+  const shareLeaderboard = () => {
+    const lb = leaderboard.map((t,i)=>`${["🥇","🥈","🥉"][i]||`#${i+1}`} ${t.name}: ${t.total} pts`).join("\n");
+    const text = `🏏 *Teekha Bouncer League*\n*Leaderboard Update*\n\n${lb}\n\n_teekha-bouncer.vercel.app_`;
+    shareToWhatsApp(text);
+  };
+
+  const shareMatchResult = (match) => {
+    const matchPts = leaderboard.map(t=>{
+      const pts = players.filter(p=>assignments[p.id]===t.id&&points[p.id]?.[match.id])
+        .reduce((s,p)=>s+(points[p.id][match.id].base||0),0);
+      return `${t.name}: ${pts} pts`;
+    }).join("\n");
+    const text = `🏏 *Teekha Bouncer League*\n*Match ${match.matchNum}: ${match.team1} vs ${match.team2}*\n${match.result||""}\n\n${matchPts}\n\n_teekha-bouncer.vercel.app_`;
+    shareToWhatsApp(text);
+  };
+
+  // ── STATS HELPERS ────────────────────────────────────────────────────────────
+  const getPlayerSeasonStats = () => {
+    return players.filter(p => assignments[p.id]).map(p => {
+      const matchPoints = Object.entries(points[p.id] || {}).map(([mid, d]) => ({
+        matchId: mid, pts: d.base, stats: d.stats
+      }));
+      const total = matchPoints.reduce((s, m) => s + m.pts, 0);
+      const matchesPlayed = matchPoints.length;
+      const avg = matchesPlayed > 0 ? Math.round(total / matchesPlayed) : 0;
+      const nonZero = matchPoints.filter(m => m.pts > 0).length;
+      const consistency = matchesPlayed > 0 ? Math.round((nonZero / matchesPlayed) * 100) : 0;
+      const best = matchPoints.reduce((max, m) => m.pts > max ? m.pts : max, 0);
+      const last5 = matchPoints.slice(-5).map(m => m.pts);
+      const team = teams.find(t => t.id === assignments[p.id]);
+      return { ...p, total, matchesPlayed, avg, consistency, best, last5, teamColor: team?.color || '#4A5E78', teamName: team?.name || '' };
+    }).sort((a, b) => b.total - a.total);
+  };
+
+  const getH2H = (teamId1, teamId2) => {
+    const completedMatches = matches.filter(m => m.status === 'completed' && Object.keys(points).some(pid => points[pid][m.id]));
+    return completedMatches.map(match => {
+      const t1pts = players.filter(p => assignments[p.id] === teamId1 && points[p.id]?.[match.id])
+        .reduce((s, p) => {
+          const cap = captains[`${match.id}_${teamId1}`] || {};
+          let pts = points[p.id][match.id].base;
+          if (cap.captain === p.id) pts *= 2; else if (cap.vc === p.id) pts *= 1.5;
+          return s + pts;
+        }, 0);
+      const t2pts = players.filter(p => assignments[p.id] === teamId2 && points[p.id]?.[match.id])
+        .reduce((s, p) => {
+          const cap = captains[`${match.id}_${teamId2}`] || {};
+          let pts = points[p.id][match.id].base;
+          if (cap.captain === p.id) pts *= 2; else if (cap.vc === p.id) pts *= 1.5;
+          return s + pts;
+        }, 0);
+      return { match, t1pts: Math.round(t1pts), t2pts: Math.round(t2pts), winner: t1pts > t2pts ? teamId1 : t2pts > t1pts ? teamId2 : 'draw' };
+    });
+  };
+
   const navItems=[
     {id:"draft",label:"Draft",icon:"📋",disabled:teams.length===0},
     {id:"matches",label:"Matches",icon:"🏏",disabled:players.length===0},
@@ -1435,7 +1567,7 @@ export default function App() {
   return (
     <>
       <style>{css}</style>
-      <div style={{minHeight:"100vh",background:"var(--bg)"}}>
+      <div style={{minHeight:"100vh",background:"var(--bg)"}} className={darkMode?"":"light-mode"}>
         {editPlayer&&<EditPlayerModal player={editPlayer}
           onSave={(updated)=>{const up=players.map(p=>p.id===updated.id?updated:p);setPlayers(up);storeSet("players",up);setEditPlayer(null);}}
           onAdd={(np)=>{const all=[...players,np];setPlayers(all);storeSet("players",all);setEditPlayer(null);}}
@@ -1471,11 +1603,25 @@ export default function App() {
               <div style={{fontSize:9,color:"#4A5E78",letterSpacing:2,textTransform:"uppercase"}}>Bouncer League</div>
             </div>
           </div>
+          {nextMatch && countdown && (
+            <div style={{flex:1,textAlign:"center",display:"none"}}>
+            </div>
+          )}
           <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <button onClick={()=>setDarkMode(d=>!d)}
+              style={{background:"transparent",border:"1px solid #1E2D45",color:"#4A5E78",fontSize:16,borderRadius:6,padding:"5px 10px",cursor:"pointer"}}>
+              {darkMode?"☀️":"🌙"}
+            </button>
             <button onClick={()=>{if(unlocked)setUnlocked(false);else{setPendingAction(null);setShowPwModal(true);}}}
               style={{background:unlocked?"#2ECC7122":"transparent",border:`1px solid ${unlocked?"#2ECC71":"#1E2D45"}`,color:unlocked?"#2ECC71":"#4A5E78",fontSize:13,borderRadius:6,padding:"6px 12px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>
               {unlocked?"🔓 ON":"🔒 OFF"}
             </button>
+            {installPrompt && (
+              <button onClick={installPWA}
+                style={{background:"#4F8EF722",border:"1px solid #4F8EF744",color:"#4F8EF7",fontSize:11,borderRadius:6,padding:"5px 10px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>
+                📲 INSTALL
+              </button>
+            )}
             <button onClick={()=>withPassword(()=>{if(!confirm("Reset ALL data? This cannot be undone!"))return;["teams","players","assignments","matches","captains","points","page","pwhash"].forEach(k=>storeDel(k));window.location.reload();})}
               style={{background:"transparent",border:"1px solid #1E2D45",color:"#4A5E78",fontSize:13,borderRadius:6,padding:"6px 10px",cursor:"pointer"}}>⚙️</button>
           </div>
@@ -1501,6 +1647,21 @@ export default function App() {
         )}
 
         <div style={{maxWidth:860,margin:"0 auto",padding:"20px 16px 90px"}}>
+
+          {/* ── COUNTDOWN BANNER ── */}
+          {nextMatch && countdown && (
+            <div style={{background:"linear-gradient(135deg,#0E1521,#141E2E)",border:"1px solid #F5A62333",borderRadius:12,padding:"12px 16px",marginBottom:16,display:"flex",alignItems:"center",justifyContent:"space-between",flexWrap:"wrap",gap:8}}>
+              <div>
+                <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700}}>NEXT MATCH</div>
+                <div style={{fontSize:14,fontWeight:700,color:"#E2EAF4",marginTop:2}}>{nextMatch.team1} <span style={{color:"#4A5E78"}}>vs</span> {nextMatch.team2}</div>
+                <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>{nextMatch.date} • {nextMatch.venue}</div>
+              </div>
+              <div style={{textAlign:"right"}}>
+                <div style={{fontSize:11,color:"#F5A623",letterSpacing:2,fontWeight:700}}>SET YOUR C/VC BEFORE</div>
+                <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:24,fontWeight:800,color:"#F5A623",letterSpacing:2}}>{countdown}</div>
+              </div>
+            </div>
+          )}
 
           {page==="setup"&&(
             <div className="fade-in">
@@ -2002,8 +2163,218 @@ export default function App() {
             </div>
           )}
 
-          {page==="results" && (
+          {page==="stats" && (
             <div className="fade-in">
+              <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2,marginBottom:16}}>STATS & INSIGHTS</h2>
+
+              {/* Sub tabs */}
+              <div style={{display:"flex",background:"#0E1521",borderRadius:10,padding:4,gap:3,marginBottom:20,overflowX:"auto"}}>
+                {[{id:"top",label:"🏅 Top Players"},{id:"mvp",label:"⭐ MVP"},{id:"h2h",label:"⚔️ Head-to-Head"},{id:"form",label:"📈 Form Chart"},{id:"results",label:"📋 Results"}].map(t=>(
+                  <button key={t.id} onClick={()=>setStatsPage(t.id)}
+                    style={{flex:"0 0 auto",padding:"8px 14px",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,background:statsPage===t.id?"#F5A623":"transparent",color:statsPage===t.id?"#080C14":"#4A5E78",whiteSpace:"nowrap"}}>
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* ── TOP PERFORMERS ── */}
+              {statsPage==="top" && (() => {
+                const allStats = getPlayerSeasonStats();
+                const categories = [
+                  {label:"🏏 TOP BATSMEN", color:"#4F8EF7", filter: p => (p.stats?.runs||0) > 0, sort: (a,b) => (Object.values(points[b.id]||{}).reduce((s,d)=>s+(d.stats?.runs||0),0)) - (Object.values(points[a.id]||{}).reduce((s,d)=>s+(d.stats?.runs||0),0))},
+                  {label:"🎳 TOP BOWLERS", color:"#FF3D5A", filter: p => (p.stats?.wickets||0) > 0, sort: (a,b) => (Object.values(points[b.id]||{}).reduce((s,d)=>s+(d.stats?.wickets||0),0)) - (Object.values(points[a.id]||{}).reduce((s,d)=>s+(d.stats?.wickets||0),0))},
+                  {label:"🏆 MOST POINTS", color:"#F5A623", filter: ()=>true, sort: (a,b)=>b.total-a.total},
+                  {label:"🎯 MOST CONSISTENT", color:"#2ECC71", filter: p=>p.matchesPlayed>0, sort: (a,b)=>b.consistency-a.consistency},
+                ];
+                return (
+                  <div style={{display:"flex",flexDirection:"column",gap:16}}>
+                    {categories.map(cat=>(
+                      <div key={cat.label} style={{background:"#0E1521",borderRadius:12,overflow:"hidden",border:`1px solid ${cat.color}33`}}>
+                        <div style={{padding:"12px 16px",background:cat.color+"11",borderBottom:`1px solid ${cat.color}33`}}>
+                          <span style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:16,color:cat.color,letterSpacing:1}}>{cat.label}</span>
+                        </div>
+                        {allStats.filter(cat.filter).sort(cat.sort).slice(0,5).map((p,i)=>(
+                          <div key={p.id} style={{display:"flex",alignItems:"center",padding:"10px 16px",borderBottom:"1px solid #1E2D4522"}}>
+                            <span style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:800,color:i===0?cat.color:"#4A5E78",minWidth:28}}>#{i+1}</span>
+                            <div style={{flex:1,marginLeft:8}}>
+                              <div style={{fontWeight:700,fontSize:14,color:"#E2EAF4"}}>{p.name}</div>
+                              <div style={{fontSize:11,color:p.teamColor}}>{p.teamName} • {p.matchesPlayed} matches</div>
+                            </div>
+                            <div style={{textAlign:"right"}}>
+                              <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:800,color:i===0?cat.color:"#E2EAF4"}}>
+                                {cat.label.includes("CONSISTENT") ? p.consistency+"%" : p.total+" pts"}
+                              </div>
+                              <div style={{fontSize:10,color:"#4A5E78"}}>avg {p.avg}/match</div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+
+                    {/* Biggest score ever */}
+                    {(() => {
+                      const best = getPlayerSeasonStats().reduce((max,p) => p.best > max.best ? p : max, {best:0});
+                      if(!best.best) return null;
+                      return (
+                        <div style={{background:"linear-gradient(135deg,#F5A62322,#FF8C0011)",border:"1px solid #F5A62366",borderRadius:12,padding:20,textAlign:"center"}}>
+                          <div style={{fontSize:11,color:"#F5A623",letterSpacing:2,fontWeight:700,marginBottom:4}}>🔥 BIGGEST SINGLE-MATCH SCORE</div>
+                          <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:48,fontWeight:800,color:"#F5A623"}}>{best.best}</div>
+                          <div style={{fontSize:16,fontWeight:700,color:"#E2EAF4"}}>{best.name}</div>
+                          <div style={{fontSize:12,color:"#4A5E78",marginTop:2}}>{best.teamName}</div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                );
+              })()}
+
+              {/* ── MVP ── */}
+              {statsPage==="mvp" && (() => {
+                const allStats = getPlayerSeasonStats();
+                const mvp = allStats[0];
+                if(!mvp) return <div style={{textAlign:"center",padding:40,color:"#4A5E78"}}>No data yet</div>;
+                return (
+                  <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                    <div style={{background:"linear-gradient(135deg,#F5A62333,#FF8C0011)",border:"2px solid #F5A623",borderRadius:16,padding:28,textAlign:"center"}}>
+                      <div style={{fontSize:11,color:"#F5A623",letterSpacing:3,fontWeight:700,marginBottom:12}}>⭐ MOST VALUABLE PLAYER</div>
+                      <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:36,fontWeight:800,color:"#F5A623"}}>{mvp.name}</div>
+                      <div style={{fontSize:14,color:mvp.teamColor,marginTop:4}}>{mvp.teamName} • {mvp.iplTeam}</div>
+                      <div style={{display:"flex",justifyContent:"center",gap:24,marginTop:20}}>
+                        {[{label:"TOTAL PTS",val:mvp.total},{label:"AVG/MATCH",val:mvp.avg},{label:"BEST",val:mvp.best},{label:"CONSISTENCY",val:mvp.consistency+"%"}].map(s=>(
+                          <div key={s.label} style={{textAlign:"center"}}>
+                            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:28,fontWeight:800,color:"#E2EAF4"}}>{s.val}</div>
+                            <div style={{fontSize:10,color:"#4A5E78",letterSpacing:1}}>{s.label}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Top 10 overall */}
+                    <div style={{background:"#0E1521",borderRadius:12,overflow:"hidden"}}>
+                      <div style={{padding:"12px 16px",borderBottom:"1px solid #1E2D45",fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:15,color:"#F5A623",letterSpacing:1}}>OVERALL RANKINGS</div>
+                      {allStats.slice(0,10).map((p,i)=>(
+                        <div key={p.id} style={{display:"flex",alignItems:"center",padding:"10px 16px",borderBottom:"1px solid #1E2D4522",background:i===0?"#F5A62308":"transparent"}}>
+                          <span style={{fontFamily:"Rajdhani,sans-serif",fontSize:18,fontWeight:800,color:["#F5A623","#94A3B8","#CD7C2F"][i]||"#4A5E78",minWidth:28}}>#{i+1}</span>
+                          <div style={{flex:1,marginLeft:8}}>
+                            <div style={{fontWeight:700,fontSize:14,color:"#E2EAF4"}}>{p.name}</div>
+                            <div style={{fontSize:11,color:p.teamColor}}>{p.teamName}</div>
+                          </div>
+                          <div style={{display:"flex",gap:16,textAlign:"right"}}>
+                            <div><div style={{fontFamily:"Rajdhani,sans-serif",fontSize:18,fontWeight:700,color:"#E2EAF4"}}>{p.total}</div><div style={{fontSize:9,color:"#4A5E78"}}>PTS</div></div>
+                            <div><div style={{fontFamily:"Rajdhani,sans-serif",fontSize:18,fontWeight:700,color:"#94A3B8"}}>{p.consistency}%</div><div style={{fontSize:9,color:"#4A5E78"}}>CONSIST.</div></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* ── HEAD TO HEAD ── */}
+              {statsPage==="h2h" && (
+                <div>
+                  <div style={{display:"flex",gap:10,marginBottom:20,alignItems:"center",flexWrap:"wrap"}}>
+                    <select value={h2hTeam1} onChange={e=>setH2hTeam1(e.target.value)} style={{flex:1,minWidth:120,background:"#0E1521",border:"1px solid #1E2D45",borderRadius:8,padding:"10px 14px",color:"#E2EAF4",fontSize:14,fontFamily:"Barlow Condensed"}}>
+                      <option value="">Team 1</option>
+                      {teams.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
+                    </select>
+                    <span style={{color:"#F5A623",fontWeight:800,fontFamily:"Rajdhani,sans-serif",fontSize:20}}>VS</span>
+                    <select value={h2hTeam2} onChange={e=>setH2hTeam2(e.target.value)} style={{flex:1,minWidth:120,background:"#0E1521",border:"1px solid #1E2D45",borderRadius:8,padding:"10px 14px",color:"#E2EAF4",fontSize:14,fontFamily:"Barlow Condensed"}}>
+                      <option value="">Team 2</option>
+                      {teams.filter(t=>t.id!==h2hTeam1).map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
+                    </select>
+                  </div>
+                  {h2hTeam1&&h2hTeam2&&(()=>{
+                    const t1=teams.find(t=>t.id===h2hTeam1), t2=teams.find(t=>t.id===h2hTeam2);
+                    const h2h=getH2H(h2hTeam1,h2hTeam2);
+                    const t1wins=h2h.filter(m=>m.winner===h2hTeam1).length;
+                    const t2wins=h2h.filter(m=>m.winner===h2hTeam2).length;
+                    const t1total=h2h.reduce((s,m)=>s+m.t1pts,0);
+                    const t2total=h2h.reduce((s,m)=>s+m.t2pts,0);
+                    if(h2h.length===0) return <div style={{textAlign:"center",padding:40,color:"#4A5E78"}}>No completed matches yet</div>;
+                    return (
+                      <div style={{display:"flex",flexDirection:"column",gap:12}}>
+                        {/* Summary */}
+                        <div style={{background:"#0E1521",borderRadius:12,padding:20,display:"flex",alignItems:"center",gap:16}}>
+                          <div style={{flex:1,textAlign:"center"}}>
+                            <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:800,fontSize:22,color:t1.color}}>{t1.name}</div>
+                            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:48,fontWeight:800,color:t1wins>t2wins?t1.color:"#4A5E78"}}>{t1wins}</div>
+                            <div style={{fontSize:11,color:"#4A5E78",letterSpacing:1}}>WINS</div>
+                            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,color:"#E2EAF4",marginTop:4}}>{t1total} pts</div>
+                          </div>
+                          <div style={{fontSize:24,color:"#4A5E78",fontWeight:800}}>:</div>
+                          <div style={{flex:1,textAlign:"center"}}>
+                            <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:800,fontSize:22,color:t2.color}}>{t2.name}</div>
+                            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:48,fontWeight:800,color:t2wins>t1wins?t2.color:"#4A5E78"}}>{t2wins}</div>
+                            <div style={{fontSize:11,color:"#4A5E78",letterSpacing:1}}>WINS</div>
+                            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,color:"#E2EAF4",marginTop:4}}>{t2total} pts</div>
+                          </div>
+                        </div>
+                        {/* Per match */}
+                        {h2h.map(({match,t1pts,t2pts,winner})=>(
+                          <div key={match.id} style={{background:"#0E1521",borderRadius:10,padding:"12px 16px",display:"flex",alignItems:"center",gap:12}}>
+                            <div style={{flex:1}}>
+                              <div style={{fontSize:12,color:"#4A5E78"}}>M{match.matchNum} • {match.date}</div>
+                              <div style={{fontSize:13,color:"#E2EAF4",fontWeight:600,marginTop:2}}>{match.team1} vs {match.team2}</div>
+                            </div>
+                            <div style={{display:"flex",gap:16,alignItems:"center"}}>
+                              <div style={{textAlign:"center"}}>
+                                <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,fontWeight:800,color:winner===h2hTeam1?t1.color:"#E2EAF4"}}>{t1pts}</div>
+                                <div style={{fontSize:9,color:"#4A5E78"}}>{t1.name.split(' ')[0]}</div>
+                              </div>
+                              <span style={{color:"#4A5E78",fontWeight:700}}>-</span>
+                              <div style={{textAlign:"center"}}>
+                                <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,fontWeight:800,color:winner===h2hTeam2?t2.color:"#E2EAF4"}}>{t2pts}</div>
+                                <div style={{fontSize:9,color:"#4A5E78"}}>{t2.name.split(' ')[0]}</div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+                  {(!h2hTeam1||!h2hTeam2)&&<div style={{textAlign:"center",padding:40,color:"#4A5E78",fontSize:14}}>Select two teams to compare</div>}
+                </div>
+              )}
+
+              {/* ── PLAYER FORM CHART ── */}
+              {statsPage==="form" && (() => {
+                const allStats = getPlayerSeasonStats().filter(p=>p.matchesPlayed>0);
+                return (
+                  <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                    <div style={{fontSize:13,color:"#4A5E78",marginBottom:4}}>Last 5 match points for each player. Taller bar = better performance.</div>
+                    {allStats.slice(0,20).map(p=>{
+                      const max = Math.max(...p.last5, 1);
+                      return (
+                        <div key={p.id} style={{background:"#0E1521",borderRadius:10,padding:"12px 14px"}}>
+                          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                            <div>
+                              <span style={{fontWeight:700,fontSize:14,color:"#E2EAF4"}}>{p.name}</span>
+                              <span style={{fontSize:11,color:p.teamColor,marginLeft:8}}>{p.teamName}</span>
+                            </div>
+                            <span style={{fontFamily:"Rajdhani,sans-serif",fontWeight:800,fontSize:18,color:"#F5A623"}}>{p.total} pts</span>
+                          </div>
+                          {p.last5.length>0 ? (
+                            <div style={{display:"flex",alignItems:"flex-end",gap:4,height:40}}>
+                              {p.last5.map((pts,i)=>(
+                                <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+                                  <div style={{fontSize:9,color:"#4A5E78"}}>{pts}</div>
+                                  <div style={{width:"100%",background:pts>0?p.teamColor:"#1E2D45",borderRadius:"3px 3px 0 0",height:Math.max(4,Math.round((pts/max)*30))+"px",transition:"height .3s"}} />
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div style={{fontSize:12,color:"#4A5E78"}}>No match data yet</div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+
+              {/* ── RESULTS (moved here) ── */}
+              {statsPage==="results" && (
+
               <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2,marginBottom:24}}>MATCH RESULTS</h2>
 
               {matches.filter(m=>m.status==="completed"&&Object.keys(points).some(pid=>points[pid][m.id])).length===0 ? (
@@ -2094,11 +2465,27 @@ export default function App() {
                 </div>
               )}
             </div>
+
+              )}
+
+            </div>
           )}
 
           {page==="leaderboard"&&(
             <div className="fade-in">
-              <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2,marginBottom:24}}>LEADERBOARD</h2>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24,flexWrap:"wrap",gap:10}}>
+                <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2}}>LEADERBOARD</h2>
+<div style={{display:"flex",gap:8}}>
+                <button onClick={shareLeaderboard}
+                  style={{background:"#25D36622",border:"1px solid #25D36644",color:"#25D366",borderRadius:8,padding:"8px 14px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,display:"flex",alignItems:"center",gap:6}}>
+                  <span>📲</span> WHATSAPP
+                </button>
+                <button onClick={exportToPDF}
+                  style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:"#FF3D5A",borderRadius:8,padding:"8px 14px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,display:"flex",alignItems:"center",gap:6}}>
+                  <span>📄</span> PDF
+                </button>
+                </div>
+              </div>
               {leaderboard.length===0?(
                 <Card sx={{padding:60,textAlign:"center"}}><div style={{fontSize:56}}>🏆</div><div style={{color:"#4A5E78",marginTop:16}}>Set up your league first</div></Card>
               ):(
