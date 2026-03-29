@@ -1539,6 +1539,51 @@ function TeamClaimScreen({ pitch, user, teams, onClaimed, onBack }) {
 }
 
 
+// ── PROPOSE RULES FORM ───────────────────────────────────────────────────────
+function ProposeRulesForm({ teams, eligibleVoters, onPropose }) {
+  const [open, setOpen] = useState(false);
+  const [transferDay, setTransferDay] = useState("Sunday");
+  const [transferTime, setTransferTime] = useState("11:00 AM");
+  const [snatchStart, setSnatchStart] = useState("Saturday 12:00 AM");
+  const [snatchEnd, setSnatchEnd] = useState("Saturday 12:00 PM");
+  const [snatchReturn, setSnatchReturn] = useState("Friday 11:58 PM");
+
+  const days = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+  const times = ["12:00 AM","1:00 AM","2:00 AM","3:00 AM","6:00 AM","9:00 AM","10:00 AM","11:00 AM","12:00 PM","1:00 PM","3:00 PM","6:00 PM","9:00 PM","10:00 PM","11:00 PM","11:58 PM"];
+
+  if (!open) return (
+    <button onClick={()=>setOpen(true)} style={{width:"100%",background:"#F5A62322",border:"1px solid #F5A62344",borderRadius:12,padding:14,color:"#F5A623",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:15,cursor:"pointer"}}>
+      + PROPOSE RULE CHANGE
+    </button>
+  );
+
+  const sel = (label, val, setVal, opts) => (
+    <div style={{marginBottom:12}}>
+      <div style={{fontSize:11,color:"#4A5E78",marginBottom:4,letterSpacing:1}}>{label}</div>
+      <select value={val} onChange={e=>setVal(e.target.value)} style={{width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"8px 12px",color:"#E2EAF4",fontSize:14,fontFamily:"Barlow Condensed,sans-serif",cursor:"pointer",outline:"none"}}>
+        {opts.map(o=><option key={o} value={o}>{o}</option>)}
+      </select>
+    </div>
+  );
+
+  return (
+    <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #F5A62344",padding:20}}>
+      <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:18,fontWeight:700,color:"#F5A623",letterSpacing:2,marginBottom:4}}>PROPOSE RULE CHANGE</div>
+      <div style={{fontSize:11,color:"#4A5E78",marginBottom:16}}>All {eligibleVoters.length} claimed teams must approve for changes to take effect.</div>
+      {sel("Transfer Window Start Day", transferDay, setTransferDay, days)}
+      {sel("Transfer Window End Time", transferTime, setTransferTime, times)}
+      {sel("Snatch Window Start", snatchStart, setSnatchStart, days.map(d=>d+" 12:00 AM").concat(days.map(d=>d+" 12:00 PM")))}
+      {sel("Snatch Window End", snatchEnd, setSnatchEnd, days.map(d=>d+" 12:00 PM").concat(days.map(d=>d+" 6:00 PM")))}
+      {sel("Snatch Return Time", snatchReturn, setSnatchReturn, days.map(d=>d+" 11:58 PM").concat(days.map(d=>d+" 11:00 PM")))}
+      <div style={{display:"flex",gap:8,marginTop:4}}>
+        <button onClick={()=>setOpen(false)} style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:10,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
+        <button onClick={()=>{onPropose({"Transfer Start":transferDay,"Transfer End":transferTime,"Snatch Window":snatchStart+" → "+snatchEnd,"Snatch Return":snatchReturn});setOpen(false);}} style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:10,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:14,cursor:"pointer"}}>SUBMIT FOR VOTE</button>
+      </div>
+    </div>
+  );
+}
+
+
 function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
   const [page, setPage] = useState("setup");
   const [teams, setTeams] = useState([]);
@@ -1559,7 +1604,11 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
   const [appReady, setAppReady] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [teamIdentity, setTeamIdentity] = useState({});
-  const [snatchPinModal, setSnatchPinModal] = useState(null); // {pid, fromTeamId}
+  const [snatchPinModal, setSnatchPinModal] = useState(null);
+  const [ruleProposal, setRuleProposal] = useState(null); // loaded from supabase
+  const [showRulesPanel, setShowRulesPanel] = useState(false);
+  const [votePin, setVotePin] = useState('');
+  const [votePinErr, setVotePinErr] = useState(''); // {pid, fromTeamId}
   const [snatchPin, setSnatchPin] = useState('');
   const [snatchPinErr, setSnatchPinErr] = useState('');
   const [snatchWindowStatus, setSnatchWindowStatus] = useState(getSnatchWindowStatus());
@@ -1598,7 +1647,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
   useEffect(() => {
     (async () => {
       try {
-        const keys = ["teams","players","assignments","matches","captains","points","page","tnames","numteams","pwhash","recoveryHash","teamLogos","safePlayers","unsoldPool","transfers","snatch","ownershipLog","teamIdentity"];
+        const keys = ["teams","players","assignments","matches","captains","points","page","tnames","numteams","pwhash","recoveryHash","teamLogos","safePlayers","unsoldPool","transfers","snatch","ownershipLog","teamIdentity","ruleProposal"];
         const results = await Promise.all(keys.map(k => storeGet(k)));
         const [t,p,a,m,c,pts,pg,tn,nt,ph,rh,tl,sp,up,tr,sn,ol,ti] = results;
         if(t) setTeams(t);
@@ -1619,6 +1668,8 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
         if(sn && typeof sn === 'object') setSnatch(sn);
         if(ol && typeof ol === 'object') setOwnershipLog(ol);
         if(ti && typeof ti === 'object') setTeamIdentity(ti);
+        const rp = results[keys.indexOf("ruleProposal")];
+        if(rp && typeof rp === 'object') setRuleProposal(rp);
       } catch(e) {
         console.error("Load error:", e.message);
       } finally {
@@ -2398,6 +2449,60 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
     return () => clearInterval(t);
   }, [snatch.active]);
 
+
+  const updRuleProposal = async (val) => {
+    setRuleProposal(val);
+    await storeSet("ruleProposal", val);
+  };
+
+  // Teams with claimed IDs = eligible voters
+  const eligibleVoters = teams.filter(t => teamIdentity[t.id]?.claimedBy);
+
+  const proposeRuleChange = async (changes) => {
+    const proposal = {
+      id: Date.now().toString(),
+      proposedBy: myTeam?.id || 'admin',
+      proposedAt: new Date().toISOString(),
+      changes, // { transferDay, transferTime, snatchStart, snatchEnd, snatchReturn }
+      votes: {}, // { teamId: 'approved' | 'rejected' }
+      status: 'pending'
+    };
+    await updRuleProposal(proposal);
+  };
+
+  const voteOnProposal = async (approve) => {
+    if (!myTeam || !ruleProposal) return;
+    const ti = teamIdentity[myTeam.id];
+    if (!ti?.pinHash) { setVotePinErr("No PIN set for your team"); return; }
+    const h = await hashPw(votePin);
+    if (h !== ti.pinHash) { setVotePinErr("Wrong PIN"); setVotePin(''); return; }
+
+    const newVotes = { ...ruleProposal.votes, [myTeam.id]: approve ? 'approved' : 'rejected' };
+    const allApproved = eligibleVoters.every(t => newVotes[t.id] === 'approved');
+    const anyRejected = Object.values(newVotes).includes('rejected');
+
+    let newProposal = { ...ruleProposal, votes: newVotes };
+
+    if (anyRejected) {
+      newProposal.status = 'rejected';
+      await updRuleProposal(newProposal);
+      alert("Rule change rejected.");
+    } else if (allApproved) {
+      newProposal.status = 'approved';
+      await updRuleProposal(newProposal);
+      // Apply the rule changes
+      alert("All teams approved! Rules updated.");
+    } else {
+      await updRuleProposal(newProposal);
+    }
+    setVotePin(''); setVotePinErr('');
+  };
+
+  // Check if current user has pending vote
+  const pendingVote = ruleProposal?.status === 'pending' && myTeam &&
+    eligibleVoters.some(t => t.id === myTeam.id) &&
+    !ruleProposal.votes[myTeam.id];
+
   const navItems=[
     {id:"draft",label:"Draft",icon:"📋",disabled:teams.length===0},
     {id:"matches",label:"Matches",icon:"🏏",disabled:players.length===0},
@@ -2451,10 +2556,11 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
         {/* TOP BAR */}
         <div style={{background:"linear-gradient(180deg,#0E1521 0%,#080C14 100%)",borderBottom:"1px solid #1E2D45",padding:"10px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:50}}>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <button onClick={()=>setDrawerOpen(true)} style={{background:"transparent",border:"none",cursor:"pointer",padding:"6px 4px",display:"flex",flexDirection:"column",justifyContent:"center",gap:4,flexShrink:0}}>
+            <button onClick={()=>setDrawerOpen(true)} style={{background:"transparent",border:"none",cursor:"pointer",padding:"6px 4px",display:"flex",flexDirection:"column",justifyContent:"center",gap:4,flexShrink:0,position:"relative"}}>
               <span style={{display:"block",width:20,height:2,background:"#E2EAF4",borderRadius:2}} />
               <span style={{display:"block",width:20,height:2,background:"#E2EAF4",borderRadius:2}} />
               <span style={{display:"block",width:20,height:2,background:"#E2EAF4",borderRadius:2}} />
+              {pendingVote && <span style={{position:"absolute",top:2,right:2,width:8,height:8,background:"#FF3D5A",borderRadius:"50%"}} />}
             </button>
             <div style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={onLeave} title="Back to pitches">
             <img src="/logo.png" alt="Teekha Bouncer" style={{height:36,width:36,objectFit:"contain",borderRadius:6}} />
@@ -3273,6 +3379,87 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
           )}
         </div>
 
+        {/* LEAGUE RULES PANEL */}
+        {showRulesPanel && (
+          <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",zIndex:200,overflowY:"auto",padding:24,fontFamily:"Barlow Condensed,sans-serif"}}>
+            <div style={{maxWidth:500,margin:"0 auto"}}>
+              <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:24}}>
+                <button onClick={()=>setShowRulesPanel(false)} style={{background:"transparent",border:"none",color:"#4A5E78",fontSize:22,cursor:"pointer",padding:"0 4px"}}>←</button>
+                <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:26,fontWeight:700,color:"#F5A623",letterSpacing:2}}>LEAGUE RULES</div>
+              </div>
+
+              {/* Current Rules */}
+              <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #1E2D45",padding:20,marginBottom:16}}>
+                <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginBottom:12}}>CURRENT RULES</div>
+                {[
+                  ["Transfer Window", "Sunday → Monday 11:00 AM IST"],
+                  ["Snatch Window", "Saturday 12:00 AM → 12:00 PM IST"],
+                  ["Snatch Return", "Friday 11:58 PM IST"],
+                ].map(([label, val]) => (
+                  <div key={label} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid #1E2D4533"}}>
+                    <div style={{fontSize:13,color:"#4A5E78"}}>{label}</div>
+                    <div style={{fontSize:13,color:"#E2EAF4",fontWeight:700}}>{val}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Pending proposal */}
+              {ruleProposal && ruleProposal.status === "pending" && (
+                <div style={{background:"#F5A62311",borderRadius:12,border:"1px solid #F5A62344",padding:20,marginBottom:16}}>
+                  <div style={{fontSize:11,color:"#F5A623",letterSpacing:2,fontWeight:700,marginBottom:4}}>⏳ PENDING PROPOSAL</div>
+                  <div style={{fontSize:11,color:"#4A5E78",marginBottom:12}}>Proposed by {teams.find(t=>t.id===ruleProposal.proposedBy)?.name || "Admin"} • {new Date(ruleProposal.proposedAt).toLocaleDateString()}</div>
+                  {Object.entries(ruleProposal.changes).map(([key, val]) => (
+                    <div key={key} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid #1E2D4533"}}>
+                      <div style={{fontSize:12,color:"#4A5E78"}}>{key}</div>
+                      <div style={{fontSize:12,color:"#F5A623",fontWeight:700}}>{val}</div>
+                    </div>
+                  ))}
+                  <div style={{marginTop:12}}>
+                    <div style={{fontSize:11,color:"#4A5E78",marginBottom:8}}>VOTES ({Object.keys(ruleProposal.votes).length}/{eligibleVoters.length}):</div>
+                    {eligibleVoters.map(t => (
+                      <div key={t.id} style={{display:"flex",justifyContent:"space-between",padding:"4px 0"}}>
+                        <div style={{fontSize:12,color:t.color}}>{t.name}</div>
+                        <div style={{fontSize:12,fontWeight:700,color:ruleProposal.votes[t.id]==="approved"?"#2ECC71":ruleProposal.votes[t.id]==="rejected"?"#FF3D5A":"#4A5E78"}}>{ruleProposal.votes[t.id]||"Pending"}</div>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Vote section for current user */}
+                  {myTeam && eligibleVoters.some(t=>t.id===myTeam.id) && !ruleProposal.votes[myTeam.id] && (
+                    <div style={{marginTop:16,paddingTop:16,borderTop:"1px solid #1E2D45"}}>
+                      <div style={{fontSize:12,color:"#E2EAF4",marginBottom:8}}>Cast your vote as <span style={{color:myTeam.color,fontWeight:700}}>{myTeam.name}</span></div>
+                      <input type="password" value={votePin} onChange={e=>{setVotePin(e.target.value);setVotePinErr('');}} placeholder="Enter your team PIN" maxLength={6}
+                        style={{width:"100%",background:"#080C14",border:"1px solid "+(votePinErr?"#FF3D5A":"#1E2D45"),borderRadius:8,padding:"10px 14px",color:"#E2EAF4",fontSize:18,letterSpacing:4,textAlign:"center",fontFamily:"Rajdhani,sans-serif",outline:"none",marginBottom:votePinErr?6:12,boxSizing:"border-box"}} />
+                      {votePinErr && <div style={{color:"#FF3D5A",fontSize:12,marginBottom:10,textAlign:"center"}}>{votePinErr}</div>}
+                      <div style={{display:"flex",gap:8}}>
+                        <button onClick={()=>voteOnProposal(false)} style={{flex:1,background:"#FF3D5A22",border:"1px solid #FF3D5A44",borderRadius:8,padding:10,color:"#FF3D5A",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>✕ REJECT</button>
+                        <button onClick={()=>voteOnProposal(true)} style={{flex:1,background:"#2ECC7122",border:"1px solid #2ECC7144",borderRadius:8,padding:10,color:"#2ECC71",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>✓ APPROVE</button>
+                      </div>
+                    </div>
+                  )}
+                  {/* Admin cancel proposal */}
+                  {unlocked && (
+                    <button onClick={()=>updRuleProposal(null)} style={{width:"100%",marginTop:10,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:8,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:12,cursor:"pointer"}}>CANCEL PROPOSAL (ADMIN)</button>
+                  )}
+                </div>
+              )}
+
+              {/* Last approved/rejected */}
+              {ruleProposal && ruleProposal.status !== "pending" && (
+                <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #1E2D45",padding:16,marginBottom:16}}>
+                  <div style={{fontSize:11,color:ruleProposal.status==="approved"?"#2ECC71":"#FF3D5A",letterSpacing:2,fontWeight:700}}>
+                    {ruleProposal.status==="approved"?"✓ LAST PROPOSAL APPROVED":"✕ LAST PROPOSAL REJECTED"}
+                  </div>
+                </div>
+              )}
+
+              {/* Propose new change — admin only */}
+              {unlocked && (!ruleProposal || ruleProposal.status !== "pending") && (
+                <ProposeRulesForm teams={teams} eligibleVoters={eligibleVoters} onPropose={proposeRuleChange} />
+              )}
+            </div>
+          </div>
+        )}
+
         {/* SNATCH PIN MODAL */}
         {snatchPinModal && (
           <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.96)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,padding:24}}>
@@ -3362,6 +3549,26 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
                   </div>
                 )}
               </div>
+
+              {/* Pending vote notification */}
+              {pendingVote && (
+                <div style={{margin:"0 8px 8px",background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:10,padding:"12px 14px"}}>
+                  <div style={{fontSize:11,color:"#FF3D5A",fontWeight:700,letterSpacing:1,marginBottom:4}}>⚡ VOTE NEEDED</div>
+                  <div style={{fontSize:11,color:"#E2EAF4",marginBottom:8}}>A rule change has been proposed and needs your vote.</div>
+                  <button onClick={()=>{setShowRulesPanel(true);setDrawerOpen(false);}} style={{width:"100%",background:"#FF3D5A22",border:"1px solid #FF3D5A",borderRadius:6,padding:"7px",color:"#FF3D5A",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:12,cursor:"pointer"}}>VIEW & VOTE →</button>
+                </div>
+              )}
+
+              {/* League Rules button */}
+              <button onClick={()=>{setShowRulesPanel(true);setDrawerOpen(false);}} style={{width:"100%",background:"transparent",border:"none",padding:"10px 14px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12}}>
+                <span style={{fontSize:20}}>📋</span>
+                <div style={{flex:1}}>
+                  <div style={{fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,color:"#E2EAF4"}}>League Rules</div>
+                  <div style={{fontSize:11,color:"#4A5E78"}}>Transfer & snatch timing</div>
+                </div>
+                {pendingVote && <span style={{width:8,height:8,background:"#FF3D5A",borderRadius:"50%",flexShrink:0}} />}
+              </button>
+
               <div style={{padding:"16px",borderTop:"1px solid #1E2D45"}}>
                 <button onClick={onLogout} style={{width:"100%",background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:8,padding:"10px",color:"#FF3D5A",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>LOGOUT</button>
               </div>
