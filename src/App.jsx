@@ -2534,7 +2534,18 @@ function App({ pitch, onLeave, user, onLogout }) {
 
           {page==="leaderboard"&&(
             <div className="fade-in">
-              <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2,marginBottom:24}}>LEADERBOARD</h2>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,flexWrap:"wrap",gap:8}}>
+                <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2}}>LEADERBOARD</h2>
+                {lbTab==="board" && <button onClick={shareLeaderboard} style={{background:"#25D36622",border:"1px solid #25D36644",color:"#25D366",borderRadius:8,padding:"8px 14px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13}}>📲 SHARE</button>}
+              </div>
+              <div style={{display:"flex",background:"#0E1521",borderRadius:10,padding:4,gap:4,marginBottom:20}}>
+                {[{id:"board",label:"🏆 Board"},{id:"form",label:"📈 Form"}].map(t => (
+                  <button key={t.id} onClick={() => setLbTab(t.id)} style={{flex:1,padding:"8px",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,background:lbTab===t.id?"#F5A623":"transparent",color:lbTab===t.id?"#080C14":"#4A5E78"}}>{t.label}</button>
+                ))}
+              </div>
+              {lbTab==="form" ? (
+                <FormChart players={players} assignments={assignments} points={points} teams={teams} />
+              ) : (
               {leaderboard.length===0?(
                 <Card sx={{padding:60,textAlign:"center"}}><div style={{fontSize:56}}>🏆</div><div style={{color:"#4A5E78",marginTop:16}}>Set up your league first</div></Card>
               ):(
@@ -2586,7 +2597,7 @@ function App({ pitch, onLeave, user, onLogout }) {
                   })}
                 </>
               )}
-              </div>}
+            </div>
           )}
         </div>
       </div>
