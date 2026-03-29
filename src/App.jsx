@@ -890,7 +890,7 @@ function SplashScreen({ onLogin }) {
         </button>
       </div>
 
-      <div style={{marginTop:32,fontSize:11,color:"#2D3E52",letterSpacing:2}}>POWERED BY CRICBUZZ</div>
+
     </div>
   );
 
