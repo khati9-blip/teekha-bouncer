@@ -811,6 +811,11 @@ function PitchHome({ onEnter }) {
   const [enterErr, setEnterErr] = useState("");
   const [settingPasswordFor, setSettingPasswordFor] = useState(null);
   const [newPitchPw, setNewPitchPw] = useState("");
+  const [forgotMode, setForgotMode] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotStep, setForgotStep] = useState('email'); // email | code
+  const [forgotCode, setForgotCode] = useState("");
+  const [forgotSending, setForgotSending] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -865,6 +870,43 @@ function PitchHome({ onEnter }) {
       setEnterErr("Wrong password");
       setEnterPw("");
     }
+  };
+
+  const sendPitchResetCode = async () => {
+    if (!forgotEmail.trim()) { setEnterErr("Enter your email"); return; }
+    setForgotSending(true); setEnterErr("");
+    try {
+      const res = await fetch("/api/reset-password", {
+        method: "POST", headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({ email: forgotEmail.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed");
+      setForgotStep('code'); setForgotCode("");
+    } catch(e) { setEnterErr("❌ " + e.message); }
+    setForgotSending(false);
+  };
+
+  const verifyPitchResetCode = async () => {
+    if (!forgotCode.trim()) { setEnterErr("Enter the code"); return; }
+    try {
+      const res = await fetch("/api/reset-password", {
+        method: "POST", headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({ verifyCode: forgotCode.trim() }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        const newPw = prompt("Code verified! Enter your NEW pitch password:");
+        if (!newPw) return;
+        const h = await hashPw(newPw);
+        const updated = pitches.map(p => p.id === enterPitchId ? {...p, hash: h} : p);
+        await sbSet("pitches", updated);
+        setPitches(updated);
+        setForgotMode(false); setForgotStep('email'); setForgotEmail(""); setForgotCode("");
+        setEnterPitchId(null);
+        alert("Password reset! Please enter your new password.");
+      } else { setEnterErr("❌ Wrong code. Try again."); setForgotCode(""); }
+    } catch(e) { setEnterErr("❌ " + e.message); }
   };
 
   const setFirstPassword = async () => {
@@ -980,16 +1022,48 @@ function PitchHome({ onEnter }) {
             <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,fontWeight:700,color:"#F5A623",textAlign:"center",letterSpacing:2,marginBottom:4}}>
               {pitches.find(p=>p.id===enterPitchId)?.name}
             </div>
-            <div style={{fontSize:13,color:"#4A5E78",textAlign:"center",marginBottom:20}}>Enter pitch password to continue</div>
-            <input type="password" value={enterPw} onChange={e=>{setEnterPw(e.target.value);setEnterErr("");}} onKeyDown={e=>e.key==="Enter"&&submitEnter()} placeholder="Pitch password..." autoFocus
-              style={{width:"100%",background:"#080C14",border:"1px solid " + (enterErr?"#FF3D5A":"#1E2D45"),borderRadius:8,padding:"12px 16px",color:"#E2EAF4",fontSize:16,fontFamily:"Barlow Condensed,sans-serif",outline:"none",marginBottom:enterErr?8:20,boxSizing:"border-box"}} />
-            {enterErr && <div style={{color:"#FF3D5A",fontSize:13,marginBottom:16,textAlign:"center"}}>{enterErr}</div>}
-            <div style={{display:"flex",gap:10}}>
-              <button onClick={()=>{setEnterPitchId(null);setEnterPw("");setEnterErr("");}}
-                style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:11,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
-              <button onClick={submitEnter}
-                style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:11,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>ENTER PITCH</button>
-            </div>
+            {!forgotMode ? <>
+              <div style={{fontSize:13,color:"#4A5E78",textAlign:"center",marginBottom:20}}>Enter pitch password to continue</div>
+              <input type="password" value={enterPw} onChange={e=>{setEnterPw(e.target.value);setEnterErr("");}} onKeyDown={e=>e.key==="Enter"&&submitEnter()} placeholder="Pitch password..." autoFocus
+                style={{width:"100%",background:"#080C14",border:"1px solid "+(enterErr?"#FF3D5A":"#1E2D45"),borderRadius:8,padding:"12px 16px",color:"#E2EAF4",fontSize:16,fontFamily:"Barlow Condensed,sans-serif",outline:"none",marginBottom:enterErr?8:20,boxSizing:"border-box"}} />
+              {enterErr && <div style={{color:"#FF3D5A",fontSize:13,marginBottom:16,textAlign:"center"}}>{enterErr}</div>}
+              <div style={{display:"flex",gap:10}}>
+                <button onClick={()=>{setEnterPitchId(null);setEnterPw("");setEnterErr("");}}
+                  style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:11,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
+                <button onClick={submitEnter}
+                  style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:11,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>ENTER PITCH</button>
+              </div>
+              <div style={{textAlign:"center",marginTop:14}}>
+                <button onClick={()=>{setForgotMode(true);setForgotStep('email');setForgotEmail("");setForgotCode("");setEnterErr("");}}
+                  style={{background:"none",border:"none",color:"#FF3D5A",fontSize:12,cursor:"pointer",textDecoration:"underline"}}>Forgot pitch password?</button>
+              </div>
+            </> : <>
+              {forgotStep==='email' ? <>
+                <div style={{fontSize:13,color:"#4A5E78",textAlign:"center",marginBottom:20}}>Enter the admin email to receive a reset code</div>
+                <input type="email" value={forgotEmail} onChange={e=>{setForgotEmail(e.target.value);setEnterErr("");}} onKeyDown={e=>e.key==="Enter"&&sendPitchResetCode()} placeholder="Admin email..." autoFocus
+                  style={{width:"100%",background:"#080C14",border:"1px solid "+(enterErr?"#FF3D5A":"#1E2D45"),borderRadius:8,padding:"12px 16px",color:"#E2EAF4",fontSize:16,fontFamily:"Barlow Condensed,sans-serif",outline:"none",marginBottom:enterErr?8:20,boxSizing:"border-box"}} />
+                {enterErr && <div style={{color:"#FF3D5A",fontSize:13,marginBottom:16,textAlign:"center"}}>{enterErr}</div>}
+                <div style={{display:"flex",gap:10}}>
+                  <button onClick={()=>{setForgotMode(false);setEnterErr("");}}
+                    style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:11,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>BACK</button>
+                  <button onClick={sendPitchResetCode} disabled={forgotSending}
+                    style={{flex:2,background:"linear-gradient(135deg,#4F8EF7,#1a5fb4)",border:"none",borderRadius:8,padding:11,color:"#fff",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:forgotSending?"not-allowed":"pointer",opacity:forgotSending?0.6:1}}>
+                    {forgotSending?"SENDING...":"SEND CODE"}
+                  </button>
+                </div>
+              </> : <>
+                <div style={{fontSize:13,color:"#2ECC71",textAlign:"center",marginBottom:20}}>Code sent! Check your email inbox.</div>
+                <input type="text" value={forgotCode} onChange={e=>{setForgotCode(e.target.value);setEnterErr("");}} onKeyDown={e=>e.key==="Enter"&&verifyPitchResetCode()} placeholder="Enter reset code..." autoFocus
+                  style={{width:"100%",background:"#080C14",border:"1px solid "+(enterErr?"#FF3D5A":"#1E2D45"),borderRadius:8,padding:"12px 16px",color:"#E2EAF4",fontSize:16,fontFamily:"Barlow Condensed,sans-serif",outline:"none",marginBottom:enterErr?8:20,boxSizing:"border-box",letterSpacing:4,textAlign:"center"}} />
+                {enterErr && <div style={{color:"#FF3D5A",fontSize:13,marginBottom:16,textAlign:"center"}}>{enterErr}</div>}
+                <div style={{display:"flex",gap:10}}>
+                  <button onClick={()=>{setForgotStep('email');setEnterErr("");}}
+                    style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:11,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>BACK</button>
+                  <button onClick={verifyPitchResetCode}
+                    style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:11,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>VERIFY & RESET</button>
+                </div>
+              </>}
+            </>}
           </div>
         </div>
       )}
