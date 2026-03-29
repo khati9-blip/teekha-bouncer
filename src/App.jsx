@@ -1893,36 +1893,6 @@ function App({ pitch, onLeave, user, onLogout }) {
           }}
           onClose={()=>setSmartStatsMatch(null)}
         />}
-        {/* ── DRAWER MENU ── */}
-        {drawerOpen && (
-          <div style={{position:"fixed",inset:0,zIndex:200,display:"flex"}}>
-            <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.6)"}} onClick={()=>setDrawerOpen(false)} />
-            <div style={{position:"relative",width:260,background:"#0E1521",borderRight:"1px solid #1E2D45",display:"flex",flexDirection:"column",zIndex:1,height:"100%",overflowY:"auto"}}>
-              <div style={{padding:"20px 16px",borderBottom:"1px solid #1E2D45"}}>
-                <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:16,color:"#F5A623",letterSpacing:2}}>MENU</div>
-                <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>{pitch ? pitch.name : ""}</div>
-              </div>
-              <div style={{flex:1,padding:"12px 8px"}}>
-                {[
-                  {id:"form", icon:"📈", label:"Player Form Chart", desc:"Last 5 matches per player"},
-                ].map(item => (
-                  <button key={item.id} onClick={()=>{ setDrawerPage(item.id); setDrawerOpen(false); nav(item.id); }}
-                    style={{width:"100%",background:page===item.id?"#F5A62322":"transparent",border:"1px solid "+(page===item.id?"#F5A62366":"transparent"),borderRadius:10,padding:"12px 14px",marginBottom:6,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12}}>
-                    <span style={{fontSize:22}}>{item.icon}</span>
-                    <div>
-                      <div style={{fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,color:page===item.id?"#F5A623":"#E2EAF4"}}>{item.label}</div>
-                      <div style={{fontSize:11,color:"#4A5E78",marginTop:1}}>{item.desc}</div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-              <div style={{padding:"12px 16px",borderTop:"1px solid #1E2D45"}}>
-                <button onClick={onLogout} style={{width:"100%",background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:8,padding:"10px",color:"#FF3D5A",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>LOGOUT</button>
-              </div>
-            </div>
-          </div>
-        </div>
-        )}
 
         {showPwModal&&<PasswordModal storedHash={pwHash} recoveryHash={recoveryHash} onSuccess={handlePwSuccess} onClose={()=>{setShowPwModal(false);setPendingAction(null);}} />}
         {editPlayer&&<EditPlayerModal player={editPlayer} onSave={(updated)=>{const updated_players=players.map(p=>p.id===updated.id?updated:p);setPlayers(updated_players);storeSet("players",updated_players);setEditPlayer(null);}} onAdd={(np)=>{const all=[...players,np];setPlayers(all);storeSet("players",all);setEditPlayer(null);}} onClose={()=>setEditPlayer(null)} />}
@@ -1945,13 +1915,9 @@ function App({ pitch, onLeave, user, onLogout }) {
           </div>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <button onClick={()=>{if(unlocked)setUnlocked(false);else{setPendingAction(null);setShowPwModal(true);}}}
-              style={{background:unlocked?"#2ECC7122":"transparent",border:`1px solid ${unlocked?"#2ECC71":"#1E2D45"}`,color:unlocked?"#2ECC71":"#4A5E78",fontSize:13,borderRadius:6,padding:"6px 12px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>
-              {unlocked?"🔓 ON":"🔒 OFF"}
-            </button>
+            <button onClick={()=>{if(unlocked)setUnlocked(false);else{setPendingAction(null);setShowPwModal(true);}}} style={{background:unlocked?"#2ECC7122":"transparent",border:"1px solid "+(unlocked?"#2ECC71":"#1E2D45"),color:unlocked?"#2ECC71":"#4A5E78",fontSize:13,borderRadius:6,padding:"6px 12px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>{unlocked?"🔓 ON":"🔒 OFF"}</button>
 
-            <button onClick={()=>withPassword(()=>{if(!confirm("Reset ALL data? This cannot be undone!"))return;["teams","players","assignments","matches","captains","points","page","pwhash"].forEach(k=>storeDel(k));window.location.reload();})}
-              style={{background:"transparent",border:"1px solid #1E2D45",color:"#4A5E78",fontSize:13,borderRadius:6,padding:"6px 10px",cursor:"pointer"}}>⚙️</button>
+            <button onClick={()=>withPassword(()=>{if(!confirm("Reset ALL data? This cannot be undone!"))return;["teams","players","assignments","matches","captains","points","page","pwhash"].forEach(k=>storeDel(k));window.location.reload();})} style={{background:"transparent",border:"1px solid #1E2D45",color:"#4A5E78",fontSize:13,borderRadius:6,padding:"6px 10px",cursor:"pointer"}}>⚙️</button>
             <button onClick={onLogout}
               style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:"#FF3D5A",fontSize:11,borderRadius:6,padding:"6px 10px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,letterSpacing:0.5}}>LOGOUT</button>
           </div>
@@ -2644,6 +2610,32 @@ function App({ pitch, onLeave, user, onLogout }) {
             </div>
           )}
         </div>
+        {/* DRAWER MENU */}
+        {drawerOpen && (
+          <div style={{position:"fixed",inset:0,zIndex:200,display:"flex"}}>
+            <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.6)"}} onClick={()=>setDrawerOpen(false)} />
+            <div style={{position:"relative",width:260,background:"#0E1521",borderRight:"1px solid #1E2D45",display:"flex",flexDirection:"column",zIndex:1,height:"100%",overflowY:"auto"}}>
+              <div style={{padding:"20px 16px",borderBottom:"1px solid #1E2D45"}}>
+                <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:16,color:"#F5A623",letterSpacing:2}}>MENU</div>
+                <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>{pitch ? pitch.name : ""}</div>
+              </div>
+              <div style={{flex:1,padding:"12px 8px"}}>
+                <button onClick={()=>{ nav("form"); setDrawerOpen(false); }} style={{width:"100%",background:page==="form"?"#F5A62322":"transparent",border:"1px solid "+(page==="form"?"#F5A62366":"transparent"),borderRadius:10,padding:"12px 14px",marginBottom:6,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12}}>
+                  <span style={{fontSize:22}}>📈</span>
+                  <div>
+                    <div style={{fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,color:page==="form"?"#F5A623":"#E2EAF4"}}>Player Form Chart</div>
+                    <div style={{fontSize:11,color:"#4A5E78",marginTop:1}}>Last 5 matches per player</div>
+                  </div>
+                </button>
+              </div>
+              <div style={{padding:"12px 16px",borderTop:"1px solid #1E2D45"}}>
+                <button onClick={onLogout} style={{width:"100%",background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:8,padding:"10px",color:"#FF3D5A",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>LOGOUT</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        )}
+
       </div>
     </>
   );
