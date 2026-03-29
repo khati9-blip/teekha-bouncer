@@ -1557,7 +1557,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
       try {
         const keys = ["teams","players","assignments","matches","captains","points","page","tnames","numteams","pwhash","recoveryHash","teamLogos","safePlayers","unsoldPool","transfers","snatch","ownershipLog","teamIdentity"];
         const results = await Promise.all(keys.map(k => storeGet(k)));
-        const [t,p,a,m,c,pts,pg,tn,nt,ph,rh,tl,sp,up,tr,sn,ol] = results;
+        const [t,p,a,m,c,pts,pg,tn,nt,ph,rh,tl,sp,up,tr,sn,ol,ti] = results;
         if(t) setTeams(t);
         if(p) setPlayers(p);
         if(a) setAssignments(a);
@@ -1575,6 +1575,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
         if(tr && typeof tr === 'object') setTransfers(tr);
         if(sn && typeof sn === 'object') setSnatch(sn);
         if(ol && typeof ol === 'object') setOwnershipLog(ol);
+        if(ti && typeof ti === 'object') setTeamIdentity(ti);
       } catch(e) {
         console.error("Load error:", e.message);
       } finally {
