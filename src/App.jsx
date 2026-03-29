@@ -1241,7 +1241,6 @@ function App({ pitch, onLeave, user, onLogout }) {
   const [pwHash, setPwHash] = useState(null);
   const [recoveryHash, setRecoveryHash] = useState(null);
   const [appReady, setAppReady] = useState(false);
-  const [formFilter, setFormFilter] = useState('all');
   const [unlocked, setUnlocked] = useState(false);
   const isAdmin = user && pitch && (pitch.creatorEmail === user.email || !pitch.creatorEmail);
   const [showPwModal, setShowPwModal] = useState(false);
@@ -1845,17 +1844,6 @@ function App({ pitch, onLeave, user, onLogout }) {
     return [...active, ...historical, ...(snatchedIn?[snatchedIn]:[])].sort((a,b)=>b.total-a.total);
   };
 
-  const getSeasonStats = () => players.filter(p => assignments[p.id]).map(p => {
-    const arr = Object.entries(points[p.id] || {}).map(([mid, d]) => ({ mid, pts: d.base }));
-    const total = arr.reduce((s, m) => s + m.pts, 0);
-    const played = arr.length;
-    const avg = played > 0 ? Math.round(total * 10 / (played * 10)) : 0;
-    const best = arr.reduce((mx, m) => m.pts > mx ? m.pts : mx, 0);
-    const last5 = arr.slice(-5).map(m => m.pts);
-    const team = teams.find(t => t.id === assignments[p.id]);
-    return { ...p, total, played, avg, best, last5, tc: team ? team.color : '#4A5E78', tn: team ? team.name : '', tid: team ? team.id : '' };
-  }).sort((a, b) => b.total - a.total);
-
   const navItems=[
     {id:"draft",label:"Draft",icon:"📋",disabled:teams.length===0},
     {id:"matches",label:"Matches",icon:"🏏",disabled:players.length===0},
@@ -2446,110 +2434,6 @@ function App({ pitch, onLeave, user, onLogout }) {
                 )}
               </div>
             </div>
-          )}
-
-          {page==="form" && (
-            <div className="fade-in">
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}}>
-                <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2}}>PLAYER FORM</h2>
-                <div style={{fontSize:12,color:"#4A5E78"}}>Last 5 matches per player</div>
-              </div>
-
-              {/* Filter by team */}
-              <div style={{display:"flex",gap:6,marginBottom:16,overflowX:"auto",paddingBottom:4}}>
-                <button onClick={()=>setFormFilter('all')}
-                  style={{flexShrink:0,padding:"6px 14px",borderRadius:20,border:"1px solid "+(formFilter==='all'?"#F5A623":"#1E2D45"),background:formFilter==='all'?"#F5A62322":"transparent",color:formFilter==='all'?"#F5A623":"#4A5E78",fontSize:12,fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,cursor:"pointer"}}>
-                  ALL
-                </button>
-                {teams.map(t => (
-                  <button key={t.id} onClick={()=>setFormFilter(t.id)}
-                    style={{flexShrink:0,padding:"6px 14px",borderRadius:20,border:"1px solid "+(formFilter===t.id?t.color:"#1E2D45"),background:formFilter===t.id?t.color+"22":"transparent",color:formFilter===t.id?t.color:"#4A5E78",fontSize:12,fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,cursor:"pointer"}}>
-                    {t.name}
-                  </button>
-                ))}
-              </div>
-
-              {(() => {
-                const all = getSeasonStats().filter(p => p.played > 0 && (formFilter === 'all' || p.tid === formFilter));
-                if (all.length === 0) return (
-                  <div style={{textAlign:"center",padding:60,color:"#4A5E78"}}>
-                    <div style={{fontSize:48}}>📈</div>
-                    <div style={{marginTop:12,fontSize:15}}>No match data yet. Sync stats from the Matches tab first.</div>
-                  </div>
-                );
-                return (
-                  <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                    {all.map(p => {
-                      const mx = Math.max.apply(null, p.last5.concat([1]));
-                      const trend = p.last5.length >= 2 ? p.last5[p.last5.length-1] - p.last5[p.last5.length-2] : 0;
-                      const trendIcon = trend > 0 ? "▲" : trend < 0 ? "▼" : "—";
-                      const trendColor = trend > 0 ? "#2ECC71" : trend < 0 ? "#FF3D5A" : "#4A5E78";
-                      return (
-                        <div key={p.id} style={{background:"#0E1521",borderRadius:12,padding:"14px 16px",border:"1px solid #1E2D45"}}>
-                          {/* Player header */}
-                          <div style={{display:"flex",alignItems:"center",marginBottom:10}}>
-                            <div style={{flex:1,minWidth:0}}>
-                              <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-                                <span style={{fontWeight:700,fontSize:15,color:"#E2EAF4"}}>{p.name}</span>
-                                <span style={{fontSize:11,color:p.tc,background:p.tc+"22",padding:"2px 8px",borderRadius:10,border:"1px solid "+p.tc+"44"}}>{p.tn}</span>
-                                <span style={{fontSize:11,color:"#4A5E78"}}>{p.role}</span>
-                              </div>
-                            </div>
-                            <div style={{textAlign:"right",flexShrink:0,marginLeft:12}}>
-                              <div style={{display:"flex",alignItems:"center",gap:8}}>
-                                <span style={{fontSize:13,color:trendColor,fontWeight:700}}>{trendIcon}</span>
-                                <div>
-                                  <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:800,color:"#F5A623",lineHeight:1}}>{p.total}</div>
-                                  <div style={{fontSize:9,color:"#4A5E78",letterSpacing:1}}>TOTAL</div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Bar chart */}
-                          <div style={{display:"flex",alignItems:"flex-end",gap:4,height:50}}>
-                            {p.last5.map((v, i) => {
-                              const barH = mx > 0 ? Math.max(4, Math.round(v * 44 / mx)) : 4;
-                              const isLast = i === p.last5.length - 1;
-                              const hasVal = v > 0;
-                              const barColor = hasVal ? (isLast ? "#F5A623" : p.tc) : "#1E2D45";
-                              return (
-                                <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
-                                  <span style={{fontSize:10,color:isLast?"#F5A623":"#4A5E78",fontWeight:isLast?700:400}}>{v}</span>
-                                  <div style={{width:"100%",background:barColor,borderRadius:"3px 3px 0 0",height:barH+"px",opacity:isLast?1:0.65}} />
-                                </div>
-                              );
-                            })}
-                            {p.last5.length < 5 && Array.from({length: 5 - p.last5.length}).map((_, i) => (
-                              <div key={"empty"+i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
-                                <span style={{fontSize:10,color:"#2D3E52"}}>-</span>
-                                <div style={{width:"100%",background:"#1E2D4533",borderRadius:"3px 3px 0 0",height:"4px"}} />
-                              </div>
-                            ))}
-                          </div>
-
-                          {/* Stats row */}
-                          <div style={{display:"flex",gap:16,marginTop:10,paddingTop:10,borderTop:"1px solid #1E2D4544"}}>
-                            {[["MATCHES",p.played],["AVG",p.avg],["BEST",p.best]].map(([l,v]) => (
-                              <div key={l} style={{textAlign:"center"}}>
-                                <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:16,fontWeight:700,color:"#E2EAF4"}}>{v}</div>
-                                <div style={{fontSize:9,color:"#4A5E78",letterSpacing:1}}>{l}</div>
-                              </div>
-                            ))}
-                            <div style={{flex:1,textAlign:"right"}}>
-                              <div style={{fontSize:9,color:"#4A5E78",letterSpacing:1,marginBottom:2}}>LAST 5 TREND</div>
-                              <div style={{fontSize:12,color:trendColor,fontWeight:700}}>{trendIcon} {Math.abs(trend)} pts</div>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })()}
-            </div>
-          </div>
-          </div>
           )}
 
           {page==="results" && (
