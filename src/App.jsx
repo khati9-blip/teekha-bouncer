@@ -942,6 +942,23 @@ function SplashScreen({ onLogin }) {
   );
 }
 
+
+class ErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { error: null }; }
+  componentDidCatch(error, info) { this.setState({ error: error.message + " | " + info.componentStack?.split("\n")[1] }); }
+  static getDerivedStateFromError(error) { return { error: error.message }; }
+  render() {
+    if (this.state.error) return (
+      <div style={{minHeight:"100vh",background:"#080C14",padding:24,fontFamily:"monospace"}}>
+        <div style={{color:"#FF3D5A",fontSize:18,marginBottom:16}}>💥 CRASH REPORT</div>
+        <div style={{background:"#0E1521",padding:16,borderRadius:8,color:"#E2EAF4",fontSize:13,wordBreak:"break-all",whiteSpace:"pre-wrap"}}>{this.state.error}</div>
+        <button onClick={()=>{ localStorage.clear(); window.location.reload(); }} style={{marginTop:20,background:"#F5A623",border:"none",borderRadius:8,padding:"10px 20px",color:"#080C14",fontWeight:700,cursor:"pointer"}}>CLEAR & RELOAD</button>
+      </div>
+    );
+    return this.props.children;
+  }
+}
+
 // ── PITCH HOME SCREEN ────────────────────────────────────────────────────────
 function PitchHome({ onEnter, user, onLogout }) {
   const [pitches, setPitches] = useState([]);
