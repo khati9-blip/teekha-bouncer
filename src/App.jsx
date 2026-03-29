@@ -1910,6 +1910,8 @@ function App({ pitch, onLeave, user, onLogout }) {
 
             <button onClick={()=>withPassword(()=>{if(!confirm("Reset ALL data? This cannot be undone!"))return;["teams","players","assignments","matches","captains","points","page","pwhash"].forEach(k=>storeDel(k));window.location.reload();})}
               style={{background:"transparent",border:"1px solid #1E2D45",color:"#4A5E78",fontSize:13,borderRadius:6,padding:"6px 10px",cursor:"pointer"}}>⚙️</button>
+            <button onClick={onLogout}
+              style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:"#FF3D5A",fontSize:11,borderRadius:6,padding:"6px 10px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,letterSpacing:0.5}}>LOGOUT</button>
           </div>
         </div>
 
