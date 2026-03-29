@@ -1589,7 +1589,7 @@ function EditPointsForm({ config, onSave, onCancel }) {
 
 
 // ── PROPOSE RULES FORM ───────────────────────────────────────────────────────
-function ProposeRulesForm({ teams, eligibleVoters, onPropose }) {
+function ProposeRulesForm({ teams, eligibleVoters, onPropose, withPassword, tournamentStarted }) {
   const [open, setOpen] = useState(false);
   const [transferDay, setTransferDay] = useState("Sunday");
   const [transferTime, setTransferTime] = useState("11:00 AM");
@@ -1601,8 +1601,8 @@ function ProposeRulesForm({ teams, eligibleVoters, onPropose }) {
   const times = ["12:00 AM","1:00 AM","2:00 AM","3:00 AM","6:00 AM","9:00 AM","10:00 AM","11:00 AM","12:00 PM","1:00 PM","3:00 PM","6:00 PM","9:00 PM","10:00 PM","11:00 PM","11:58 PM"];
 
   if (!open) return (
-    <button onClick={()=>setOpen(true)} style={{width:"100%",background:"#F5A62322",border:"1px solid #F5A62344",borderRadius:12,padding:14,color:"#F5A623",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:15,cursor:"pointer"}}>
-      + PROPOSE RULE CHANGE
+    <button onClick={()=>withPassword(()=>setOpen(true))} style={{width:"100%",background:"#F5A62322",border:"1px solid #F5A62344",borderRadius:12,padding:14,color:"#F5A623",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:15,cursor:"pointer"}}>
+      ✏️ PROPOSE TIMING CHANGE (Admin)
     </button>
   );
 
@@ -3470,11 +3470,11 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
                     <div style={{fontSize:13,color:"#F5A623",fontWeight:700,fontFamily:"Rajdhani,sans-serif"}}>{val} <span style={{color:"#4A5E78",fontWeight:400,fontSize:11}}>{unit}</span></div>
                   </div>
                 ))}
-                {(!tournamentStarted || !eligibleVoters.length) && unlocked && (
-                  <button onClick={()=>setShowRulesPanel("points")} style={{width:"100%",marginTop:12,background:"#F5A62322",border:"1px solid #F5A62344",borderRadius:8,padding:8,color:"#F5A623",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>✏️ EDIT POINTS (FREE — Tournament not started)</button>
-                )}
-                {tournamentStarted && !!eligibleVoters.length && unlocked && (!ruleProposal || ruleProposal.status !== "pending") && (
-                  <button onClick={()=>setShowRulesPanel("points")} style={{width:"100%",marginTop:12,background:"#F5A62322",border:"1px solid #F5A62344",borderRadius:8,padding:8,color:"#F5A623",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>✏️ PROPOSE POINTS CHANGE (Needs all-team vote)</button>
+                {(!ruleProposal || ruleProposal.status !== "pending") && (
+                  <button onClick={()=>withPassword(()=>setShowRulesPanel("points"))}
+                    style={{width:"100%",marginTop:12,background:"#F5A62322",border:"1px solid #F5A62344",borderRadius:8,padding:8,color:"#F5A623",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+                    ✏️ {(!tournamentStarted||!eligibleVoters.length) ? "EDIT POINTS (Admin)" : "PROPOSE POINTS CHANGE (Needs team vote)"}
+                  </button>
                 )}
               </div>
 
@@ -3527,9 +3527,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
                     </div>
                   )}
                   {/* Admin cancel proposal */}
-                  {unlocked && (
-                    <button onClick={()=>updRuleProposal(null)} style={{width:"100%",marginTop:10,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:8,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:12,cursor:"pointer"}}>CANCEL PROPOSAL (ADMIN)</button>
-                  )}
+                  <button onClick={()=>withPassword(()=>updRuleProposal(null))} style={{width:"100%",marginTop:10,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:8,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:12,cursor:"pointer"}}>CANCEL PROPOSAL (Admin)</button>
                 </div>
               )}
 
@@ -3556,9 +3554,9 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
                 }} onCancel={()=>setShowRulesPanel(true)} />
               )}
 
-              {/* Propose new timing change — admin only */}
-              {showRulesPanel === true && unlocked && (!ruleProposal || ruleProposal.status !== "pending") && (
-                <ProposeRulesForm teams={teams} eligibleVoters={eligibleVoters} tournamentStarted={tournamentStarted} onPropose={proposeRuleChange} />
+              {/* Propose new timing change — always visible, needs admin password */}
+              {showRulesPanel === true && (!ruleProposal || ruleProposal.status !== "pending") && (
+                <ProposeRulesForm teams={teams} eligibleVoters={eligibleVoters} tournamentStarted={tournamentStarted} onPropose={proposeRuleChange} withPassword={withPassword} />
               )}
             </div>
           </div>
