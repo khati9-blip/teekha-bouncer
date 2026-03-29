@@ -2544,7 +2544,7 @@ function App({ pitch, onLeave, user, onLogout }) {
                       const medals=["🥇","🥈","🥉"],mc=["#F5A623","#94A3B8","#CD7C2F"];
                       return(
                         <div key={team.id} style={{display:"flex",alignItems:"center",gap:16,background:"#0E1521",borderRadius:10,padding:"16px 20px",marginBottom:8,borderLeft:`4px solid ${team.color}`}}>
-                          <div style={{fontSize:28,minWidth:36}}>{"#"+(i+1)}</div>
+                          <div style={{fontSize:28,minWidth:36}}>{medals[i]||("#"+(i+1))}</div>
                           <div style={{flex:1}}>
                             <div style={{fontWeight:700,fontSize:18,color:team.color,fontFamily:"Rajdhani",letterSpacing:1}}>{team.name}</div>
                             <div style={{fontSize:12,color:"#4A5E78"}}>{players.filter(p=>assignments[p.id]===team.id).length} players drafted</div>
