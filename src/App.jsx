@@ -1756,12 +1756,21 @@ function App({ pitch, onLeave, user, onLogout }) {
         return ipl;
       };
 
-      const [recentData, upcomingData] = await Promise.all([
+      const [recentData, upcomingData, liveData] = await Promise.all([
         fetch("/api/cricbuzz?path="+encodeURIComponent("matches/v1/recent")).then(r=>r.json()).catch(()=>({})),
         fetch("/api/cricbuzz?path="+encodeURIComponent("matches/v1/upcoming")).then(r=>r.json()).catch(()=>({})),
+        fetch("/api/cricbuzz?path="+encodeURIComponent("matches/v1/live")).then(r=>r.json()).catch(()=>({})),
       ]);
 
-      const fetched = [...extractIPL(recentData), ...extractIPL(upcomingData)];
+      // Deduplicate across all three sources
+      const seenIds = new Set();
+      const fetched = [];
+      for (const m of [...extractIPL(liveData), ...extractIPL(recentData), ...extractIPL(upcomingData)]) {
+        if (!seenIds.has(m.info?.matchId)) {
+          seenIds.add(m.info?.matchId);
+          fetched.push(m);
+        }
+      }
 
       if (fetched.length === 0) {
         alert("No IPL matches found from Cricbuzz right now.");
@@ -1805,9 +1814,7 @@ function App({ pitch, onLeave, user, onLogout }) {
       const live = updated.filter(m => m.status === "live").length;
       const upcoming = updated.filter(m => m.status === "upcoming").length;
       const completed = updated.filter(m => m.status === "completed").length;
-      const fetchedIds = fetched.map(f => f.info?.matchId).join(", ");
-      const existingIds = matches.map(m => m.cricbuzzId).join(", ");
-      alert("Fetched from Cricbuzz: "+fetched.length+" IPL matches (IDs: "+fetchedIds+")\nExisting cricbuzzIds: "+existingIds+"\nResult: "+completed+" completed, "+live+" live, "+upcoming+" upcoming.");
+      alert("Updated! "+completed+" completed, "+live+" live, "+upcoming+" upcoming.");
     } catch(e){
       alert("Error: "+e.message);
     }
