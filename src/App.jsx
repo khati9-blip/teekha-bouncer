@@ -1740,38 +1740,11 @@ function App({ pitch, onLeave, user, onLogout }) {
   const fetchMatches=async()=>{
     setLoading("Fetching IPL 2026 schedule…");
     try {
-      const IPL_SERIES_ID = 9241;
-      let formatted = [];
-      try {
-        const schedRes = await fetch("/api/cricbuzz?path="+encodeURIComponent("series/v1/"+IPL_SERIES_ID+"/matches"));
-        const schedData = await schedRes.json();
-        const matchList = schedData.matchDetails || [];
-        let num = 0;
-        for (const block of matchList) {
-          for (const m of (block.matchDetailsMap?.match || [])) {
-            const info = m.matchInfo;
-            if (!info) continue;
-            num++;
-            formatted.push({
-              id: "m"+info.matchId,
-              cricbuzzId: info.matchId,
-              matchNum: num,
-              date: info.startDate ? new Date(parseInt(info.startDate)).toISOString().split("T")[0] : "TBD",
-              time: info.startDate ? new Date(parseInt(info.startDate)).toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit",timeZone:"Asia/Kolkata"}) : "",
-              team1: info.team1?.teamSName || info.team1?.teamName || "TBA",
-              team2: info.team2?.teamSName || info.team2?.teamName || "TBA",
-              venue: info.venueInfo?.ground ? info.venueInfo.ground+(info.venueInfo.city?", "+info.venueInfo.city:"") : (info.venueInfo?.city || "TBD"),
-              status: info.state === "Complete" ? "completed" : info.state === "In Progress" ? "live" : "upcoming",
-              result: info.status || null,
-            });
-          }
-        }
-      } catch(e) { console.warn("Series schedule failed:", e.message); }
-
-      if (formatted.length === 0) {
-        const ipl = await fetchRecentIPLMatches();
-        formatted = ipl.map((m, i) => ({
-          id: "m"+(m.matchId || i+1),
+      const formatMatch = (m, i, existingMap) => {
+        const id = "m"+m.matchId;
+        const ex = existingMap[id];
+        return {
+          id,
           cricbuzzId: m.matchId,
           matchNum: i+1,
           date: m.startDate ? new Date(parseInt(m.startDate)).toISOString().split("T")[0] : "TBD",
@@ -1779,25 +1752,63 @@ function App({ pitch, onLeave, user, onLogout }) {
           team1: m.team1?.teamSName || m.team1?.teamName || "TBA",
           team2: m.team2?.teamSName || m.team2?.teamName || "TBA",
           venue: m.venueInfo?.ground ? m.venueInfo.ground+(m.venueInfo.city?", "+m.venueInfo.city:"") : (m.venueInfo?.city || "TBD"),
-          status: m.state === "Complete" ? "completed" : m.state === "In Progress" ? "live" : "upcoming",
-          result: m.status || null,
-        }));
+          status: ex?.status === "completed" ? "completed" : m.state === "Complete" ? "completed" : m.state === "In Progress" ? "live" : "upcoming",
+          result: ex?.result || m.status || null,
+        };
+      };
+
+      const extractIPL = (data) => {
+        const ipl = [];
+        if (!data || !data.typeMatches) return ipl;
+        for (const type of data.typeMatches) {
+          for (const series of (type.seriesMatches || [])) {
+            const sm = series.seriesAdWrapper || series;
+            if (sm.seriesName && sm.seriesName.includes("Indian Premier League")) {
+              for (const match of (sm.matches || [])) {
+                ipl.push({info: match.matchInfo, score: match.matchScore});
+              }
+            }
+          }
+        }
+        return ipl;
+      };
+
+      // Build existing match map to preserve completed status
+      const existingMap = {};
+      matches.forEach(m => { existingMap[m.id] = m; });
+
+      // Fetch recent (has live + just completed) and upcoming in parallel
+      const [recentData, upcomingData] = await Promise.all([
+        fetch("/api/cricbuzz?path="+encodeURIComponent("matches/v1/recent")).then(r=>r.json()).catch(()=>({})),
+        fetch("/api/cricbuzz?path="+encodeURIComponent("matches/v1/upcoming")).then(r=>r.json()).catch(()=>({})),
+      ]);
+
+      const recentIPL = extractIPL(recentData);
+      const upcomingIPL = extractIPL(upcomingData);
+
+      // Merge — avoid duplicates
+      const seen = new Set(recentIPL.map(m => m.info?.matchId));
+      const allIPL = [...recentIPL];
+      for (const m of upcomingIPL) {
+        if (!seen.has(m.info?.matchId)) { allIPL.push(m); seen.add(m.info?.matchId); }
       }
 
-      if (formatted.length > 0) {
-        const existing = {};
-        matches.forEach(m => { if (m.cricbuzzId) existing[m.cricbuzzId] = m; });
-        const merged = formatted.map(m => {
-          const ex = existing[m.cricbuzzId];
-          return ex ? {...m, status: ex.status === "completed" ? "completed" : m.status, result: ex.result || m.result} : m;
-        });
-        updMatches(merged);
-        alert("Fetched "+formatted.length+" matches!");
-      } else {
-        alert("No matches found from Cricbuzz. Try again later.");
+      if (allIPL.length === 0) {
+        alert("No IPL 2026 matches found yet. Cricbuzz may not have the full schedule.");
+        setLoading(""); return;
       }
+
+      // Sort by startDate
+      allIPL.sort((a, b) => parseInt(a.info?.startDate||0) - parseInt(b.info?.startDate||0));
+
+      const formatted = allIPL.map((m, i) => formatMatch(m.info, i, existingMap));
+      updMatches(formatted);
+      const live = formatted.filter(m => m.status === "live").length;
+      const upcoming = formatted.filter(m => m.status === "upcoming").length;
+      const completed = formatted.filter(m => m.status === "completed").length;
+      alert("Fetched "+formatted.length+" IPL matches — "+completed+" completed, "+live+" live, "+upcoming+" upcoming!");
     } catch(e){
-      alert("Error: "+e.message);
+      alert("Error fetching schedule: "+e.message);
     }
     setLoading("");
   };
@@ -1946,7 +1957,8 @@ function App({ pitch, onLeave, user, onLogout }) {
 
   const fetchLiveScores = async () => {
     try {
-      const res = await fetch("/api/cricbuzz?path=" + encodeURIComponent("matches/v1/live"));
+      // Use recent endpoint which has live matches
+      const res = await fetch("/api/cricbuzz?path=" + encodeURIComponent("matches/v1/recent"));
       const data = await res.json();
       const scores = {};
       if (data && data.typeMatches) {
@@ -1957,10 +1969,12 @@ function App({ pitch, onLeave, user, onLogout }) {
               for (const m of (sm.matches || [])) {
                 const info = m.matchInfo;
                 const score = m.matchScore;
-                if (info && info.matchId) {
+                if (info && info.matchId && info.state === "In Progress") {
+                  const t1 = score?.team1Score?.inngs1;
+                  const t2 = score?.team2Score?.inngs1;
                   scores["m"+info.matchId] = {
-                    team1Score: score?.team1Score?.inngs1 ? score.team1Score.inngs1.runs+"/"+score.team1Score.inngs1.wickets+" ("+parseFloat(score.team1Score.inngs1.overs).toFixed(1)+" ov)" : null,
-                    team2Score: score?.team2Score?.inngs1 ? score.team2Score.inngs1.runs+"/"+score.team2Score.inngs1.wickets+" ("+parseFloat(score.team2Score.inngs1.overs).toFixed(1)+" ov)" : null,
+                    team1Score: t1 ? t1.runs+"/"+t1.wickets+" ("+parseFloat(t1.overs).toFixed(1)+" ov)" : null,
+                    team2Score: t2 ? t2.runs+"/"+t2.wickets+" ("+parseFloat(t2.overs).toFixed(1)+" ov)" : null,
                     status: info.status || "",
                     state: info.state,
                   };
