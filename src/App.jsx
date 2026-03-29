@@ -1333,7 +1333,7 @@ function PitchHome({ onEnter, user, onLogout }) {
 
 
 // ── TEAM CLAIM SCREEN ────────────────────────────────────────────────────────
-function TeamClaimScreen({ pitch, user, teams, onClaimed }) {
+function TeamClaimScreen({ pitch, user, teams, onClaimed, onBack }) {
   const [teamIdentity, setTeamIdentity] = useState({});
   const [loading, setLoading] = useState(true);
   const [enteredCode, setEnteredCode] = useState("");
@@ -1403,6 +1403,11 @@ function TeamClaimScreen({ pitch, user, teams, onClaimed }) {
     <div style={{minHeight:"100vh",background:"#080C14",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,fontFamily:"Barlow Condensed,sans-serif"}}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Barlow+Condensed:wght@400;600;700;800&display=swap');*{box-sizing:border-box;margin:0;padding:0;}body{background:#080C14;color:#E2EAF4;}`}</style>
       <div style={{width:"100%",maxWidth:380}}>
+        <div style={{width:"100%",marginBottom:16}}>
+          <button onClick={onBack} style={{background:"transparent",border:"none",color:"#4A5E78",fontSize:13,cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",padding:0,display:"flex",alignItems:"center",gap:4}}>
+            ← Back to Pitches
+          </button>
+        </div>
         <div style={{textAlign:"center",marginBottom:32}}>
           <div style={{fontSize:40,marginBottom:8}}>🏏</div>
           <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:28,fontWeight:700,color:"#F5A623",letterSpacing:3}}>{pitch.name}</div>
@@ -3197,7 +3202,7 @@ function Root() {
   try {
     if (!currentUser) return <SplashScreen onLogin={handleLogin} />;
     if (!currentPitch) return <PitchHome onEnter={handleEnter} user={currentUser} onLogout={handleLogout} />;
-    if (!teamsClaimed) return <TeamClaimScreen pitch={currentPitch} user={currentUser} teams={[]} onClaimed={handleClaimed} onSkip={null} />;
+    if (!teamsClaimed) return <TeamClaimScreen pitch={currentPitch} user={currentUser} teams={[]} onClaimed={handleClaimed} onBack={handleLeave} />;
     return <App pitch={currentPitch} onLeave={handleLeave} user={currentUser} onLogout={handleLogout} myTeam={myTeam} myPinHash={myPinHash} />;
   } catch(e) {
     return <div style={{minHeight:"100vh",background:"#080C14",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16,padding:24,fontFamily:"Barlow Condensed,sans-serif"}}>
