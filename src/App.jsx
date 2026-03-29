@@ -1672,6 +1672,9 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
   const [players, setPlayers] = useState([]);
   const [assignments, setAssignments] = useState({});
   const [matches, setMatches] = useState([]);
+  const [tournaments, setTournaments] = useState([{id:"t_ipl",name:"Indian Premier League",open:true}]);
+  const [expandedTournaments, setExpandedTournaments] = useState({"t_ipl":true});
+  const [newTournamentName, setNewTournamentName] = useState("");
   const [captains, setCaptains] = useState({});
   const [points, setPoints] = useState({});
   const [loading, setLoading] = useState("");
@@ -1737,7 +1740,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
   useEffect(() => {
     (async () => {
       try {
-        const keys = ["teams","players","assignments","matches","captains","points","page","tnames","numteams","pwhash","recoveryHash","teamLogos","safePlayers","unsoldPool","transfers","snatch","ownershipLog","teamIdentity","ruleProposal","pointsConfig"];
+        const keys = ["teams","players","assignments","matches","captains","points","page","tnames","numteams","pwhash","recoveryHash","teamLogos","safePlayers","unsoldPool","transfers","snatch","ownershipLog","teamIdentity","ruleProposal","pointsConfig","tournaments"];
         const results = await Promise.all(keys.map(k => storeGet(k)));
         const [t,p,a,m,c,pts,pg,tn,nt,ph,rh,tl,sp,up,tr,sn,ol,ti] = results;
         if(t) setTeams(t);
@@ -1762,6 +1765,8 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
         if(rp && typeof rp === 'object') setRuleProposal(rp);
         const pc = results[keys.indexOf('pointsConfig')];
         if(pc && typeof pc === 'object') setPointsConfig(prev=>({...prev,...pc}));
+        const tv = results[keys.indexOf('tournaments')];
+        if(tv && Array.isArray(tv)) { setTournaments(tv); const exp={}; tv.forEach(t=>exp[t.id]=true); setExpandedTournaments(exp); }
       } catch(e) {
         console.error("Load error:", e.message);
       } finally {
@@ -2156,23 +2161,23 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
     return 0;
   });
 
-  const fetchMatches=async()=>{
-    setLoading("Fetching IPL 2026 matches from Cricbuzz…");
+  const fetchMatchesForTournament = async (tournamentId, tournamentName) => {
+    setLoading("Fetching matches for " + tournamentName + "…");
     try {
-      const extractIPL = (data) => {
-        const ipl = [];
-        if (!data || !data.typeMatches) return ipl;
+      const extractForTournament = (data) => {
+        const found = [];
+        if (!data || !data.typeMatches) return found;
         for (const type of data.typeMatches) {
           for (const series of (type.seriesMatches || [])) {
             const sm = series.seriesAdWrapper || series;
-            if (sm.seriesName && sm.seriesName.includes("Indian Premier League")) {
+            if (sm.seriesName && sm.seriesName.toLowerCase().includes(tournamentName.toLowerCase())) {
               for (const match of (sm.matches || [])) {
-                ipl.push({info: match.matchInfo, score: match.matchScore});
+                found.push({info: match.matchInfo, score: match.matchScore});
               }
             }
           }
         }
-        return ipl;
+        return found;
       };
 
       const [recentData, upcomingData, liveData] = await Promise.all([
@@ -2220,6 +2225,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
         updated.push({
           id: "m"+m.matchId,
           cricbuzzId: m.matchId,
+          tournamentId: tournamentId,
           matchNum: nextNum++,
           date: m.startDate ? new Date(parseInt(m.startDate)).toISOString().split("T")[0] : "TBD",
           time: m.startDate ? new Date(parseInt(m.startDate)).toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit",timeZone:"Asia/Kolkata"}) : "",
@@ -2232,10 +2238,11 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
       });
 
       updMatches(updated);
-      const live = updated.filter(m => m.status === "live").length;
-      const upcoming = updated.filter(m => m.status === "upcoming").length;
-      const completed = updated.filter(m => m.status === "completed").length;
-      alert("Updated! "+completed+" completed, "+live+" live, "+upcoming+" upcoming.");
+      const tMatches = updated.filter(m => m.tournamentId === tournamentId);
+      const live = tMatches.filter(m => m.status === "live").length;
+      const upcoming = tMatches.filter(m => m.status === "upcoming").length;
+      const completed = tMatches.filter(m => m.status === "completed").length;
+      alert(tournamentName + ": " + completed + " completed, " + live + " live, " + upcoming + " upcoming.");
     } catch(e){
       alert("Error: "+e.message);
     }
@@ -2953,336 +2960,130 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
             <div className="fade-in">
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:12}}>
                 <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2}}>MATCHES</h2>
-                <Btn variant="blue" onClick={fetchMatches}>{matches.length>0?"↻ REFRESH ("+matches.length+")":"🌐 FETCH SCHEDULE"}</Btn>
               </div>
-              {matches.length===0?(
-                <Card sx={{padding:60,textAlign:"center"}}><div style={{fontSize:56}}>📅</div><div style={{color:"#4A5E78",marginTop:16,fontSize:16}}>Click "Fetch Schedule" to load IPL 2026 matches</div></Card>
-              ):(
-                <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                  {(() => {
-                    const sorted = [...matches].sort((a,b)=>{
-                      const order = {completed:0, live:1, upcoming:2};
-                      const ao = order[a.status]??2, bo = order[b.status]??2;
-                      if (ao !== bo) return ao - bo;
-                      return (a.date||"").localeCompare(b.date||"");
-                    });
-                    let upcomingCount = 0;
-                    return sorted.filter(m => {
-                      if (m.status !== "upcoming") return true;
-                      upcomingCount++;
-                      return upcomingCount <= 5;
-                    });
-                  })().map(match=>{
-                    const open=expandedMatch===match.id,completed=match.status==="completed",synced=Object.keys(points).some(pid=>points[pid][match.id]);
-                    return(
-                      <Card key={match.id} sx={{overflow:"hidden"}}>
-                        <div style={{display:"flex",alignItems:"center",padding:"12px 14px",cursor:"pointer",gap:10}} onClick={()=>setExpandedMatch(open?null:match.id)}>
-                          <div style={{background:"#080C14",borderRadius:6,padding:"4px 8px",minWidth:36,textAlign:"center",flexShrink:0}}>
-                            <div style={{fontSize:9,color:"#4A5E78"}}>M</div>
-                            <div style={{fontSize:16,fontWeight:800,color:"#F5A623",fontFamily:"Rajdhani"}}>{match.matchNum}</div>
-                          </div>
-                          <div style={{flex:1,minWidth:0}}>
-                            <div style={{fontWeight:700,fontSize:14,color:"#E2EAF4",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{match.team1} <span style={{color:"#4A5E78"}}>vs</span> {match.team2}</div>
-                            {liveScores[match.id] && liveScores[match.id].team1Score ? (
-                              <div style={{marginTop:3}}>
-                                <div style={{fontSize:11,color:"#E2EAF4",fontWeight:600}}>{match.team1}: <span style={{color:"#F5A623",fontFamily:"Rajdhani,sans-serif",fontSize:13,fontWeight:700}}>{liveScores[match.id].team1Score}</span></div>
-                                {liveScores[match.id].team2Score && <div style={{fontSize:11,color:"#E2EAF4",fontWeight:600}}>{match.team2}: <span style={{color:"#4F8EF7",fontFamily:"Rajdhani,sans-serif",fontSize:13,fontWeight:700}}>{liveScores[match.id].team2Score}</span></div>}
-                              </div>
-                            ) : (
-                              <div style={{fontSize:11,color:"#4A5E78",marginTop:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{match.date}{match.time?" • "+match.time+" IST":""} • {match.venue}</div>
-                            )}
-                          </div>
-                          <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4,flexShrink:0}}>
-                            {synced&&<span style={{fontSize:9,color:"#2ECC71",fontWeight:700}}>✓ SYNCED</span>}
-                            {match.status==="live" || (liveScores[match.id] && liveScores[match.id].state !== "Complete") ? (
-                              <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4}}>
-                                <span style={{fontSize:9,color:"#FF3D5A",fontWeight:700,animation:"pulse 1s infinite"}}>🔴 LIVE</span>
-                                {unlocked && <button onClick={e=>{e.stopPropagation();const upd=matches.map(m=>m.id===match.id?{...m,status:"completed"}:m);updMatches(upd);}} style={{fontSize:9,color:"#4A5E78",background:"transparent",border:"1px solid #1E2D45",borderRadius:4,padding:"2px 6px",cursor:"pointer"}}>Mark Done</button>}
-                              </div>
-                            ) : (
-                              <span style={{fontSize:9,color:completed?"#2ECC71":"#F5A623",fontWeight:700,maxWidth:80,textAlign:"right",lineHeight:1.2}}>{completed?(match.result?"✓ "+match.result.slice(0,25):"DONE"):"UPCOMING"}</span>
-                            )}
-                            <span style={{color:"#4A5E78",fontSize:11}}>{open?"▲":"▼"}</span>
-                          </div>
-                        </div>
-                        {open&&(
-                          <div style={{padding:"0 18px 18px",borderTop:"1px solid #1E2D45"}}>
-                            <div style={{marginTop:16}}>
-                              <div style={{fontSize:12,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginBottom:4}}>CAPTAIN & VICE CAPTAIN</div>
-                              {!completed && <div style={{fontSize:11,color:"#F5A62388",marginBottom:14}}>⚡ Set before match starts — affects fantasy points</div>}
-                              {completed && <div style={{fontSize:11,color:"#2ECC7188",marginBottom:14}}>✓ Points already calculated for this match</div>}
-                              <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                                {teams.map(team=>{
-                                  const key=`${match.id}_${team.id}`,cap=captains[key]||{},teamPlayers=players.filter(p=>assignments[p.id]===team.id);
-                                  return(
-                                    <div key={team.id} style={{background:"#080C14",borderRadius:8,padding:"12px 16px",borderLeft:"3px solid "+team.color}}>
-                                      <div style={{color:team.color,fontWeight:700,fontSize:13,letterSpacing:1,marginBottom:10}}>{team.name.toUpperCase()}</div>
-                                      <div style={{display:"flex",gap:14,flexWrap:"wrap"}}>
-                                        <div>
-                                          <div style={{fontSize:11,color:"#4A5E78",marginBottom:5}}>⭐ CAPTAIN (2×)</div>
-                                          <select value={cap.captain||""} onChange={e=>withPassword(()=>setCap(match.id,team.id,"captain",e.target.value))} style={{background:"#0E1521",border:"1px solid #1E2D45",borderRadius:6,padding:"7px 12px",color:"#E2EAF4",fontSize:13,fontFamily:"Barlow Condensed",maxWidth:200}}>
-                                            <option value="">— Select Captain —</option>
-                                            {teamPlayers.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-                                          </select>
-                                        </div>
-                                        <div>
-                                          <div style={{fontSize:11,color:"#4A5E78",marginBottom:5}}>🥈 VICE CAPTAIN (1.5×)</div>
-                                          <select value={cap.vc||""} onChange={e=>withPassword(()=>setCap(match.id,team.id,"vc",e.target.value))} style={{background:"#0E1521",border:"1px solid #1E2D45",borderRadius:6,padding:"7px 12px",color:"#E2EAF4",fontSize:13,fontFamily:"Barlow Condensed",maxWidth:200}}>
-                                            <option value="">— Select V. Captain —</option>
-                                            {teamPlayers.filter(p=>p.id!==cap.captain).map(p=><option key={p.id} value={p.id}>{p.name}</option>)}
-                                          </select>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                            {completed&&(
-                              <div style={{marginTop:16,display:"flex",gap:8,flexDirection:"column"}}>
-                                <button onClick={()=>withPassword(()=>setSmartStatsMatch(match))}
-                                  style={{width:"100%",background:synced?"#1E2D45":"linear-gradient(135deg,#F5A623,#FF8C00)",color:synced?"#4A5E78":"#080C14",border:"none",borderRadius:8,padding:13,fontWeight:700,fontSize:14,cursor:"pointer",fontFamily:"Barlow Condensed",letterSpacing:1}}>
-                                  {synced?"↻ EDIT / RE-SYNC STATS":"📊 SYNC STATS & CALCULATE POINTS"}
-                                </button>
-                                {!synced&&<div style={{fontSize:11,color:"#4A5E78",textAlign:"center"}}>Auto-fills from Cricbuzz • manually editable • 100% accurate</div>}
-                              </div>
-                            )}
-                            {!completed&&<div style={{marginTop:16,padding:"12px 16px",background:"#080C14",borderRadius:8,fontSize:13,color:"#4A5E78",textAlign:"center"}}>Points sync available once match is completed</div>}
-                          </div>
-                        )}
-                      </Card>
-                    );
-                  })}
+
+              {/* Add tournament - admin only */}
+              {unlocked && (
+                <div style={{background:"#0E1521",borderRadius:10,border:"1px solid #1E2D45",padding:14,marginBottom:16}}>
+                  <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginBottom:10}}>+ ADD TOURNAMENT</div>
+                  <div style={{display:"flex",gap:8}}>
+                    <input value={newTournamentName} onChange={e=>setNewTournamentName(e.target.value)}
+                      placeholder="e.g. Indian Premier League" onKeyDown={e=>{
+                        if(e.key==="Enter"&&newTournamentName.trim()){
+                          const newT={id:"t_"+Date.now(),name:newTournamentName.trim()};
+                          const updated=[...tournaments,newT];
+                          setTournaments(updated);
+                          setExpandedTournaments(prev=>({...prev,[newT.id]:true}));
+                          storeSet("tournaments",updated);
+                          setNewTournamentName("");
+                        }
+                      }}
+                      style={{flex:1,background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"8px 12px",color:"#E2EAF4",fontSize:14,fontFamily:"Barlow Condensed,sans-serif",outline:"none"}} />
+                    <button onClick={()=>{
+                      if(!newTournamentName.trim()) return;
+                      const newT={id:"t_"+Date.now(),name:newTournamentName.trim()};
+                      const updated=[...tournaments,newT];
+                      setTournaments(updated);
+                      setExpandedTournaments(prev=>({...prev,[newT.id]:true}));
+                      storeSet("tournaments",updated);
+                      setNewTournamentName("");
+                    }} style={{background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:"8px 16px",color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>ADD</button>
+                  </div>
                 </div>
               )}
-            </div>
-          )}
 
+              {/* Tournament collapsible sections */}
+              {tournaments.map(tournament => {
+                const tMatches = matches.filter(m => m.tournamentId === tournament.id || (!m.tournamentId && tournament.id === "t_ipl"));
+                const isOpen = expandedTournaments[tournament.id];
+                const liveCount = tMatches.filter(m=>m.status==="live").length;
+                return (
+                  <div key={tournament.id} style={{marginBottom:12,background:"#0E1521",borderRadius:12,border:"1px solid #1E2D45",overflow:"hidden"}}>
+                    {/* Tournament header */}
+                    <div style={{display:"flex",alignItems:"center",padding:"12px 16px",cursor:"pointer",gap:10}}
+                      onClick={()=>setExpandedTournaments(prev=>({...prev,[tournament.id]:!prev[tournament.id]}))}>
+                      <div style={{flex:1}}>
+                        <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:16,fontWeight:700,color:"#E2EAF4",letterSpacing:1}}>{tournament.name}</div>
+                        <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>{tMatches.length} matches{liveCount>0?" • "+liveCount+" LIVE 🔴":""}</div>
+                      </div>
+                      <button onClick={e=>{e.stopPropagation();fetchMatchesForTournament(tournament.id,tournament.name);}}
+                        style={{background:"#4F8EF722",border:"1px solid #4F8EF744",color:"#4F8EF7",borderRadius:8,padding:"5px 10px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:11}}>↻ REFRESH</button>
+                      {unlocked && tournament.id !== "t_ipl" && (
+                        <button onClick={e=>{e.stopPropagation();if(!confirm("Remove this tournament?"))return;const updated=tournaments.filter(t=>t.id!==tournament.id);setTournaments(updated);storeSet("tournaments",updated);}}
+                          style={{background:"transparent",border:"1px solid #1E2D45",color:"#4A5E78",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:11}}>✕</button>
+                      )}
+                      <span style={{color:"#4A5E78",fontSize:12}}>{isOpen?"▲":"▼"}</span>
+                    </div>
 
-
-          {page==="transfer" && (
-            <div className="fade-in">
-              <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2,marginBottom:6}}>TRANSFER WINDOW</h2>
-              <div style={{fontSize:13,color:"#4A5E78",marginBottom:20}}>Week {transfers.weekNum} • Status: <span style={{color:transfers.phase==="closed"?"#FF3D5A":transfers.phase==="release"?"#F5A623":transfers.phase==="pick"?"#2ECC71":"#4A5E78",fontWeight:700,textTransform:"uppercase"}}>{transfers.phase}</span></div>
-
-              {/* Admin Controls */}
-              <div style={{background:"#0E1521",borderRadius:12,padding:16,marginBottom:16,border:"1px solid #1E2D45"}}>
-                <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginBottom:12}}>⚙️ ADMIN CONTROLS</div>
-
-                {/* Team Identity Management */}
-                <div style={{background:"#080C14",borderRadius:10,padding:"14px 16px",marginBottom:12,border:"1px solid #1E2D45"}}>
-                  <div style={{fontSize:11,color:"#F5A623",letterSpacing:2,fontWeight:700,marginBottom:10}}>🔑 TEAM IDs</div>
-                  <div style={{fontSize:11,color:"#4A5E78",marginBottom:10}}>Share these codes with each team manager so they can claim their team</div>
-                  {teams.map(t => {
-                    const ti = teamIdentity[t.id] || {};
-                    return (
-                      <div key={t.id} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,padding:"8px 12px",background:"#0E1521",borderRadius:8,border:"1px solid "+t.color+"33"}}>
-                        <div style={{flex:1}}>
-                          <div style={{fontWeight:700,fontSize:13,color:t.color}}>{t.name}</div>
-                          <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>{ti.claimedBy ? "Claimed by "+ti.claimedBy : "Unclaimed"}</div>
-                        </div>
-                        {ti.claimedBy ? (
-                          <span style={{fontSize:11,color:"#2ECC71",fontWeight:700,background:"#2ECC7122",padding:"4px 10px",borderRadius:6}}>✓ CLAIMED</span>
-                        ) : ti.teamId ? (
-                          <div style={{display:"flex",alignItems:"center",gap:6}}>
-                            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:16,fontWeight:800,color:"#F5A623",letterSpacing:2,background:"#F5A62322",padding:"4px 10px",borderRadius:6}}>{ti.teamId}</div>
-                            <button onClick={async()=>{
-                              if(!confirm("Reset Team ID?")) return;
-                              const updated = {...teamIdentity, [t.id]: {teamId: generateTeamId()}};
-                              setTeamIdentity(updated);
-                              await storeSet("teamIdentity", updated);
-                            }} style={{background:"transparent",border:"1px solid #1E2D45",color:"#4A5E78",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:10,fontFamily:"Barlow Condensed,sans-serif"}}>↺</button>
+                    {/* Matches list */}
+                    {isOpen && (
+                      <div style={{borderTop:"1px solid #1E2D45",padding:"8px 8px"}}>
+                        {tMatches.length === 0 ? (
+                          <div style={{textAlign:"center",padding:"24px",color:"#4A5E78",fontSize:13}}>
+                            No matches yet — hit ↻ REFRESH to fetch from Cricbuzz
                           </div>
                         ) : (
-                          <button onClick={async()=>{
-                            const newId = generateTeamId();
-                            const updated = {...teamIdentity, [t.id]: {...ti, teamId: newId}};
-                            setTeamIdentity(updated);
-                            await storeSet("teamIdentity", updated);
-                          }} style={{background:"#F5A62322",border:"1px solid #F5A62344",color:"#F5A623",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:11,fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>GENERATE</button>
+                          <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                            {(() => {
+                              const sorted = [...tMatches].sort((a,b)=>{
+                                const o={completed:0,live:1,upcoming:2};
+                                return (o[a.status]||2)-(o[b.status]||2);
+                              });
+                              return sorted.map((match,idx) => {
+                                const completed = match.status==="completed";
+                                const live = match.status==="live";
+                                const liveScore = liveScores[match.id];
+                                const isSynced = completed && Object.keys(points).some(pid=>points[pid][match.id]);
+                                return (
+                                  <div key={match.id} style={{background:"#141E2E",borderRadius:10,border:"1px solid "+(live?"#FF3D5A33":completed?"#2ECC7122":"#1E2D45")}}>
+                                    <div style={{display:"flex",alignItems:"center",padding:"10px 14px",gap:12,cursor:"pointer"}} onClick={()=>setExpandedMatchId(expandedMatchId===match.id?null:match.id)}>
+                                      <div style={{background:"#080C14",borderRadius:6,padding:"3px 8px",minWidth:38,textAlign:"center",flexShrink:0}}>
+                                        <div style={{fontSize:9,color:"#4A5E78"}}>M</div>
+                                        <div style={{fontSize:16,fontWeight:800,color:"#F5A623",fontFamily:"Rajdhani"}}>{match.matchNum}</div>
+                                      </div>
+                                      <div style={{flex:1,minWidth:0}}>
+                                        <div style={{fontWeight:700,fontSize:14,color:"#E2EAF4"}}>{match.team1} <span style={{color:"#4A5E78"}}>vs</span> {match.team2}</div>
+                                        <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>{match.date} • {match.time} IST • {match.venue}</div>
+                                        {live && liveScore && <div style={{fontSize:11,color:"#F5A623",marginTop:2}}>{liveScore.score1} | {liveScore.score2}</div>}
+                                      </div>
+                                      <div style={{flexShrink:0,textAlign:"right"}}>
+                                        {live ? (
+                                          <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:3}}>
+                                            <span style={{fontSize:10,color:"#FF3D5A",fontWeight:700}}>🔴 LIVE</span>
+                                            {unlocked && <button onClick={e=>{e.stopPropagation();const upd=matches.map(m=>m.id===match.id?{...m,status:"completed"}:m);updMatches(upd);}} style={{fontSize:9,color:"#4A5E78",background:"transparent",border:"1px solid #1E2D45",borderRadius:4,padding:"2px 6px",cursor:"pointer"}}>Mark Done</button>}
+                                          </div>
+                                        ) : (
+                                          <span style={{fontSize:10,color:completed?"#2ECC71":"#F5A623",fontWeight:700,maxWidth:80,textAlign:"right",lineHeight:1.3}}>
+                                            {completed?(isSynced?"✓ SYNCED":match.result?"✓ "+match.result.slice(0,20):"DONE"):"UPCOMING"}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {/* Expanded match actions */}
+                                    {expandedMatchId===match.id && completed && (
+                                      <div style={{borderTop:"1px solid #1E2D45",padding:"10px 14px",display:"flex",gap:8,flexWrap:"wrap"}}>
+                                        <button onClick={()=>withPassword(()=>setSmartStatsMatch(match))}
+                                          style={{background:"#F5A62322",border:"1px solid #F5A62344",color:"#F5A623",borderRadius:7,padding:"6px 12px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:12}}>
+                                          📊 {isSynced?"EDIT STATS":"SYNC STATS"}
+                                        </button>
+                                        <button onClick={()=>setCaptainMatch(match)}
+                                          style={{background:"#4F8EF722",border:"1px solid #4F8EF744",color:"#4F8EF7",borderRadius:7,padding:"6px 12px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:12}}>
+                                          👑 SET C/VC
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              });
+                            })()}
+                          </div>
                         )}
-                      </div>
-                    );
-                  })}
-                </div>
-                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                  {transfers.phase==="closed" && <Btn onClick={openReleaseWindow} sx={{fontSize:13}}>📤 OPEN RELEASE WINDOW</Btn>}
-                  {transfers.phase==="release" && <Btn onClick={closeReleaseWindow} variant="blue" sx={{fontSize:13}}>🔒 CLOSE RELEASES & START PICKS</Btn>}
-                  {transfers.phase==="pick" && <Btn onClick={skipCurrentTeam} variant="ghost" sx={{fontSize:13}}>⏭ SKIP CURRENT TEAM</Btn>}
-                  {(transfers.phase==="done"||transfers.phase==="closed") && <Btn onClick={resetTransferWindow} variant="ghost" sx={{fontSize:13}}>🔁 RESET FOR NEXT WEEK</Btn>}
-                  {(transfers.phase==="release"||transfers.phase==="pick") && <Btn onClick={()=>withPassword(()=>{if(!confirm("Cancel transfer window? All releases and picks this week will be discarded."))return;updTransfers({...transfers,phase:"closed",releases:{},picks:[],currentPickTeam:null,pickDeadline:null});alert("Transfer window cancelled.");})  } variant="ghost" sx={{fontSize:13,color:"#FF3D5A"}}>✕ CANCEL WINDOW</Btn>}
-                </div>
-              </div>
-
-              {/* Release Phase */}
-              {(transfers.phase==="release"||transfers.phase==="pick"||transfers.phase==="done") && (
-                <div style={{marginBottom:16}}>
-                  <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginBottom:12}}>TEAM RELEASES</div>
-                  <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                    {teams.map(team=>{
-                      const released = (transfers.releases[team.id]||[]);
-                      const teamPlayers = players.filter(p=>assignments[p.id]===team.id);
-                      return (
-                        <div key={team.id} style={{background:"#0E1521",borderRadius:10,border:"1px solid "+team.color+"33",padding:14}}>
-                          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:released.length>0||transfers.phase==="release"?10:0}}>
-                            <span style={{fontWeight:700,color:team.color,fontFamily:"Rajdhani,sans-serif",fontSize:15}}>{team.name}</span>
-                            <span style={{fontSize:12,color:"#4A5E78"}}>{released.length}/3 released</span>
-                          </div>
-                          {released.length>0 && (
-                            <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:transfers.phase==="release"?10:0}}>
-                              {released.map(pid=>{
-                                const p=players.find(x=>x.id===pid);
-                                return <span key={pid} style={{background:"#FF3D5A22",color:"#FF3D5A",border:"1px solid #FF3D5A44",borderRadius:16,padding:"3px 10px",fontSize:12}}>{p?.name||pid}</span>;
-                              })}
-                            </div>
-                          )}
-                          {transfers.phase==="release" && released.length<3 && (
-                            <div>
-                              <div style={{fontSize:11,color:"#4A5E78",marginBottom:6}}>Select players to release (max 3, safe players excluded):</div>
-                              <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
-                                {teamPlayers.filter(p=>!released.includes(p.id)&&!isPlayerSafeForTeam(team.id,p.id)).map(p=>(
-                                  <button key={p.id} onClick={()=>releasePlayer(team.id,p.id)}
-                                    style={{padding:"4px 10px",borderRadius:16,border:"1px solid #1E2D45",background:"transparent",color:"#4A5E78",fontSize:12,fontFamily:"Barlow Condensed,sans-serif",cursor:"pointer"}}>
-                                    📤 {p.name}
-                                  </button>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Pick Phase */}
-              {transfers.phase==="pick" && (
-                <div>
-                  <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginBottom:12}}>PICK PHASE — UNSOLD POOL</div>
-
-                  {/* Current turn indicator */}
-                  {transfers.currentPickTeam && (() => {
-                    const team = teams.find(t=>t.id===transfers.currentPickTeam);
-                    const deadline = transfers.pickDeadline ? new Date(transfers.pickDeadline) : null;
-                    const minsLeft = deadline ? Math.max(0, Math.round((deadline-Date.now())/60000)) : 0;
-                    return (
-                      <div style={{background:team?.color+"22",border:"1px solid "+(team?.color||"#1E2D45")+"44",borderRadius:10,padding:14,marginBottom:12}}>
-                        <div style={{fontWeight:700,color:team?.color,fontFamily:"Rajdhani,sans-serif",fontSize:18}}>{team?.name}'s TURN</div>
-                        <div style={{fontSize:13,color:"#4A5E78",marginTop:4}}>
-                          ⏱ {minsLeft} minutes remaining •
-                          Can pick: {(transfers.releases[transfers.currentPickTeam]||[]).length - transfers.picks.filter(pk=>pk.teamId===transfers.currentPickTeam).length} player(s)
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {/* Unsold pool to pick from */}
-                  <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                    {unsoldPool.map(pid=>{
-                      const p=players.find(x=>x.id===pid);
-                      if(!p) return null;
-                      return (
-                        <div key={pid} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:"#0E1521",borderRadius:8}}>
-                          <div style={{flex:1}}>
-                            <div style={{fontWeight:700,fontSize:14,color:"#E2EAF4"}}>{p.name}</div>
-                            <div style={{fontSize:12,color:"#4A5E78"}}>{p.iplTeam} • {p.role}</div>
-                          </div>
-                          <button onClick={()=>pickPlayer(pid)}
-                            style={{background:"linear-gradient(135deg,#2ECC71,#16a34a)",border:"none",borderRadius:6,padding:"7px 14px",color:"#fff",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>
-                            PICK ✓
-                          </button>
-                        </div>
-                      );
-                    })}
-                    {unsoldPool.length===0&&<div style={{textAlign:"center",padding:24,color:"#4A5E78"}}>Unsold pool is empty</div>}
-                  </div>
-                </div>
-              )}
-
-              {transfers.phase==="done" && (
-                <div style={{textAlign:"center",padding:40,background:"#0E1521",borderRadius:12}}>
-                  <div style={{fontSize:48}}>✅</div>
-                  <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,color:"#2ECC71",fontWeight:700,marginTop:8}}>WEEK {transfers.weekNum} TRANSFERS COMPLETE</div>
-                  <div style={{fontSize:13,color:"#4A5E78",marginTop:8}}>{transfers.picks.length} players transferred this week</div>
-                </div>
-              )}
-
-              {transfers.phase==="closed" && transfers.weekNum===1 && (
-                <div style={{textAlign:"center",padding:40,background:"#0E1521",borderRadius:12}}>
-                  <div style={{fontSize:48}}>🔒</div>
-                  <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,color:"#4A5E78",fontWeight:700,marginTop:8}}>TRANSFER WINDOW CLOSED</div>
-                  <div style={{fontSize:13,color:"#4A5E78",marginTop:8}}>Opens Sunday 11:59 PM — Week {transfers.weekNum}</div>
-                </div>
-              )}
-
-              {/* Snatch Power Section */}
-              <div style={{marginTop:24,background:"#0E1521",borderRadius:12,border:"1px solid #A855F744",padding:16}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-                  <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:18,fontWeight:700,color:"#A855F7",letterSpacing:2}}>⚡ SNATCH POWER</div>
-                  <div style={{fontSize:10,fontWeight:700,color:snatchWindowStatus.open?"#2ECC71":"#FF3D5A",background:snatchWindowStatus.open?"#2ECC7122":"#FF3D5A22",padding:"3px 8px",borderRadius:20,letterSpacing:1}}>{snatchWindowStatus.label}</div>
-                </div>
-                {!snatchWindowStatus.open && <div style={{fontSize:11,color:"#4A5E78",marginBottom:8}}>{snatchWindowStatus.countdown}</div>}
-                <div style={{fontSize:12,color:"#4A5E78",marginBottom:14}}>Week {snatch.weekNum} • #1 team gets to snatch 1 player (Sat 12AM–12PM IST). Returns Friday 11:58 PM.</div>
-
-                {snatch.active ? (
-                  <div>
-                    <div style={{background:"#A855F722",border:"1px solid #A855F744",borderRadius:8,padding:12,marginBottom:12}}>
-                      <div style={{fontSize:11,color:"#A855F7",fontWeight:700,letterSpacing:1,marginBottom:6}}>ACTIVE SNATCH</div>
-                      {(() => {
-                        const p=players.find(x=>x.id===snatch.active.pid);
-                        const byTeam=teams.find(t=>t.id===snatch.active.byTeamId);
-                        const fromTeam=teams.find(t=>t.id===snatch.active.fromTeamId);
-                        const returnDate = "Friday 11:58 PM";
-                        return (
-                          <div>
-                            <div style={{fontSize:13,color:"#E2EAF4",marginBottom:4}}><strong>{p?.name}</strong> snatched by <span style={{color:byTeam?.color,fontWeight:700}}>{byTeam?.name}</span></div>
-                            <div style={{fontSize:11,color:"#4A5E78"}}>From: <span style={{color:fromTeam?.color}}>{fromTeam?.name}</span> • {snatch.active.pointsAtSnatch} pts at snatch • Returns: {returnDate}</div>
-                          </div>
-                        );
-                      })()}
-                    </div>
-                    {unlocked && <Btn onClick={returnSnatched} variant="ghost" sx={{fontSize:12}}>↩️ FORCE RETURN (ADMIN)</Btn>}
-                  </div>
-                ) : (
-                  <div>
-                    <div style={{fontSize:13,color:"#E2EAF4",marginBottom:10}}>
-                      Snatch power this week: <span style={{color:leaderboard[0]?.color,fontWeight:700}}>{leaderboard[0]?.name||"—"}</span>
-                    </div>
-                    {snatchWindowStatus.open ? (
-                      <div>
-                        <div style={{fontSize:11,color:"#4A5E78",marginBottom:8}}>⚡ Window is open — {leaderboard[0]?.name} can snatch 1 player now. Safe players excluded.</div>
-                        <div style={{maxHeight:220,overflowY:"auto",display:"flex",flexDirection:"column",gap:5}}>
-                          {players.filter(p=>assignments[p.id]&&assignments[p.id]!==leaderboard[0]?.id&&!isPlayerSafe(p.id)).map(p=>{
-                            const fromTeam=teams.find(t=>t.id===assignments[p.id]);
-                            const isMyTeam = myTeam?.id === leaderboard[0]?.id;
-                            return (
-                              <div key={p.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:"#141E2E",borderRadius:7}}>
-                                <div style={{flex:1}}>
-                                  <div style={{fontWeight:600,fontSize:13,color:"#E2EAF4"}}>{p.name}</div>
-                                  <div style={{fontSize:11,color:fromTeam?.color}}>{fromTeam?.name}</div>
-                                </div>
-                                {isMyTeam ? (
-                                  <button onClick={()=>initiateSnatch(p.id,assignments[p.id])}
-                                    style={{background:"#A855F722",border:"1px solid #A855F744",color:"#A855F7",borderRadius:6,padding:"5px 10px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:12}}>
-                                    ⚡ SNATCH
-                                  </button>
-                                ) : (
-                                  <div style={{fontSize:10,color:"#4A5E78"}}>Only {leaderboard[0]?.name} can snatch</div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ) : (
-                      <div style={{fontSize:12,color:"#4A5E78",padding:"12px",background:"#141E2E",borderRadius:8,textAlign:"center"}}>
-                        Snatch window opens Saturday 12:00 AM IST
                       </div>
                     )}
                   </div>
-                )}
-              </div>
+                );
+              })}
             </div>
           )}
 
