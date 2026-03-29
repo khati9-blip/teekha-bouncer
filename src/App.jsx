@@ -1849,7 +1849,7 @@ function App({ pitch, onLeave, user, onLogout }) {
     {id:"draft",label:"Draft",icon:"📋",disabled:teams.length===0},
     {id:"matches",label:"Matches",icon:"🏏",disabled:players.length===0},
     {id:"transfer",label:"Transfer",icon:"🔄",disabled:teams.length===0},
-    {id:"results",label:"Results",icon:"📊",disabled:teams.length===0},
+    {id:"form",label:"Form",icon:"📈",disabled:teams.length===0},
     {id:"leaderboard",label:"Board",icon:"🏆",disabled:teams.length===0},
   ];
 
