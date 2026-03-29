@@ -2584,7 +2584,6 @@ function App({ pitch, onLeave, user, onLogout }) {
                   })}
                 </>
               )}
-              </>}
             </div>
           )}
         </div>
