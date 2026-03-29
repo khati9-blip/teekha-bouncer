@@ -411,14 +411,14 @@ const css = `
 `;
 
 function Spinner() { return <div style={{width:24,height:24,border:"3px solid #1E2D45",borderTop:"3px solid #F5A623",borderRadius:"50%",animation:"spin 0.8s linear infinite",display:"inline-block"}} />; }
-function Badge({ label, color="#4F8EF7" }) { return <span style={{background:color+"22",color,border:`1px solid ${color}44`,padding:"2px 8px",borderRadius:4,fontSize:11,fontWeight:600}}>{label}</span>; }
+function Badge({ label, color="#4F8EF7" }) { return <span style={{background:color+"22",color,border:"1px solid "+color+"44",padding:"2px 8px",borderRadius:4,fontSize:11,fontWeight:600}}>{label}</span>; }
 function Btn({ children, onClick, variant="primary", disabled, style:sx={} }) {
   const base={fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:15,letterSpacing:1,textTransform:"uppercase",border:"none",borderRadius:8,padding:"10px 22px",cursor:disabled?"not-allowed":"pointer",opacity:disabled?0.5:1,...sx};
   const v={primary:{background:"linear-gradient(135deg,#F5A623,#FF8C00)",color:"#080C14"},blue:{background:"linear-gradient(135deg,#4F8EF7,#1a5fb4)",color:"#fff"},ghost:{background:"transparent",color:"#4A5E78",border:"1px solid #1E2D45"},danger:{background:"#FF3D5A22",color:"#FF3D5A",border:"1px solid #FF3D5A44"}};
   return <button onClick={disabled?undefined:onClick} style={{...base,...v[variant],...sx}}>{children}</button>;
 }
 function Card({ children, style:sx={}, accent }) {
-  return <div style={{background:"var(--card)",borderRadius:12,border:"1px solid var(--border)",...(accent?{borderTop:`3px solid ${accent}`}:{}),...sx}}>{children}</div>;
+  return <div style={{background:"var(--card)",borderRadius:12,border:"1px solid var(--border)",...(accent?{borderTop:"3px solid "+accent}:{}),...sx}}>{children}</div>;
 }
 
 
@@ -683,7 +683,7 @@ function SmartStatsModal({ match, players, assignments, existingStats, onSave, o
           <div style={{maxHeight:100,overflowY:"auto",display:"flex",flexWrap:"wrap",gap:5}}>
             {filteredPlayers.map(p=>(
               <button key={p.id} onClick={()=>upd(p.id,"played",!stats[p.id]?.played)}
-                style={{padding:"4px 10px",borderRadius:20,border:`1px solid ${stats[p.id]?.played?"#2ECC71":"#1E2D45"}`,background:stats[p.id]?.played?"#2ECC7122":"transparent",color:stats[p.id]?.played?"#2ECC71":"#4A5E78",fontSize:12,fontFamily:"Barlow Condensed,sans-serif",cursor:"pointer",fontWeight:600}}>
+                style={{padding:"4px 10px",borderRadius:20,border:"1px solid "+(stats[p.id]?.played?"#2ECC71":"#1E2D45"),background:stats[p.id]?.played?"#2ECC7122":"transparent",color:stats[p.id]?.played?"#2ECC71":"#4A5E78",fontSize:12,fontFamily:"Barlow Condensed,sans-serif",cursor:"pointer",fontWeight:600}}>
                 {stats[p.id]?.played?"✓ ":""}{p.name} <span style={{opacity:0.5,fontSize:10}}>({p.iplTeam})</span>
               </button>
             ))}
@@ -1954,7 +1954,7 @@ function App({ pitch, onLeave, user, onLogout }) {
                   {Array.from({length:numTeams},(_,i)=>(
                     <div key={i} style={{display:"flex",alignItems:"center",gap:10}}>
                       <div style={{width:10,height:10,borderRadius:"50%",background:PALETTE[i],flexShrink:0}} />
-                      <input value={tNames[i]} onChange={e=>{const n=[...tNames];n[i]=e.target.value;setTNames(n);}} style={{flex:1,background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"9px 14px",color:"#E2EAF4",fontSize:15,fontFamily:"Barlow Condensed,sans-serif",fontWeight:600}} placeholder={`Team ${i+1}`} />
+                      <input value={tNames[i]} onChange={e=>{const n=[...tNames];n[i]=e.target.value;setTNames(n);}} style={{flex:1,background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"9px 14px",color:"#E2EAF4",fontSize:15,fontFamily:"Barlow Condensed,sans-serif",fontWeight:600}} placeholder={"Team "+(i+1)} />
                     </div>
                   ))}
                 </div>
@@ -2052,12 +2052,12 @@ function App({ pitch, onLeave, user, onLogout }) {
 
               {/* PLAYERS TAB */}
               {draftTab==="players" && <>
-              <div style={{background:unlocked?"#2ECC7112":"#F5A62310",border:`1px solid ${unlocked?"#2ECC7133":"#F5A62333"}`,borderRadius:10,padding:"12px 16px",marginBottom:16,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
+              <div style={{background:unlocked?"#2ECC7112":"#F5A62310",border:"1px solid "+(unlocked?"#2ECC7133":"#F5A62333"),borderRadius:10,padding:"12px 16px",marginBottom:16,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
                 <div>
                   <span style={{fontWeight:700,color:unlocked?"#2ECC71":"#F5A623",fontSize:14}}>{unlocked?"🔓 Squad changes unlocked":"🔒 Squad changes are locked"}</span>
                   <span style={{color:"#4A5E78",fontSize:12,marginLeft:10}}>{unlocked?"Assign, replace or remove freely":"Password required to modify squads"}</span>
                 </div>
-                <button onClick={()=>{if(unlocked)setUnlocked(false);else{setPendingAction(null);setShowPwModal(true);}}} style={{background:unlocked?"#FF3D5A22":"#F5A62322",border:`1px solid ${unlocked?"#FF3D5A44":"#F5A62344"}`,color:unlocked?"#FF3D5A":"#F5A623",borderRadius:7,padding:"7px 16px",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+                <button onClick={()=>{if(unlocked)setUnlocked(false);else{setPendingAction(null);setShowPwModal(true);}}} style={{background:unlocked?"#FF3D5A22":"#F5A62322",border:"1px solid "+(unlocked?"#FF3D5A44":"#F5A62344"),color:unlocked?"#FF3D5A":"#F5A623",borderRadius:7,padding:"7px 16px",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>
                   {unlocked?"LOCK":"UNLOCK"}
                 </button>
               </div>
@@ -2066,7 +2066,7 @@ function App({ pitch, onLeave, user, onLogout }) {
                   const cnt=players.filter(p=>assignments[p.id]===t.id).length;
                   const active=teamFilter===t.id;
                   return(
-                    <div key={t.id} style={{position:"relative",display:"flex",alignItems:"center",background:active?t.color+"22":"#0E1521",borderRadius:8,borderLeft:`3px solid ${t.color}`,fontSize:13,border:active?`1px solid ${t.color}`:"1px solid transparent",transition:"all .15s",overflow:"hidden"}}>
+                    <div key={t.id} style={{position:"relative",display:"flex",alignItems:"center",background:active?t.color+"22":"#0E1521",borderRadius:8,borderLeft:"3px solid "+t.color,fontSize:13,border:active?"1px solid "+t.color:"1px solid transparent",transition:"all .15s",overflow:"hidden"}}>
                       {teamLogos[t.id]&&<img src={teamLogos[t.id]} style={{position:"absolute",right:0,top:0,height:"100%",opacity:0.15,objectFit:"contain",pointerEvents:"none"}} />}
                       <div onClick={()=>setTeamFilter(active?null:t.id)} style={{padding:"7px 10px",cursor:"pointer",display:"flex",alignItems:"center",gap:6,flex:1}}>
                         {teamLogos[t.id]&&<img src={teamLogos[t.id]} style={{width:22,height:22,objectFit:"contain",borderRadius:4}} />}
@@ -2162,7 +2162,7 @@ function App({ pitch, onLeave, user, onLogout }) {
                       const aTeam=teams.find(t=>t.id===assignments[p.id]);
                       const isAssigned=!!assignments[p.id];
                       return(
-                        <div key={p.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:"#0E1521",borderRadius:8,borderLeft:`3px solid ${aTeam?aTeam.color:"#1E2D45"}`}}>
+                        <div key={p.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:"#0E1521",borderRadius:8,borderLeft:"3px solid "+(aTeam?aTeam.color:"#1E2D45")}}>
                           <div style={{flex:1,minWidth:0}}>
                             <div style={{display:"flex",alignItems:"center",gap:6}}>
                               <span style={{fontWeight:700,fontSize:14,color:"#E2EAF4"}}>{p.name}</span>
@@ -2170,7 +2170,7 @@ function App({ pitch, onLeave, user, onLogout }) {
                             </div>
                             <div style={{fontSize:12,color:"#4A5E78",marginTop:2}}>{p.iplTeam} &nbsp;•&nbsp;<span style={{color:ROLE_COLORS[p.role]||"#94A3B8"}}>{p.role}</span>{isAssigned&&<span style={{marginLeft:8,color:aTeam?.color,fontWeight:700}}>→ {aTeam?.name}</span>}</div>
                           </div>
-                          <select value={assignments[p.id]||""} onChange={e=>assignPlayer(p.id,e.target.value)} style={{background:"#141E2E",border:`1px solid ${aTeam?aTeam.color+"66":"#1E2D45"}`,borderRadius:6,padding:"6px 10px",color:aTeam?aTeam.color:"#4A5E78",fontSize:13,fontFamily:"Barlow Condensed",fontWeight:600,maxWidth:150,cursor:"pointer"}}>
+                          <select value={assignments[p.id]||""} onChange={e=>assignPlayer(p.id,e.target.value)} style={{background:"#141E2E",border:"1px solid "+(aTeam?aTeam.color+"66":"#1E2D45"),borderRadius:6,padding:"6px 10px",color:aTeam?aTeam.color:"#4A5E78",fontSize:13,fontFamily:"Barlow Condensed",fontWeight:600,maxWidth:150,cursor:"pointer"}}>
                             <option value="">{isAssigned?"Move to…":"— Assign —"}</option>
                             {teams.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
                           </select>
@@ -2178,7 +2178,7 @@ function App({ pitch, onLeave, user, onLogout }) {
                           <button onClick={()=>withPassword(()=>setEditPlayer(p))} style={{background:"#4F8EF722",border:"1px solid #4F8EF744",color:"#4F8EF7",borderRadius:6,padding:"6px 10px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,flexShrink:0}}>✏️</button>
                           {isAssigned && <button onClick={()=>toggleSafePlayer(assignments[p.id],p.id)}
                             title={isPlayerSafeForTeam(assignments[p.id],p.id)?"Remove safe status":"Mark as safe player"}
-                            style={{background:isPlayerSafeForTeam(assignments[p.id],p.id)?"#2ECC7133":"transparent",border:`1px solid ${isPlayerSafeForTeam(assignments[p.id],p.id)?"#2ECC71":"#1E2D45"}`,color:isPlayerSafeForTeam(assignments[p.id],p.id)?"#2ECC71":"#4A5E78",borderRadius:6,padding:"6px 10px",cursor:"pointer",fontSize:13,flexShrink:0}}>🛡️</button>}
+                            style={{background:isPlayerSafeForTeam(assignments[p.id],p.id)?"#2ECC7133":"transparent",border:"1px solid "+(isPlayerSafeForTeam(assignments[p.id],p.id)?"#2ECC71":"#1E2D45"),color:isPlayerSafeForTeam(assignments[p.id],p.id)?"#2ECC71":"#4A5E78",borderRadius:6,padding:"6px 10px",cursor:"pointer",fontSize:13,flexShrink:0}}>🛡️</button>}
                           <button onClick={()=>deletePlayer(p.id)} style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:"#FF3D5A",borderRadius:6,padding:"6px 10px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:11,flexShrink:0}}>🗑️</button>
                         </div>
                       );
@@ -2227,7 +2227,7 @@ function App({ pitch, onLeave, user, onLogout }) {
                                 {teams.map(team=>{
                                   const key=`${match.id}_${team.id}`,cap=captains[key]||{},teamPlayers=players.filter(p=>assignments[p.id]===team.id);
                                   return(
-                                    <div key={team.id} style={{background:"#080C14",borderRadius:8,padding:"12px 16px",borderLeft:`3px solid ${team.color}`}}>
+                                    <div key={team.id} style={{background:"#080C14",borderRadius:8,padding:"12px 16px",borderLeft:"3px solid "+team.color}}>
                                       <div style={{color:team.color,fontWeight:700,fontSize:13,letterSpacing:1,marginBottom:10}}>{team.name.toUpperCase()}</div>
                                       <div style={{display:"flex",gap:14,flexWrap:"wrap"}}>
                                         <div>
@@ -2297,7 +2297,7 @@ function App({ pitch, onLeave, user, onLogout }) {
                       const released = (transfers.releases[team.id]||[]);
                       const teamPlayers = players.filter(p=>assignments[p.id]===team.id);
                       return (
-                        <div key={team.id} style={{background:"#0E1521",borderRadius:10,border:`1px solid ${team.color}33`,padding:14}}>
+                        <div key={team.id} style={{background:"#0E1521",borderRadius:10,border:"1px solid "+team.color+"33",padding:14}}>
                           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:released.length>0||transfers.phase==="release"?10:0}}>
                             <span style={{fontWeight:700,color:team.color,fontFamily:"Rajdhani,sans-serif",fontSize:15}}>{team.name}</span>
                             <span style={{fontSize:12,color:"#4A5E78"}}>{released.length}/3 released</span>
@@ -2341,7 +2341,7 @@ function App({ pitch, onLeave, user, onLogout }) {
                     const deadline = transfers.pickDeadline ? new Date(transfers.pickDeadline) : null;
                     const minsLeft = deadline ? Math.max(0, Math.round((deadline-Date.now())/60000)) : 0;
                     return (
-                      <div style={{background:team?.color+"22",border:`1px solid ${team?.color}44`,borderRadius:10,padding:14,marginBottom:12}}>
+                      <div style={{background:team?.color+"22",border:"1px solid "+(team?.color||"#1E2D45")+"44",borderRadius:10,padding:14,marginBottom:12}}>
                         <div style={{fontWeight:700,color:team?.color,fontFamily:"Rajdhani,sans-serif",fontSize:18}}>{team?.name}'s TURN</div>
                         <div style={{fontSize:13,color:"#4A5E78",marginTop:4}}>
                           ⏱ {minsLeft} minutes remaining •
@@ -2487,7 +2487,7 @@ function App({ pitch, onLeave, user, onLogout }) {
                         {open && (
                           <div style={{borderTop:"1px solid #1E2D45",padding:"16px 18px",display:"flex",flexDirection:"column",gap:14}}>
                             {teamBreakdowns.map((tb,rank)=>(
-                              <div key={tb.team.id} style={{background:"#080C14",borderRadius:10,border:`1px solid ${tb.team.color}33`,overflow:"hidden"}}>
+                              <div key={tb.team.id} style={{background:"#080C14",borderRadius:10,border:"1px solid "+tb.team.color+"33",overflow:"hidden"}}>
                                 {/* Team header */}
                                 <div style={{padding:"10px 16px",borderBottom:"1px solid #1E2D4544",display:"flex",alignItems:"center",justifyContent:"space-between",background:tb.team.color+"11"}}>
                                   <div style={{display:"flex",alignItems:"center",gap:10}}>
@@ -2506,7 +2506,7 @@ function App({ pitch, onLeave, user, onLogout }) {
                                       <div style={{flex:1,minWidth:0}}>
                                         <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
                                           <span style={{fontWeight:700,fontSize:14,color:"#E2EAF4"}}>{p.name}</span>
-                                          {p.mult>1 && <span style={{background:p.mult===2?"#F5A62322":"#94A3B822",color:p.mult===2?"#F5A623":"#94A3B8",border:`1px solid ${p.mult===2?"#F5A62344":"#94A3B844"}`,fontSize:10,padding:"1px 7px",borderRadius:10,fontWeight:700}}>
+                                          {p.mult>1 && <span style={{background:p.mult===2?"#F5A62322":"#94A3B822",color:p.mult===2?"#F5A623":"#94A3B8",border:"1px solid "+(p.mult===2?"#F5A62344":"#94A3B844"),fontSize:10,padding:"1px 7px",borderRadius:10,fontWeight:700}}>
                                             {p.mult===2?"⭐ CAPTAIN 2×":"🥈 VC 1.5×"}
                                           </span>}
                                         </div>
@@ -2547,7 +2547,7 @@ function App({ pitch, onLeave, user, onLogout }) {
                     {leaderboard.map((team,i)=>{
                       const medals=["🥇","🥈","🥉"],mc=["#F5A623","#94A3B8","#CD7C2F"];
                       return(
-                        <div key={team.id} style={{display:"flex",alignItems:"center",gap:16,background:"#0E1521",borderRadius:10,padding:"16px 20px",marginBottom:8,borderLeft:`4px solid ${team.color}`}}>
+                        <div key={team.id} style={{display:"flex",alignItems:"center",gap:16,background:"#0E1521",borderRadius:10,padding:"16px 20px",marginBottom:8,borderLeft:"4px solid "+team.color}}>
                           <div style={{fontSize:28,minWidth:36}}>{medals[i]||("#"+(i+1))}</div>
                           <div style={{flex:1}}>
                             <div style={{fontWeight:700,fontSize:18,color:team.color,fontFamily:"Rajdhani",letterSpacing:1}}>{team.name}</div>
