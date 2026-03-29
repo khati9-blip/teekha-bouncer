@@ -2309,7 +2309,7 @@ export default function App() {
                                 {/* Team header */}
                                 <div style={{padding:"10px 16px",borderBottom:"1px solid #1E2D4544",display:"flex",alignItems:"center",justifyContent:"space-between",background:tb.team.color+"11"}}>
                                   <div style={{display:"flex",alignItems:"center",gap:10}}>
-                                    <span style={{fontSize:20}}>{["🥇","🥈","🥉"][rank]||`#${rank+1}`}</span>
+                                    <span style={{fontSize:20}}>{["🥇","🥈","🥉"][rank]||"#"+(rank+1)}</span>
                                     <span style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:16,color:tb.team.color,letterSpacing:1}}>{tb.team.name}</span>
                                   </div>
                                   <span style={{fontFamily:"Rajdhani,sans-serif",fontWeight:800,fontSize:22,color:"#F5A623"}}>{tb.total} pts</span>
@@ -2370,7 +2370,7 @@ export default function App() {
                       const medals=["🥇","🥈","🥉"],mc=["#F5A623","#94A3B8","#CD7C2F"];
                       return(
                         <div key={team.id} style={{display:"flex",alignItems:"center",gap:16,background:"#0E1521",borderRadius:10,padding:"16px 20px",marginBottom:8,borderLeft:`4px solid ${team.color}`}}>
-                          <div style={{fontSize:28,minWidth:36}}>{medals[i]||`#${i+1}`}</div>
+                          <div style={{fontSize:28,minWidth:36}}>{"#"+(i+1)}</div>
                           <div style={{flex:1}}>
                             <div style={{fontWeight:700,fontSize:18,color:team.color,fontFamily:"Rajdhani",letterSpacing:1}}>{team.name}</div>
                             <div style={{fontSize:12,color:"#4A5E78"}}>{players.filter(p=>assignments[p.id]===team.id).length} players drafted</div>
