@@ -2179,6 +2179,7 @@ export default function App() {
                   <div style={{fontSize:12,color:"#4A5E78",marginBottom:8}}>Last 5 match points. Taller bar = better match.</div>
                   {getSeasonStats().filter(p => p.played > 0).map(p => {
                     const mx = Math.max.apply(null, p.last5.concat([1]));
+                    const barH = (v) => Math.max(3, Math.round(v * 28 / mx));
                     return (
                       <div key={p.id} style={{background:"#0E1521",borderRadius:10,padding:"10px 14px"}}>
                         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
@@ -2189,7 +2190,7 @@ export default function App() {
                           {p.last5.map((v, i) => (
                             <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:1}}>
                               <span style={{fontSize:9,color:"#4A5E78"}}>{v}</span>
-                              <div style={{width:"100%",background:v>0?p.tc:"#1E2D45",borderRadius:"2px 2px 0 0",height:Math.max(3, Math.round(v * 28 / mx))+"px"}} />
+                              <div style={{width:"100%",background:v>0?p.tc:"#1E2D45",borderRadius:"2px 2px 0 0",height:barH(v)+"px"}} />
                             </div>
                           ))}
                         </div>
