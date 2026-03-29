@@ -223,45 +223,50 @@ const SUPABASE_KEY = "sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm";
 const SB_HEADERS = {
   "Content-Type": "application/json",
   "apikey": SUPABASE_KEY,
-  "Authorization": `Bearer ${SUPABASE_KEY}`,
+  "Authorization": "Bearer " + SUPABASE_KEY,
 };
 
-// Local cache to avoid slow reads
 const localCache = {};
 
-async function storeGet(key) {
-  if (localCache[key] !== undefined) return localCache[key];
+async function sbGet(rawKey) {
+  if (localCache[rawKey] !== undefined) return localCache[rawKey];
   try {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/league_data?key=eq.${encodeURIComponent(key)}&select=value`, {
+    const res = await fetch(SUPABASE_URL + "/rest/v1/league_data?key=eq." + encodeURIComponent(rawKey) + "&select=value", {
       headers: SB_HEADERS,
     });
     const data = await res.json();
     const val = data?.[0]?.value ?? null;
-    localCache[key] = val;
+    localCache[rawKey] = val;
     return val;
   } catch { return null; }
 }
 
-async function storeSet(key, val) {
-  localCache[key] = val;
+async function sbSet(rawKey, val) {
+  localCache[rawKey] = val;
   try {
-    await fetch(`${SUPABASE_URL}/rest/v1/league_data`, {
+    await fetch(SUPABASE_URL + "/rest/v1/league_data", {
       method: "POST",
       headers: { ...SB_HEADERS, "Prefer": "resolution=merge-duplicates" },
-      body: JSON.stringify({ key, value: val, updated_at: new Date().toISOString() }),
+      body: JSON.stringify({ key: rawKey, value: val, updated_at: new Date().toISOString() }),
     });
-  } catch(e) { console.warn("storeSet failed:", e.message); }
+  } catch(e) { console.warn("sbSet failed:", e.message); }
 }
 
-async function storeDel(key) {
-  delete localCache[key];
+async function sbDel(rawKey) {
+  delete localCache[rawKey];
   try {
-    await fetch(`${SUPABASE_URL}/rest/v1/league_data?key=eq.${encodeURIComponent(key)}`, {
+    await fetch(SUPABASE_URL + "/rest/v1/league_data?key=eq." + encodeURIComponent(rawKey), {
       method: "DELETE",
       headers: SB_HEADERS,
     });
-  } catch(e) { console.warn("storeDel failed:", e.message); }
+  } catch(e) { console.warn("sbDel failed:", e.message); }
 }
+
+// Pitch-aware wrappers — set pitchId before using
+let _pitchId = "p1";
+const storeGet = (key) => sbGet(_pitchId + "_" + key);
+const storeSet = (key, val) => sbSet(_pitchId + "_" + key, val);
+const storeDel = (key) => sbDel(_pitchId + "_" + key);
 
 async function hashPw(str) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
@@ -793,7 +798,162 @@ function SmartStatsModal({ match, players, assignments, existingStats, onSave, o
   );
 }
 
-export default function App() {
+// ── PITCH HOME SCREEN ────────────────────────────────────────────────────────
+function PitchHome({ onEnter }) {
+  const [pitches, setPitches] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [err, setErr] = useState("");
+  const [enterPitchId, setEnterPitchId] = useState(null);
+  const [enterPw, setEnterPw] = useState("");
+  const [enterErr, setEnterErr] = useState("");
+
+  useEffect(() => {
+    (async () => {
+      const data = await sbGet("pitches");
+      if (data && Array.isArray(data)) {
+        setPitches(data);
+      } else {
+        // First time — seed with Pitch 1 (existing league)
+        const p1hash = await sbGet("p1_pwhash");
+        const defaultPitches = [{ id: "p1", name: "Pitch 1", hash: p1hash || "", createdAt: new Date().toISOString() }];
+        await sbSet("pitches", defaultPitches);
+        setPitches(defaultPitches);
+      }
+      setLoading(false);
+    })();
+  }, []);
+
+  const createPitch = async () => {
+    if (!newName.trim()) { setErr("Enter a pitch name"); return; }
+    if (!newPw.trim()) { setErr("Set a password"); return; }
+    if (pitches.length >= 1000) { setErr("Max 1000 pitches reached"); return; }
+    const id = "p" + Date.now();
+    const hash = await hashPw(newPw);
+    const pitch = { id, name: newName.trim(), hash, createdAt: new Date().toISOString() };
+    const updated = [...pitches, pitch];
+    await sbSet("pitches", updated);
+    setPitches(updated);
+    setCreating(false);
+    setNewName(""); setNewPw(""); setErr("");
+    alert("Pitch created! You can now enter " + pitch.name);
+  };
+
+  const tryEnter = async (pitch) => {
+    // If no password set yet, enter directly
+    if (!pitch.hash) { _pitchId = pitch.id; onEnter(pitch); return; }
+    setEnterPitchId(pitch.id);
+    setEnterPw(""); setEnterErr("");
+  };
+
+  const submitEnter = async () => {
+    const pitch = pitches.find(p => p.id === enterPitchId);
+    if (!pitch) return;
+    const h = await hashPw(enterPw);
+    if (h === pitch.hash) {
+      _pitchId = pitch.id;
+      onEnter(pitch);
+    } else {
+      setEnterErr("Wrong password");
+      setEnterPw("");
+    }
+  };
+
+  const COLORS = ["#FF3D5A","#4F8EF7","#2ECC71","#F5A623","#A855F7","#06B6D4","#FF6B35","#EC4899"];
+
+  if (loading) return (
+    <div style={{minHeight:"100vh",background:"#080C14",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16}}>
+      <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:28,fontWeight:700,color:"#F5A623",letterSpacing:3}}>TEEKHA BOUNCER</div>
+      <div style={{color:"#4A5E78",fontSize:14}}>Loading pitches...</div>
+    </div>
+  );
+
+  return (
+    <div style={{minHeight:"100vh",background:"#080C14",color:"#E2EAF4"}}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Barlow+Condensed:wght@400;600;700;800&display=swap');*{box-sizing:border-box;margin:0;padding:0;}body{font-family:'Barlow Condensed',sans-serif;background:#080C14;color:#E2EAF4;}`}</style>
+
+      {/* Header */}
+      <div style={{background:"#0E1521",borderBottom:"1px solid #1E2D45",padding:"16px 20px",display:"flex",alignItems:"center",gap:12}}>
+        <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:24,color:"#F5A623",letterSpacing:3}}>🏏 TEEKHA BOUNCER</div>
+        <div style={{fontSize:12,color:"#4A5E78",letterSpacing:2}}>LEAGUE PITCHES</div>
+      </div>
+
+      <div style={{maxWidth:600,margin:"0 auto",padding:"24px 16px 100px"}}>
+        <div style={{marginBottom:24}}>
+          <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,fontWeight:700,color:"#E2EAF4",letterSpacing:2,marginBottom:4}}>SELECT YOUR PITCH</div>
+          <div style={{fontSize:13,color:"#4A5E78"}}>Each pitch is an independent league. Enter your pitch to manage teams, track points and view the leaderboard.</div>
+        </div>
+
+        {/* Pitch list */}
+        <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
+          {pitches.map((pitch, i) => (
+            <div key={pitch.id} onClick={() => tryEnter(pitch)}
+              style={{background:"#0E1521",borderRadius:12,border:"2px solid " + (COLORS[i % COLORS.length] + "44"),padding:"16px 20px",cursor:"pointer",display:"flex",alignItems:"center",gap:16,transition:"border .15s"}}
+            >
+              <div style={{width:44,height:44,borderRadius:10,background:COLORS[i % COLORS.length] + "22",border:"2px solid " + COLORS[i % COLORS.length] + "66",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+                <span style={{fontFamily:"Rajdhani,sans-serif",fontWeight:800,fontSize:18,color:COLORS[i % COLORS.length]}}>{"P"+(i+1)}</span>
+              </div>
+              <div style={{flex:1}}>
+                <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:18,color:"#E2EAF4",letterSpacing:1}}>{pitch.name}</div>
+                <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>Created {new Date(pitch.createdAt).toLocaleDateString()}</div>
+              </div>
+              <div style={{fontSize:12,color:COLORS[i % COLORS.length],fontWeight:700,letterSpacing:1}}>ENTER →</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Create new pitch */}
+        {!creating ? (
+          <button onClick={() => setCreating(true)}
+            style={{width:"100%",background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:12,padding:"14px",color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:16,cursor:"pointer",letterSpacing:1}}>
+            + CREATE NEW PITCH
+          </button>
+        ) : (
+          <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #1E2D45",padding:20}}>
+            <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:18,color:"#F5A623",letterSpacing:2,marginBottom:16}}>NEW PITCH</div>
+            <input value={newName} onChange={e=>{setNewName(e.target.value);setErr("");}} placeholder="Pitch name (e.g. Office League 2026)"
+              style={{width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"11px 14px",color:"#E2EAF4",fontSize:15,fontFamily:"Barlow Condensed,sans-serif",marginBottom:10,boxSizing:"border-box"}} />
+            <input type="password" value={newPw} onChange={e=>{setNewPw(e.target.value);setErr("");}} placeholder="Set pitch password"
+              style={{width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"11px 14px",color:"#E2EAF4",fontSize:15,fontFamily:"Barlow Condensed,sans-serif",marginBottom:err?8:16,boxSizing:"border-box"}} />
+            {err && <div style={{color:"#FF3D5A",fontSize:13,marginBottom:12}}>{err}</div>}
+            <div style={{display:"flex",gap:10}}>
+              <button onClick={()=>{setCreating(false);setNewName("");setNewPw("");setErr("");}}
+                style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:11,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
+              <button onClick={createPitch}
+                style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:11,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CREATE PITCH</button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Enter password modal */}
+      {enterPitchId && (
+        <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.95)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300}}>
+          <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #1E2D45",padding:32,width:"100%",maxWidth:340,margin:"0 16px"}}>
+            <div style={{fontSize:32,textAlign:"center",marginBottom:8}}>🏏</div>
+            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,fontWeight:700,color:"#F5A623",textAlign:"center",letterSpacing:2,marginBottom:4}}>
+              {pitches.find(p=>p.id===enterPitchId)?.name}
+            </div>
+            <div style={{fontSize:13,color:"#4A5E78",textAlign:"center",marginBottom:20}}>Enter pitch password to continue</div>
+            <input type="password" value={enterPw} onChange={e=>{setEnterPw(e.target.value);setEnterErr("");}} onKeyDown={e=>e.key==="Enter"&&submitEnter()} placeholder="Pitch password..." autoFocus
+              style={{width:"100%",background:"#080C14",border:"1px solid " + (enterErr?"#FF3D5A":"#1E2D45"),borderRadius:8,padding:"12px 16px",color:"#E2EAF4",fontSize:16,fontFamily:"Barlow Condensed,sans-serif",outline:"none",marginBottom:enterErr?8:20,boxSizing:"border-box"}} />
+            {enterErr && <div style={{color:"#FF3D5A",fontSize:13,marginBottom:16,textAlign:"center"}}>{enterErr}</div>}
+            <div style={{display:"flex",gap:10}}>
+              <button onClick={()=>{setEnterPitchId(null);setEnterPw("");setEnterErr("");}}
+                style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:11,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
+              <button onClick={submitEnter}
+                style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:11,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>ENTER PITCH</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function App({ pitch, onLeave }) {
   const [page, setPage] = useState("setup");
   const [teams, setTeams] = useState([]);
   const [players, setPlayers] = useState([]);
@@ -811,9 +971,6 @@ export default function App() {
   const [pwHash, setPwHash] = useState(null);
   const [recoveryHash, setRecoveryHash] = useState(null);
   const [appReady, setAppReady] = useState(false);
-  const [statsTab, setStatsTab] = useState('top');
-  const [h2hA, setH2hA] = useState('');
-  const [h2hB, setH2hB] = useState('');
   const [unlocked, setUnlocked] = useState(false);
   const [showPwModal, setShowPwModal] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
@@ -1416,39 +1573,6 @@ export default function App() {
     return [...active, ...historical, ...(snatchedIn?[snatchedIn]:[])].sort((a,b)=>b.total-a.total);
   };
 
-  const getSeasonStats = () => players.filter(p => assignments[p.id]).map(p => {
-    const arr = Object.entries(points[p.id] || {}).map(([mid, d]) => d.base);
-    const total = arr.reduce((s, n) => s + n, 0);
-    const played = arr.length;
-    const avg = played > 0 ? Math.round(total / (played || 1)) : 0;
-    const nonZero = arr.filter(n => n > 0).length;
-    const pct = played > 0 ? Math.round((nonZero * 100) / (played || 1)) : 0;
-    const best = arr.reduce((mx, n) => n > mx ? n : mx, 0);
-    const last5 = arr.slice(-5);
-    const team = teams.find(t => t.id === assignments[p.id]);
-    return { ...p, total, played, avg, pct, best, last5, tc: team ? team.color : '#4A5E78', tn: team ? team.name : '' };
-  }).sort((a, b) => b.total - a.total);
-
-  const getH2H = (aid, bid) => {
-    return matches
-      .filter(m => m.status === 'completed' && Object.keys(points).some(pid => points[pid][m.id]))
-      .map(match => {
-        const pts = (tid) => Math.round(
-          players
-            .filter(p => assignments[p.id] === tid && points[p.id] && points[p.id][match.id])
-            .reduce((s, p) => {
-              const cap = captains[match.id + '_' + tid] || {};
-              let v = points[p.id][match.id].base;
-              if (cap.captain === p.id) { v = v * 2; } else if (cap.vc === p.id) { v = v * 1.5; }
-              return s + v;
-            }, 0)
-        );
-        const ap = pts(aid);
-        const bp = pts(bid);
-        return { match, ap, bp, winner: ap > bp ? aid : bp > ap ? bid : 'draw' };
-      });
-  };
-
   const navItems=[
     {id:"draft",label:"Draft",icon:"📋",disabled:teams.length===0},
     {id:"matches",label:"Matches",icon:"🏏",disabled:players.length===0},
@@ -1504,13 +1628,17 @@ export default function App() {
             <img src="/logo.png" alt="Teekha Bouncer" style={{height:36,width:36,objectFit:"contain",borderRadius:6}} />
             <div>
               <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:17,color:"#F5A623",letterSpacing:2,lineHeight:1}}>TEEKHA</div>
-              <div style={{fontSize:9,color:"#4A5E78",letterSpacing:2,textTransform:"uppercase"}}>Bouncer League</div>
+              <div style={{fontSize:9,color:"#4A5E78",letterSpacing:2,textTransform:"uppercase"}}>{pitch ? pitch.name : "Bouncer League"}</div>
             </div>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             <button onClick={()=>{if(unlocked)setUnlocked(false);else{setPendingAction(null);setShowPwModal(true);}}}
               style={{background:unlocked?"#2ECC7122":"transparent",border:`1px solid ${unlocked?"#2ECC71":"#1E2D45"}`,color:unlocked?"#2ECC71":"#4A5E78",fontSize:13,borderRadius:6,padding:"6px 12px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>
               {unlocked?"🔓 ON":"🔒 OFF"}
+            </button>
+            <button onClick={onLeave} title="Back to pitches"
+              style={{background:"transparent",border:"1px solid #1E2D45",color:"#4A5E78",fontSize:13,borderRadius:6,padding:"5px 10px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>
+              🏟️ PITCHES
             </button>
             <button onClick={()=>withPassword(()=>{if(!confirm("Reset ALL data? This cannot be undone!"))return;["teams","players","assignments","matches","captains","points","page","pwhash"].forEach(k=>storeDel(k));window.location.reload();})}
               style={{background:"transparent",border:"1px solid #1E2D45",color:"#4A5E78",fontSize:13,borderRadius:6,padding:"6px 10px",cursor:"pointer"}}>⚙️</button>
@@ -2038,170 +2166,8 @@ export default function App() {
             </div>
           )}
 
-          {page==="stats" && (
+          {page==="results" && (
             <div className="fade-in">
-              <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2,marginBottom:16}}>STATS</h2>
-              <div style={{display:"flex",background:"#0E1521",borderRadius:10,padding:4,gap:3,marginBottom:20,overflowX:"auto"}}>
-                {[{id:"top",label:"🏅 Top"},{id:"mvp",label:"⭐ MVP"},{id:"h2h",label:"⚔️ H2H"},{id:"form",label:"📈 Form"},{id:"results",label:"📋 Results"}].map(t => (
-                  <button key={t.id} onClick={() => setStatsTab(t.id)} style={{flex:"0 0 auto",padding:"8px 14px",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,background:statsTab===t.id?"#F5A623":"transparent",color:statsTab===t.id?"#080C14":"#4A5E78",whiteSpace:"nowrap"}}>{t.label}</button>
-                ))}
-              </div>
-              {statsTab==="top" && (() => {
-                const all = getSeasonStats();
-                const byPts = all.slice(0, 5);
-                const byCons = all.filter(p => p.played > 0).sort((a, b) => b.pct - a.pct).slice(0, 5);
-                const mvpBest = all.reduce((mx, p) => p.best > mx.best ? p : mx, {best:0,name:"",tn:""});
-                return (
-                  <div style={{display:"flex",flexDirection:"column",gap:14}}>
-                    {[
-                      {label:"🏆 MOST POINTS", color:"#F5A623", items:byPts, val:p=>p.total+" pts", sub:p=>"avg "+p.avg+" per match"},
-                      {label:"🎯 MOST CONSISTENT", color:"#2ECC71", items:byCons, val:p=>p.pct+"%", sub:p=>p.played+" matches"}
-                    ].map(cat => (
-                      <div key={cat.label} style={{background:"#0E1521",borderRadius:12,overflow:"hidden",border:"1px solid "+cat.color+"33"}}>
-                        <div style={{padding:"10px 16px",background:cat.color+"11",borderBottom:"1px solid "+cat.color+"22"}}>
-                          <span style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:15,color:cat.color}}>{cat.label}</span>
-                        </div>
-                        {cat.items.map((p, i) => (
-                          <div key={p.id} style={{display:"flex",alignItems:"center",padding:"9px 16px",borderBottom:"1px solid #1E2D4422"}}>
-                            <span style={{fontFamily:"Rajdhani,sans-serif",fontSize:18,fontWeight:800,color:i===0?cat.color:"#4A5E78",minWidth:26}}>{"#"+(i+1)}</span>
-                            <div style={{flex:1,marginLeft:8}}>
-                              <div style={{fontWeight:700,fontSize:13,color:"#E2EAF4"}}>{p.name}</div>
-                              <div style={{fontSize:11,color:p.tc}}>{p.tn}</div>
-                            </div>
-                            <div style={{textAlign:"right"}}>
-                              <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:18,fontWeight:800,color:i===0?cat.color:"#E2EAF4"}}>{cat.val(p)}</div>
-                              <div style={{fontSize:10,color:"#4A5E78"}}>{cat.sub(p)}</div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ))}
-                    {mvpBest.best > 0 && (
-                      <div style={{background:"#0E1521",border:"1px solid #F5A62366",borderRadius:12,padding:20,textAlign:"center"}}>
-                        <div style={{fontSize:10,color:"#F5A623",letterSpacing:2,fontWeight:700,marginBottom:4}}>BIGGEST SINGLE-MATCH SCORE</div>
-                        <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:48,fontWeight:800,color:"#F5A623"}}>{mvpBest.best}</div>
-                        <div style={{fontSize:16,fontWeight:700,color:"#E2EAF4"}}>{mvpBest.name}</div>
-                        <div style={{fontSize:12,color:"#4A5E78"}}>{mvpBest.tn}</div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
-              {statsTab==="mvp" && (() => {
-                const all = getSeasonStats();
-                const mvp = all[0];
-                if (!mvp) return <div style={{textAlign:"center",padding:40,color:"#4A5E78"}}>No data yet</div>;
-                return (
-                  <div style={{display:"flex",flexDirection:"column",gap:12}}>
-                    <div style={{background:"#0E1521",border:"2px solid #F5A623",borderRadius:16,padding:24,textAlign:"center"}}>
-                      <div style={{fontSize:10,color:"#F5A623",letterSpacing:3,fontWeight:700,marginBottom:10}}>MOST VALUABLE PLAYER</div>
-                      <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:32,fontWeight:800,color:"#F5A623"}}>{mvp.name}</div>
-                      <div style={{fontSize:13,color:mvp.tc,marginTop:4}}>{mvp.tn}</div>
-                      <div style={{display:"flex",justifyContent:"center",gap:20,marginTop:16,flexWrap:"wrap"}}>
-                        {[["TOTAL",mvp.total+" pts"],["AVG",mvp.avg+" per match"],["BEST",mvp.best+" pts"],["CONSIST.",mvp.pct+"%"]].map(([l,v]) => (
-                          <div key={l} style={{textAlign:"center"}}>
-                            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,fontWeight:800,color:"#E2EAF4"}}>{v}</div>
-                            <div style={{fontSize:9,color:"#4A5E78"}}>{l}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <div style={{background:"#0E1521",borderRadius:12,overflow:"hidden"}}>
-                      {all.slice(0, 10).map((p, i) => (
-                        <div key={p.id} style={{display:"flex",alignItems:"center",padding:"9px 16px",borderBottom:"1px solid #1E2D4422"}}>
-                          <span style={{fontFamily:"Rajdhani,sans-serif",fontSize:16,fontWeight:800,color:i===0?"#F5A623":i===1?"#94A3B8":i===2?"#CD7C2F":"#4A5E78",minWidth:26}}>{"#"+(i+1)}</span>
-                          <div style={{flex:1,marginLeft:8}}>
-                            <div style={{fontWeight:700,fontSize:13,color:"#E2EAF4"}}>{p.name}</div>
-                            <div style={{fontSize:11,color:p.tc}}>{p.tn}</div>
-                          </div>
-                          <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:18,fontWeight:700,color:"#E2EAF4"}}>{p.total} pts</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
-              {statsTab==="h2h" && (
-                <div>
-                  <div style={{display:"flex",gap:10,marginBottom:16,alignItems:"center",flexWrap:"wrap"}}>
-                    <select value={h2hA} onChange={e => setH2hA(e.target.value)} style={{flex:1,minWidth:120,background:"#0E1521",border:"1px solid #1E2D45",borderRadius:8,padding:"10px 12px",color:"#E2EAF4",fontSize:14,fontFamily:"Barlow Condensed,sans-serif"}}>
-                      <option value="">Team 1</option>
-                      {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                    </select>
-                    <span style={{color:"#F5A623",fontWeight:800,fontFamily:"Rajdhani,sans-serif",fontSize:18}}>VS</span>
-                    <select value={h2hB} onChange={e => setH2hB(e.target.value)} style={{flex:1,minWidth:120,background:"#0E1521",border:"1px solid #1E2D45",borderRadius:8,padding:"10px 12px",color:"#E2EAF4",fontSize:14,fontFamily:"Barlow Condensed,sans-serif"}}>
-                      <option value="">Team 2</option>
-                      {teams.filter(t => t.id !== h2hA).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                    </select>
-                  </div>
-                  {h2hA && h2hB ? (() => {
-                    const ta = teams.find(t => t.id === h2hA);
-                    const tb = teams.find(t => t.id === h2hB);
-                    const rows = getH2H(h2hA, h2hB);
-                    if (rows.length === 0) return <div style={{textAlign:"center",padding:32,color:"#4A5E78"}}>No completed matches yet</div>;
-                    const aw = rows.filter(r => r.winner === h2hA).length;
-                    const bw = rows.filter(r => r.winner === h2hB).length;
-                    return (
-                      <div style={{display:"flex",flexDirection:"column",gap:10}}>
-                        <div style={{background:"#0E1521",borderRadius:12,padding:16,display:"flex",alignItems:"center"}}>
-                          <div style={{flex:1,textAlign:"center"}}>
-                            <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:800,fontSize:16,color:ta.color}}>{ta.name}</div>
-                            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:40,fontWeight:800,color:aw>bw?ta.color:"#4A5E78"}}>{aw}</div>
-                            <div style={{fontSize:10,color:"#4A5E78"}}>WINS</div>
-                          </div>
-                          <div style={{color:"#4A5E78",fontWeight:800,fontSize:20}}>:</div>
-                          <div style={{flex:1,textAlign:"center"}}>
-                            <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:800,fontSize:16,color:tb.color}}>{tb.name}</div>
-                            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:40,fontWeight:800,color:bw>aw?tb.color:"#4A5E78"}}>{bw}</div>
-                            <div style={{fontSize:10,color:"#4A5E78"}}>WINS</div>
-                          </div>
-                        </div>
-                        {rows.map(({match, ap, bp, winner}) => (
-                          <div key={match.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 14px",background:"#0E1521",borderRadius:8}}>
-                            <div style={{flex:1}}>
-                              <div style={{fontSize:11,color:"#4A5E78"}}>M{match.matchNum}</div>
-                              <div style={{fontSize:12,color:"#E2EAF4",fontWeight:600}}>{match.team1} vs {match.team2}</div>
-                            </div>
-                            <div style={{display:"flex",gap:12,alignItems:"center"}}>
-                              <div style={{textAlign:"center"}}><div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:800,color:winner===h2hA?ta.color:"#E2EAF4"}}>{ap}</div><div style={{fontSize:9,color:"#4A5E78"}}>{ta.name.split(" ")[0]}</div></div>
-                              <span style={{color:"#4A5E78"}}>-</span>
-                              <div style={{textAlign:"center"}}><div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:800,color:winner===h2hB?tb.color:"#E2EAF4"}}>{bp}</div><div style={{fontSize:9,color:"#4A5E78"}}>{tb.name.split(" ")[0]}</div></div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })() : <div style={{textAlign:"center",padding:32,color:"#4A5E78"}}>Select two teams above</div>}
-                </div>
-              )}
-              {statsTab==="form" && (
-                <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                  <div style={{fontSize:12,color:"#4A5E78",marginBottom:8}}>Last 5 match points. Taller bar = better match.</div>
-                  {getSeasonStats().filter(p => p.played > 0).map(p => {
-                    const mx = Math.max.apply(null, p.last5.concat([1]));
-                    const barH = (v) => Math.max(3, Math.round(v * 28 / mx));
-                    return (
-                      <div key={p.id} style={{background:"#0E1521",borderRadius:10,padding:"10px 14px"}}>
-                        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
-                          <div><span style={{fontWeight:700,fontSize:13,color:"#E2EAF4"}}>{p.name}</span><span style={{fontSize:11,color:p.tc,marginLeft:8}}>{p.tn}</span></div>
-                          <span style={{fontFamily:"Rajdhani,sans-serif",fontWeight:800,fontSize:16,color:"#F5A623"}}>{p.total}</span>
-                        </div>
-                        <div style={{display:"flex",alignItems:"flex-end",gap:4,height:36}}>
-                          {p.last5.map((v, i) => (
-                            <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:1}}>
-                              <span style={{fontSize:9,color:"#4A5E78"}}>{v}</span>
-                              <div style={{width:"100%",background:v>0?p.tc:"#1E2D45",borderRadius:"2px 2px 0 0",height:barH(v)+"px"}} />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-              {statsTab==="results" && (
-                <div>
-
               <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2,marginBottom:24}}>MATCH RESULTS</h2>
 
               {matches.filter(m=>m.status==="completed"&&Object.keys(points).some(pid=>points[pid][m.id])).length===0 ? (
@@ -2291,12 +2257,8 @@ export default function App() {
                   })}
                 </div>
               )}
-                </div>
-              )}
             </div>
-              </div>
           )}
-
 
           {page==="leaderboard"&&(
             <div className="fade-in">
@@ -2359,3 +2321,13 @@ export default function App() {
     </>
   );
 }
+
+function Root() {
+  const [currentPitch, setCurrentPitch] = useState(null);
+  const handleEnter = (pitch) => { setCurrentPitch(pitch); };
+  const handleLeave = () => { setCurrentPitch(null); };
+  if (!currentPitch) return <PitchHome onEnter={handleEnter} />;
+  return <App pitch={currentPitch} onLeave={handleLeave} />;
+}
+
+export default Root;
