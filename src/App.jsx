@@ -1478,13 +1478,7 @@ export default function App() {
   const shareLeaderboard = () => {
     const medals = ['🥇','🥈','🥉'];
     const lines = leaderboard.map((t, i) => (medals[i] || ('#' + (i+1))) + ' ' + t.name + ': ' + t.total + ' pts');
-    const text = '🏏 Teekha Bouncer League
-Leaderboard
-
-' + lines.join('
-') + '
-
-teekha-bouncer.vercel.app';
+    const text = '🏏 Teekha Bouncer League\nLeaderboard\n\n' + lines.join('\n') + '\n\nteekha-bouncer.vercel.app';
     window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
   };
 
