@@ -3108,7 +3108,9 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
                             <div style={{fontWeight:700,fontSize:12,color:t.color}}>{t.name}</div>
                             <div style={{fontSize:10,color:"#4A5E78",marginTop:1}}>{ti.claimedBy ? ti.claimedBy.split("@")[0] : "Unclaimed"}</div>
                           </div>
-                          {ti.teamId ? (
+                          {ti.claimedBy ? (
+                            <span style={{fontSize:10,color:"#2ECC71",fontWeight:700}}>✓ CLAIMED</span>
+                          ) : ti.teamId ? (
                             <div style={{display:"flex",alignItems:"center",gap:4}}>
                               <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:14,fontWeight:800,color:"#F5A623",letterSpacing:2,background:"#F5A62322",padding:"3px 8px",borderRadius:6}}>{ti.teamId}</div>
                               <button onClick={async()=>{
