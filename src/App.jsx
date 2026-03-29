@@ -1808,15 +1808,17 @@ function App({ pitch, onLeave, user, onLogout }) {
         fetch("/api/cricbuzz?path="+encodeURIComponent("matches/v1/live")).then(r=>r.json()).catch(()=>({})),
       ]);
 
-      // Deduplicate across all three sources
-      const seenIds = new Set();
-      const fetched = [];
+      // Merge all three sources — "Complete" state always wins over "In Progress"
+      const matchMap = new Map();
       for (const m of [...extractIPL(liveData), ...extractIPL(recentData), ...extractIPL(upcomingData)]) {
-        if (!seenIds.has(m.info?.matchId)) {
-          seenIds.add(m.info?.matchId);
-          fetched.push(m);
+        const id = m.info?.matchId;
+        if (!id) continue;
+        const existing = matchMap.get(id);
+        if (!existing || m.info?.state === "Complete") {
+          matchMap.set(id, m);
         }
       }
+      const fetched = Array.from(matchMap.values());
 
       if (fetched.length === 0) {
         alert("No IPL matches found from Cricbuzz right now.");
@@ -2452,7 +2454,10 @@ function App({ pitch, onLeave, user, onLogout }) {
                           <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4,flexShrink:0}}>
                             {synced&&<span style={{fontSize:9,color:"#2ECC71",fontWeight:700}}>✓ SYNCED</span>}
                             {match.status==="live" || (liveScores[match.id] && liveScores[match.id].state !== "Complete") ? (
-                              <span style={{fontSize:9,color:"#FF3D5A",fontWeight:700,animation:"pulse 1s infinite"}}>🔴 LIVE</span>
+                              <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4}}>
+                                <span style={{fontSize:9,color:"#FF3D5A",fontWeight:700,animation:"pulse 1s infinite"}}>🔴 LIVE</span>
+                                {unlocked && <button onClick={e=>{e.stopPropagation();const upd=matches.map(m=>m.id===match.id?{...m,status:"completed"}:m);updMatches(upd);}} style={{fontSize:9,color:"#4A5E78",background:"transparent",border:"1px solid #1E2D45",borderRadius:4,padding:"2px 6px",cursor:"pointer"}}>Mark Done</button>}
+                              </div>
                             ) : (
                               <span style={{fontSize:9,color:completed?"#2ECC71":"#F5A623",fontWeight:700,maxWidth:80,textAlign:"right",lineHeight:1.2}}>{completed?(match.result?"✓ "+match.result.slice(0,25):"DONE"):"UPCOMING"}</span>
                             )}
