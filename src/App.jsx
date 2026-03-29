@@ -1410,106 +1410,95 @@ function TeamClaimScreen({ pitch, user, teams, onClaimed }) {
         </div>
 
         <div style={{background:"#0E1521",borderRadius:16,border:"1px solid #1E2D45",padding:28}}>
-          {step === "enter" ? (
-            <>
-              <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:"#E2EAF4",letterSpacing:2,marginBottom:4}}>ENTER TEAM ID</div>
-              <div style={{fontSize:12,color:"#4A5E78",marginBottom:20}}>Ask your league admin for your Team ID code</div>
-              <input value={enteredCode} onChange={e=>{setEnteredCode(e.target.value.toUpperCase());setErr("");}}
-                onKeyDown={e=>e.key==="Enter"&&handleEnterCode()}
-                placeholder="e.g. TBL-X7K2" autoFocus maxLength={8}
-                style={{width:"100%",background:"#080C14",border:"1px solid "+(err?"#FF3D5A":"#1E2D45"),borderRadius:8,padding:"12px 16px",color:"#F5A623",fontSize:22,fontFamily:"Rajdhani,sans-serif",fontWeight:700,letterSpacing:4,textAlign:"center",outline:"none",marginBottom:err?8:16,boxSizing:"border-box"}} />
-              {err && <div style={{color:"#FF3D5A",fontSize:13,marginBottom:16,textAlign:"center"}}>{err}</div>}
-              <button onClick={handleEnterCode}
-                style={{width:"100%",background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:14,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:16,cursor:"pointer",letterSpacing:1}}>
-                CLAIM TEAM
-              </button>
-
-            </>
-          ) : (
-            <>
-              <div style={{background:claimingTeam.color+"22",border:"1px solid "+claimingTeam.color+"44",borderRadius:10,padding:"12px 16px",marginBottom:20,textAlign:"center"}}>
-                <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,fontWeight:700,color:claimingTeam.color}}>{claimingTeam.name}</div>
-                <div style={{fontSize:12,color:"#4A5E78",marginTop:4}}>You are claiming this team</div>
-              </div>
-              <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:18,fontWeight:700,color:"#E2EAF4",letterSpacing:2,marginBottom:4}}>SET YOUR PIN</div>
-              <div style={{fontSize:12,color:"#4A5E78",marginBottom:16}}>You'll use this PIN to authorize snatch actions</div>
-              <input type="password" value={pin} onChange={e=>{setPin(e.target.value.replace(/\D/g,""));setErr("");}}
-                placeholder="Enter 4+ digit PIN" maxLength={6} inputMode="numeric"
-                style={{width:"100%",background:"#080C14",border:"1px solid "+(err?"#FF3D5A":"#1E2D45"),borderRadius:8,padding:"12px 16px",color:"#E2EAF4",fontSize:20,letterSpacing:6,textAlign:"center",fontFamily:"Rajdhani,sans-serif",outline:"none",marginBottom:10,boxSizing:"border-box"}} />
-              <input type="password" value={pin2} onChange={e=>{setPin2(e.target.value.replace(/\D/g,""));setErr("");}}
-                onKeyDown={e=>e.key==="Enter"&&handleSetPin()}
-                placeholder="Confirm PIN" maxLength={6} inputMode="numeric"
-                style={{width:"100%",background:"#080C14",border:"1px solid "+(err?"#FF3D5A":"#1E2D45"),borderRadius:8,padding:"12px 16px",color:"#E2EAF4",fontSize:20,letterSpacing:6,textAlign:"center",fontFamily:"Rajdhani,sans-serif",outline:"none",marginBottom:err?8:16,boxSizing:"border-box"}} />
-              {err && <div style={{color:"#FF3D5A",fontSize:13,marginBottom:16,textAlign:"center"}}>{err}</div>}
-              <div style={{display:"flex",gap:10}}>
-                <button onClick={()=>{setStep("enter");setErr("");}}
-                  style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:12,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>BACK</button>
-                <button onClick={handleSetPin} disabled={submitting}
-                  style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:12,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:16,cursor:submitting?"not-allowed":"pointer",opacity:submitting?0.7:1}}>
-                  {submitting?"SAVING...":"SET PIN & ENTER"}
-                </button>
-              </div>
-            </>
-          ) : step === "admin" ? (
-            <>
-              <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:"#E2EAF4",letterSpacing:2,marginBottom:4}}>ADMIN ENTRY</div>
-              <div style={{fontSize:12,color:"#4A5E78",marginBottom:16}}>Enter your league admin password to continue</div>
-              <input type="password" value={adminPw} onChange={e=>{setAdminPw(e.target.value);setErr("");}}
-                onKeyDown={async e=>{
-                  if(e.key==="Enter") {
-                    const ti = await storeGet("teamIdentity");
+          {(() => {
+            if (step === "enter") return (
+              <>
+                <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:"#E2EAF4",letterSpacing:2,marginBottom:4}}>ENTER TEAM ID</div>
+                <div style={{fontSize:12,color:"#4A5E78",marginBottom:16}}>Ask your league admin for your Team ID code</div>
+                <input value={enteredCode} onChange={e=>{setEnteredCode(e.target.value.toUpperCase());setErr("");}}
+                  onKeyDown={e=>e.key==="Enter"&&handleEnterCode()}
+                  placeholder="e.g. TBL-X7K2" autoFocus maxLength={8}
+                  style={{width:"100%",background:"#080C14",border:"1px solid "+(err?"#FF3D5A":"#1E2D45"),borderRadius:8,padding:"12px 16px",color:"#F5A623",fontSize:22,fontFamily:"Rajdhani,sans-serif",fontWeight:700,letterSpacing:4,textAlign:"center",outline:"none",marginBottom:err?8:16,boxSizing:"border-box"}} />
+                {err && <div style={{color:"#FF3D5A",fontSize:13,marginBottom:16,textAlign:"center"}}>{err}</div>}
+                <button onClick={handleEnterCode} style={{width:"100%",background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:14,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:16,cursor:"pointer",letterSpacing:1}}>CLAIM TEAM</button>
+                <div style={{marginTop:20,paddingTop:16,borderTop:"1px solid #1E2D45"}}>
+                  <div style={{fontSize:11,color:"#4A5E78",marginBottom:8,textAlign:"center"}}>League admin? Use your admin password to enter and claim a team</div>
+                  <button onClick={()=>setStep("admin")} style={{width:"100%",background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:10,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>🔒 ADMIN ENTRY</button>
+                </div>
+              </>
+            );
+            if (step === "setpin") return (
+              <>
+                <div style={{background:claimingTeam.color+"22",border:"1px solid "+claimingTeam.color+"44",borderRadius:10,padding:"12px 16px",marginBottom:20,textAlign:"center"}}>
+                  <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,fontWeight:700,color:claimingTeam.color}}>{claimingTeam.name}</div>
+                  <div style={{fontSize:12,color:"#4A5E78",marginTop:4}}>You are claiming this team</div>
+                </div>
+                <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:18,fontWeight:700,color:"#E2EAF4",letterSpacing:2,marginBottom:4}}>SET YOUR PIN</div>
+                <div style={{fontSize:12,color:"#4A5E78",marginBottom:16}}>You will use this PIN to authorize snatch actions</div>
+                <input type="password" value={pin} onChange={e=>{setPin(e.target.value);setErr("");}}
+                  placeholder="Enter 4+ digit PIN" maxLength={6}
+                  style={{width:"100%",background:"#080C14",border:"1px solid "+(err?"#FF3D5A":"#1E2D45"),borderRadius:8,padding:"12px 16px",color:"#E2EAF4",fontSize:20,letterSpacing:6,textAlign:"center",fontFamily:"Rajdhani,sans-serif",outline:"none",marginBottom:10,boxSizing:"border-box"}} />
+                <input type="password" value={pin2} onChange={e=>{setPin2(e.target.value);setErr("");}}
+                  onKeyDown={e=>e.key==="Enter"&&handleSetPin()}
+                  placeholder="Confirm PIN" maxLength={6}
+                  style={{width:"100%",background:"#080C14",border:"1px solid "+(err?"#FF3D5A":"#1E2D45"),borderRadius:8,padding:"12px 16px",color:"#E2EAF4",fontSize:20,letterSpacing:6,textAlign:"center",fontFamily:"Rajdhani,sans-serif",outline:"none",marginBottom:err?8:16,boxSizing:"border-box"}} />
+                {err && <div style={{color:"#FF3D5A",fontSize:13,marginBottom:16,textAlign:"center"}}>{err}</div>}
+                <div style={{display:"flex",gap:10}}>
+                  <button onClick={()=>{setStep("enter");setErr("");}} style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:12,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>BACK</button>
+                  <button onClick={handleSetPin} disabled={submitting} style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:12,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:16,cursor:submitting?"not-allowed":"pointer",opacity:submitting?0.7:1}}>{submitting?"SAVING...":"SET PIN & ENTER"}</button>
+                </div>
+              </>
+            );
+            if (step === "admin") return (
+              <>
+                <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:"#E2EAF4",letterSpacing:2,marginBottom:4}}>ADMIN ENTRY</div>
+                <div style={{fontSize:12,color:"#4A5E78",marginBottom:16}}>Enter your league admin password to continue</div>
+                <input type="password" value={adminPw} onChange={e=>{setAdminPw(e.target.value);setErr("");}} placeholder="Admin password..." autoFocus
+                  style={{width:"100%",background:"#080C14",border:"1px solid "+(err?"#FF3D5A":"#1E2D45"),borderRadius:8,padding:"12px 16px",color:"#E2EAF4",fontSize:16,fontFamily:"Barlow Condensed,sans-serif",outline:"none",marginBottom:err?8:16,boxSizing:"border-box"}} />
+                {err && <div style={{color:"#FF3D5A",fontSize:13,marginBottom:16,textAlign:"center"}}>{err}</div>}
+                <div style={{display:"flex",gap:10}}>
+                  <button onClick={()=>{setStep("enter");setAdminPw("");setErr("");}} style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:12,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>BACK</button>
+                  <button onClick={async()=>{
                     const ph = await storeGet("pwhash");
                     const h = await hashPw(adminPw);
-                    if(h === ph) { setTeamIdentity(ti||{}); setStep("adminpick"); setErr(""); }
+                    if(h===ph){const ti=await storeGet("teamIdentity");setTeamIdentity(ti||{});setStep("adminpick");setErr("");}
                     else setErr("Wrong admin password");
-                  }
-                }}
-                placeholder="Admin password..." autoFocus
-                style={{width:"100%",background:"#080C14",border:"1px solid "+(err?"#FF3D5A":"#1E2D45"),borderRadius:8,padding:"12px 16px",color:"#E2EAF4",fontSize:16,fontFamily:"Barlow Condensed,sans-serif",outline:"none",marginBottom:err?8:16,boxSizing:"border-box"}} />
-              {err && <div style={{color:"#FF3D5A",fontSize:13,marginBottom:16,textAlign:"center"}}>{err}</div>}
-              <div style={{display:"flex",gap:10}}>
-                <button onClick={()=>{setStep("enter");setAdminPw("");setErr("");}}
-                  style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:12,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>BACK</button>
-                <button onClick={async()=>{
-                  const ph = await storeGet("pwhash");
-                  const h = await hashPw(adminPw);
-                  if(h === ph) { const ti = await storeGet("teamIdentity"); setTeamIdentity(ti||{}); setStep("adminpick"); setErr(""); }
-                  else setErr("Wrong admin password");
-                }}
-                  style={{flex:2,background:"linear-gradient(135deg,#4F8EF7,#1a5fb4)",border:"none",borderRadius:8,padding:12,color:"#fff",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:15,cursor:"pointer"}}>ENTER</button>
-              </div>
-            </>
-          ) : step === "adminpick" ? (
-            <>
-              <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:"#E2EAF4",letterSpacing:2,marginBottom:4}}>PICK YOUR TEAM</div>
-              <div style={{fontSize:12,color:"#4A5E78",marginBottom:16}}>Select the team you manage</div>
-              <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:16}}>
-                {allTeams.map(t => {
-                  const claimed = teamIdentity[t.id]?.claimedBy;
-                  const isMe = claimed === user.email;
-                  return (
-                    <button key={t.id} onClick={()=>{ if(!claimed || isMe) { setClaimingTeam(t); setStep("setpin"); setPin(""); setPin2(""); setErr(""); }}}
-                      style={{padding:"12px 16px",borderRadius:10,border:"2px solid "+(isMe?"#2ECC71":claimed?"#1E2D45":t.color+"44"),background:isMe?"#2ECC7122":claimed?"#1E2D4522":t.color+"11",cursor:claimed&&!isMe?"not-allowed":"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12,opacity:claimed&&!isMe?0.5:1}}>
-                      <div style={{flex:1}}>
-                        <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:16,color:isMe?"#2ECC71":claimed?"#4A5E78":t.color}}>{t.name}</div>
-                        <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>{isMe?"Your team":claimed?"Claimed by "+claimed:"Available"}</div>
-                      </div>
-                      {!claimed && <span style={{color:t.color,fontSize:12,fontWeight:700}}>SELECT →</span>}
-                      {isMe && <span style={{color:"#2ECC71",fontSize:12,fontWeight:700}}>✓ YOURS</span>}
-                    </button>
-                  );
-                })}
-              </div>
-              <button onClick={()=>setStep("enter")}
-                style={{width:"100%",background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:10,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>BACK</button>
-            </>
-          ) : null}
-          )}
+                  }} style={{flex:2,background:"linear-gradient(135deg,#4F8EF7,#1a5fb4)",border:"none",borderRadius:8,padding:12,color:"#fff",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:15,cursor:"pointer"}}>ENTER</button>
+                </div>
+              </>
+            );
+            if (step === "adminpick") return (
+              <>
+                <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:"#E2EAF4",letterSpacing:2,marginBottom:4}}>PICK YOUR TEAM</div>
+                <div style={{fontSize:12,color:"#4A5E78",marginBottom:16}}>Select the team you manage</div>
+                <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:16}}>
+                  {allTeams.map(t => {
+                    const claimed = teamIdentity[t.id]?.claimedBy;
+                    const isMe = claimed===user.email;
+                    return (
+                      <button key={t.id} onClick={()=>{if(!claimed||isMe){setClaimingTeam(t);setStep("setpin");setPin("");setPin2("");setErr("");}}}
+                        style={{padding:"12px 16px",borderRadius:10,border:"2px solid "+(isMe?"#2ECC71":claimed?"#1E2D45":t.color+"44"),background:isMe?"#2ECC7122":claimed?"#1E2D4522":t.color+"11",cursor:claimed&&!isMe?"not-allowed":"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12,opacity:claimed&&!isMe?0.5:1}}>
+                        <div style={{flex:1}}>
+                          <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:16,color:isMe?"#2ECC71":claimed?"#4A5E78":t.color}}>{t.name}</div>
+                          <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>{isMe?"Your team":claimed?"Claimed":"Available"}</div>
+                        </div>
+                        {!claimed && <span style={{color:t.color,fontSize:12,fontWeight:700}}>SELECT</span>}
+                        {isMe && <span style={{color:"#2ECC71",fontSize:12,fontWeight:700}}>YOUR TEAM</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+                <button onClick={()=>setStep("enter")} style={{width:"100%",background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:10,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>BACK</button>
+              </>
+            );
+            return null;
+          })()}
         </div>
       </div>
     </div>
   );
 }
+
 
 function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
   const [page, setPage] = useState("setup");
