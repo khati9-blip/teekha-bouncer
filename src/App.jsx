@@ -1242,7 +1242,8 @@ function App({ pitch, onLeave, user, onLogout }) {
   const [pwHash, setPwHash] = useState(null);
   const [recoveryHash, setRecoveryHash] = useState(null);
   const [appReady, setAppReady] = useState(false);
-  const [lbTab, setLbTab] = useState('board');
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerPage, setDrawerPage] = useState('');
   const [unlocked, setUnlocked] = useState(false);
   const isAdmin = user && pitch && (pitch.creatorEmail === user.email || !pitch.creatorEmail);
   const [showPwModal, setShowPwModal] = useState(false);
@@ -1892,17 +1893,55 @@ function App({ pitch, onLeave, user, onLogout }) {
           }}
           onClose={()=>setSmartStatsMatch(null)}
         />}
+        {/* ── DRAWER MENU ── */}
+        {drawerOpen && (
+          <div style={{position:"fixed",inset:0,zIndex:200,display:"flex"}}>
+            <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.6)"}} onClick={()=>setDrawerOpen(false)} />
+            <div style={{position:"relative",width:260,background:"#0E1521",borderRight:"1px solid #1E2D45",display:"flex",flexDirection:"column",zIndex:1,height:"100%",overflowY:"auto"}}>
+              <div style={{padding:"20px 16px",borderBottom:"1px solid #1E2D45"}}>
+                <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:16,color:"#F5A623",letterSpacing:2}}>MENU</div>
+                <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>{pitch ? pitch.name : ""}</div>
+              </div>
+              <div style={{flex:1,padding:"12px 8px"}}>
+                {[
+                  {id:"form", icon:"📈", label:"Player Form Chart", desc:"Last 5 matches per player"},
+                ].map(item => (
+                  <button key={item.id} onClick={()=>{ setDrawerPage(item.id); setDrawerOpen(false); nav(item.id); }}
+                    style={{width:"100%",background:page===item.id?"#F5A62322":"transparent",border:"1px solid "+(page===item.id?"#F5A62366":"transparent"),borderRadius:10,padding:"12px 14px",marginBottom:6,cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12}}>
+                    <span style={{fontSize:22}}>{item.icon}</span>
+                    <div>
+                      <div style={{fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,color:page===item.id?"#F5A623":"#E2EAF4"}}>{item.label}</div>
+                      <div style={{fontSize:11,color:"#4A5E78",marginTop:1}}>{item.desc}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+              <div style={{padding:"12px 16px",borderTop:"1px solid #1E2D45"}}>
+                <button onClick={onLogout} style={{width:"100%",background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:8,padding:"10px",color:"#FF3D5A",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>LOGOUT</button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {showPwModal&&<PasswordModal storedHash={pwHash} recoveryHash={recoveryHash} onSuccess={handlePwSuccess} onClose={()=>{setShowPwModal(false);setPendingAction(null);}} />}
         {editPlayer&&<EditPlayerModal player={editPlayer} onSave={(updated)=>{const updated_players=players.map(p=>p.id===updated.id?updated:p);setPlayers(updated_players);storeSet("players",updated_players);setEditPlayer(null);}} onAdd={(np)=>{const all=[...players,np];setPlayers(all);storeSet("players",all);setEditPlayer(null);}} onClose={()=>setEditPlayer(null)} />}
 
         {/* TOP BAR */}
         <div style={{background:"linear-gradient(180deg,#0E1521 0%,#080C14 100%)",borderBottom:"1px solid #1E2D45",padding:"10px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:50}}>
-          <div style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={onLeave} title="Back to pitches">
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <button onClick={()=>setDrawerOpen(true)}
+              style={{background:"transparent",border:"none",cursor:"pointer",padding:"4px 6px",display:"flex",flexDirection:"column",gap:5,flexShrink:0}}>
+              <div style={{width:20,height:2,background:"#E2EAF4",borderRadius:2}}></div>
+              <div style={{width:20,height:2,background:"#E2EAF4",borderRadius:2}}></div>
+              <div style={{width:20,height:2,background:"#E2EAF4",borderRadius:2}}></div>
+            </button>
+            <div style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={onLeave} title="Back to pitches">
             <img src="/logo.png" alt="Teekha Bouncer" style={{height:36,width:36,objectFit:"contain",borderRadius:6}} />
             <div>
               <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:14,color:"#F5A623",letterSpacing:1,lineHeight:1}}>TEEKHA BOUNCER LEAGUE</div>
               <div style={{fontSize:9,color:"#4A5E78",letterSpacing:1,marginTop:2}}>{pitch ? pitch.name : ""} {user ? "• "+user.email.split("@")[0] : ""}</div>
             </div>
+          </div>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             <button onClick={()=>{if(unlocked)setUnlocked(false);else{setPendingAction(null);setShowPwModal(true);}}}
@@ -2532,20 +2571,24 @@ function App({ pitch, onLeave, user, onLogout }) {
             </div>
           )}
 
+          {page==="form" && (
+            <div className="fade-in">
+              <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20}}>
+                <button onClick={()=>nav("leaderboard")} style={{background:"transparent",border:"none",color:"#4A5E78",fontSize:20,cursor:"pointer",padding:"4px 8px"}}>←</button>
+                <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2}}>PLAYER FORM</h2>
+              </div>
+              <FormChart players={players} assignments={assignments} points={points} teams={teams} />
+            </div>
+          )}
+
           {page==="leaderboard"&&(
             <div className="fade-in">
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,flexWrap:"wrap",gap:8}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:8}}>
                 <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2}}>LEADERBOARD</h2>
-                {lbTab==="board" && <button onClick={shareLeaderboard} style={{background:"#25D36622",border:"1px solid #25D36644",color:"#25D366",borderRadius:8,padding:"8px 14px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13}}>📲 SHARE</button>}
+                <button onClick={shareLeaderboard} style={{background:"#25D36622",border:"1px solid #25D36644",color:"#25D366",borderRadius:8,padding:"8px 14px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13}}>
+                  📲 SHARE WHATSAPP
+                </button>
               </div>
-              <div style={{display:"flex",background:"#0E1521",borderRadius:10,padding:4,gap:4,marginBottom:20}}>
-                {[{id:"board",label:"🏆 Board"},{id:"form",label:"📈 Form"}].map(t => (
-                  <button key={t.id} onClick={() => setLbTab(t.id)} style={{flex:1,padding:"8px",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,background:lbTab===t.id?"#F5A623":"transparent",color:lbTab===t.id?"#080C14":"#4A5E78"}}>{t.label}</button>
-                ))}
-              </div>
-              {lbTab==="form" ? (
-                <FormChart players={players} assignments={assignments} points={points} teams={teams} />
-              ) : (
               {leaderboard.length===0?(
                 <Card sx={{padding:60,textAlign:"center"}}><div style={{fontSize:56}}>🏆</div><div style={{color:"#4A5E78",marginTop:16}}>Set up your league first</div></Card>
               ):(
@@ -2597,6 +2640,8 @@ function App({ pitch, onLeave, user, onLogout }) {
                   })}
                 </>
               )}
+            </div>
+          )}
             </div>
           )}
         </div>
