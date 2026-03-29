@@ -410,6 +410,12 @@ const css = `
   .fade-in{animation:fadeIn .3s ease;}
   @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
   @keyframes spin{to{transform:rotate(360deg)}}
+  .desk-only{display:inline-flex}
+  .mob-only{display:none}
+  @media(max-width:600px){
+    .desk-only{display:none!important}
+    .mob-only{display:inline-flex!important}
+  }
 `;
 
 function Spinner() { return <div style={{width:24,height:24,border:"3px solid #1E2D45",borderTop:"3px solid #F5A623",borderRadius:"50%",animation:"spin 0.8s linear infinite",display:"inline-block"}} />; }
@@ -1941,11 +1947,16 @@ function App({ pitch, onLeave, user, onLogout }) {
             </div>
           </div>
           </div>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <button onClick={()=>{if(unlocked)setUnlocked(false);else{setPendingAction(null);setShowPwModal(true);}}} style={{background:unlocked?"#2ECC7122":"transparent",border:"1px solid "+(unlocked?"#2ECC71":"#1E2D45"),color:unlocked?"#2ECC71":"#4A5E78",fontSize:13,borderRadius:6,padding:"6px 12px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>{unlocked?"🔓 ON":"🔒 OFF"}</button>
-
+          <div style={{display:"flex",alignItems:"center",gap:6}}>
+            <button onClick={()=>{if(unlocked)setUnlocked(false);else{setPendingAction(null);setShowPwModal(true);}}} style={{background:unlocked?"#2ECC7122":"transparent",border:"1px solid "+(unlocked?"#2ECC71":"#1E2D45"),color:unlocked?"#2ECC71":"#4A5E78",fontSize:13,borderRadius:6,padding:"6px 12px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>
+              <span className="desk-only">{unlocked?"🔓 ON":"🔒 OFF"}</span>
+              <span className="mob-only">{unlocked?"🔓":"🔒"}</span>
+            </button>
             <button onClick={()=>withPassword(()=>{if(!confirm("Reset ALL data? This cannot be undone!"))return;["teams","players","assignments","matches","captains","points","page","pwhash"].forEach(k=>storeDel(k));window.location.reload();})} style={{background:"transparent",border:"1px solid #1E2D45",color:"#4A5E78",fontSize:13,borderRadius:6,padding:"6px 10px",cursor:"pointer"}}>⚙️</button>
-            <button onClick={onLogout} style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:"#FF3D5A",fontSize:11,borderRadius:6,padding:"6px 10px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,letterSpacing:0.5}}>LOGOUT</button>
+            <button onClick={onLogout} style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:"#FF3D5A",fontSize:13,borderRadius:6,padding:"6px 10px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>
+              <span className="desk-only">LOGOUT</span>
+              <span className="mob-only" style={{fontSize:11}}>OUT</span>
+            </button>
           </div>
         </div>
 
@@ -2195,24 +2206,26 @@ function App({ pitch, onLeave, user, onLogout }) {
                       const aTeam=teams.find(t=>t.id===assignments[p.id]);
                       const isAssigned=!!assignments[p.id];
                       return(
-                        <div key={p.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:"#0E1521",borderRadius:8,borderLeft:"3px solid "+(aTeam?aTeam.color:"#1E2D45")}}>
-                          <div style={{flex:1,minWidth:0}}>
-                            <div style={{display:"flex",alignItems:"center",gap:6}}>
-                              <span style={{fontWeight:700,fontSize:14,color:"#E2EAF4"}}>{p.name}</span>
-                              {isAssigned&&isPlayerSafeForTeam(assignments[p.id],p.id)&&<span style={{background:"#2ECC7122",color:"#2ECC71",border:"1px solid #2ECC7144",borderRadius:10,fontSize:10,padding:"1px 6px",fontWeight:700}}>🛡️ SAFE</span>}
+                        <div key={p.id} style={{padding:"10px 14px",background:"#0E1521",borderRadius:8,borderLeft:"3px solid "+(aTeam?aTeam.color:"#1E2D45")}}>
+                          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
+                            <div style={{minWidth:0,flex:1}}>
+                              <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                                <span style={{fontWeight:700,fontSize:14,color:"#E2EAF4"}}>{p.name}</span>
+                                {isAssigned&&isPlayerSafeForTeam(assignments[p.id],p.id)&&<span style={{background:"#2ECC7122",color:"#2ECC71",border:"1px solid #2ECC7144",borderRadius:10,fontSize:9,padding:"1px 5px",fontWeight:700}}>🛡️</span>}
+                              </div>
+                              <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>{p.iplTeam} • <span style={{color:ROLE_COLORS[p.role]||"#94A3B8"}}>{p.role}</span>{isAssigned&&<span style={{marginLeft:6,color:aTeam?.color,fontWeight:700}}>{aTeam?.name}</span>}</div>
                             </div>
-                            <div style={{fontSize:12,color:"#4A5E78",marginTop:2}}>{p.iplTeam} &nbsp;•&nbsp;<span style={{color:ROLE_COLORS[p.role]||"#94A3B8"}}>{p.role}</span>{isAssigned&&<span style={{marginLeft:8,color:aTeam?.color,fontWeight:700}}>→ {aTeam?.name}</span>}</div>
                           </div>
-                          <select value={assignments[p.id]||""} onChange={e=>assignPlayer(p.id,e.target.value)} style={{background:"#141E2E",border:"1px solid "+(aTeam?aTeam.color+"66":"#1E2D45"),borderRadius:6,padding:"6px 10px",color:aTeam?aTeam.color:"#4A5E78",fontSize:13,fontFamily:"Barlow Condensed",fontWeight:600,maxWidth:150,cursor:"pointer"}}>
-                            <option value="">{isAssigned?"Move to…":"— Assign —"}</option>
-                            {teams.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
-                          </select>
-                          {isAssigned&&<button onClick={()=>removePlayer(p.id)} style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:"#FF3D5A",borderRadius:6,padding:"6px 10px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,flexShrink:0}}>✕</button>}
-                          <button onClick={()=>withPassword(()=>setEditPlayer(p))} style={{background:"#4F8EF722",border:"1px solid #4F8EF744",color:"#4F8EF7",borderRadius:6,padding:"6px 10px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,flexShrink:0}}>✏️</button>
-                          {isAssigned && <button onClick={()=>toggleSafePlayer(assignments[p.id],p.id)}
-                            title={isPlayerSafeForTeam(assignments[p.id],p.id)?"Remove safe status":"Mark as safe player"}
-                            style={{background:isPlayerSafeForTeam(assignments[p.id],p.id)?"#2ECC7133":"transparent",border:"1px solid "+(isPlayerSafeForTeam(assignments[p.id],p.id)?"#2ECC71":"#1E2D45"),color:isPlayerSafeForTeam(assignments[p.id],p.id)?"#2ECC71":"#4A5E78",borderRadius:6,padding:"6px 10px",cursor:"pointer",fontSize:13,flexShrink:0}}>🛡️</button>}
-                          <button onClick={()=>deletePlayer(p.id)} style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:"#FF3D5A",borderRadius:6,padding:"6px 10px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:11,flexShrink:0}}>🗑️</button>
+                          <div style={{display:"flex",alignItems:"center",gap:6}}>
+                            <select value={assignments[p.id]||""} onChange={e=>assignPlayer(p.id,e.target.value)} style={{flex:1,background:"#141E2E",border:"1px solid "+(aTeam?aTeam.color+"66":"#1E2D45"),borderRadius:6,padding:"6px 8px",color:aTeam?aTeam.color:"#4A5E78",fontSize:12,fontFamily:"Barlow Condensed",fontWeight:600,cursor:"pointer",minWidth:0}}>
+                              <option value="">{isAssigned?"Move to…":"— Assign —"}</option>
+                              {teams.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
+                            </select>
+                            {isAssigned&&<button onClick={()=>removePlayer(p.id)} style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:"#FF3D5A",borderRadius:6,padding:"6px 8px",cursor:"pointer",fontSize:13,flexShrink:0}}>✕</button>}
+                            <button onClick={()=>withPassword(()=>setEditPlayer(p))} style={{background:"#4F8EF722",border:"1px solid #4F8EF744",color:"#4F8EF7",borderRadius:6,padding:"6px 8px",cursor:"pointer",fontSize:13,flexShrink:0}}>✏️</button>
+                            {isAssigned&&<button onClick={()=>toggleSafePlayer(assignments[p.id],p.id)} style={{background:isPlayerSafeForTeam(assignments[p.id],p.id)?"#2ECC7133":"transparent",border:"1px solid "+(isPlayerSafeForTeam(assignments[p.id],p.id)?"#2ECC71":"#1E2D45"),color:isPlayerSafeForTeam(assignments[p.id],p.id)?"#2ECC71":"#4A5E78",borderRadius:6,padding:"6px 8px",cursor:"pointer",fontSize:13,flexShrink:0}}>🛡️</button>}
+                            <button onClick={()=>deletePlayer(p.id)} style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:"#FF3D5A",borderRadius:6,padding:"6px 8px",cursor:"pointer",fontSize:11,flexShrink:0}}>🗑️</button>
+                          </div>
                         </div>
                       );
                     })}
@@ -2237,19 +2250,19 @@ function App({ pitch, onLeave, user, onLogout }) {
                     const open=expandedMatch===match.id,completed=match.status==="completed",synced=Object.keys(points).some(pid=>points[pid][match.id]);
                     return(
                       <Card key={match.id} sx={{overflow:"hidden"}}>
-                        <div style={{display:"flex",alignItems:"center",padding:"14px 18px",cursor:"pointer",gap:14}} onClick={()=>setExpandedMatch(open?null:match.id)}>
-                          <div style={{background:"#080C14",borderRadius:6,padding:"4px 10px",minWidth:44,textAlign:"center"}}>
-                            <div style={{fontSize:11,color:"#4A5E78"}}>M</div>
-                            <div style={{fontSize:18,fontWeight:800,color:"#F5A623",fontFamily:"Rajdhani"}}>{match.matchNum}</div>
+                        <div style={{display:"flex",alignItems:"center",padding:"12px 14px",cursor:"pointer",gap:10}} onClick={()=>setExpandedMatch(open?null:match.id)}>
+                          <div style={{background:"#080C14",borderRadius:6,padding:"4px 8px",minWidth:36,textAlign:"center",flexShrink:0}}>
+                            <div style={{fontSize:9,color:"#4A5E78"}}>M</div>
+                            <div style={{fontSize:16,fontWeight:800,color:"#F5A623",fontFamily:"Rajdhani"}}>{match.matchNum}</div>
                           </div>
                           <div style={{flex:1,minWidth:0}}>
-                            <div style={{fontWeight:700,fontSize:15,color:"#E2EAF4"}}>{match.team1} <span style={{color:"#4A5E78"}}>vs</span> {match.team2}</div>
-                            <div style={{fontSize:12,color:"#4A5E78",marginTop:2}}>{match.date} • {match.venue}</div>
+                            <div style={{fontWeight:700,fontSize:14,color:"#E2EAF4",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{match.team1} <span style={{color:"#4A5E78"}}>vs</span> {match.team2}</div>
+                            <div style={{fontSize:11,color:"#4A5E78",marginTop:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{match.date} • {match.venue}</div>
                           </div>
-                          <div style={{display:"flex",alignItems:"center",gap:8}}>
-                            {synced&&<Badge label="✓ SYNCED" color="#2ECC71" />}
-                            <Badge label={completed?(match.result?`✓ ${match.result}`:"DONE"):match.status==="live"?"🔴 LIVE":"UPCOMING"} color={completed?"#2ECC71":match.status==="live"?"#FF3D5A":"#F5A623"} />
-                            <span style={{color:"#4A5E78",fontSize:12}}>{open?"▲":"▼"}</span>
+                          <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4,flexShrink:0}}>
+                            {synced&&<span style={{fontSize:9,color:"#2ECC71",fontWeight:700}}>✓ SYNCED</span>}
+                            <span style={{fontSize:9,color:completed?"#2ECC71":match.status==="live"?"#FF3D5A":"#F5A623",fontWeight:700,maxWidth:80,textAlign:"right",lineHeight:1.2}}>{completed?(match.result?"✓ "+match.result.slice(0,25):"DONE"):match.status==="live"?"🔴 LIVE":"UPCOMING"}</span>
+                            <span style={{color:"#4A5E78",fontSize:11}}>{open?"▲":"▼"}</span>
                           </div>
                         </div>
                         {open&&(
