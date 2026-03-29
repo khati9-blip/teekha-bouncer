@@ -121,7 +121,7 @@ function parseScorecardToStats(scorecard, playerIndex) {
   };
 
   const ensure = (pid, name) => {
-    if (!stats[pid]) stats[pid] = { playerId: pid, name, runs:0, fours:0, sixes:0, wickets:0, economy:null, overs:0, catches:0, stumpings:0, runouts:0, longestSix:false };
+    if (!stats[pid]) stats[pid] = { playerId: pid, name, runs:0, balls:0, fours:0, sixes:0, wickets:0, economy:null, overs:0, maidens:0, catches:0, stumpings:0, runouts:0, longestSix:false, mom:false, playingXI:false, dismissed:false };
   };
 
   try {
@@ -180,7 +180,15 @@ const DEFAULT_POINTS = {
   wicket:25, fourWkt:8, fiveWkt:15, ecoBonus:10, ecoThreshold:6, ecoMinOvers:2,
   catch:8, stumping:12, runout:12,
   allRoundMinRuns:30, allRoundMinWkts:2, allRoundBonus:15,
-  longestSix:50, captainMult:2, vcMult:1.5
+  longestSix:50, captainMult:2, vcMult:1.5,
+  // New parameters (default 0 = disabled)
+  maiden:0,
+  srBonus:0, srBonusThreshold:150, srBonusMinBalls:10,
+  momBonus:0,
+  playingXIBonus:0,
+  duckPenalty:0,
+  srPenalty:0, srPenaltyThreshold:60, srPenaltyMinBalls:10,
+  ecoPenalty:0, ecoPenaltyThreshold:10,
 };
 
 function calcPoints(s, cfg) {
@@ -213,6 +221,31 @@ function calcPoints(s, cfg) {
 
   if (runs >= c.allRoundMinRuns && wkts >= c.allRoundMinWkts) p += c.allRoundBonus;
   if (s.longestSix) p += c.longestSix;
+
+  // ── NEW PARAMETERS ────────────────────────────────────────────────────────
+  // Maiden overs
+  const maidens = +s.maidens || 0;
+  if (c.maiden) p += maidens * c.maiden;
+
+  // Strike rate bonus/penalty (need balls faced)
+  const balls = +s.balls || 0;
+  if (balls >= (c.srBonusMinBalls||10) && runs > 0) {
+    const sr = (runs / balls) * 100;
+    if (c.srBonus && sr >= (c.srBonusThreshold||150)) p += c.srBonus;
+    if (c.srPenalty && sr < (c.srPenaltyThreshold||60) && s.dismissed) p -= c.srPenalty;
+  }
+
+  // Man of the Match
+  if (s.mom && c.momBonus) p += c.momBonus;
+
+  // Playing XI bonus
+  if (s.playingXI && c.playingXIBonus) p += c.playingXIBonus;
+
+  // Duck (0 runs + dismissed)
+  if (c.duckPenalty && runs === 0 && s.dismissed) p -= c.duckPenalty;
+
+  // Economy penalty
+  if (c.ecoPenalty && ovs >= c.ecoMinOvers && eco !== null && eco > (c.ecoPenaltyThreshold||10)) p -= c.ecoPenalty;
 
   return Math.round(p);
 }
@@ -551,7 +584,7 @@ function EditPlayerModal({ player, onSave, onAdd, onClose }) {
 // ── SMART STATS MODAL (Cricbuzz auto-fill + manual edit) ────────────────────
 function SmartStatsModal({ match, players, assignments, existingStats, onSave, onClose }) {
   const matchPlayers = players.filter(p => assignments[p.id]);
-  const emptyStats = (p) => ({ runs:0, fours:0, sixes:0, wickets:0, economy:"", overs:0, catches:0, stumpings:0, runouts:0, longestSix:false, played:false });
+  const emptyStats = (p) => ({ runs:0, balls:0, fours:0, sixes:0, wickets:0, economy:"", overs:0, maidens:0, catches:0, stumpings:0, runouts:0, longestSix:false, mom:false, playingXI:false, dismissed:false, played:false });
 
   const [stats, setStats] = React.useState(() => {
     const s = {};
@@ -786,10 +819,12 @@ function SmartStatsModal({ match, players, assignments, existingStats, onSave, o
                   <thead>
                     <tr style={{fontSize:11,color:"#4A5E78",letterSpacing:1,background:"#0E152188"}}>
                       <th style={{textAlign:"left",padding:"8px 6px",fontWeight:700}}>PLAYER</th>
-                      <th style={{padding:"8px 4px",fontWeight:700,minWidth:55}}>RUNS</th>
-                      <th style={{padding:"8px 4px",fontWeight:700,minWidth:45}}>4s</th>
-                      <th style={{padding:"8px 4px",fontWeight:700,minWidth:45}}>6s</th>
-                      <th style={{padding:"8px 4px",fontWeight:700,minWidth:70}}>LONGEST 6</th>
+                      <th style={{padding:"8px 4px",fontWeight:700,minWidth:50}}>RUNS</th>
+                      <th style={{padding:"8px 4px",fontWeight:700,minWidth:45}}>BALLS</th>
+                      <th style={{padding:"8px 4px",fontWeight:700,minWidth:40}}>4s</th>
+                      <th style={{padding:"8px 4px",fontWeight:700,minWidth:40}}>6s</th>
+                      <th style={{padding:"8px 4px",fontWeight:700,minWidth:55}}>OUT</th>
+                      <th style={{padding:"8px 4px",fontWeight:700,minWidth:55}}>L6</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -797,8 +832,10 @@ function SmartStatsModal({ match, players, assignments, existingStats, onSave, o
                       <tr key={p.id} style={{borderBottom:"1px solid #1E2D4533"}}>
                         <td style={{padding:"7px 6px",fontSize:13,color:"#E2EAF4",fontWeight:600}}>{p.name}<br/><span style={{fontSize:10,color:"#4A5E78"}}>{p.iplTeam} • {p.role}</span></td>
                         <td style={{padding:"4px"}}><input type="number" min="0" value={stats[p.id]?.runs||0} onChange={e=>upd(p.id,"runs",e.target.value)} style={inp} /></td>
+                        <td style={{padding:"4px"}}><input type="number" min="0" value={stats[p.id]?.balls||0} onChange={e=>upd(p.id,"balls",e.target.value)} style={inp} /></td>
                         <td style={{padding:"4px"}}><input type="number" min="0" value={stats[p.id]?.fours||0} onChange={e=>upd(p.id,"fours",e.target.value)} style={inp} /></td>
                         <td style={{padding:"4px"}}><input type="number" min="0" value={stats[p.id]?.sixes||0} onChange={e=>upd(p.id,"sixes",e.target.value)} style={inp} /></td>
+                        <td style={{padding:"4px",textAlign:"center"}}><input type="checkbox" checked={!!stats[p.id]?.dismissed} onChange={e=>upd(p.id,"dismissed",e.target.checked)} style={{width:18,height:18,accentColor:"#FF3D5A"}} /></td>
                         <td style={{padding:"4px",textAlign:"center"}}><input type="checkbox" checked={!!stats[p.id]?.longestSix} onChange={e=>upd(p.id,"longestSix",e.target.checked)} style={{width:18,height:18,accentColor:"#F5A623"}} /></td>
                       </tr>
                     ))}
@@ -811,9 +848,10 @@ function SmartStatsModal({ match, players, assignments, existingStats, onSave, o
                   <thead>
                     <tr style={{fontSize:11,color:"#4A5E78",letterSpacing:1,background:"#0E152188"}}>
                       <th style={{textAlign:"left",padding:"8px 6px",fontWeight:700}}>PLAYER</th>
-                      <th style={{padding:"8px 4px",fontWeight:700,minWidth:60}}>WICKETS</th>
-                      <th style={{padding:"8px 4px",fontWeight:700,minWidth:60}}>OVERS</th>
-                      <th style={{padding:"8px 4px",fontWeight:700,minWidth:70}}>ECONOMY</th>
+                      <th style={{padding:"8px 4px",fontWeight:700,minWidth:55}}>WICKETS</th>
+                      <th style={{padding:"8px 4px",fontWeight:700,minWidth:50}}>OVERS</th>
+                      <th style={{padding:"8px 4px",fontWeight:700,minWidth:55}}>ECONOMY</th>
+                      <th style={{padding:"8px 4px",fontWeight:700,minWidth:50}}>MAIDENS</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -846,6 +884,8 @@ function SmartStatsModal({ match, players, assignments, existingStats, onSave, o
                         <td style={{padding:"4px"}}><input type="number" min="0" value={stats[p.id]?.catches||0} onChange={e=>upd(p.id,"catches",e.target.value)} style={inp} /></td>
                         <td style={{padding:"4px"}}><input type="number" min="0" value={stats[p.id]?.stumpings||0} onChange={e=>upd(p.id,"stumpings",e.target.value)} style={inp} /></td>
                         <td style={{padding:"4px"}}><input type="number" min="0" value={stats[p.id]?.runouts||0} onChange={e=>upd(p.id,"runouts",e.target.value)} style={inp} /></td>
+                        <td style={{padding:"4px",textAlign:"center"}}><input type="checkbox" checked={!!stats[p.id]?.mom} onChange={e=>upd(p.id,"mom",e.target.checked)} style={{width:18,height:18,accentColor:"#F5A623"}} /></td>
+                        <td style={{padding:"4px",textAlign:"center"}}><input type="checkbox" checked={!!stats[p.id]?.playingXI} onChange={e=>upd(p.id,"playingXI",e.target.checked)} style={{width:18,height:18,accentColor:"#2ECC71"}} /></td>
                       </tr>
                     ))}
                   </tbody>
@@ -1556,29 +1596,22 @@ function EditPointsForm({ config, onSave, onCancel }) {
     <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #F5A62344",padding:20,marginBottom:16}}>
       <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:18,fontWeight:700,color:"#F5A623",letterSpacing:2,marginBottom:16}}>EDIT POINTS SYSTEM</div>
       <div style={{fontSize:11,color:"#4A5E78",letterSpacing:1,marginBottom:8}}>BATTING</div>
-      {field("Per run",        "run",      0.5)}
-      {field("Per four",       "four")}
-      {field("Per six",        "six")}
-      {field("Half-century",   "fifty")}
-      {field("Century",        "century")}
-      <div style={{fontSize:11,color:"#4A5E78",letterSpacing:1,marginBottom:8,marginTop:12}}>BOWLING</div>
-      {field("Per wicket",     "wicket")}
-      {field("4-wkt haul",     "fourWkt")}
-      {field("5-wkt haul",     "fiveWkt")}
-      {field("Economy bonus",  "ecoBonus")}
-      {field("Economy <",      "ecoThreshold", 0.5)}
-      {field("Min overs (eco)","ecoMinOvers", 0.5)}
-      <div style={{fontSize:11,color:"#4A5E78",letterSpacing:1,marginBottom:8,marginTop:12}}>FIELDING</div>
-      {field("Per catch",      "catch")}
-      {field("Per stumping",   "stumping")}
-      {field("Per run-out",    "runout")}
-      <div style={{fontSize:11,color:"#4A5E78",letterSpacing:1,marginBottom:8,marginTop:12}}>BONUSES</div>
-      {field("All-round bonus","allRoundBonus")}
-      {field("All-round min runs","allRoundMinRuns")}
-      {field("All-round min wkts","allRoundMinWkts")}
-      {field("Longest six",    "longestSix")}
-      {field("Captain mult",   "captainMult", 0.5)}
-      {field("VC mult",        "vcMult",       0.5)}
+      <div style={{fontSize:11,color:"#F5A623",letterSpacing:1,marginBottom:8}}>🏏 BATTING</div>
+      {field("Per run","run",0.5)}{field("Per four","four")}{field("Per six","six")}
+      {field("Half-century","fifty")}{field("Century","century")}
+      {field("SR Bonus pts","srBonus")}{field("SR Bonus threshold","srBonusThreshold")}
+      <div style={{fontSize:11,color:"#FF3D5A",letterSpacing:1,marginBottom:8,marginTop:12}}>PENALTIES</div>
+      {field("Duck penalty","duckPenalty")}{field("SR penalty pts","srPenalty")}{field("SR penalty threshold","srPenaltyThreshold")}
+      <div style={{fontSize:11,color:"#4F8EF7",letterSpacing:1,marginBottom:8,marginTop:12}}>🎳 BOWLING</div>
+      {field("Per wicket","wicket")}{field("4-wkt haul","fourWkt")}{field("5-wkt haul","fiveWkt")}
+      {field("Maiden over","maiden")}{field("Economy bonus","ecoBonus")}{field("Economy < threshold","ecoThreshold",0.5)}
+      {field("Min overs (eco)","ecoMinOvers",0.5)}{field("Economy penalty","ecoPenalty")}{field("Eco penalty > threshold","ecoPenaltyThreshold",0.5)}
+      <div style={{fontSize:11,color:"#2ECC71",letterSpacing:1,marginBottom:8,marginTop:12}}>🧤 FIELDING</div>
+      {field("Per catch","catch")}{field("Per stumping","stumping")}{field("Per run-out","runout")}
+      <div style={{fontSize:11,color:"#A855F7",letterSpacing:1,marginBottom:8,marginTop:12}}>⭐ BONUSES</div>
+      {field("All-round bonus","allRoundBonus")}{field("All-round min runs","allRoundMinRuns")}{field("All-round min wkts","allRoundMinWkts")}
+      {field("Longest six","longestSix")}{field("MOM bonus","momBonus")}{field("Playing XI bonus","playingXIBonus")}
+      {field("Captain mult","captainMult",0.5)}{field("VC mult","vcMult",0.5)}
       <div style={{display:"flex",gap:8,marginTop:16}}>
         <button onClick={onCancel} style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:10,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
         <button onClick={()=>onSave(cfg)} style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:10,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:14,cursor:"pointer"}}>SAVE POINTS</button>
@@ -3455,36 +3488,62 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
               </div>
 
               {/* Points System */}
-              <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #1E2D45",padding:20,marginBottom:16}}>
-                <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginBottom:12}}>🏏 POINTS SYSTEM</div>
+              {/* Points System - Beautiful Display */}
+              <div style={{marginBottom:16}}>
                 {[
-                  ["Run",pointsConfig.run,"pt"],["Four",pointsConfig.four,"pts"],["Six",pointsConfig.six,"pts"],
-                  ["Half-century (50+)",pointsConfig.fifty,"pts"],["Century (100+)",pointsConfig.century,"pts"],
-                  ["Wicket",pointsConfig.wicket,"pts"],["4-wkt haul",pointsConfig.fourWkt,"pts"],["5-wkt haul",pointsConfig.fiveWkt,"pts"],
-                  ["Economy bonus (<"+pointsConfig.ecoThreshold+")",pointsConfig.ecoBonus,"pts"],
-                  ["Catch",pointsConfig.catch,"pts"],["Stumping",pointsConfig.stumping,"pts"],["Run-out",pointsConfig.runout,"pts"],
-                  ["All-round bonus",pointsConfig.allRoundBonus,"pts ("+pointsConfig.allRoundMinRuns+"+ runs & "+pointsConfig.allRoundMinWkts+"+ wkts)"],
-                  ["Longest six",pointsConfig.longestSix,"pts"],["Captain multiplier",pointsConfig.captainMult,"×"],["VC multiplier",pointsConfig.vcMult,"×"],
-                ].map(([label,val,unit])=>(
-                  <div key={label} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"1px solid #1E2D4533"}}>
-                    <div style={{fontSize:12,color:"#4A5E78"}}>{label}</div>
-                    <div style={{fontSize:13,color:"#F5A623",fontWeight:700,fontFamily:"Rajdhani,sans-serif"}}>{val} <span style={{color:"#4A5E78",fontWeight:400,fontSize:11}}>{unit}</span></div>
+                  {label:"🏏 BATTING",color:"#F5A623",items:[
+                    {name:"Per Run",val:pointsConfig.run,unit:"pt",pos:true},
+                    {name:"Per Four",val:pointsConfig.four,unit:"pts",pos:true},
+                    {name:"Per Six",val:pointsConfig.six,unit:"pts",pos:true},
+                    {name:"Half-Century (50+)",val:pointsConfig.fifty,unit:"pts",pos:true},
+                    {name:"Century (100+)",val:pointsConfig.century,unit:"pts",pos:true},
+                    {name:"SR Bonus (SR>"+pointsConfig.srBonusThreshold+")",val:pointsConfig.srBonus,unit:"pts",pos:true},
+                    {name:"Duck Penalty",val:pointsConfig.duckPenalty,unit:"pts",pos:false},
+                    {name:"SR Penalty (SR<"+pointsConfig.srPenaltyThreshold+")",val:pointsConfig.srPenalty,unit:"pts",pos:false},
+                  ]},
+                  {label:"🎳 BOWLING",color:"#4F8EF7",items:[
+                    {name:"Per Wicket",val:pointsConfig.wicket,unit:"pts",pos:true},
+                    {name:"4-Wicket Haul",val:pointsConfig.fourWkt,unit:"pts",pos:true},
+                    {name:"5-Wicket Haul",val:pointsConfig.fiveWkt,unit:"pts",pos:true},
+                    {name:"Economy Bonus (<"+pointsConfig.ecoThreshold+")",val:pointsConfig.ecoBonus,unit:"pts",pos:true},
+                    {name:"Maiden Over",val:pointsConfig.maiden,unit:"pts",pos:true},
+                    {name:"Economy Penalty (>"+pointsConfig.ecoPenaltyThreshold+")",val:pointsConfig.ecoPenalty,unit:"pts",pos:false},
+                  ]},
+                  {label:"🧤 FIELDING",color:"#2ECC71",items:[
+                    {name:"Catch",val:pointsConfig.catch,unit:"pts",pos:true},
+                    {name:"Stumping",val:pointsConfig.stumping,unit:"pts",pos:true},
+                    {name:"Run-out",val:pointsConfig.runout,unit:"pts",pos:true},
+                  ]},
+                  {label:"⭐ BONUSES",color:"#A855F7",items:[
+                    {name:"All-round ("+pointsConfig.allRoundMinRuns+"+R & "+pointsConfig.allRoundMinWkts+"+W)",val:pointsConfig.allRoundBonus,unit:"pts",pos:true},
+                    {name:"Longest Six",val:pointsConfig.longestSix,unit:"pts",pos:true},
+                    {name:"Man of the Match",val:pointsConfig.momBonus,unit:"pts",pos:true},
+                    {name:"Playing XI",val:pointsConfig.playingXIBonus,unit:"pts",pos:true},
+                    {name:"Captain Multiplier",val:pointsConfig.captainMult,unit:"×",pos:true},
+                    {name:"VC Multiplier",val:pointsConfig.vcMult,unit:"×",pos:true},
+                  ]},
+                ].map(section=>(
+                  <div key={section.label} style={{background:"#0E1521",borderRadius:12,border:"1px solid #1E2D45",marginBottom:8,overflow:"hidden"}}>
+                    <div style={{background:section.color+"18",borderBottom:"1px solid "+section.color+"33",padding:"8px 14px"}}>
+                      <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:14,fontWeight:700,color:section.color,letterSpacing:2}}>{section.label}</div>
+                    </div>
+                    <div style={{padding:"2px 14px 6px"}}>
+                      {section.items.map(item=>(
+                        <div key={item.name} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"1px solid #1E2D4222",opacity:item.val===0?0.3:1}}>
+                          <div style={{fontSize:12,color:"#94A3B8"}}>{item.name}{item.val===0&&<span style={{fontSize:10,color:"#2D3E52",marginLeft:6}}>disabled</span>}</div>
+                          <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:16,fontWeight:800,color:item.val===0?"#2D3E52":item.pos?"#F5A623":"#FF3D5A"}}>{item.pos?"+":"-"}{item.val}<span style={{fontSize:10,color:"#4A5E78",fontWeight:400,marginLeft:2}}>{item.unit}</span></div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ))}
                 {(!ruleProposal || ruleProposal.status !== "pending") && (
-                  <button onClick={()=>withPassword(()=>setShowRulesPanel("points"))}
-                    style={{width:"100%",marginTop:12,background:"#F5A62322",border:"1px solid #F5A62344",borderRadius:8,padding:8,color:"#F5A623",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>
-                    ✏️ {(!tournamentStarted||!eligibleVoters.length) ? "EDIT POINTS (Admin)" : "PROPOSE POINTS CHANGE (Needs team vote)"}
+                  <button onClick={()=>withPassword(()=>setShowRulesPanel("points"))} style={{width:"100%",background:"#F5A62322",border:"1px solid #F5A62344",borderRadius:10,padding:10,color:"#F5A623",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+                    ✏️ {(!tournamentStarted||!eligibleVoters.length)?"EDIT POINTS — Admin":"PROPOSE POINTS CHANGE — Needs Team Vote"}
                   </button>
                 )}
               </div>
 
-              {/* Current Rules */}
-              <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #1E2D45",padding:20,marginBottom:16}}>
-                <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginBottom:12}}>CURRENT RULES</div>
-                {[
-                  ["Transfer Window", "Sunday → Monday 11:00 AM IST"],
-                  ["Snatch Window", "Saturday 12:00 AM → 12:00 PM IST"],
                   ["Snatch Return", "Friday 11:58 PM IST"],
                 ].map(([label, val]) => (
                   <div key={label} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid #1E2D4533"}}>
@@ -3560,7 +3619,6 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
                 <ProposeRulesForm teams={teams} eligibleVoters={eligibleVoters} tournamentStarted={tournamentStarted} onPropose={proposeRuleChange} withPassword={withPassword} />
               )}
             </div>
-          </div>
         )}
 
         {/* SNATCH PIN MODAL */}
