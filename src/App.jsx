@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import FormChart from "./FormChart";
 
 async function callAI(userPrompt, system = "Return only valid JSON.") {
   const body = {
@@ -2562,6 +2563,16 @@ function App({ pitch, onLeave, user, onLogout }) {
             </div>
           )}
 
+          {page==="form" && (
+            <div className="fade-in">
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:20}}>
+                <button onClick={()=>nav("leaderboard")} style={{background:"transparent",border:"none",color:"#4A5E78",fontSize:22,cursor:"pointer",lineHeight:1,padding:"0 4px"}}>←</button>
+                <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2}}>PLAYER FORM</h2>
+              </div>
+              <FormChart players={players} assignments={assignments} points={points} teams={teams} />
+            </div>
+          )}
+
           {page==="leaderboard"&&(
             <div className="fade-in">
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:8}}>
@@ -2632,8 +2643,13 @@ function App({ pitch, onLeave, user, onLogout }) {
                 <button onClick={()=>setDrawerOpen(false)} style={{background:"transparent",border:"none",color:"#4A5E78",fontSize:20,cursor:"pointer",lineHeight:1}}>×</button>
               </div>
               <div style={{flex:1,padding:"12px 8px",overflowY:"auto"}}>
-                <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,padding:"8px 8px 4px"}}>COMING SOON</div>
-                <div style={{padding:"12px 14px",color:"#2D3E52",fontSize:13}}>More features will appear here</div>
+                <button onClick={()=>{nav("form");setDrawerOpen(false);}} style={{width:"100%",background:page==="form"?"#F5A62322":"transparent",border:"1px solid "+(page==="form"?"#F5A62344":"transparent"),borderRadius:10,padding:"12px 14px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12,marginBottom:4}}>
+                  <span style={{fontSize:22}}>📈</span>
+                  <div>
+                    <div style={{fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,color:page==="form"?"#F5A623":"#E2EAF4"}}>Player Form Chart</div>
+                    <div style={{fontSize:11,color:"#4A5E78",marginTop:1}}>Last 5 matches per player</div>
+                  </div>
+                </button>
               </div>
               <div style={{padding:"16px",borderTop:"1px solid #1E2D45"}}>
                 <button onClick={onLogout} style={{width:"100%",background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:8,padding:"10px",color:"#FF3D5A",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>LOGOUT</button>
