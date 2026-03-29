@@ -1464,7 +1464,7 @@ export default function App() {
 
   const shareToWhatsApp = (text) => window.open(`https://wa.me/?text=${encodeURIComponent(text)}`,'_blank');
   const shareLeaderboard = () => {
-    const lb = leaderboard.map((t,i)=>`${['🥇','🥈','🥉'][i]||`#${i+1}`} ${t.name}: ${t.total} pts`).join('\n');
+    const medals=['🥇','🥈','🥉'];const lb = leaderboard.map((t,i)=>(medals[i]||('#'+(i+1)))+' '+t.name+': '+t.total+' pts').join('\n');
     shareToWhatsApp(`🏏 *Teekha Bouncer League*\n*Leaderboard*\n\n${lb}\n\nteekha-bouncer.vercel.app`);
   };
   const exportToPDF = async () => {
@@ -1484,7 +1484,7 @@ export default function App() {
       leaderboard.forEach((team,i)=>{
         doc.setFillColor(20,30,46); doc.roundedRect(15,y-7,180,16,2,2,'F');
         doc.setTextColor(226,234,244); doc.setFontSize(13); doc.setFont('helvetica','bold');
-        doc.text(`#${i+1} ${team.name}`,25,y+3);
+        doc.text('#'+(i+1)+' '+team.name,25,y+3);
         doc.setTextColor(245,166,35); doc.text(`${team.total} pts`,185,y+3,{align:'right'});
         y+=20;
       });
@@ -2109,7 +2109,7 @@ export default function App() {
               {statsTab==="top" && (
                 <div style={{display:"flex",flexDirection:"column",gap:14}}>
                   {[
-                    {label:"🏆 MOST POINTS",color:"#F5A623",items:getPlayerSeasonStats().slice(0,5),val:p=>p.total+" pts",sub:p=>`avg ${p.avg}/match`},
+                    {label:"🏆 MOST POINTS",color:"#F5A623",items:getPlayerSeasonStats().slice(0,5),val:p=>p.total+" pts",sub:p=>"avg "+p.avg+"/match"},
                     {label:"🎯 MOST CONSISTENT",color:"#2ECC71",items:getPlayerSeasonStats().filter(p=>p.played>0).sort((a,b)=>b.consistency-a.consistency).slice(0,5),val:p=>p.consistency+"%",sub:p=>`${p.played} matches`},
                   ].map(cat=>(
                     <div key={cat.label} style={{background:"#0E1521",borderRadius:12,overflow:"hidden",border:`1px solid ${cat.color}33`}}>
@@ -2153,7 +2153,7 @@ export default function App() {
                       <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:32,fontWeight:800,color:"#F5A623"}}>{mvp.name}</div>
                       <div style={{fontSize:13,color:mvp.teamColor,marginTop:4}}>{mvp.teamName} • {mvp.iplTeam}</div>
                       <div style={{display:"flex",justifyContent:"center",gap:20,marginTop:16,flexWrap:"wrap"}}>
-                        {[{l:"TOTAL",v:mvp.total+" pts"},{l:"AVG",v:mvp.avg+"/match"},{l:"BEST",v:mvp.best+" pts"},{l:"CONSISTENCY",v:mvp.consistency+"%"}].map(s=>(
+                        {[{l:"TOTAL",v:mvp.total+" pts"},{l:"AVG",v:mvp.avg+" per match"},{l:"BEST",v:mvp.best+" pts"},{l:"CONSISTENCY",v:mvp.consistency+"%"}].map(s=>(
                           <div key={s.l} style={{textAlign:"center"}}>
                             <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:24,fontWeight:800,color:"#E2EAF4"}}>{s.v}</div>
                             <div style={{fontSize:9,color:"#4A5E78",letterSpacing:1}}>{s.l}</div>
