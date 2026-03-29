@@ -2785,8 +2785,18 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
                           <div style={{fontWeight:700,fontSize:13,color:t.color}}>{t.name}</div>
                           <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>{ti.claimedBy ? "Claimed by "+ti.claimedBy : "Unclaimed"}</div>
                         </div>
-                        {ti.teamId ? (
-                          <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:16,fontWeight:800,color:"#F5A623",letterSpacing:2,background:"#F5A62322",padding:"4px 10px",borderRadius:6}}>{ti.teamId}</div>
+                        {ti.claimedBy ? (
+                          <span style={{fontSize:11,color:"#2ECC71",fontWeight:700,background:"#2ECC7122",padding:"4px 10px",borderRadius:6}}>✓ CLAIMED</span>
+                        ) : ti.teamId ? (
+                          <div style={{display:"flex",alignItems:"center",gap:6}}>
+                            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:16,fontWeight:800,color:"#F5A623",letterSpacing:2,background:"#F5A62322",padding:"4px 10px",borderRadius:6}}>{ti.teamId}</div>
+                            <button onClick={async()=>{
+                              if(!confirm("Reset Team ID?")) return;
+                              const updated = {...teamIdentity, [t.id]: {teamId: generateTeamId()}};
+                              setTeamIdentity(updated);
+                              await storeSet("teamIdentity", updated);
+                            }} style={{background:"transparent",border:"1px solid #1E2D45",color:"#4A5E78",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:10,fontFamily:"Barlow Condensed,sans-serif"}}>↺</button>
+                          </div>
                         ) : (
                           <button onClick={async()=>{
                             const newId = generateTeamId();
@@ -2794,14 +2804,6 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
                             setTeamIdentity(updated);
                             await storeSet("teamIdentity", updated);
                           }} style={{background:"#F5A62322",border:"1px solid #F5A62344",color:"#F5A623",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:11,fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>GENERATE</button>
-                        )}
-                        {ti.teamId && (
-                          <button onClick={async()=>{
-                            if(!confirm("Reset Team ID? The current holder will need to re-claim.")) return;
-                            const updated = {...teamIdentity, [t.id]: {teamId: generateTeamId()}};
-                            setTeamIdentity(updated);
-                            await storeSet("teamIdentity", updated);
-                          }} style={{background:"transparent",border:"1px solid #1E2D45",color:"#4A5E78",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:10,fontFamily:"Barlow Condensed,sans-serif"}}>↺</button>
                         )}
                       </div>
                     );
