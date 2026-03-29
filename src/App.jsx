@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import FormChart from "./FormChart";
 
 async function callAI(userPrompt, system = "Return only valid JSON.") {
   const body = {
@@ -1242,7 +1241,6 @@ function App({ pitch, onLeave, user, onLogout }) {
   const [pwHash, setPwHash] = useState(null);
   const [recoveryHash, setRecoveryHash] = useState(null);
   const [appReady, setAppReady] = useState(false);
-  const [lbTab, setLbTab] = useState('leaderboard');
   const [unlocked, setUnlocked] = useState(false);
   const isAdmin = user && pitch && (pitch.creatorEmail === user.email || !pitch.creatorEmail);
   const [showPwModal, setShowPwModal] = useState(false);
