@@ -1803,17 +1803,6 @@ function App({ pitch, onLeave, user, onLogout }) {
           result: m.status || null,
         });
       });
-
-      updMatches(updated);
-      const live = updated.filter(m => m.status === "live").length;
-      const upcoming = updated.filter(m => m.status === "upcoming").length;
-      const completed = updated.filter(m => m.status === "completed").length;
-      alert("Updated! "+completed+" completed, "+live+" live, "+upcoming+" upcoming.");
-    } catch(e){
-      alert("Error: "+e.message);
-    }
-    setLoading("");
-  };
       };
 
       const extractIPL = (data) => {
