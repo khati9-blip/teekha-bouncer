@@ -174,7 +174,17 @@ function parseScorecardToStats(scorecard, playerIndex) {
   return Object.values(stats);
 }
 
-function calcPoints(s) {
+// Default points config (used when no custom config loaded yet)
+const DEFAULT_POINTS = {
+  run:1, four:8, six:12, fifty:10, century:20,
+  wicket:25, fourWkt:8, fiveWkt:15, ecoBonus:10, ecoThreshold:6, ecoMinOvers:2,
+  catch:8, stumping:12, runout:12,
+  allRoundMinRuns:30, allRoundMinWkts:2, allRoundBonus:15,
+  longestSix:50, captainMult:2, vcMult:1.5
+};
+
+function calcPoints(s, cfg) {
+  const c = cfg || DEFAULT_POINTS;
   let p = 0;
   const runs   = +s.runs      || 0;
   const fours  = +s.fours     || 0;
@@ -186,31 +196,23 @@ function calcPoints(s) {
   const stump  = +s.stumpings || 0;
   const ro     = +s.runouts   || 0;
 
-  // ── BATTING ──────────────────────────────────────────────────────────────
-  p += runs;           // 1 pt per run
-  p += fours * 8;      // +8 per four
-  p += sixes * 12;     // +12 per six
-  // Milestone — only highest counts
-  if      (runs >= 100) p += 20;   // +20 for century
-  else if (runs >= 50)  p += 10;   // +10 for half-century
+  p += runs * c.run;
+  p += fours * c.four;
+  p += sixes * c.six;
+  if      (runs >= 100) p += c.century;
+  else if (runs >= 50)  p += c.fifty;
 
-  // ── BOWLING ──────────────────────────────────────────────────────────────
-  p += wkts * 25;      // 25 pts per wicket
-  // Milestone — only highest counts
-  if      (wkts >= 5) p += 15;   // +15 for 5-wkt haul
-  else if (wkts >= 4) p += 8;    // +8 for 4-wkt haul
-  // Economy bonus — min 2 overs bowled
-  if (ovs >= 2 && eco !== null && eco < 6) p += 10;
+  p += wkts * c.wicket;
+  if      (wkts >= 5) p += c.fiveWkt;
+  else if (wkts >= 4) p += c.fourWkt;
+  if (ovs >= c.ecoMinOvers && eco !== null && eco < c.ecoThreshold) p += c.ecoBonus;
 
-  // ── FIELDING ─────────────────────────────────────────────────────────────
-  p += catches * 8;          // +8 per catch
-  p += (stump + ro) * 12;   // +12 per stumping or run-out
+  p += catches * c.catch;
+  p += (stump) * c.stumping;
+  p += (ro) * c.runout;
 
-  // ── ALL-ROUND BONUS ──────────────────────────────────────────────────────
-  if (runs >= 30 && wkts >= 2) p += 15;  // 30+ runs AND 2+ wickets
-
-  // ── SPECIAL BONUS ────────────────────────────────────────────────────────
-  if (s.longestSix) p += 50;   // Longest six of the match
+  if (runs >= c.allRoundMinRuns && wkts >= c.allRoundMinWkts) p += c.allRoundBonus;
+  if (s.longestSix) p += c.longestSix;
 
   return Math.round(p);
 }
@@ -853,9 +855,9 @@ function SmartStatsModal({ match, players, assignments, existingStats, onSave, o
               {activeTab==="preview" && (
                 <div style={{marginTop:8}}>
                   <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,marginBottom:10}}>POINTS PREVIEW (before captain multiplier)</div>
-                  {playingPlayers.sort((a,b)=>calcPoints(stats[b.id]||{})-calcPoints(stats[a.id]||{})).map(p => {
+                  {playingPlayers.sort((a,b)=>calcPoints(stats[b.id]||{}, pointsConfig)-calcPoints(stats[a.id]||{}, pointsConfig)).map(p => {
                     const s = stats[p.id] || {};
-                    const pts = calcPoints(s);
+                    const pts = calcPoints(s, pointsConfig);
                     const bd = calcBreakdown(s);
                     return (
                       <div key={p.id} style={{background:"#0E1521",borderRadius:8,padding:"10px 14px",marginBottom:6,display:"flex",alignItems:"flex-start",gap:12}}>
@@ -1539,6 +1541,53 @@ function TeamClaimScreen({ pitch, user, teams, onClaimed, onBack }) {
 }
 
 
+// ── EDIT POINTS FORM ─────────────────────────────────────────────────────────
+function EditPointsForm({ config, onSave, onCancel }) {
+  const [cfg, setCfg] = useState({...config});
+  const field = (label, key, step) => (
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid #1E2D4533"}}>
+      <div style={{fontSize:12,color:"#4A5E78",flex:1}}>{label}</div>
+      <input type="number" value={cfg[key]} step={step||1} min={0}
+        onChange={e=>setCfg(prev=>({...prev,[key]:parseFloat(e.target.value)||0}))}
+        style={{width:64,background:"#080C14",border:"1px solid #1E2D45",borderRadius:6,padding:"4px 8px",color:"#F5A623",fontSize:14,fontFamily:"Rajdhani,sans-serif",fontWeight:700,textAlign:"center",outline:"none"}} />
+    </div>
+  );
+  return (
+    <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #F5A62344",padding:20,marginBottom:16}}>
+      <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:18,fontWeight:700,color:"#F5A623",letterSpacing:2,marginBottom:16}}>EDIT POINTS SYSTEM</div>
+      <div style={{fontSize:11,color:"#4A5E78",letterSpacing:1,marginBottom:8}}>BATTING</div>
+      {field("Per run",        "run",      0.5)}
+      {field("Per four",       "four")}
+      {field("Per six",        "six")}
+      {field("Half-century",   "fifty")}
+      {field("Century",        "century")}
+      <div style={{fontSize:11,color:"#4A5E78",letterSpacing:1,marginBottom:8,marginTop:12}}>BOWLING</div>
+      {field("Per wicket",     "wicket")}
+      {field("4-wkt haul",     "fourWkt")}
+      {field("5-wkt haul",     "fiveWkt")}
+      {field("Economy bonus",  "ecoBonus")}
+      {field("Economy <",      "ecoThreshold", 0.5)}
+      {field("Min overs (eco)","ecoMinOvers", 0.5)}
+      <div style={{fontSize:11,color:"#4A5E78",letterSpacing:1,marginBottom:8,marginTop:12}}>FIELDING</div>
+      {field("Per catch",      "catch")}
+      {field("Per stumping",   "stumping")}
+      {field("Per run-out",    "runout")}
+      <div style={{fontSize:11,color:"#4A5E78",letterSpacing:1,marginBottom:8,marginTop:12}}>BONUSES</div>
+      {field("All-round bonus","allRoundBonus")}
+      {field("All-round min runs","allRoundMinRuns")}
+      {field("All-round min wkts","allRoundMinWkts")}
+      {field("Longest six",    "longestSix")}
+      {field("Captain mult",   "captainMult", 0.5)}
+      {field("VC mult",        "vcMult",       0.5)}
+      <div style={{display:"flex",gap:8,marginTop:16}}>
+        <button onClick={onCancel} style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:10,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
+        <button onClick={()=>onSave(cfg)} style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:10,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:14,cursor:"pointer"}}>SAVE POINTS</button>
+      </div>
+    </div>
+  );
+}
+
+
 // ── PROPOSE RULES FORM ───────────────────────────────────────────────────────
 function ProposeRulesForm({ teams, eligibleVoters, onPropose }) {
   const [open, setOpen] = useState(false);
@@ -1605,7 +1654,14 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [teamIdentity, setTeamIdentity] = useState({});
   const [snatchPinModal, setSnatchPinModal] = useState(null);
-  const [ruleProposal, setRuleProposal] = useState(null); // loaded from supabase
+  const [ruleProposal, setRuleProposal] = useState(null);
+  const [pointsConfig, setPointsConfig] = useState({
+    run:1, four:8, six:12, fifty:10, century:20,
+    wicket:25, fourWkt:8, fiveWkt:15, ecoBonus:10, ecoThreshold:6, ecoMinOvers:2,
+    catch:8, stumping:12, runout:12,
+    allRoundMinRuns:30, allRoundMinWkts:2, allRoundBonus:15,
+    longestSix:50, captainMult:2, vcMult:1.5
+  }); // loaded from supabase
   const [showRulesPanel, setShowRulesPanel] = useState(false);
   const [votePin, setVotePin] = useState('');
   const [votePinErr, setVotePinErr] = useState(''); // {pid, fromTeamId}
@@ -1647,7 +1703,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
   useEffect(() => {
     (async () => {
       try {
-        const keys = ["teams","players","assignments","matches","captains","points","page","tnames","numteams","pwhash","recoveryHash","teamLogos","safePlayers","unsoldPool","transfers","snatch","ownershipLog","teamIdentity","ruleProposal"];
+        const keys = ["teams","players","assignments","matches","captains","points","page","tnames","numteams","pwhash","recoveryHash","teamLogos","safePlayers","unsoldPool","transfers","snatch","ownershipLog","teamIdentity","ruleProposal","pointsConfig"];
         const results = await Promise.all(keys.map(k => storeGet(k)));
         const [t,p,a,m,c,pts,pg,tn,nt,ph,rh,tl,sp,up,tr,sn,ol,ti] = results;
         if(t) setTeams(t);
@@ -1670,6 +1726,8 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
         if(ti && typeof ti === 'object') setTeamIdentity(ti);
         const rp = results[keys.indexOf("ruleProposal")];
         if(rp && typeof rp === 'object') setRuleProposal(rp);
+        const pc = results[keys.indexOf('pointsConfig')];
+        if(pc && typeof pc === 'object') setPointsConfig(prev=>({...prev,...pc}));
       } catch(e) {
         console.error("Load error:", e.message);
       } finally {
@@ -2186,7 +2244,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
       const newPts={...points};
       for(const s of stats){
         if(!s.playerId)continue;
-        const pts=calcPoints(s);
+        const pts=calcPoints(s, pointsConfig);
         if(!newPts[s.playerId])newPts[s.playerId]={};
         newPts[s.playerId][match.id]={base:pts,stats:s};
       }
@@ -2450,12 +2508,19 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
   }, [snatch.active]);
 
 
+  const savePointsConfig = async (cfg) => {
+    setPointsConfig(cfg);
+    await storeSet("pointsConfig", cfg);
+  };
+
   const updRuleProposal = async (val) => {
     setRuleProposal(val);
     await storeSet("ruleProposal", val);
   };
 
   // Teams with claimed IDs = eligible voters
+  // Tournament is "started" if any matches have been played
+  const tournamentStarted = matches.some(m => m.status === "completed") && teams.length > 0;
   const eligibleVoters = teams.filter(t => teamIdentity[t.id]?.claimedBy);
 
   const proposeRuleChange = async (changes) => {
@@ -2539,7 +2604,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
             const newPts={...points};
             for(const s of statsList){
               if(!s.playerId)continue;
-              const pts=calcPoints(s);
+              const pts=calcPoints(s, pointsConfig);
               if(!newPts[s.playerId])newPts[s.playerId]={};
               newPts[s.playerId][smartStatsMatch.id]={base:pts,stats:s};
             }
@@ -3385,7 +3450,32 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
             <div style={{maxWidth:500,margin:"0 auto"}}>
               <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:24}}>
                 <button onClick={()=>setShowRulesPanel(false)} style={{background:"transparent",border:"none",color:"#4A5E78",fontSize:22,cursor:"pointer",padding:"0 4px"}}>←</button>
-                <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:26,fontWeight:700,color:"#F5A623",letterSpacing:2}}>LEAGUE RULES</div>
+                <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:26,fontWeight:700,color:"#F5A623",letterSpacing:2}}>POINTS & RULES</div>
+              </div>
+
+              {/* Points System */}
+              <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #1E2D45",padding:20,marginBottom:16}}>
+                <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginBottom:12}}>🏏 POINTS SYSTEM</div>
+                {[
+                  ["Run",pointsConfig.run,"pt"],["Four",pointsConfig.four,"pts"],["Six",pointsConfig.six,"pts"],
+                  ["Half-century (50+)",pointsConfig.fifty,"pts"],["Century (100+)",pointsConfig.century,"pts"],
+                  ["Wicket",pointsConfig.wicket,"pts"],["4-wkt haul",pointsConfig.fourWkt,"pts"],["5-wkt haul",pointsConfig.fiveWkt,"pts"],
+                  ["Economy bonus (<"+pointsConfig.ecoThreshold+")",pointsConfig.ecoBonus,"pts"],
+                  ["Catch",pointsConfig.catch,"pts"],["Stumping",pointsConfig.stumping,"pts"],["Run-out",pointsConfig.runout,"pts"],
+                  ["All-round bonus",pointsConfig.allRoundBonus,"pts ("+pointsConfig.allRoundMinRuns+"+ runs & "+pointsConfig.allRoundMinWkts+"+ wkts)"],
+                  ["Longest six",pointsConfig.longestSix,"pts"],["Captain multiplier",pointsConfig.captainMult,"×"],["VC multiplier",pointsConfig.vcMult,"×"],
+                ].map(([label,val,unit])=>(
+                  <div key={label} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"1px solid #1E2D4533"}}>
+                    <div style={{fontSize:12,color:"#4A5E78"}}>{label}</div>
+                    <div style={{fontSize:13,color:"#F5A623",fontWeight:700,fontFamily:"Rajdhani,sans-serif"}}>{val} <span style={{color:"#4A5E78",fontWeight:400,fontSize:11}}>{unit}</span></div>
+                  </div>
+                ))}
+                {(!tournamentStarted || !eligibleVoters.length) && unlocked && (
+                  <button onClick={()=>setShowRulesPanel("points")} style={{width:"100%",marginTop:12,background:"#F5A62322",border:"1px solid #F5A62344",borderRadius:8,padding:8,color:"#F5A623",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>✏️ EDIT POINTS (FREE — Tournament not started)</button>
+                )}
+                {tournamentStarted && !!eligibleVoters.length && unlocked && (!ruleProposal || ruleProposal.status !== "pending") && (
+                  <button onClick={()=>setShowRulesPanel("points")} style={{width:"100%",marginTop:12,background:"#F5A62322",border:"1px solid #F5A62344",borderRadius:8,padding:8,color:"#F5A623",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>✏️ PROPOSE POINTS CHANGE (Needs all-team vote)</button>
+                )}
               </div>
 
               {/* Current Rules */}
@@ -3452,9 +3542,23 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
                 </div>
               )}
 
-              {/* Propose new change — admin only */}
-              {unlocked && (!ruleProposal || ruleProposal.status !== "pending") && (
-                <ProposeRulesForm teams={teams} eligibleVoters={eligibleVoters} onPropose={proposeRuleChange} />
+              {/* Edit points form */}
+              {showRulesPanel === "points" && unlocked && (
+                <EditPointsForm config={pointsConfig} onSave={async(cfg)=>{
+                  if(!tournamentStarted || !eligibleVoters.length) {
+                    await savePointsConfig(cfg);
+                    setShowRulesPanel(true);
+                    alert("Points system updated!");
+                  } else {
+                    await proposeRuleChange({"Points Change": JSON.stringify(cfg)});
+                    setShowRulesPanel(true);
+                  }
+                }} onCancel={()=>setShowRulesPanel(true)} />
+              )}
+
+              {/* Propose new timing change — admin only */}
+              {showRulesPanel === true && unlocked && (!ruleProposal || ruleProposal.status !== "pending") && (
+                <ProposeRulesForm teams={teams} eligibleVoters={eligibleVoters} tournamentStarted={tournamentStarted} onPropose={proposeRuleChange} />
               )}
             </div>
           </div>
@@ -3559,12 +3663,12 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
                 </div>
               )}
 
-              {/* League Rules button */}
+              {/* Points & Rules button */}
               <button onClick={()=>{setShowRulesPanel(true);setDrawerOpen(false);}} style={{width:"100%",background:"transparent",border:"none",padding:"10px 14px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12}}>
                 <span style={{fontSize:20}}>📋</span>
                 <div style={{flex:1}}>
-                  <div style={{fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,color:"#E2EAF4"}}>League Rules</div>
-                  <div style={{fontSize:11,color:"#4A5E78"}}>Transfer & snatch timing</div>
+                  <div style={{fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,color:"#E2EAF4"}}>Points & Rules</div>
+                  <div style={{fontSize:11,color:"#4A5E78"}}>Points system & league timing</div>
                 </div>
                 {pendingVote && <span style={{width:8,height:8,background:"#FF3D5A",borderRadius:"50%",flexShrink:0}} />}
               </button>
