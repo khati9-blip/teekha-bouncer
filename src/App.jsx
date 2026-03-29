@@ -1768,11 +1768,9 @@ function App({ pitch, onLeave, user, onLogout }) {
         setLoading(""); return;
       }
 
-      // Build a map of cricbuzzId -> new data
       const fetchedMap = {};
       fetched.forEach(m => { if (m.info?.matchId) fetchedMap[m.info.matchId] = m; });
 
-      // Start with existing matches - update status of any that match by cricbuzzId
       const updated = matches.map(m => {
         if (m.cricbuzzId && fetchedMap[m.cricbuzzId]) {
           const f = fetchedMap[m.cricbuzzId].info;
@@ -1785,7 +1783,6 @@ function App({ pitch, onLeave, user, onLogout }) {
         return m;
       });
 
-      // Add any new matches from Cricbuzz not already in our list
       const existingCricbuzzIds = new Set(matches.map(m => m.cricbuzzId).filter(Boolean));
       let nextNum = matches.length + 1;
       fetched.forEach(({info: m}) => {
@@ -1803,60 +1800,14 @@ function App({ pitch, onLeave, user, onLogout }) {
           result: m.status || null,
         });
       });
-      };
 
-      const extractIPL = (data) => {
-        const ipl = [];
-        if (!data || !data.typeMatches) return ipl;
-        for (const type of data.typeMatches) {
-          for (const series of (type.seriesMatches || [])) {
-            const sm = series.seriesAdWrapper || series;
-            if (sm.seriesName && sm.seriesName.includes("Indian Premier League")) {
-              for (const match of (sm.matches || [])) {
-                ipl.push({info: match.matchInfo, score: match.matchScore});
-              }
-            }
-          }
-        }
-        return ipl;
-      };
-
-      // Build existing match map to preserve completed status
-      const existingMap = {};
-      matches.forEach(m => { existingMap[m.id] = m; });
-
-      // Fetch recent (has live + just completed) and upcoming in parallel
-      const [recentData, upcomingData] = await Promise.all([
-        fetch("/api/cricbuzz?path="+encodeURIComponent("matches/v1/recent")).then(r=>r.json()).catch(()=>({})),
-        fetch("/api/cricbuzz?path="+encodeURIComponent("matches/v1/upcoming")).then(r=>r.json()).catch(()=>({})),
-      ]);
-
-      const recentIPL = extractIPL(recentData);
-      const upcomingIPL = extractIPL(upcomingData);
-
-      // Merge — avoid duplicates
-      const seen = new Set(recentIPL.map(m => m.info?.matchId));
-      const allIPL = [...recentIPL];
-      for (const m of upcomingIPL) {
-        if (!seen.has(m.info?.matchId)) { allIPL.push(m); seen.add(m.info?.matchId); }
-      }
-
-      if (allIPL.length === 0) {
-        alert("No IPL 2026 matches found yet. Cricbuzz may not have the full schedule.");
-        setLoading(""); return;
-      }
-
-      // Sort by startDate
-      allIPL.sort((a, b) => parseInt(a.info?.startDate||0) - parseInt(b.info?.startDate||0));
-
-      const formatted = allIPL.map((m, i) => formatMatch(m.info, i, existingMap));
-      updMatches(formatted);
-      const live = formatted.filter(m => m.status === "live").length;
-      const upcoming = formatted.filter(m => m.status === "upcoming").length;
-      const completed = formatted.filter(m => m.status === "completed").length;
-      alert("Fetched "+formatted.length+" IPL matches — "+completed+" completed, "+live+" live, "+upcoming+" upcoming!");
+      updMatches(updated);
+      const live = updated.filter(m => m.status === "live").length;
+      const upcoming = updated.filter(m => m.status === "upcoming").length;
+      const completed = updated.filter(m => m.status === "completed").length;
+      alert("Updated! "+completed+" completed, "+live+" live, "+upcoming+" upcoming.");
     } catch(e){
-      alert("Error fetching schedule: "+e.message);
+      alert("Error: "+e.message);
     }
     setLoading("");
   };
