@@ -859,8 +859,8 @@ export default function App() {
     const tick = () => {
       const diff = new Date(upcoming.date + 'T14:00:00+05:30') - Date.now();
       if (diff <= 0) { setCountdown('LIVE NOW 🔴'); return; }
-      const h = Math.floor(diff/3600000), m = Math.floor((diff%3600000)/60000), s = Math.floor((diff%60000)/1000);
-      const d = Math.floor(diff/86400000);
+      const hr=3600000,mn=60000,sc=1000; const h=Math.floor(diff/hr), m=Math.floor((diff%hr)/mn), s=Math.floor((diff%mn)/sc);
+      const d=Math.floor(diff/86400000);
       setCountdown(d > 0 ? `${d}d ${h%24}h ${m}m` : `${h}h ${m}m ${s}s`);
     };
     tick(); const id = setInterval(tick,1000); return ()=>clearInterval(id);
@@ -1443,8 +1443,8 @@ export default function App() {
     const matchData = Object.entries(points[p.id]||{}).map(([mid,d])=>({mid,pts:d.base}));
     const total = matchData.reduce((s,m)=>s+m.pts,0);
     const played = matchData.length;
-    const avg = played>0?Math.round(total/played):0;
-    const consistency = played>0?Math.round(matchData.filter(m=>m.pts>0).length/played*100):0;
+    const avg = played>0?Math.round(total*1.0/(played||1)):0;
+    const nonZero=matchData.filter(m=>m.pts>0).length; const consistency = played>0?Math.round(nonZero*100/(played||1)):0;
     const best = matchData.reduce((max,m)=>m.pts>max?m.pts:max,0);
     const last5 = matchData.slice(-5).map(m=>m.pts);
     const team = teams.find(t=>t.id===assignments[p.id]);
@@ -2244,7 +2244,7 @@ export default function App() {
                           {p.last5.map((pts,i)=>(
                             <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:1}}>
                               <span style={{fontSize:9,color:"#4A5E78"}}>{pts}</span>
-                              <div style={{width:"100%",background:pts>0?p.teamColor:"#1E2D45",borderRadius:"2px 2px 0 0",height:Math.max(3,Math.round(pts/mx*28))+"px"}} />
+                              <div style={{width:"100%",background:pts>0?p.teamColor:"#1E2D45",borderRadius:"2px 2px 0 0",height:Math.max(3,Math.round(pts*28/(mx||1)))+"px"}} />
                             </div>
                           ))}
                         </div>
