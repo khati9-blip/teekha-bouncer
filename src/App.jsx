@@ -1262,6 +1262,7 @@ function App({ pitch, onLeave, user, onLogout }) {
   const [pwHash, setPwHash] = useState(null);
   const [recoveryHash, setRecoveryHash] = useState(null);
   const [appReady, setAppReady] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
   const isAdmin = user && pitch && (pitch.creatorEmail === user.email || !pitch.creatorEmail);
   const [showPwModal, setShowPwModal] = useState(false);
@@ -1924,19 +1925,25 @@ function App({ pitch, onLeave, user, onLogout }) {
 
         {/* TOP BAR */}
         <div style={{background:"linear-gradient(180deg,#0E1521 0%,#080C14 100%)",borderBottom:"1px solid #1E2D45",padding:"10px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:50}}>
-          <div style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={onLeave} title="Back to pitches">
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <button onClick={()=>setDrawerOpen(true)} style={{background:"transparent",border:"none",cursor:"pointer",padding:"6px 4px",display:"flex",flexDirection:"column",justifyContent:"center",gap:4,flexShrink:0}}>
+              <span style={{display:"block",width:20,height:2,background:"#E2EAF4",borderRadius:2}} />
+              <span style={{display:"block",width:20,height:2,background:"#E2EAF4",borderRadius:2}} />
+              <span style={{display:"block",width:20,height:2,background:"#E2EAF4",borderRadius:2}} />
+            </button>
+            <div style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={onLeave} title="Back to pitches">
             <img src="/logo.png" alt="Teekha Bouncer" style={{height:36,width:36,objectFit:"contain",borderRadius:6}} />
             <div>
               <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:14,color:"#F5A623",letterSpacing:1,lineHeight:1}}>TEEKHA BOUNCER LEAGUE</div>
               <div style={{fontSize:9,color:"#4A5E78",letterSpacing:1,marginTop:2}}>{pitch ? pitch.name : ""} {user ? "• "+user.email.split("@")[0] : ""}</div>
             </div>
           </div>
+          </div>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             <button onClick={()=>{if(unlocked)setUnlocked(false);else{setPendingAction(null);setShowPwModal(true);}}} style={{background:unlocked?"#2ECC7122":"transparent",border:"1px solid "+(unlocked?"#2ECC71":"#1E2D45"),color:unlocked?"#2ECC71":"#4A5E78",fontSize:13,borderRadius:6,padding:"6px 12px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>{unlocked?"🔓 ON":"🔒 OFF"}</button>
 
             <button onClick={()=>withPassword(()=>{if(!confirm("Reset ALL data? This cannot be undone!"))return;["teams","players","assignments","matches","captains","points","page","pwhash"].forEach(k=>storeDel(k));window.location.reload();})} style={{background:"transparent",border:"1px solid #1E2D45",color:"#4A5E78",fontSize:13,borderRadius:6,padding:"6px 10px",cursor:"pointer"}}>⚙️</button>
-            <button onClick={onLogout}
-              style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:"#FF3D5A",fontSize:11,borderRadius:6,padding:"6px 10px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,letterSpacing:0.5}}>LOGOUT</button>
+            <button onClick={onLogout} style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:"#FF3D5A",fontSize:11,borderRadius:6,padding:"6px 10px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,letterSpacing:0.5}}>LOGOUT</button>
           </div>
         </div>
 
@@ -2617,6 +2624,23 @@ function App({ pitch, onLeave, user, onLogout }) {
             </div>
           )}
         </div>
+        {drawerOpen && (
+          <div onClick={()=>setDrawerOpen(false)} style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,0.6)",display:"flex"}}>
+            <div onClick={e=>e.stopPropagation()} style={{width:260,background:"#0E1521",borderRight:"1px solid #1E2D45",display:"flex",flexDirection:"column",height:"100%"}}>
+              <div style={{padding:"20px 16px",borderBottom:"1px solid #1E2D45",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:16,color:"#F5A623",letterSpacing:2}}>MENU</div>
+                <button onClick={()=>setDrawerOpen(false)} style={{background:"transparent",border:"none",color:"#4A5E78",fontSize:20,cursor:"pointer",lineHeight:1}}>×</button>
+              </div>
+              <div style={{flex:1,padding:"12px 8px",overflowY:"auto"}}>
+                <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,padding:"8px 8px 4px"}}>COMING SOON</div>
+                <div style={{padding:"12px 14px",color:"#2D3E52",fontSize:13}}>More features will appear here</div>
+              </div>
+              <div style={{padding:"16px",borderTop:"1px solid #1E2D45"}}>
+                <button onClick={onLogout} style={{width:"100%",background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:8,padding:"10px",color:"#FF3D5A",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>LOGOUT</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
