@@ -963,15 +963,19 @@ function PitchHome({ onEnter, user, onLogout }) {
 
   useEffect(() => {
     (async () => {
-      const data = await sbGet("pitches");
-      if (data && Array.isArray(data)) {
-        setPitches(data);
-      } else {
-        // First time — seed with Pitch 1 (existing league)
-        const p1hash = await sbGet("p1_pwhash");
-        const defaultPitches = [{ id: "p1", name: "Pitch 1", hash: p1hash || "", createdAt: new Date().toISOString() }];
-        await sbSet("pitches", defaultPitches);
-        setPitches(defaultPitches);
+      try {
+        const data = await sbGet("pitches");
+        if (data && Array.isArray(data)) {
+          setPitches(data);
+        } else {
+          const p1hash = await sbGet("p1_pwhash");
+          const defaultPitches = [{ id: "p1", name: "Pitch 1", hash: p1hash || "", createdAt: new Date().toISOString() }];
+          await sbSet("pitches", defaultPitches);
+          setPitches(defaultPitches);
+        }
+      } catch(e) {
+        console.error("PitchHome load error:", e);
+        setPitches([{ id: "p1", name: "Pitch 1", hash: "", createdAt: new Date().toISOString() }]);
       }
       setLoading(false);
     })();
@@ -2626,9 +2630,18 @@ function Root() {
     if (currentPitch) _pitchId = currentPitch.id;
   }, []);
 
-  if (!currentUser) return <SplashScreen onLogin={handleLogin} />;
-  if (!currentPitch) return <PitchHome onEnter={handleEnter} user={currentUser} onLogout={handleLogout} />;
-  return <App pitch={currentPitch} onLeave={handleLeave} user={currentUser} onLogout={handleLogout} />;
+  try {
+    if (!currentUser) return <SplashScreen onLogin={handleLogin} />;
+    if (!currentPitch) return <PitchHome onEnter={handleEnter} user={currentUser} onLogout={handleLogout} />;
+    return <App pitch={currentPitch} onLeave={handleLeave} user={currentUser} onLogout={handleLogout} />;
+  } catch(e) {
+    return <div style={{minHeight:"100vh",background:"#080C14",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16,padding:24}}>
+      <div style={{fontSize:48}}>⚠️</div>
+      <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,color:"#FF3D5A",fontWeight:700}}>Something went wrong</div>
+      <div style={{color:"#4A5E78",fontSize:13,textAlign:"center"}}>{e.message}</div>
+      <button onClick={()=>{localStorage.clear();window.location.reload();}} style={{background:"#F5A623",border:"none",borderRadius:8,padding:"10px 20px",color:"#080C14",fontWeight:700,fontFamily:"Barlow Condensed,sans-serif",fontSize:14,cursor:"pointer",marginTop:8}}>CLEAR & RELOAD</button>
+    </div>;
+  }
 }
 
 export default Root;
