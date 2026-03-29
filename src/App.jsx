@@ -2777,7 +2777,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
                 <div style={{background:"#080C14",borderRadius:10,padding:"14px 16px",marginBottom:12,border:"1px solid #1E2D45"}}>
                   <div style={{fontSize:11,color:"#F5A623",letterSpacing:2,fontWeight:700,marginBottom:10}}>🔑 TEAM IDs</div>
                   <div style={{fontSize:11,color:"#4A5E78",marginBottom:10}}>Share these codes with each team manager so they can claim their team</div>
-                  {teamsData.map(t => {
+                  {teams.map(t => {
                     const ti = teamIdentity[t.id] || {};
                     return (
                       <div key={t.id} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,padding:"8px 12px",background:"#0E1521",borderRadius:8,border:"1px solid "+t.color+"33"}}>
