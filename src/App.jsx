@@ -2548,8 +2548,9 @@ function App({ pitch, onLeave, user, onLogout }) {
                 );
               })()}
             </div>
+          </div>
+          </div>
           )}
-            </div>
 
           {page==="results" && (
             <div className="fade-in">
