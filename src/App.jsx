@@ -1223,7 +1223,7 @@ function PitchHome({ onEnter, user, onLogout }) {
   );
 }
 
-function App({ pitch, onLeave, user }) {
+function App({ pitch, onLeave, user, onLogout }) {
   const [page, setPage] = useState("setup");
   const [teams, setTeams] = useState([]);
   const [players, setPlayers] = useState([]);
@@ -2624,7 +2624,7 @@ function Root() {
 
   if (!currentUser) return <SplashScreen onLogin={handleLogin} />;
   if (!currentPitch) return <PitchHome onEnter={handleEnter} user={currentUser} onLogout={handleLogout} />;
-  return <App pitch={currentPitch} onLeave={handleLeave} user={currentUser} />;
+  return <App pitch={currentPitch} onLeave={handleLeave} user={currentUser} onLogout={handleLogout} />;
 }
 
 export default Root;
