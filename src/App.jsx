@@ -1770,15 +1770,6 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
     })();
   }, []);
 
-  // Auto-refresh schedule when upcoming matches < 5
-  useEffect(() => {
-    if (!appReady) return;
-    const upcomingCount = matches.filter(m => m.status === "upcoming").length;
-    if (upcomingCount < 5) {
-      fetchMatches();
-    }
-  }, [appReady]);
-
   const nav=(pg)=>{setPage(pg);storeSet("page",pg);};
   const upd=(setter,key)=>(val)=>{setter(val);storeSet(key,val);};
   const updTeams=upd(setTeams,"teams"),updAssign=upd(setAssignments,"assignments"),
