@@ -2812,6 +2812,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
                   {transfers.phase==="release" && <Btn onClick={closeReleaseWindow} variant="blue" sx={{fontSize:13}}>🔒 CLOSE RELEASES & START PICKS</Btn>}
                   {transfers.phase==="pick" && <Btn onClick={skipCurrentTeam} variant="ghost" sx={{fontSize:13}}>⏭ SKIP CURRENT TEAM</Btn>}
                   {(transfers.phase==="done"||transfers.phase==="closed") && <Btn onClick={resetTransferWindow} variant="ghost" sx={{fontSize:13}}>🔁 RESET FOR NEXT WEEK</Btn>}
+                  {(transfers.phase==="release"||transfers.phase==="pick") && <Btn onClick={()=>withPassword(()=>{if(!confirm("Cancel transfer window? All releases and picks this week will be discarded."))return;updTransfers({...transfers,phase:"closed",releases:{},picks:[],currentPickTeam:null,pickDeadline:null});alert("Transfer window cancelled.");})  } variant="ghost" sx={{fontSize:13,color:"#FF3D5A"}}>✕ CANCEL WINDOW</Btn>}
                 </div>
               </div>
 
