@@ -2592,13 +2592,36 @@ function App({ pitch, onLeave, user }) {
 }
 
 function Root() {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [currentPitch, setCurrentPitch] = useState(null);
+  const [currentUser, setCurrentUser] = useState(() => {
+    try { const s = localStorage.getItem('tb_user'); return s ? JSON.parse(s) : null; } catch { return null; }
+  });
+  const [currentPitch, setCurrentPitch] = useState(() => {
+    try { const s = localStorage.getItem('tb_pitch'); return s ? JSON.parse(s) : null; } catch { return null; }
+  });
 
-  const handleLogin = (user) => { setCurrentUser(user); };
-  const handleLogout = () => { setCurrentUser(null); setCurrentPitch(null); };
-  const handleEnter = (pitch) => { setCurrentPitch(pitch); };
-  const handleLeave = () => { setCurrentPitch(null); };
+  const handleLogin = (user) => {
+    setCurrentUser(user);
+    try { localStorage.setItem('tb_user', JSON.stringify(user)); } catch {}
+  };
+  const handleLogout = () => {
+    setCurrentUser(null); setCurrentPitch(null);
+    try { localStorage.removeItem('tb_user'); localStorage.removeItem('tb_pitch'); } catch {}
+  };
+  const handleEnter = (pitch) => {
+    // Set global pitchId so storage wrappers use correct prefix
+    _pitchId = pitch.id;
+    setCurrentPitch(pitch);
+    try { localStorage.setItem('tb_pitch', JSON.stringify(pitch)); } catch {}
+  };
+  const handleLeave = () => {
+    setCurrentPitch(null);
+    try { localStorage.removeItem('tb_pitch'); } catch {}
+  };
+
+  // Restore pitchId on mount if pitch is already saved
+  useEffect(() => {
+    if (currentPitch) _pitchId = currentPitch.id;
+  }, []);
 
   if (!currentUser) return <SplashScreen onLogin={handleLogin} />;
   if (!currentPitch) return <PitchHome onEnter={handleEnter} user={currentUser} onLogout={handleLogout} />;
