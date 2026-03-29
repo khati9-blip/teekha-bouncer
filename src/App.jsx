@@ -1333,24 +1333,28 @@ function PitchHome({ onEnter, user, onLogout }) {
 
 
 // ── TEAM CLAIM SCREEN ────────────────────────────────────────────────────────
-function TeamClaimScreen({ pitch, user, teams, onClaimed, onSkip }) {
+function TeamClaimScreen({ pitch, user, teams, onClaimed }) {
   const [teamIdentity, setTeamIdentity] = useState({});
   const [loading, setLoading] = useState(true);
   const [enteredCode, setEnteredCode] = useState("");
   const [pin, setPin] = useState("");
   const [pin2, setPin2] = useState("");
-  const [step, setStep] = useState("enter"); // enter | setpin
+  const [step, setStep] = useState("enter"); // enter | setpin | admin | adminpin
+  const [adminPw, setAdminPw] = useState("");
   const [claimingTeam, setClaimingTeam] = useState(null);
   const [err, setErr] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  const [teamsData, setTeamsData] = useState([]);
   useEffect(() => {
     (async () => {
-      const data = await storeGet("teamIdentity");
-      setTeamIdentity(data || {});
+      const [ti, ts] = await Promise.all([storeGet("teamIdentity"), storeGet("teams")]);
+      setTeamIdentity(ti || {});
+      if (ts && Array.isArray(ts)) setTeamsData(ts);
       setLoading(false);
     })();
   }, []);
+  const allTeams = teams.length > 0 ? teams : teamsData;
 
   // Check if this user already has a team
   const myTeam = teams.find(t => teamIdentity[t.id]?.claimedBy === user.email);
@@ -1359,7 +1363,7 @@ function TeamClaimScreen({ pitch, user, teams, onClaimed, onSkip }) {
     setErr("");
     const code = enteredCode.trim().toUpperCase();
     // Find which team this code belongs to
-    const match = teams.find(t => teamIdentity[t.id]?.teamId === code);
+    const match = allTeams.find(t => teamIdentity[t.id]?.teamId === code);
     if (!match) { setErr("Invalid Team ID. Ask your admin for the correct code."); return; }
     if (teamIdentity[match.id]?.claimedBy && teamIdentity[match.id].claimedBy !== user.email) {
       setErr("This team is already claimed by another player."); return;
@@ -1419,11 +1423,7 @@ function TeamClaimScreen({ pitch, user, teams, onClaimed, onSkip }) {
                 style={{width:"100%",background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:14,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:16,cursor:"pointer",letterSpacing:1}}>
                 CLAIM TEAM
               </button>
-              <div style={{textAlign:"center",marginTop:16}}>
-                <button onClick={onSkip} style={{background:"none",border:"none",color:"#4A5E78",fontSize:12,cursor:"pointer",textDecoration:"underline"}}>
-                  I am the admin — skip for now
-                </button>
-              </div>
+
             </>
           ) : (
             <>
@@ -1450,6 +1450,60 @@ function TeamClaimScreen({ pitch, user, teams, onClaimed, onSkip }) {
                 </button>
               </div>
             </>
+          ) : step === "admin" ? (
+            <>
+              <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:"#E2EAF4",letterSpacing:2,marginBottom:4}}>ADMIN ENTRY</div>
+              <div style={{fontSize:12,color:"#4A5E78",marginBottom:16}}>Enter your league admin password to continue</div>
+              <input type="password" value={adminPw} onChange={e=>{setAdminPw(e.target.value);setErr("");}}
+                onKeyDown={async e=>{
+                  if(e.key==="Enter") {
+                    const ti = await storeGet("teamIdentity");
+                    const ph = await storeGet("pwhash");
+                    const h = await hashPw(adminPw);
+                    if(h === ph) { setTeamIdentity(ti||{}); setStep("adminpick"); setErr(""); }
+                    else setErr("Wrong admin password");
+                  }
+                }}
+                placeholder="Admin password..." autoFocus
+                style={{width:"100%",background:"#080C14",border:"1px solid "+(err?"#FF3D5A":"#1E2D45"),borderRadius:8,padding:"12px 16px",color:"#E2EAF4",fontSize:16,fontFamily:"Barlow Condensed,sans-serif",outline:"none",marginBottom:err?8:16,boxSizing:"border-box"}} />
+              {err && <div style={{color:"#FF3D5A",fontSize:13,marginBottom:16,textAlign:"center"}}>{err}</div>}
+              <div style={{display:"flex",gap:10}}>
+                <button onClick={()=>{setStep("enter");setAdminPw("");setErr("");}}
+                  style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:12,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>BACK</button>
+                <button onClick={async()=>{
+                  const ph = await storeGet("pwhash");
+                  const h = await hashPw(adminPw);
+                  if(h === ph) { const ti = await storeGet("teamIdentity"); setTeamIdentity(ti||{}); setStep("adminpick"); setErr(""); }
+                  else setErr("Wrong admin password");
+                }}
+                  style={{flex:2,background:"linear-gradient(135deg,#4F8EF7,#1a5fb4)",border:"none",borderRadius:8,padding:12,color:"#fff",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:15,cursor:"pointer"}}>ENTER</button>
+              </div>
+            </>
+          ) : step === "adminpick" ? (
+            <>
+              <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:"#E2EAF4",letterSpacing:2,marginBottom:4}}>PICK YOUR TEAM</div>
+              <div style={{fontSize:12,color:"#4A5E78",marginBottom:16}}>Select the team you manage</div>
+              <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:16}}>
+                {allTeams.map(t => {
+                  const claimed = teamIdentity[t.id]?.claimedBy;
+                  const isMe = claimed === user.email;
+                  return (
+                    <button key={t.id} onClick={()=>{ if(!claimed || isMe) { setClaimingTeam(t); setStep("setpin"); setPin(""); setPin2(""); setErr(""); }}}
+                      style={{padding:"12px 16px",borderRadius:10,border:"2px solid "+(isMe?"#2ECC71":claimed?"#1E2D45":t.color+"44"),background:isMe?"#2ECC7122":claimed?"#1E2D4522":t.color+"11",cursor:claimed&&!isMe?"not-allowed":"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12,opacity:claimed&&!isMe?0.5:1}}>
+                      <div style={{flex:1}}>
+                        <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:16,color:isMe?"#2ECC71":claimed?"#4A5E78":t.color}}>{t.name}</div>
+                        <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>{isMe?"Your team":claimed?"Claimed by "+claimed:"Available"}</div>
+                      </div>
+                      {!claimed && <span style={{color:t.color,fontSize:12,fontWeight:700}}>SELECT →</span>}
+                      {isMe && <span style={{color:"#2ECC71",fontSize:12,fontWeight:700}}>✓ YOURS</span>}
+                    </button>
+                  );
+                })}
+              </div>
+              <button onClick={()=>setStep("enter")}
+                style={{width:"100%",background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:10,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>BACK</button>
+            </>
+          ) : null}
           )}
         </div>
       </div>
@@ -2667,7 +2721,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
                 <div style={{background:"#080C14",borderRadius:10,padding:"14px 16px",marginBottom:12,border:"1px solid #1E2D45"}}>
                   <div style={{fontSize:11,color:"#F5A623",letterSpacing:2,fontWeight:700,marginBottom:10}}>🔑 TEAM IDs</div>
                   <div style={{fontSize:11,color:"#4A5E78",marginBottom:10}}>Share these codes with each team manager so they can claim their team</div>
-                  {teams.map(t => {
+                  {allTeams.map(t => {
                     const ti = teamIdentity[t.id] || {};
                     return (
                       <div key={t.id} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,padding:"8px 12px",background:"#0E1521",borderRadius:8,border:"1px solid "+t.color+"33"}}>
@@ -3083,7 +3137,7 @@ function Root() {
     try { return localStorage.getItem('tb_pinHash') || null; } catch { return null; }
   });
   const [teamsClaimed, setTeamsClaimed] = useState(() => {
-    try { return !!localStorage.getItem('tb_myteam') || !!localStorage.getItem('tb_skipped'); } catch { return false; }
+    try { return !!localStorage.getItem('tb_myteam'); } catch { return false; }
   });
 
   const handleLogin = (user) => {
@@ -3092,7 +3146,7 @@ function Root() {
   };
   const handleLogout = () => {
     setCurrentUser(null); setCurrentPitch(null); setMyTeam(null); setMyPinHash(null); setTeamsClaimed(false);
-    try { ['tb_user','tb_pitch','tb_myteam','tb_pinHash','tb_skipped'].forEach(k=>localStorage.removeItem(k)); } catch {}
+    try { ['tb_user','tb_pitch','tb_myteam','tb_pinHash'].forEach(k=>localStorage.removeItem(k)); } catch {}
   };
   const handleEnter = (pitch) => {
     _pitchId = pitch.id;
@@ -3111,15 +3165,10 @@ function Root() {
     setMyTeam(team); setMyPinHash(pinHash); setTeamsClaimed(true);
     try { localStorage.setItem('tb_myteam', JSON.stringify(team)); if(pinHash) localStorage.setItem('tb_pinHash', pinHash); } catch {}
   };
-  const handleSkip = () => {
-    setTeamsClaimed(true);
-    try { localStorage.setItem('tb_skipped', '1'); } catch {}
-  };
-
   try {
     if (!currentUser) return <SplashScreen onLogin={handleLogin} />;
     if (!currentPitch) return <PitchHome onEnter={handleEnter} user={currentUser} onLogout={handleLogout} />;
-    if (!teamsClaimed) return <TeamClaimScreen pitch={currentPitch} user={currentUser} teams={[]} onClaimed={handleClaimed} onSkip={handleSkip} />;
+    if (!teamsClaimed) return <TeamClaimScreen pitch={currentPitch} user={currentUser} teams={[]} onClaimed={handleClaimed} onSkip={null} />;
     return <App pitch={currentPitch} onLeave={handleLeave} user={currentUser} onLogout={handleLogout} myTeam={myTeam} myPinHash={myPinHash} />;
   } catch(e) {
     return <div style={{minHeight:"100vh",background:"#080C14",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16,padding:24,fontFamily:"Barlow Condensed,sans-serif"}}>
