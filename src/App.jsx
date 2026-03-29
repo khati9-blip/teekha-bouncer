@@ -56,22 +56,46 @@ async function fetchLiveScorecard(matchId) {
 }
 
 async function fetchRecentIPLMatches() {
-  const data = await cricbuzz("matches/v1/recent");
-  // Filter for IPL matches
-  const ipl = [];
-  if (data.typeMatches) {
-    for (const type of data.typeMatches) {
-      for (const series of (type.seriesMatches || [])) {
-        const sm = series.seriesAdWrapper || series;
-        if (sm.seriesName && sm.seriesName.includes("Indian Premier League")) {
-          for (const match of (sm.matches || [])) {
-            ipl.push(match.matchInfo);
+  // Fetch both recent and upcoming matches
+  const extractIPL = (data) => {
+    const ipl = [];
+    if (data && data.typeMatches) {
+      for (const type of data.typeMatches) {
+        for (const series of (type.seriesMatches || [])) {
+          const sm = series.seriesAdWrapper || series;
+          if (sm.seriesName && sm.seriesName.includes("Indian Premier League")) {
+            for (const match of (sm.matches || [])) {
+              ipl.push(match.matchInfo);
+            }
           }
         }
       }
     }
+    return ipl;
+  };
+
+  try {
+    // Fetch recent + upcoming in parallel
+    const [recentData, upcomingData] = await Promise.all([
+      cricbuzz("matches/v1/recent"),
+      cricbuzz("matches/v1/upcoming")
+    ]);
+
+    const recent = extractIPL(recentData);
+    const upcoming = extractIPL(upcomingData);
+
+    // Merge — avoid duplicates by matchId
+    const seen = new Set(recent.map(m => m.matchId));
+    const all = [...recent];
+    for (const m of upcoming) {
+      if (!seen.has(m.matchId)) { all.push(m); seen.add(m.matchId); }
+    }
+    return all;
+  } catch(e) {
+    // Fallback to just recent
+    const data = await cricbuzz("matches/v1/recent");
+    return extractIPL(data);
   }
-  return ipl;
 }
 
 function parseScorecardToStats(scorecard, playerIndex) {
@@ -410,6 +434,7 @@ const css = `
   .fade-in{animation:fadeIn .3s ease;}
   @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
   @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
   .desk-only{display:inline-flex}
   .mob-only{display:none}
   @media(max-width:600px){
@@ -1271,6 +1296,8 @@ function App({ pitch, onLeave, user, onLogout }) {
   const [recoveryHash, setRecoveryHash] = useState(null);
   const [appReady, setAppReady] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [liveScores, setLiveScores] = useState({});
+  const pollRef = React.useRef(null);
   const [unlocked, setUnlocked] = useState(false);
   const isAdmin = user && pitch && (pitch.creatorEmail === user.email || !pitch.creatorEmail);
   const [showPwModal, setShowPwModal] = useState(false);
@@ -1331,6 +1358,15 @@ function App({ pitch, onLeave, user, onLogout }) {
       }
     })();
   }, []);
+
+  // Auto-refresh schedule when upcoming matches < 5
+  useEffect(() => {
+    if (!appReady) return;
+    const upcomingCount = matches.filter(m => m.status === "upcoming").length;
+    if (upcomingCount < 5) {
+      fetchMatches();
+    }
+  }, [appReady]);
 
   const nav=(pg)=>{setPage(pg);storeSet("page",pg);};
   const upd=(setter,key)=>(val)=>{setter(val);storeSet(key,val);};
@@ -1716,12 +1752,13 @@ function App({ pitch, onLeave, user, onLogout }) {
         const formatted = ipl.map((m, i) => ({
           id: "m" + (m.matchId || i+1),
           cricbuzzId: m.matchId,
-          matchNum: i+1,
+          matchNum: m.matchDesc || ("M"+(i+1)),
           date: m.startDate ? new Date(parseInt(m.startDate)).toISOString().split("T")[0] : "TBD",
+          time: m.startDate ? new Date(parseInt(m.startDate)).toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit",timeZone:"Asia/Kolkata"}) : "",
           team1: m.team1?.teamSName || m.team1?.teamName || "TBA",
           team2: m.team2?.teamSName || m.team2?.teamName || "TBA",
-          venue: m.venueInfo?.ground || m.venueInfo?.city || "TBD",
-          status: m.state === "Complete" ? "completed" : "upcoming",
+          venue: m.venueInfo?.ground ? m.venueInfo.ground+(m.venueInfo.city?", "+m.venueInfo.city:"") : (m.venueInfo?.city || "TBD"),
+          status: m.state === "Complete" ? "completed" : m.state === "In Progress" ? "live" : "upcoming",
           result: m.status || null,
         }));
         updMatches(formatted);
@@ -1880,6 +1917,45 @@ function App({ pitch, onLeave, user, onLogout }) {
     const text = '🏏 Teekha Bouncer League\n' + (pitch ? pitch.name : '') + '\nLeaderboard\n\n' + lines.join('\n') + '\n\nteekha-bouncer.vercel.app';
     window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
   };
+
+  const fetchLiveScores = async () => {
+    try {
+      const res = await fetch("/api/cricbuzz?path=" + encodeURIComponent("matches/v1/live"));
+      const data = await res.json();
+      const scores = {};
+      if (data && data.typeMatches) {
+        for (const type of data.typeMatches) {
+          for (const series of (type.seriesMatches || [])) {
+            const sm = series.seriesAdWrapper || series;
+            if (sm.seriesName && sm.seriesName.includes("Indian Premier League")) {
+              for (const m of (sm.matches || [])) {
+                const info = m.matchInfo;
+                const score = m.matchScore;
+                if (info && info.matchId) {
+                  scores["m"+info.matchId] = {
+                    team1Score: score?.team1Score?.inngs1 ? score.team1Score.inngs1.runs+"/"+score.team1Score.inngs1.wickets+" ("+parseFloat(score.team1Score.inngs1.overs).toFixed(1)+" ov)" : null,
+                    team2Score: score?.team2Score?.inngs1 ? score.team2Score.inngs1.runs+"/"+score.team2Score.inngs1.wickets+" ("+parseFloat(score.team2Score.inngs1.overs).toFixed(1)+" ov)" : null,
+                    status: info.status || "",
+                    state: info.state,
+                  };
+                }
+              }
+            }
+          }
+        }
+      }
+      setLiveScores(scores);
+    } catch(e) { console.warn("Live scores fetch failed:", e.message); }
+  };
+
+  // Poll live scores every 60s when on matches page
+  useEffect(() => {
+    if (page === "matches") {
+      fetchLiveScores();
+      pollRef.current = setInterval(fetchLiveScores, 60000);
+    }
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
+  }, [page]);
 
   const navItems=[
     {id:"draft",label:"Draft",icon:"📋",disabled:teams.length===0},
@@ -2246,7 +2322,20 @@ function App({ pitch, onLeave, user, onLogout }) {
                 <Card sx={{padding:60,textAlign:"center"}}><div style={{fontSize:56}}>📅</div><div style={{color:"#4A5E78",marginTop:16,fontSize:16}}>Click "Fetch Schedule" to load IPL 2026 matches</div></Card>
               ):(
                 <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                  {matches.map(match=>{
+                  {(() => {
+                    const sorted = [...matches].sort((a,b)=>{
+                      const order = {completed:0, live:1, upcoming:2};
+                      const ao = order[a.status]??2, bo = order[b.status]??2;
+                      if (ao !== bo) return ao - bo;
+                      return (a.date||"").localeCompare(b.date||"");
+                    });
+                    let upcomingCount = 0;
+                    return sorted.filter(m => {
+                      if (m.status !== "upcoming") return true;
+                      upcomingCount++;
+                      return upcomingCount <= 5;
+                    });
+                  })().map(match=>{
                     const open=expandedMatch===match.id,completed=match.status==="completed",synced=Object.keys(points).some(pid=>points[pid][match.id]);
                     return(
                       <Card key={match.id} sx={{overflow:"hidden"}}>
@@ -2257,18 +2346,31 @@ function App({ pitch, onLeave, user, onLogout }) {
                           </div>
                           <div style={{flex:1,minWidth:0}}>
                             <div style={{fontWeight:700,fontSize:14,color:"#E2EAF4",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{match.team1} <span style={{color:"#4A5E78"}}>vs</span> {match.team2}</div>
-                            <div style={{fontSize:11,color:"#4A5E78",marginTop:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{match.date} • {match.venue}</div>
+                            {liveScores[match.id] && liveScores[match.id].team1Score ? (
+                              <div style={{marginTop:3}}>
+                                <div style={{fontSize:11,color:"#E2EAF4",fontWeight:600}}>{match.team1}: <span style={{color:"#F5A623",fontFamily:"Rajdhani,sans-serif",fontSize:13,fontWeight:700}}>{liveScores[match.id].team1Score}</span></div>
+                                {liveScores[match.id].team2Score && <div style={{fontSize:11,color:"#E2EAF4",fontWeight:600}}>{match.team2}: <span style={{color:"#4F8EF7",fontFamily:"Rajdhani,sans-serif",fontSize:13,fontWeight:700}}>{liveScores[match.id].team2Score}</span></div>}
+                              </div>
+                            ) : (
+                              <div style={{fontSize:11,color:"#4A5E78",marginTop:2,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{match.date}{match.time?" • "+match.time+" IST":""} • {match.venue}</div>
+                            )}
                           </div>
                           <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4,flexShrink:0}}>
                             {synced&&<span style={{fontSize:9,color:"#2ECC71",fontWeight:700}}>✓ SYNCED</span>}
-                            <span style={{fontSize:9,color:completed?"#2ECC71":match.status==="live"?"#FF3D5A":"#F5A623",fontWeight:700,maxWidth:80,textAlign:"right",lineHeight:1.2}}>{completed?(match.result?"✓ "+match.result.slice(0,25):"DONE"):match.status==="live"?"🔴 LIVE":"UPCOMING"}</span>
+                            {match.status==="live" || (liveScores[match.id] && liveScores[match.id].state !== "Complete") ? (
+                              <span style={{fontSize:9,color:"#FF3D5A",fontWeight:700,animation:"pulse 1s infinite"}}>🔴 LIVE</span>
+                            ) : (
+                              <span style={{fontSize:9,color:completed?"#2ECC71":"#F5A623",fontWeight:700,maxWidth:80,textAlign:"right",lineHeight:1.2}}>{completed?(match.result?"✓ "+match.result.slice(0,25):"DONE"):"UPCOMING"}</span>
+                            )}
                             <span style={{color:"#4A5E78",fontSize:11}}>{open?"▲":"▼"}</span>
                           </div>
                         </div>
                         {open&&(
                           <div style={{padding:"0 18px 18px",borderTop:"1px solid #1E2D45"}}>
                             <div style={{marginTop:16}}>
-                              <div style={{fontSize:12,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginBottom:14}}>CAPTAIN & VICE CAPTAIN (MATCH {match.matchNum})</div>
+                              <div style={{fontSize:12,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginBottom:4}}>CAPTAIN & VICE CAPTAIN</div>
+                              {!completed && <div style={{fontSize:11,color:"#F5A62388",marginBottom:14}}>⚡ Set before match starts — affects fantasy points</div>}
+                              {completed && <div style={{fontSize:11,color:"#2ECC7188",marginBottom:14}}>✓ Points already calculated for this match</div>}
                               <div style={{display:"flex",flexDirection:"column",gap:10}}>
                                 {teams.map(team=>{
                                   const key=`${match.id}_${team.id}`,cap=captains[key]||{},teamPlayers=players.filter(p=>assignments[p.id]===team.id);
