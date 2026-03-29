@@ -1865,6 +1865,13 @@ function App({ pitch, onLeave, user, onLogout }) {
     return [...active, ...historical, ...(snatchedIn?[snatchedIn]:[])].sort((a,b)=>b.total-a.total);
   };
 
+  const shareLeaderboard = () => {
+    const medals = ['🥇','🥈','🥉'];
+    const lines = leaderboard.map((t, i) => (medals[i] || ('#'+(i+1))) + ' ' + t.name + ': ' + t.total + ' pts');
+    const text = '🏏 Teekha Bouncer League\n' + (pitch ? pitch.name : '') + '\nLeaderboard\n\n' + lines.join('\n') + '\n\nteekha-bouncer.vercel.app';
+    window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+  };
+
   const navItems=[
     {id:"draft",label:"Draft",icon:"📋",disabled:teams.length===0},
     {id:"matches",label:"Matches",icon:"🏏",disabled:players.length===0},
