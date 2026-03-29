@@ -1,5 +1,7 @@
+import React, { useState } from "react";
+
 function FormChart({ players, assignments, points, teams }) {
-  const [filter, setFilter] = React.useState("all");
+  const [filter, setFilter] = useState("all");
 
   const stats = players
     .filter(p => assignments[p.id])
