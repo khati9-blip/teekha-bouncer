@@ -3405,7 +3405,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
                 <button onClick={()=>nav("leaderboard")} style={{background:"transparent",border:"none",color:"#4A5E78",fontSize:22,cursor:"pointer",lineHeight:1,padding:"0 4px"}}>←</button>
                 <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2}}>HEAD TO HEAD</h2>
               </div>
-              <H2HStats teams={teams} matches={matches} points={points} assignments={assignments} players={players} />
+              <H2HStats teams={teams} matches={matches} points={points} assignments={assignments} players={players} captains={captains} />
             </div>
           )}
 
