@@ -1237,7 +1237,7 @@ function App({ pitch, onLeave, user, onLogout }) {
   const [points, setPoints] = useState({});
   const [loading, setLoading] = useState("");
   const [numTeams, setNumTeams] = useState(4);
-  const [tNames, setTNames] = useState(Array.from({length:10},(_,i)=>`Team ${i+1}`));
+  const [tNames, setTNames] = useState(Array.from({length:10},(_,i)=>"Team "+(i+1)));
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("All");
   const [expandedMatch, setExpandedMatch] = useState(null);
