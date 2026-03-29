@@ -1805,7 +1805,9 @@ function App({ pitch, onLeave, user, onLogout }) {
       const live = updated.filter(m => m.status === "live").length;
       const upcoming = updated.filter(m => m.status === "upcoming").length;
       const completed = updated.filter(m => m.status === "completed").length;
-      alert("Updated! "+completed+" completed, "+live+" live, "+upcoming+" upcoming.");
+      const fetchedIds = fetched.map(f => f.info?.matchId).join(", ");
+      const existingIds = matches.map(m => m.cricbuzzId).join(", ");
+      alert("Fetched from Cricbuzz: "+fetched.length+" IPL matches (IDs: "+fetchedIds+")\nExisting cricbuzzIds: "+existingIds+"\nResult: "+completed+" completed, "+live+" live, "+upcoming+" upcoming.");
     } catch(e){
       alert("Error: "+e.message);
     }
