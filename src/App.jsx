@@ -1389,7 +1389,6 @@ function TeamClaimScreen({ pitch, user, teams, onClaimed, onBack }) {
       setLoading(false);
     })();
   }, []);
-  const allTeams = teams.length > 0 ? teams : teamsData;
 
   // Check if this user already has a team
   const myTeam = teams.find(t => teamIdentity[t.id]?.claimedBy === user.email);
@@ -1398,7 +1397,7 @@ function TeamClaimScreen({ pitch, user, teams, onClaimed, onBack }) {
     setErr("");
     const code = enteredCode.trim().toUpperCase();
     // Find which team this code belongs to
-    const match = allTeams.find(t => teamIdentity[t.id]?.teamId === code);
+    const match = teamsData.find(t => teamIdentity[t.id]?.teamId === code);
     if (!match) { setErr("Invalid Team ID. Ask your admin for the correct code."); return; }
     if (teamIdentity[match.id]?.claimedBy && teamIdentity[match.id].claimedBy !== user.email) {
       setErr("This team is already claimed by another player."); return;
@@ -1512,7 +1511,7 @@ function TeamClaimScreen({ pitch, user, teams, onClaimed, onBack }) {
                 <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:"#E2EAF4",letterSpacing:2,marginBottom:4}}>PICK YOUR TEAM</div>
                 <div style={{fontSize:12,color:"#4A5E78",marginBottom:16}}>Select the team you manage</div>
                 <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:16}}>
-                  {allTeams.map(t => {
+                  {teamsData.map(t => {
                     const claimed = teamIdentity[t.id]?.claimedBy;
                     const isMe = claimed===user.email;
                     return (
@@ -2778,7 +2777,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
                 <div style={{background:"#080C14",borderRadius:10,padding:"14px 16px",marginBottom:12,border:"1px solid #1E2D45"}}>
                   <div style={{fontSize:11,color:"#F5A623",letterSpacing:2,fontWeight:700,marginBottom:10}}>🔑 TEAM IDs</div>
                   <div style={{fontSize:11,color:"#4A5E78",marginBottom:10}}>Share these codes with each team manager so they can claim their team</div>
-                  {allTeams.map(t => {
+                  {teamsData.map(t => {
                     const ti = teamIdentity[t.id] || {};
                     return (
                       <div key={t.id} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,padding:"8px 12px",background:"#0E1521",borderRadius:8,border:"1px solid "+t.color+"33"}}>
