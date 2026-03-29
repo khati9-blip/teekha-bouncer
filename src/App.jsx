@@ -820,13 +820,32 @@ export default function App() {
   const [teamFilter, setTeamFilter] = useState(null); // filter by fantasy team
   const [sortOrder, setSortOrder] = useState('default'); // default | az | za
   const [teamLogos, setTeamLogos] = useState({});
+  const [safePlayers, setSafePlayers] = useState({}); // {teamId: [pid,pid,pid]}
+  const [unsoldPool, setUnsoldPool] = useState([]); // manually managed unsold list
+  const [draftTab, setDraftTab] = useState('players'); // players | unsold
+  // ownershipLog: {pid: [{teamId, from: isoDate, to: isoDate|null}]}
+  const [ownershipLog, setOwnershipLog] = useState({});
+  const [transfers, setTransfers] = useState({
+    weekNum: 1,
+    phase: 'closed', // closed | release | pick | done
+    releases: {}, // {teamId: [pid, pid]}
+    picks: [],    // [{teamId, pid, timestamp}]
+    currentPickTeam: null,
+    pickDeadline: null,
+    history: [],  // all past transfers
+  });
+  const [snatch, setSnatch] = useState({
+    weekNum: 1,
+    active: null, // {byTeamId, pid, fromTeamId, pointsAtSnatch, startDate}
+    history: [],
+  });
 
   useEffect(() => {
     (async () => {
       try {
-        const keys = ["teams","players","assignments","matches","captains","points","page","tnames","numteams","pwhash","recoveryHash","teamLogos"];
+        const keys = ["teams","players","assignments","matches","captains","points","page","tnames","numteams","pwhash","recoveryHash","teamLogos","safePlayers","unsoldPool","transfers","snatch","ownershipLog"];
         const results = await Promise.all(keys.map(k => storeGet(k)));
-        const [t,p,a,m,c,pts,pg,tn,nt,ph,rh,tl] = results;
+        const [t,p,a,m,c,pts,pg,tn,nt,ph,rh,tl,sp,up,tr,sn,ol] = results;
         if(t) setTeams(t);
         if(p) setPlayers(p);
         if(a) setAssignments(a);
@@ -839,6 +858,11 @@ export default function App() {
         if(ph) setPwHash(ph);
         if(rh) setRecoveryHash(rh);
         if(tl) setTeamLogos(tl);
+        if(sp) setSafePlayers(sp);
+        if(up) setUnsoldPool(up);
+        if(tr) setTransfers(tr);
+        if(sn) setSnatch(sn);
+        if(ol) setOwnershipLog(ol);
       } catch(e) {
         console.error("Load error:", e);
       } finally {
@@ -852,6 +876,197 @@ export default function App() {
   const updTeams=upd(setTeams,"teams"),updAssign=upd(setAssignments,"assignments"),
         updMatches=upd(setMatches,"matches"),updCaptains=upd(setCaptains,"captains"),
         updPoints=upd(setPoints,"points");
+
+  const toggleSafePlayer = (teamId, pid) => {
+    withPassword(() => {
+      const current = safePlayers[teamId] || [];
+      let updated;
+      if (current.includes(pid)) {
+        updated = current.filter(x => x !== pid);
+      } else {
+        if (current.length >= 3) { alert("Max 3 safe players per team!"); return; }
+        updated = [...current, pid];
+      }
+      const newSafe = { ...safePlayers, [teamId]: updated };
+      setSafePlayers(newSafe);
+      storeSet("safePlayers", newSafe);
+    });
+  };
+
+  const isPlayerSafe = (pid) => Object.values(safePlayers).some(arr => arr.includes(pid));
+  const isPlayerSafeForTeam = (teamId, pid) => (safePlayers[teamId]||[]).includes(pid);
+
+  const addToUnsoldPool = (pid) => {
+    withPassword(() => {
+      if (unsoldPool.includes(pid)) return;
+      const updated = [...unsoldPool, pid];
+      setUnsoldPool(updated);
+      storeSet("unsoldPool", updated);
+    });
+  };
+
+  const removeFromUnsoldPool = (pid) => {
+    withPassword(() => {
+      const updated = unsoldPool.filter(x => x !== pid);
+      setUnsoldPool(updated);
+      storeSet("unsoldPool", updated);
+    });
+  };
+
+  // ── TRANSFER HELPERS ────────────────────────────────────────────────────────
+  const updOwnership = (val) => { setOwnershipLog(val); storeSet("ownershipLog", val); };
+
+  // Record ownership change — close previous period, open new one
+  const recordOwnership = (pid, newTeamId, log) => {
+    const now = new Date().toISOString();
+    const history = log[pid] ? [...log[pid]] : [];
+    // Close previous period
+    if (history.length > 0 && !history[history.length-1].to) {
+      history[history.length-1].to = now;
+    }
+    // Open new period (null to = currently owned)
+    if (newTeamId) history.push({ teamId: newTeamId, from: now, to: null });
+    return { ...log, [pid]: history };
+  };
+
+  const updTransfers = (val) => { setTransfers(val); storeSet("transfers", val); };
+  const updSnatch = (val) => { setSnatch(val); storeSet("snatch", val); };
+
+  const openReleaseWindow = () => withPassword(() => {
+    const updated = {...transfers, phase:'release', weekNum: transfers.weekNum};
+    updTransfers(updated);
+    alert("✅ Release window is now OPEN. Teams can release up to 3 players until Monday 11 AM.");
+  });
+
+  const closeReleaseWindow = () => withPassword(() => {
+    const updated = {...transfers, phase:'pick'};
+    // Set first picking team = #1 on leaderboard
+    const firstTeam = leaderboard[0]?.id || null;
+    const deadline = new Date(Date.now() + 45*60*1000).toISOString();
+    updated.currentPickTeam = firstTeam;
+    updated.pickDeadline = deadline;
+    updTransfers(updated);
+    alert(`✅ Release window CLOSED. ${leaderboard[0]?.name} picks first! 45 minutes on the clock.`);
+  });
+
+  const releasePlayer = (teamId, pid) => withPassword(() => {
+    if (transfers.phase !== 'release') { alert("Release window is not open"); return; }
+    const currentReleases = transfers.releases[teamId] || [];
+    if (currentReleases.includes(pid)) { alert("Already released"); return; }
+    if (currentReleases.length >= 3) { alert("Max 3 releases per team"); return; }
+    if (isPlayerSafeForTeam(teamId, pid)) { alert("Safe players cannot be released!"); return; }
+
+    // Remove from team assignment
+    const newAssign = {...assignments};
+    delete newAssign[pid];
+    updAssign(newAssign);
+
+    // Add to unsold pool
+    const newUnsold = unsoldPool.includes(pid) ? unsoldPool : [...unsoldPool, pid];
+    setUnsoldPool(newUnsold); storeSet("unsoldPool", newUnsold);
+
+    // Record release
+    const newReleases = {...transfers.releases, [teamId]: [...currentReleases, pid]};
+    const updated = {...transfers, releases: newReleases};
+    updTransfers(updated);
+    alert(`✅ Player released to unsold pool`);
+  });
+
+  const pickPlayer = (pid) => withPassword(() => {
+    if (transfers.phase !== 'pick') { alert("Pick phase not active"); return; }
+    const pickingTeam = transfers.currentPickTeam;
+    if (!pickingTeam) { alert("No team is currently picking"); return; }
+
+    const releasedCount = (transfers.releases[pickingTeam]||[]).length;
+    const pickedCount = transfers.picks.filter(pk=>pk.teamId===pickingTeam).length;
+    if (pickedCount >= releasedCount) { alert("You can only pick as many as you released"); return; }
+    if (!unsoldPool.includes(pid)) { alert("Player not in unsold pool"); return; }
+
+    // Assign player to picking team
+    const newAssign = {...assignments, [pid]: pickingTeam};
+    updAssign(newAssign);
+
+    // Remove from unsold pool
+    const newUnsold = unsoldPool.filter(x => x !== pid);
+    setUnsoldPool(newUnsold); storeSet("unsoldPool", newUnsold);
+
+    // ✅ Record ownership transfer — points reset for new team from this moment
+    const newLog = recordOwnership(pid, pickingTeam, ownershipLog);
+    updOwnership(newLog);
+
+    // Record pick and advance to next team
+    const newPicks = [...transfers.picks, {teamId: pickingTeam, pid, timestamp: new Date().toISOString()}];
+    const nextTeam = getNextPickTeam(pickingTeam, newPicks);
+    const deadline = nextTeam ? new Date(Date.now() + 45*60*1000).toISOString() : null;
+    const newPhase = nextTeam ? 'pick' : 'done';
+    const updated = {...transfers, picks: newPicks, currentPickTeam: nextTeam, pickDeadline: deadline, phase: newPhase};
+    if (newPhase === 'done') {
+      updated.history = [...(transfers.history||[]), {week: transfers.weekNum, releases: transfers.releases, picks: newPicks, date: new Date().toISOString()}];
+    }
+    updTransfers(updated);
+  });
+
+  const skipCurrentTeam = () => withPassword(() => {
+    const pickingTeam = transfers.currentPickTeam;
+    const nextTeam = getNextPickTeam(pickingTeam, transfers.picks);
+    const deadline = nextTeam ? new Date(Date.now() + 45*60*1000).toISOString() : null;
+    const newPhase = nextTeam ? 'pick' : 'done';
+    const updated = {...transfers, currentPickTeam: nextTeam, pickDeadline: deadline, phase: newPhase};
+    updTransfers(updated);
+    alert(nextTeam ? `Skipped. Now it's ${teams.find(t=>t.id===nextTeam)?.name}'s turn.` : "Transfer window complete!");
+  });
+
+  const getNextPickTeam = (currentTeamId, currentPicks) => {
+    // Order by leaderboard. Each team picks once per released player
+    const lb = [...teams].map(t=>({...t, total:getTeamTotal(t.id)})).sort((a,b)=>b.total-a.total);
+    // Find teams that still have picks remaining
+    for (const team of lb) {
+      if (team.id === currentTeamId) continue; // skip current (they just picked)
+      const released = (transfers.releases[team.id]||[]).length;
+      const picked = currentPicks.filter(pk=>pk.teamId===team.id).length;
+      if (released > 0 && picked < released) return team.id;
+    }
+    // Second round — check if current team has more picks
+    const currentReleased = (transfers.releases[currentTeamId]||[]).length;
+    const currentPicked = currentPicks.filter(pk=>pk.teamId===currentTeamId).length;
+    if (currentPicked < currentReleased) return currentTeamId;
+    return null; // all done
+  };
+
+  const resetTransferWindow = () => withPassword(() => {
+    if (!confirm("Reset transfer window for new week?")) return;
+    const updated = {
+      weekNum: transfers.weekNum + 1,
+      phase: 'closed', releases: {}, picks: [],
+      currentPickTeam: null, pickDeadline: null,
+      history: transfers.history || [],
+    };
+    updTransfers(updated);
+  });
+
+  // ── SNATCH HELPERS ───────────────────────────────────────────────────────
+  const activateSnatch = (byTeamId, pid, fromTeamId) => withPassword(() => {
+    if (isPlayerSafe(pid)) { alert("🛡️ Safe players cannot be snatched!"); return; }
+    if (snatch.active) { alert("A snatch is already active this week"); return; }
+    const pointsAtSnatch = Object.values(points[pid]||{}).reduce((s,d)=>s+d.base,0);
+    const active = { byTeamId, pid, fromTeamId, pointsAtSnatch, startDate: new Date().toISOString() };
+    // Move player to snatching team temporarily
+    const newAssign = {...assignments, [pid]: byTeamId};
+    updAssign(newAssign);
+    updSnatch({...snatch, active, weekNum: snatch.weekNum});
+    alert(`✅ Snatch activated! Player moved to ${teams.find(t=>t.id===byTeamId)?.name} for 1 week.`);
+  });
+
+  const returnSnatched = () => withPassword(() => {
+    if (!snatch.active) { alert("No active snatch"); return; }
+    const {pid, fromTeamId} = snatch.active;
+    // Return player to original team
+    const newAssign = {...assignments, [pid]: fromTeamId};
+    updAssign(newAssign);
+    const newHistory = [...(snatch.history||[]), {...snatch.active, returnDate: new Date().toISOString()}];
+    updSnatch({...snatch, active: null, history: newHistory, weekNum: snatch.weekNum+1});
+    alert(`✅ Snatched player returned to their original team.`);
+  });
 
   const uploadTeamLogo=(teamId, file)=>{
     const reader = new FileReader();
@@ -993,7 +1208,19 @@ export default function App() {
     setLoading("");
   };
 
-  const assignPlayer=(pid,tid)=>withPassword(()=>{const a={...assignments};if(!tid)delete a[pid];else a[pid]=tid;updAssign(a);});
+  const assignPlayer=(pid,tid)=>withPassword(()=>{
+    const a={...assignments};
+    if(!tid) { delete a[pid]; }
+    else {
+      a[pid]=tid;
+      // Record initial ownership if not already tracked
+      if(!ownershipLog[pid]||ownershipLog[pid].length===0) {
+        const newLog = recordOwnership(pid, tid, ownershipLog);
+        updOwnership(newLog);
+      }
+    }
+    updAssign(a);
+  });
   const removePlayer=(pid)=>withPassword(()=>{const a={...assignments};delete a[pid];updAssign(a);});
   const deletePlayer=(pid)=>withPassword(()=>{
     if(!confirm("Delete this player completely?")) return;
@@ -1095,9 +1322,25 @@ export default function App() {
 
   const getTeamTotal=(teamId)=>{
     let total=0;
-    for(const[pid,matchData]of Object.entries(points)){
-      if(assignments[pid]!==teamId)continue;
-      for(const[mid,d]of Object.entries(matchData)){
+    // Include ALL players that have ever been owned by this team
+    const allPids = new Set([
+      ...players.filter(p=>assignments[p.id]===teamId).map(p=>p.id),
+      ...Object.entries(ownershipLog).filter(([pid,periods])=>periods.some(o=>o.teamId===teamId)).map(([pid])=>pid)
+    ]);
+    for(const pid of allPids){
+      const periods = (ownershipLog[pid]||[]).filter(o=>o.teamId===teamId);
+      for(const[mid,d] of Object.entries(points[pid]||{})){
+        const m = matches.find(x=>x.id===mid);
+        if(!m) continue;
+        const matchDate = new Date(m.date);
+        const owned = periods.length === 0
+          ? assignments[pid]===teamId // no log = only if currently owned
+          : periods.some(o=>{
+              const from = new Date(o.from);
+              const to = o.to ? new Date(o.to) : new Date('2099-01-01');
+              return matchDate >= from && matchDate <= to;
+            });
+        if(!owned) continue;
         const cap=captains[`${mid}_${teamId}`]||{};
         let pts=d.base;
         if(cap.captain===pid)pts*=2;else if(cap.vc===pid)pts*=1.5;
@@ -1108,23 +1351,74 @@ export default function App() {
   };
 
   const leaderboard=[...teams].map(t=>({...t,total:getTeamTotal(t.id)})).sort((a,b)=>b.total-a.total);
-  const getPlayerBreakdown=(teamId)=>players.filter(p=>assignments[p.id]===teamId).map(p=>{
-    let tot=0;
-    for(const[mid,d]of Object.entries(points[p.id]||{})){
-      const cap=captains[`${mid}_${teamId}`]||{};
-      let pts=d.base;
-      if(cap.captain===p.id)pts*=2;else if(cap.vc===p.id)pts*=1.5;
-      tot+=pts;
-    }
-    return{...p,total:Math.round(tot)};
-  }).sort((a,b)=>b.total-a.total);
+  const getPlayerBreakdown=(teamId)=>{
+    // Helper: get points for player during team's ownership period(s)
+    const getPtsForTeam = (pid, tid) => {
+      const periods = (ownershipLog[pid]||[]).filter(o=>o.teamId===tid);
+      let tot = 0;
+      for(const[mid,d] of Object.entries(points[pid]||{})){
+        const m = matches.find(x=>x.id===mid);
+        if(!m) continue;
+        const matchDate = new Date(m.date);
+        // Check if match falls within any ownership period for this team
+        const owned = periods.length === 0
+          ? true // no log = original owner, count all
+          : periods.some(o => {
+              const from = new Date(o.from);
+              const to = o.to ? new Date(o.to) : new Date('2099-01-01');
+              return matchDate >= from && matchDate <= to;
+            });
+        if(!owned) continue;
+        const cap=captains[`${mid}_${tid}`]||{};
+        let pts=d.base;
+        if(cap.captain===pid)pts*=2;else if(cap.vc===pid)pts*=1.5;
+        tot+=pts;
+      }
+      return Math.round(tot);
+    };
+
+    // Active players in squad
+    const active = players.filter(p=>assignments[p.id]===teamId).map(p=>{
+      const tot = getPtsForTeam(p.id, teamId);
+      const isSnatched = snatch.active?.pid===p.id && snatch.active?.fromTeamId===teamId;
+      return{...p,total:tot,status:isSnatched?"snatched":"active"};
+    });
+
+    // Historical players — released via transfer but points still count
+    const releasedPids = transfers.history?.flatMap(w=>
+      (w.releases[teamId]||[]).filter(pid=> !(w.picks||[]).some(pk=>pk.teamId===teamId&&pk.pid===pid))
+    ) || [];
+    const historical = releasedPids.map(pid=>{
+      const p = players.find(x=>x.id===pid);
+      if(!p||assignments[p.id]===teamId) return null;
+      // Only count points during THIS team's ownership period
+      const tot = getPtsForTeam(pid, teamId);
+      return p?{...p,total:tot,status:"released"}:null;
+    }).filter(Boolean);
+
+    // Snatched player this team borrowed
+    const snatchedIn = snatch.active?.byTeamId===teamId ? (() => {
+      const p = players.find(x=>x.id===snatch.active.pid);
+      if(!p) return null;
+      // Only count points scored AFTER snatch started
+      const snatchDate = snatch.active.startDate;
+      let tot=0;
+      for(const[mid,d]of Object.entries(points[p.id]||{})){
+        const m = matches.find(x=>x.id===mid);
+        if(m && new Date(m.date) >= new Date(snatchDate)) tot+=d.base;
+      }
+      return p?{...p,total:Math.round(tot),status:"snatched-in"}:null;
+    })() : null;
+
+    return [...active, ...historical, ...(snatchedIn?[snatchedIn]:[])].sort((a,b)=>b.total-a.total);
+  };
 
   const navItems=[
-    {id:"setup",label:"Setup",icon:"⚙️"},
     {id:"draft",label:"Draft",icon:"📋",disabled:teams.length===0},
     {id:"matches",label:"Matches",icon:"🏏",disabled:players.length===0},
-    {id:"results",label:"Results",icon:"📊",disabled:teams.length===0||matches.length===0},
-    {id:"leaderboard",label:"Leaderboard",icon:"🏆",disabled:teams.length===0},
+    {id:"transfer",label:"Transfer",icon:"🔄",disabled:teams.length===0},
+    {id:"results",label:"Results",icon:"📊",disabled:teams.length===0},
+    {id:"leaderboard",label:"Board",icon:"🏆",disabled:teams.length===0},
   ];
 
   if (!appReady) return (
@@ -1247,14 +1541,82 @@ export default function App() {
 
           {page==="draft"&&(
             <div className="fade-in">
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:12}}>
-                <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2}}>PLAYER DRAFT</h2>
-                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                <Btn variant="blue" onClick={fetchPlayers}>{players.length>0?`↻ REFRESH (${players.length})`:"🌐 FETCH IPL PLAYERS"}</Btn>
-                <Btn variant="ghost" onClick={()=>withPassword(()=>setEditPlayer({name:"",iplTeam:"",role:"Batsman"}))}>✚ ADD PLAYER</Btn>
-                <Btn variant={squadView?"primary":"ghost"} onClick={()=>setSquadView(v=>!v)}>{squadView?"📋 LIST VIEW":"👥 SQUAD VIEW"}</Btn>
+              <div style={{marginBottom:16}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,flexWrap:"wrap",gap:8}}>
+                  <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2}}>PLAYER DRAFT</h2>
+                  <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                    <Btn variant="blue" onClick={fetchPlayers} sx={{fontSize:13,padding:"8px 14px"}}>{players.length>0?`↻ REFRESH`:"🌐 FETCH PLAYERS"}</Btn>
+                    <Btn variant="ghost" onClick={()=>withPassword(()=>setEditPlayer({name:"",iplTeam:"",role:"Batsman"}))} sx={{fontSize:13,padding:"8px 14px"}}>✚ ADD</Btn>
+                    <Btn variant={squadView?"primary":"ghost"} onClick={()=>setSquadView(v=>!v)} sx={{fontSize:13,padding:"8px 14px"}}>{squadView?"📋 LIST":"👥 SQUAD"}</Btn>
+                  </div>
+                </div>
+                {/* Draft sub-tabs */}
+                <div style={{display:"flex",background:"#0E1521",borderRadius:10,padding:4,gap:4}}>
+                  {[{id:"players",label:"📋 Players"},{id:"unsold",label:"🏷️ Unsold Pool"}].map(t=>(
+                    <button key={t.id} onClick={()=>setDraftTab(t.id)}
+                      style={{flex:1,padding:"8px",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,letterSpacing:1,background:draftTab===t.id?"#F5A623":"transparent",color:draftTab===t.id?"#080C14":"#4A5E78",transition:"all .15s"}}>
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
               </div>
-              </div>
+              {/* UNSOLD POOL TAB */}
+              {draftTab==="unsold" && (
+                <div>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
+                    <div style={{fontSize:13,color:"#4A5E78"}}>
+                      Players in the unsold pool can be picked up during the transfer window.
+                    </div>
+                    <span style={{background:"#F5A62322",color:"#F5A623",border:"1px solid #F5A62344",borderRadius:6,padding:"4px 10px",fontSize:12,fontWeight:700}}>{unsoldPool.length} players</span>
+                  </div>
+
+                  {/* Add unassigned players to pool */}
+                  <div style={{marginBottom:16}}>
+                    <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginBottom:10}}>ADD FROM UNASSIGNED PLAYERS</div>
+                    <div style={{maxHeight:160,overflowY:"auto",display:"flex",flexWrap:"wrap",gap:6}}>
+                      {players.filter(p=>!assignments[p.id]&&!unsoldPool.includes(p.id)).map(p=>(
+                        <button key={p.id} onClick={()=>addToUnsoldPool(p.id)}
+                          style={{padding:"5px 12px",borderRadius:20,border:"1px solid #1E2D45",background:"transparent",color:"#4A5E78",fontSize:12,fontFamily:"Barlow Condensed,sans-serif",cursor:"pointer"}}>
+                          + {p.name} <span style={{opacity:0.5}}>({p.iplTeam})</span>
+                        </button>
+                      ))}
+                      {players.filter(p=>!assignments[p.id]&&!unsoldPool.includes(p.id)).length===0&&(
+                        <div style={{color:"#4A5E78",fontSize:13}}>All unassigned players are already in the pool</div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Current unsold pool */}
+                  <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginBottom:10}}>CURRENT UNSOLD POOL</div>
+                  {unsoldPool.length===0 ? (
+                    <div style={{textAlign:"center",padding:"32px",color:"#4A5E78",fontSize:14,background:"#0E1521",borderRadius:10}}>
+                      Pool is empty — add players above
+                    </div>
+                  ) : (
+                    <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                      {unsoldPool.map(pid=>{
+                        const p = players.find(x=>x.id===pid);
+                        if(!p) return null;
+                        return (
+                          <div key={pid} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:"#0E1521",borderRadius:8,border:"1px solid #1E2D4566"}}>
+                            <div style={{flex:1}}>
+                              <div style={{fontWeight:700,fontSize:14,color:"#E2EAF4"}}>{p.name}</div>
+                              <div style={{fontSize:12,color:"#4A5E78"}}>{p.iplTeam} • {p.role}</div>
+                            </div>
+                            <button onClick={()=>removeFromUnsoldPool(pid)}
+                              style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:"#FF3D5A",borderRadius:6,padding:"5px 10px",cursor:"pointer",fontSize:12,fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>
+                              REMOVE
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* PLAYERS TAB */}
+              {draftTab==="players" && <>
               <div style={{background:unlocked?"#2ECC7112":"#F5A62310",border:`1px solid ${unlocked?"#2ECC7133":"#F5A62333"}`,borderRadius:10,padding:"12px 16px",marginBottom:16,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
                 <div>
                   <span style={{fontWeight:700,color:unlocked?"#2ECC71":"#F5A623",fontSize:14}}>{unlocked?"🔓 Squad changes unlocked":"🔒 Squad changes are locked"}</span>
@@ -1367,7 +1729,10 @@ export default function App() {
                       return(
                         <div key={p.id} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:"#0E1521",borderRadius:8,borderLeft:`3px solid ${aTeam?aTeam.color:"#1E2D45"}`}}>
                           <div style={{flex:1,minWidth:0}}>
-                            <div style={{fontWeight:700,fontSize:14,color:"#E2EAF4"}}>{p.name}</div>
+                            <div style={{display:"flex",alignItems:"center",gap:6}}>
+                              <span style={{fontWeight:700,fontSize:14,color:"#E2EAF4"}}>{p.name}</span>
+                              {isAssigned&&isPlayerSafeForTeam(assignments[p.id],p.id)&&<span style={{background:"#2ECC7122",color:"#2ECC71",border:"1px solid #2ECC7144",borderRadius:10,fontSize:10,padding:"1px 6px",fontWeight:700}}>🛡️ SAFE</span>}
+                            </div>
                             <div style={{fontSize:12,color:"#4A5E78",marginTop:2}}>{p.iplTeam} &nbsp;•&nbsp;<span style={{color:ROLE_COLORS[p.role]||"#94A3B8"}}>{p.role}</span>{isAssigned&&<span style={{marginLeft:8,color:aTeam?.color,fontWeight:700}}>→ {aTeam?.name}</span>}</div>
                           </div>
                           <select value={assignments[p.id]||""} onChange={e=>assignPlayer(p.id,e.target.value)} style={{background:"#141E2E",border:`1px solid ${aTeam?aTeam.color+"66":"#1E2D45"}`,borderRadius:6,padding:"6px 10px",color:aTeam?aTeam.color:"#4A5E78",fontSize:13,fontFamily:"Barlow Condensed",fontWeight:600,maxWidth:150,cursor:"pointer"}}>
@@ -1376,6 +1741,9 @@ export default function App() {
                           </select>
                           {isAssigned&&<button onClick={()=>removePlayer(p.id)} style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:"#FF3D5A",borderRadius:6,padding:"6px 10px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,flexShrink:0}}>✕</button>}
                           <button onClick={()=>withPassword(()=>setEditPlayer(p))} style={{background:"#4F8EF722",border:"1px solid #4F8EF744",color:"#4F8EF7",borderRadius:6,padding:"6px 10px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,flexShrink:0}}>✏️</button>
+                          {isAssigned && <button onClick={()=>toggleSafePlayer(assignments[p.id],p.id)}
+                            title={isPlayerSafeForTeam(assignments[p.id],p.id)?"Remove safe status":"Mark as safe player"}
+                            style={{background:isPlayerSafeForTeam(assignments[p.id],p.id)?"#2ECC7133":"transparent",border:`1px solid ${isPlayerSafeForTeam(assignments[p.id],p.id)?"#2ECC71":"#1E2D45"}`,color:isPlayerSafeForTeam(assignments[p.id],p.id)?"#2ECC71":"#4A5E78",borderRadius:6,padding:"6px 10px",cursor:"pointer",fontSize:13,flexShrink:0}}>🛡️</button>}
                           <button onClick={()=>deletePlayer(p.id)} style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:"#FF3D5A",borderRadius:6,padding:"6px 10px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:11,flexShrink:0}}>🗑️</button>
                         </div>
                       );
@@ -1383,6 +1751,7 @@ export default function App() {
                   </div>
                 </>
               )}
+              </> }
             </div>
           )}
 
@@ -1466,6 +1835,172 @@ export default function App() {
             </div>
           )}
 
+
+
+          {page==="transfer" && (
+            <div className="fade-in">
+              <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2,marginBottom:6}}>TRANSFER WINDOW</h2>
+              <div style={{fontSize:13,color:"#4A5E78",marginBottom:20}}>Week {transfers.weekNum} • Status: <span style={{color:transfers.phase==="closed"?"#FF3D5A":transfers.phase==="release"?"#F5A623":transfers.phase==="pick"?"#2ECC71":"#4A5E78",fontWeight:700,textTransform:"uppercase"}}>{transfers.phase}</span></div>
+
+              {/* Admin Controls */}
+              <div style={{background:"#0E1521",borderRadius:12,padding:16,marginBottom:16,border:"1px solid #1E2D45"}}>
+                <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginBottom:12}}>⚙️ ADMIN CONTROLS</div>
+                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                  {transfers.phase==="closed" && <Btn onClick={openReleaseWindow} sx={{fontSize:13}}>📤 OPEN RELEASE WINDOW</Btn>}
+                  {transfers.phase==="release" && <Btn onClick={closeReleaseWindow} variant="blue" sx={{fontSize:13}}>🔒 CLOSE RELEASES & START PICKS</Btn>}
+                  {transfers.phase==="pick" && <Btn onClick={skipCurrentTeam} variant="ghost" sx={{fontSize:13}}>⏭ SKIP CURRENT TEAM</Btn>}
+                  {(transfers.phase==="done"||transfers.phase==="closed") && <Btn onClick={resetTransferWindow} variant="ghost" sx={{fontSize:13}}>🔁 RESET FOR NEXT WEEK</Btn>}
+                </div>
+              </div>
+
+              {/* Release Phase */}
+              {(transfers.phase==="release"||transfers.phase==="pick"||transfers.phase==="done") && (
+                <div style={{marginBottom:16}}>
+                  <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginBottom:12}}>TEAM RELEASES</div>
+                  <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                    {teams.map(team=>{
+                      const released = (transfers.releases[team.id]||[]);
+                      const teamPlayers = players.filter(p=>assignments[p.id]===team.id);
+                      return (
+                        <div key={team.id} style={{background:"#0E1521",borderRadius:10,border:`1px solid ${team.color}33`,padding:14}}>
+                          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:released.length>0||transfers.phase==="release"?10:0}}>
+                            <span style={{fontWeight:700,color:team.color,fontFamily:"Rajdhani,sans-serif",fontSize:15}}>{team.name}</span>
+                            <span style={{fontSize:12,color:"#4A5E78"}}>{released.length}/3 released</span>
+                          </div>
+                          {released.length>0 && (
+                            <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:transfers.phase==="release"?10:0}}>
+                              {released.map(pid=>{
+                                const p=players.find(x=>x.id===pid);
+                                return <span key={pid} style={{background:"#FF3D5A22",color:"#FF3D5A",border:"1px solid #FF3D5A44",borderRadius:16,padding:"3px 10px",fontSize:12}}>{p?.name||pid}</span>;
+                              })}
+                            </div>
+                          )}
+                          {transfers.phase==="release" && released.length<3 && (
+                            <div>
+                              <div style={{fontSize:11,color:"#4A5E78",marginBottom:6}}>Select players to release (max 3, safe players excluded):</div>
+                              <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                                {teamPlayers.filter(p=>!released.includes(p.id)&&!isPlayerSafeForTeam(team.id,p.id)).map(p=>(
+                                  <button key={p.id} onClick={()=>releasePlayer(team.id,p.id)}
+                                    style={{padding:"4px 10px",borderRadius:16,border:"1px solid #1E2D45",background:"transparent",color:"#4A5E78",fontSize:12,fontFamily:"Barlow Condensed,sans-serif",cursor:"pointer"}}>
+                                    📤 {p.name}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Pick Phase */}
+              {transfers.phase==="pick" && (
+                <div>
+                  <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginBottom:12}}>PICK PHASE — UNSOLD POOL</div>
+
+                  {/* Current turn indicator */}
+                  {transfers.currentPickTeam && (() => {
+                    const team = teams.find(t=>t.id===transfers.currentPickTeam);
+                    const deadline = transfers.pickDeadline ? new Date(transfers.pickDeadline) : null;
+                    const minsLeft = deadline ? Math.max(0, Math.round((deadline-Date.now())/60000)) : 0;
+                    return (
+                      <div style={{background:team?.color+"22",border:`1px solid ${team?.color}44`,borderRadius:10,padding:14,marginBottom:12}}>
+                        <div style={{fontWeight:700,color:team?.color,fontFamily:"Rajdhani,sans-serif",fontSize:18}}>{team?.name}'s TURN</div>
+                        <div style={{fontSize:13,color:"#4A5E78",marginTop:4}}>
+                          ⏱ {minsLeft} minutes remaining •
+                          Can pick: {(transfers.releases[transfers.currentPickTeam]||[]).length - transfers.picks.filter(pk=>pk.teamId===transfers.currentPickTeam).length} player(s)
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Unsold pool to pick from */}
+                  <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                    {unsoldPool.map(pid=>{
+                      const p=players.find(x=>x.id===pid);
+                      if(!p) return null;
+                      return (
+                        <div key={pid} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:"#0E1521",borderRadius:8}}>
+                          <div style={{flex:1}}>
+                            <div style={{fontWeight:700,fontSize:14,color:"#E2EAF4"}}>{p.name}</div>
+                            <div style={{fontSize:12,color:"#4A5E78"}}>{p.iplTeam} • {p.role}</div>
+                          </div>
+                          <button onClick={()=>pickPlayer(pid)}
+                            style={{background:"linear-gradient(135deg,#2ECC71,#16a34a)",border:"none",borderRadius:6,padding:"7px 14px",color:"#fff",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+                            PICK ✓
+                          </button>
+                        </div>
+                      );
+                    })}
+                    {unsoldPool.length===0&&<div style={{textAlign:"center",padding:24,color:"#4A5E78"}}>Unsold pool is empty</div>}
+                  </div>
+                </div>
+              )}
+
+              {transfers.phase==="done" && (
+                <div style={{textAlign:"center",padding:40,background:"#0E1521",borderRadius:12}}>
+                  <div style={{fontSize:48}}>✅</div>
+                  <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,color:"#2ECC71",fontWeight:700,marginTop:8}}>WEEK {transfers.weekNum} TRANSFERS COMPLETE</div>
+                  <div style={{fontSize:13,color:"#4A5E78",marginTop:8}}>{transfers.picks.length} players transferred this week</div>
+                </div>
+              )}
+
+              {transfers.phase==="closed" && transfers.weekNum===1 && (
+                <div style={{textAlign:"center",padding:40,background:"#0E1521",borderRadius:12}}>
+                  <div style={{fontSize:48}}>🔒</div>
+                  <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,color:"#4A5E78",fontWeight:700,marginTop:8}}>TRANSFER WINDOW CLOSED</div>
+                  <div style={{fontSize:13,color:"#4A5E78",marginTop:8}}>Opens Sunday 11:59 PM — Week {transfers.weekNum}</div>
+                </div>
+              )}
+
+              {/* Snatch Power Section */}
+              <div style={{marginTop:24,background:"#0E1521",borderRadius:12,border:"1px solid #A855F744",padding:16}}>
+                <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:18,fontWeight:700,color:"#A855F7",letterSpacing:2,marginBottom:4}}>⚡ SNATCH POWER</div>
+                <div style={{fontSize:12,color:"#4A5E78",marginBottom:14}}>Week {snatch.weekNum} • Leaderboard #1 gets to snatch 1 player for 1 week. Safe players are protected.</div>
+
+                {snatch.active ? (
+                  <div>
+                    <div style={{background:"#A855F722",border:"1px solid #A855F744",borderRadius:8,padding:12,marginBottom:12}}>
+                      <div style={{fontSize:12,color:"#A855F7",fontWeight:700,marginBottom:4}}>ACTIVE SNATCH</div>
+                      {(() => {
+                        const p=players.find(x=>x.id===snatch.active.pid);
+                        const byTeam=teams.find(t=>t.id===snatch.active.byTeamId);
+                        const fromTeam=teams.find(t=>t.id===snatch.active.fromTeamId);
+                        return <div style={{fontSize:13,color:"#E2EAF4"}}><strong>{p?.name}</strong> snatched by <span style={{color:byTeam?.color}}>{byTeam?.name}</span> from <span style={{color:fromTeam?.color}}>{fromTeam?.name}</span> • {snatch.active.pointsAtSnatch} pts at time of snatch</div>;
+                      })()}
+                    </div>
+                    <Btn onClick={returnSnatched} variant="ghost" sx={{fontSize:13}}>↩️ RETURN PLAYER (END SNATCH)</Btn>
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{fontSize:13,color:"#E2EAF4",marginBottom:12}}>
+                      Current snatch power: <span style={{color:leaderboard[0]?.color,fontWeight:700}}>{leaderboard[0]?.name||"—"}</span>
+                    </div>
+                    <div style={{fontSize:11,color:"#4A5E78",marginBottom:10}}>SELECT A PLAYER TO SNATCH (safe players excluded):</div>
+                    <div style={{maxHeight:200,overflowY:"auto",display:"flex",flexDirection:"column",gap:5}}>
+                      {players.filter(p=>assignments[p.id]&&assignments[p.id]!==leaderboard[0]?.id&&!isPlayerSafe(p.id)).map(p=>{
+                        const fromTeam=teams.find(t=>t.id===assignments[p.id]);
+                        return (
+                          <div key={p.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:"#141E2E",borderRadius:7}}>
+                            <div style={{flex:1}}>
+                              <span style={{fontWeight:600,fontSize:13,color:"#E2EAF4"}}>{p.name}</span>
+                              <span style={{fontSize:11,color:fromTeam?.color,marginLeft:8}}>{fromTeam?.name}</span>
+                            </div>
+                            <button onClick={()=>activateSnatch(leaderboard[0]?.id,p.id,assignments[p.id])}
+                              style={{background:"#A855F722",border:"1px solid #A855F744",color:"#A855F7",borderRadius:6,padding:"5px 10px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:12}}>
+                              ⚡ SNATCH
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {page==="results" && (
             <div className="fade-in">
@@ -1589,6 +2124,7 @@ export default function App() {
                   <div style={{fontWeight:700,color:"#4A5E78",letterSpacing:2,fontSize:12,marginBottom:16}}>TEAM PLAYER BREAKDOWN</div>
                   {leaderboard.map(team=>{
                     const breakdown=getPlayerBreakdown(team.id),isOpen=expandedTeam===team.id;
+                    const safeCount=(safePlayers[team.id]||[]).length;
                     return(
                       <Card key={team.id} accent={team.color} sx={{marginBottom:12,overflow:"hidden"}}>
                         <div style={{display:"flex",alignItems:"center",padding:"14px 18px",cursor:"pointer"}} onClick={()=>setExpandedTeam(isOpen?null:team.id)}>
