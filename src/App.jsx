@@ -1654,6 +1654,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [teamIdentity, setTeamIdentity] = useState({});
   const [snatchPinModal, setSnatchPinModal] = useState(null);
+  const [teamIdsOpen, setTeamIdsOpen] = useState(false);
   const [ruleProposal, setRuleProposal] = useState(null);
   const [pointsConfig, setPointsConfig] = useState({
     run:1, four:8, six:12, fifty:10, century:20,
@@ -3612,10 +3613,13 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
                   </div>
                 </button>
 
-                {/* Team IDs - always visible, admin password to generate */}
+                {/* Team IDs - collapsible */}
                 <div style={{marginTop:8,paddingTop:8,borderTop:"1px solid #1E2D45"}}>
-                  <div style={{fontSize:10,color:"#F5A623",letterSpacing:2,fontWeight:700,padding:"4px 6px 8px"}}>🔑 TEAM IDs</div>
-                  {teams.map(t => {
+                  <button onClick={()=>setTeamIdsOpen(o=>!o)} style={{width:"100%",background:"transparent",border:"none",padding:"4px 6px 8px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                    <div style={{fontSize:10,color:"#F5A623",letterSpacing:2,fontWeight:700}}>🔑 TEAM IDs</div>
+                    <span style={{fontSize:10,color:"#4A5E78"}}>{teamIdsOpen?"▲":"▼"}</span>
+                  </button>
+                  {teamIdsOpen && teams.map(t => {
                     const ti = teamIdentity[t.id] || {};
                     return (
                       <div key={t.id} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,padding:"8px 10px",background:"#080C14",borderRadius:8,border:"1px solid "+t.color+"33"}}>
