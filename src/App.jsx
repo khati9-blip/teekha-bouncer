@@ -2356,7 +2356,7 @@ function App({ pitch, onLeave, user, onLogout }) {
             <div className="fade-in">
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:12}}>
                 <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2}}>MATCHES</h2>
-                <Btn variant="blue" onClick={fetchMatches}>{matches.length>0?`↻ REFRESH (${matches.length})`:"🌐 FETCH SCHEDULE"}</Btn>
+                <Btn variant="blue" onClick={fetchMatches}>{matches.length>0?"↻ REFRESH ("+matches.length+")":"🌐 FETCH SCHEDULE"}</Btn>
               </div>
               {matches.length===0?(
                 <Card sx={{padding:60,textAlign:"center"}}><div style={{fontSize:56}}>📅</div><div style={{color:"#4A5E78",marginTop:16,fontSize:16}}>Click "Fetch Schedule" to load IPL 2026 matches</div></Card>
