@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import FormChart from "./FormChart";
+import H2HStats from "./H2HStats";
 
 async function callAI(userPrompt, system = "Return only valid JSON.") {
   const body = {
@@ -2573,6 +2574,16 @@ function App({ pitch, onLeave, user, onLogout }) {
             </div>
           )}
 
+          {page==="h2h" && (
+            <div className="fade-in">
+              <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:20}}>
+                <button onClick={()=>nav("leaderboard")} style={{background:"transparent",border:"none",color:"#4A5E78",fontSize:22,cursor:"pointer",lineHeight:1,padding:"0 4px"}}>←</button>
+                <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2}}>HEAD TO HEAD</h2>
+              </div>
+              <H2HStats teams={teams} matches={matches} points={points} assignments={assignments} players={players} />
+            </div>
+          )}
+
           {page==="leaderboard"&&(
             <div className="fade-in">
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:8}}>
@@ -2648,6 +2659,13 @@ function App({ pitch, onLeave, user, onLogout }) {
                   <div>
                     <div style={{fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,color:page==="form"?"#F5A623":"#E2EAF4"}}>Player Form Chart</div>
                     <div style={{fontSize:11,color:"#4A5E78",marginTop:1}}>Last 5 matches per player</div>
+                  </div>
+                </button>
+                <button onClick={()=>{nav("h2h");setDrawerOpen(false);}} style={{width:"100%",background:page==="h2h"?"#4F8EF722":"transparent",border:"1px solid "+(page==="h2h"?"#4F8EF744":"transparent"),borderRadius:10,padding:"12px 14px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12,marginBottom:4}}>
+                  <span style={{fontSize:22}}>⚔️</span>
+                  <div>
+                    <div style={{fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,color:page==="h2h"?"#4F8EF7":"#E2EAF4"}}>Head to Head</div>
+                    <div style={{fontSize:11,color:"#4A5E78",marginTop:1}}>Compare two teams across matches</div>
                   </div>
                 </button>
               </div>
