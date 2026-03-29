@@ -1921,6 +1921,7 @@ function App({ pitch, onLeave, user, onLogout }) {
               </div>
             </div>
           </div>
+        </div>
         )}
 
         {showPwModal&&<PasswordModal storedHash={pwHash} recoveryHash={recoveryHash} onSuccess={handlePwSuccess} onClose={()=>{setShowPwModal(false);setPendingAction(null);}} />}
@@ -2640,8 +2641,6 @@ function App({ pitch, onLeave, user, onLogout }) {
                   })}
                 </>
               )}
-            </div>
-          )}
             </div>
           )}
         </div>
