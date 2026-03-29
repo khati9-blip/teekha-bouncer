@@ -1242,6 +1242,7 @@ function App({ pitch, onLeave, user, onLogout }) {
   const [pwHash, setPwHash] = useState(null);
   const [recoveryHash, setRecoveryHash] = useState(null);
   const [appReady, setAppReady] = useState(false);
+  const [lbTab, setLbTab] = useState('leaderboard');
   const [unlocked, setUnlocked] = useState(false);
   const isAdmin = user && pitch && (pitch.creatorEmail === user.email || !pitch.creatorEmail);
   const [showPwModal, setShowPwModal] = useState(false);
@@ -1849,7 +1850,7 @@ function App({ pitch, onLeave, user, onLogout }) {
     {id:"draft",label:"Draft",icon:"📋",disabled:teams.length===0},
     {id:"matches",label:"Matches",icon:"🏏",disabled:players.length===0},
     {id:"transfer",label:"Transfer",icon:"🔄",disabled:teams.length===0},
-    {id:"form",label:"Form",icon:"📈",disabled:teams.length===0},
+    {id:"results",label:"Results",icon:"📊",disabled:teams.length===0||matches.length===0},
     {id:"leaderboard",label:"Board",icon:"🏆",disabled:teams.length===0},
   ];
 
@@ -2437,12 +2438,6 @@ function App({ pitch, onLeave, user, onLogout }) {
             </div>
           )}
 
-          {page==="form" && (
-            <div className="fade-in">
-              <FormChart players={players} assignments={assignments} points={points} teams={teams} />
-            </div>
-          )}
-
           {page==="results" && (
             <div className="fade-in">
               <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2,marginBottom:24}}>MATCH RESULTS</h2>
@@ -2591,6 +2586,7 @@ function App({ pitch, onLeave, user, onLogout }) {
                   })}
                 </>
               )}
+              </>}
             </div>
           )}
         </div>
