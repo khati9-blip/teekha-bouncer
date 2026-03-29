@@ -1738,21 +1738,42 @@ function App({ pitch, onLeave, user, onLogout }) {
   });
 
   const fetchMatches=async()=>{
-    setLoading("Fetching live IPL matches from Cricbuzz…");
+    setLoading("Fetching IPL 2026 schedule…");
     try {
-      const ipl = await fetchRecentIPLMatches();
-      if (ipl.length === 0) {
-        // fallback to AI if no live matches found
-        const text=await callAI(
-          `List all 74 matches of IPL 2026. Return ONLY a raw JSON array: [{"id":"m1","matchNum":1,"date":"2025-03-22","team1":"CSK","team2":"MI","venue":"Chepauk","status":"upcoming|completed","result":"winner or null"}].`,
-          "Cricket expert. Return ONLY a raw JSON array. No markdown."
-        );
-        updMatches(parseJSON(text));
-      } else {
-        const formatted = ipl.map((m, i) => ({
-          id: "m" + (m.matchId || i+1),
+      const IPL_SERIES_ID = 9241;
+      let formatted = [];
+      try {
+        const schedRes = await fetch("/api/cricbuzz?path="+encodeURIComponent("series/v1/"+IPL_SERIES_ID+"/matches"));
+        const schedData = await schedRes.json();
+        const matchList = schedData.matchDetails || [];
+        let num = 0;
+        for (const block of matchList) {
+          for (const m of (block.matchDetailsMap?.match || [])) {
+            const info = m.matchInfo;
+            if (!info) continue;
+            num++;
+            formatted.push({
+              id: "m"+info.matchId,
+              cricbuzzId: info.matchId,
+              matchNum: num,
+              date: info.startDate ? new Date(parseInt(info.startDate)).toISOString().split("T")[0] : "TBD",
+              time: info.startDate ? new Date(parseInt(info.startDate)).toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit",timeZone:"Asia/Kolkata"}) : "",
+              team1: info.team1?.teamSName || info.team1?.teamName || "TBA",
+              team2: info.team2?.teamSName || info.team2?.teamName || "TBA",
+              venue: info.venueInfo?.ground ? info.venueInfo.ground+(info.venueInfo.city?", "+info.venueInfo.city:"") : (info.venueInfo?.city || "TBD"),
+              status: info.state === "Complete" ? "completed" : info.state === "In Progress" ? "live" : "upcoming",
+              result: info.status || null,
+            });
+          }
+        }
+      } catch(e) { console.warn("Series schedule failed:", e.message); }
+
+      if (formatted.length === 0) {
+        const ipl = await fetchRecentIPLMatches();
+        formatted = ipl.map((m, i) => ({
+          id: "m"+(m.matchId || i+1),
           cricbuzzId: m.matchId,
-          matchNum: m.matchDesc || ("M"+(i+1)),
+          matchNum: i+1,
           date: m.startDate ? new Date(parseInt(m.startDate)).toISOString().split("T")[0] : "TBD",
           time: m.startDate ? new Date(parseInt(m.startDate)).toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit",timeZone:"Asia/Kolkata"}) : "",
           team1: m.team1?.teamSName || m.team1?.teamName || "TBA",
@@ -1761,17 +1782,22 @@ function App({ pitch, onLeave, user, onLogout }) {
           status: m.state === "Complete" ? "completed" : m.state === "In Progress" ? "live" : "upcoming",
           result: m.status || null,
         }));
-        updMatches(formatted);
+      }
+
+      if (formatted.length > 0) {
+        const existing = {};
+        matches.forEach(m => { if (m.cricbuzzId) existing[m.cricbuzzId] = m; });
+        const merged = formatted.map(m => {
+          const ex = existing[m.cricbuzzId];
+          return ex ? {...m, status: ex.status === "completed" ? "completed" : m.status, result: ex.result || m.result} : m;
+        });
+        updMatches(merged);
+        alert("Fetched "+formatted.length+" matches!");
+      } else {
+        alert("No matches found from Cricbuzz. Try again later.");
       }
     } catch(e){
-      alert("Cricbuzz error: "+e.message+". Falling back to AI data.");
-      try {
-        const text=await callAI(
-          `List all 74 matches of IPL 2026. Return ONLY a raw JSON array: [{"id":"m1","matchNum":1,"date":"2025-03-22","team1":"CSK","team2":"MI","venue":"Chepauk","status":"upcoming|completed","result":"winner or null"}].`,
-          "Cricket expert. Return ONLY a raw JSON array. No markdown."
-        );
-        updMatches(parseJSON(text));
-      } catch(e2){alert("Error: "+e2.message);}
+      alert("Error: "+e.message);
     }
     setLoading("");
   };
