@@ -2511,12 +2511,13 @@ function App({ pitch, onLeave, user, onLogout }) {
                             {p.last5.map((v, i) => {
                               const barH = mx > 0 ? Math.max(4, Math.round(v * 44 / mx)) : 4;
                               const isLast = i === p.last5.length - 1;
+                              const hasVal = v > 0;
+                              const barColor = hasVal ? (isLast ? "#F5A623" : p.tc) : "#1E2D45";
                               return (
                                 <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
                                   <span style={{fontSize:10,color:isLast?"#F5A623":"#4A5E78",fontWeight:isLast?700:400}}>{v}</span>
-                                  <div style={{width:"100%",background:v>0?(isLast?"#F5A623":p.tc):"#1E2D45",borderRadius:"3px 3px 0 0",height:barH+"px",opacity:isLast?1:0.65}} />
+                                  <div style={{width:"100%",background:barColor,borderRadius:"3px 3px 0 0",height:barH+"px",opacity:isLast?1:0.65}} />
                                 </div>
-                              </div>
                               );
                             })}
                             {p.last5.length < 5 && Array.from({length: 5 - p.last5.length}).map((_, i) => (
