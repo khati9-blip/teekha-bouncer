@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import FormChart from "./FormChart";
 
 async function callAI(userPrompt, system = "Return only valid JSON.") {
   const body = {
@@ -2433,6 +2434,12 @@ function App({ pitch, onLeave, user, onLogout }) {
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {page==="form" && (
+            <div className="fade-in">
+              <FormChart players={players} assignments={assignments} points={points} teams={teams} />
             </div>
           )}
 
