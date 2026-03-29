@@ -2013,7 +2013,7 @@ function App({ pitch, onLeave, user, onLogout }) {
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,flexWrap:"wrap",gap:8}}>
                   <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2}}>PLAYER DRAFT</h2>
                   <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                    <Btn variant="blue" onClick={fetchPlayers} sx={{fontSize:13,padding:"8px 14px"}}>{players.length>0?`↻ REFRESH`:"🌐 FETCH PLAYERS"}</Btn>
+                    <Btn variant="blue" onClick={()=>withPassword(fetchPlayers)} sx={{fontSize:13,padding:"8px 14px"}}>{players.length>0?"↻ REFRESH":"🌐 FETCH PLAYERS"}</Btn>
                     <Btn variant="ghost" onClick={()=>withPassword(()=>setEditPlayer({name:"",iplTeam:"",role:"Batsman"}))} sx={{fontSize:13,padding:"8px 14px"}}>✚ ADD</Btn>
                     <Btn variant={squadView?"primary":"ghost"} onClick={()=>setSquadView(v=>!v)} sx={{fontSize:13,padding:"8px 14px"}}>{squadView?"📋 LIST":"👥 SQUAD"}</Btn>
                   </div>
