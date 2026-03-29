@@ -2374,7 +2374,7 @@ export default function App() {
 
               {/* ── RESULTS (moved here) ── */}
               {statsPage==="results" && (
-
+              <div>
               <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2,marginBottom:24}}>MATCH RESULTS</h2>
 
               {matches.filter(m=>m.status==="completed"&&Object.keys(points).some(pid=>points[pid][m.id])).length===0 ? (
@@ -2466,6 +2466,7 @@ export default function App() {
               )}
             </div>
 
+              </div>
               )}
 
             </div>
