@@ -1005,6 +1005,10 @@ function PitchHome({ onEnter, user, onLogout }) {
   const [enterErr, setEnterErr] = useState("");
   const [settingPasswordFor, setSettingPasswordFor] = useState(null);
   const [newPitchPw, setNewPitchPw] = useState("");
+  const [changingPasswordFor, setChangingPasswordFor] = useState(null);
+  const [oldPitchPw, setOldPitchPw] = useState("");
+  const [newChangePw, setNewChangePw] = useState("");
+  const [changeErr, setChangeErr] = useState("");
   const [forgotMode, setForgotMode] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotStep, setForgotStep] = useState('email'); // email | code
@@ -1121,6 +1125,22 @@ function PitchHome({ onEnter, user, onLogout }) {
     setNewPitchPw("");
   };
 
+  const changePassword = async () => {
+    if (!oldPitchPw.trim()) { setChangeErr("Enter current password"); return; }
+    if (!newChangePw.trim()) { setChangeErr("Enter new password"); return; }
+    const pitch = pitches.find(p => p.id === changingPasswordFor);
+    if (!pitch) return;
+    const oldHash = await hashPw(oldPitchPw);
+    if (oldHash !== pitch.hash) { setChangeErr("Wrong current password"); setOldPitchPw(""); return; }
+    const newHash = await hashPw(newChangePw);
+    const updated = pitches.map(p => p.id === changingPasswordFor ? {...p, hash: newHash} : p);
+    await sbSet("pitches", updated);
+    setPitches(updated);
+    setChangingPasswordFor(null);
+    setOldPitchPw(""); setNewChangePw(""); setChangeErr("");
+    alert("Password changed successfully!");
+  };
+
   const COLORS = ["#FF3D5A","#4F8EF7","#2ECC71","#F5A623","#A855F7","#06B6D4","#FF6B35","#EC4899"];
 
   if (loading) return (
@@ -1167,7 +1187,11 @@ function PitchHome({ onEnter, user, onLogout }) {
                 <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:18,color:"#E2EAF4",letterSpacing:1}}>{pitch.name}</div>
                 <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>Created {new Date(pitch.createdAt).toLocaleDateString()}</div>
               </div>
-              <div style={{fontSize:12,color:COLORS[i % COLORS.length],fontWeight:700,letterSpacing:1}}>ENTER →</div>
+              <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6}}>
+                <div style={{fontSize:12,color:COLORS[i % COLORS.length],fontWeight:700,letterSpacing:1}}>ENTER →</div>
+                <button onClick={e=>{e.stopPropagation();setChangingPasswordFor(pitch.id);setOldPitchPw("");setNewChangePw("");setChangeErr("");}}
+                  style={{background:"transparent",border:"none",color:"#4A5E78",fontSize:10,cursor:"pointer",textDecoration:"underline",padding:0,fontFamily:"Barlow Condensed,sans-serif"}}>change password</button>
+              </div>
             </div>
           ))}
         </div>
@@ -1215,6 +1239,28 @@ function PitchHome({ onEnter, user, onLogout }) {
                 style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:11,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
               <button onClick={setFirstPassword}
                 style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:11,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>SET & ENTER</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Change password modal */}
+      {changingPasswordFor && (
+        <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.95)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300}}>
+          <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #1E2D45",padding:32,width:"100%",maxWidth:340,margin:"0 16px"}}>
+            <div style={{fontSize:32,textAlign:"center",marginBottom:8}}>🔑</div>
+            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,fontWeight:700,color:"#F5A623",textAlign:"center",letterSpacing:2,marginBottom:4}}>CHANGE PASSWORD</div>
+            <div style={{fontSize:13,color:"#4A5E78",textAlign:"center",marginBottom:20}}>{pitches.find(p=>p.id===changingPasswordFor)?.name}</div>
+            <input type="password" value={oldPitchPw} onChange={e=>{setOldPitchPw(e.target.value);setChangeErr("");}} placeholder="Current password..." autoFocus
+              style={{width:"100%",background:"#080C14",border:"1px solid "+(changeErr?"#FF3D5A":"#1E2D45"),borderRadius:8,padding:"12px 16px",color:"#E2EAF4",fontSize:15,fontFamily:"Barlow Condensed,sans-serif",outline:"none",marginBottom:10,boxSizing:"border-box"}} />
+            <input type="password" value={newChangePw} onChange={e=>{setNewChangePw(e.target.value);setChangeErr("");}} onKeyDown={e=>e.key==="Enter"&&changePassword()} placeholder="New password..."
+              style={{width:"100%",background:"#080C14",border:"1px solid "+(changeErr?"#FF3D5A":"#1E2D45"),borderRadius:8,padding:"12px 16px",color:"#E2EAF4",fontSize:15,fontFamily:"Barlow Condensed,sans-serif",outline:"none",marginBottom:changeErr?8:20,boxSizing:"border-box"}} />
+            {changeErr && <div style={{color:"#FF3D5A",fontSize:13,marginBottom:16,textAlign:"center"}}>{changeErr}</div>}
+            <div style={{display:"flex",gap:10}}>
+              <button onClick={()=>{setChangingPasswordFor(null);setOldPitchPw("");setNewChangePw("");setChangeErr("");}}
+                style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:11,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
+              <button onClick={changePassword}
+                style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:11,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CHANGE PASSWORD</button>
             </div>
           </div>
         </div>
