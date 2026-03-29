@@ -1898,9 +1898,8 @@ function App({ pitch, onLeave, user }) {
           <div style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={onLeave} title="Back to pitches">
             <img src="/logo.png" alt="Teekha Bouncer" style={{height:36,width:36,objectFit:"contain",borderRadius:6}} />
             <div>
-              <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:17,color:"#F5A623",letterSpacing:2,lineHeight:1}}>TEEKHA</div>
-              <div style={{fontSize:9,color:"#4A5E78",letterSpacing:2,textTransform:"uppercase"}}>{pitch ? pitch.name : "Bouncer League"}</div>
-              {user && <div style={{fontSize:9,color:"#2ECC7188",letterSpacing:1}}>{user.email.split("@")[0]}</div>}
+              <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:14,color:"#F5A623",letterSpacing:1,lineHeight:1}}>TEEKHA BOUNCER LEAGUE</div>
+              <div style={{fontSize:9,color:"#4A5E78",letterSpacing:1,marginTop:2}}>{pitch ? pitch.name : ""} {user ? "• "+user.email.split("@")[0] : ""}</div>
             </div>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
