@@ -2152,26 +2152,73 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
 
   const getTeamTotal=(teamId)=>{
     let total=0;
-    // Include ALL players that have ever been owned by this team
     const allPids = new Set([
       ...players.filter(p=>assignments[p.id]===teamId).map(p=>p.id),
       ...Object.entries(ownershipLog).filter(([pid,periods])=>periods.some(o=>o.teamId===teamId)).map(([pid])=>pid)
     ]);
+
+    // Add snatched-in player (currently on loan to this team)
+    if (snatch.active?.byTeamId===teamId) allPids.add(snatch.active.pid);
+
     for(const pid of allPids){
       const periods = (ownershipLog[pid]||[]).filter(o=>o.teamId===teamId);
+
+      // If this player is currently snatched AWAY from this team — freeze at pointsAtSnatch
+      if(snatch.active?.pid===pid && snatch.active?.fromTeamId===teamId) {
+        total += snatch.active.pointsAtSnatch;
+        continue;
+      }
+
+      // If this player is currently snatched IN to this team — only count post-snatch points
+      if(snatch.active?.pid===pid && snatch.active?.byTeamId===teamId) {
+        const snatchDate = snatch.active.startDate.split('T')[0];
+        for(const[mid,d] of Object.entries(points[pid]||{})){
+          const m = matches.find(x=>x.id===mid);
+          if(m && m.date >= snatchDate) total+=d.base;
+        }
+        continue;
+      }
+
+      // Historical snatch: player was snatched away, now returned — freeze contributed pts
+      const histSnatchedAway = (snatch.history||[]).find(h=>h.pid===pid && h.fromTeamId===teamId);
+      if(histSnatchedAway) {
+        // Count all points EXCEPT those during the snatch period
+        for(const[mid,d] of Object.entries(points[pid]||{})){
+          const m = matches.find(x=>x.id===mid);
+          if(!m) continue;
+          const matchDate = m.date;
+          const snatchStart = histSnatchedAway.startDate.split('T')[0];
+          const snatchEnd = histSnatchedAway.returnDate ? histSnatchedAway.returnDate.split('T')[0] : '2099-01-01';
+          if(matchDate >= snatchStart && matchDate <= snatchEnd) continue; // skip snatch week
+          const cap=captains[mid+"_"+teamId]||{};
+          let pts=d.base;
+          if(cap.captain===pid)pts*=2;else if(cap.vc===pid)pts*=1.5;
+          total+=pts;
+        }
+        continue;
+      }
+
+      // Historical snatch: player was snatched IN, now returned — freeze snatch week pts
+      const histSnatchedIn = (snatch.history||[]).find(h=>h.pid===pid && h.byTeamId===teamId);
+      if(histSnatchedIn) {
+        total += (histSnatchedIn.snatchWeekPts||0);
+        continue;
+      }
+
+      // Normal ownership
       for(const[mid,d] of Object.entries(points[pid]||{})){
         const m = matches.find(x=>x.id===mid);
         if(!m) continue;
         const matchDate = new Date(m.date);
         const owned = periods.length === 0
-          ? assignments[pid]===teamId // no log = only if currently owned
+          ? assignments[pid]===teamId
           : periods.some(o=>{
               const from = new Date(o.from);
               const to = o.to ? new Date(o.to) : new Date('2099-01-01');
               return matchDate >= from && matchDate <= to;
             });
         if(!owned) continue;
-        const cap=captains[`${mid}_${teamId}`]||{};
+        const cap=captains[mid+"_"+teamId]||{};
         let pts=d.base;
         if(cap.captain===pid)pts*=2;else if(cap.vc===pid)pts*=1.5;
         total+=pts;
@@ -2230,17 +2277,33 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
     const snatchedIn = snatch.active?.byTeamId===teamId ? (() => {
       const p = players.find(x=>x.id===snatch.active.pid);
       if(!p) return null;
-      // Only count points scored AFTER snatch started
       const snatchDate = snatch.active.startDate;
       let tot=0;
       for(const[mid,d]of Object.entries(points[p.id]||{})){
         const m = matches.find(x=>x.id===mid);
         if(m && new Date(m.date) >= new Date(snatchDate)) tot+=d.base;
       }
-      return p?{...p,total:Math.round(tot),status:"snatched-in"}:null;
+      return p?{...p,total:Math.round(tot),status:"snatched-in",frozenAt:Math.round(tot)}:null;
     })() : null;
 
-    return [...active, ...historical, ...(snatchedIn?[snatchedIn]:[])].sort((a,b)=>b.total-a.total);
+    // Players currently snatched AWAY from this team (show struck-through, frozen pts)
+    const snatchedOut = (snatch.active?.fromTeamId===teamId) ? (() => {
+      const p = players.find(x=>x.id===snatch.active.pid);
+      if(!p) return null;
+      return {...p, total: snatch.active.pointsAtSnatch, status:"snatched-out", frozenAt: snatch.active.pointsAtSnatch};
+    })() : null;
+
+    // Historical: players returned after snatch (show in B's pool struck-through)
+    const snatchHistoryForTeam = (snatch.history||[]).map(h => {
+      const p = players.find(x=>x.id===h.pid);
+      if(!p) return null;
+      // If this team snatched the player — show them struck-through with snatch week pts
+      if(h.byTeamId===teamId) return {...p, total: h.snatchWeekPts||0, status:"snatch-returned-in", frozenAt: h.snatchWeekPts||0};
+      return null;
+    }).filter(Boolean);
+
+    const allActive = [...active, ...(snatchedOut?[snatchedOut]:[])];
+    return [...allActive, ...historical, ...(snatchedIn?[snatchedIn]:[]), ...snatchHistoryForTeam].sort((a,b)=>b.total-a.total);
   };
 
   const shareLeaderboard = () => {
@@ -2297,6 +2360,43 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
     const t = setInterval(() => setSnatchWindowStatus(getSnatchWindowStatus()), 60000);
     return () => clearInterval(t);
   }, []);
+
+  // Auto-return snatched player on Friday 11:58 PM IST
+  useEffect(() => {
+    if (!snatch.active) return;
+    const check = () => {
+      const now = new Date();
+      const ist = new Date(now.getTime() + (5.5 * 60 * 60 * 1000));
+      const day = ist.getUTCDay(); // 5 = Friday
+      const hour = ist.getUTCHours();
+      const min = ist.getUTCMinutes();
+      if (day === 5 && hour === 23 && min >= 58) {
+        // Auto return!
+        const { pid, fromTeamId, byTeamId, pointsAtSnatch } = snatch.active;
+        // Calculate points earned during snatch week for B
+        const snatchDate = snatch.active.startDate;
+        let snatchWeekPts = 0;
+        Object.entries(points[pid] || {}).forEach(([mid, d]) => {
+          const match = matches.find(m => m.id === mid);
+          if (match && match.date >= snatchDate.split('T')[0]) {
+            snatchWeekPts += d.base;
+          }
+        });
+        const newHistory = [...(snatch.history || []), {
+          ...snatch.active,
+          returnDate: new Date().toISOString(),
+          snatchWeekPts,
+        }];
+        // Return player to original team
+        const a = {...assignments, [pid]: fromTeamId};
+        updAssign(a);
+        updSnatch({...snatch, active: null, history: newHistory, weekNum: snatch.weekNum + 1});
+      }
+    };
+    check();
+    const t = setInterval(check, 60000);
+    return () => clearInterval(t);
+  }, [snatch.active]);
 
   const navItems=[
     {id:"draft",label:"Draft",icon:"📋",disabled:teams.length===0},
@@ -3149,10 +3249,16 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
                           <div style={{borderTop:"1px solid #1E2D45",padding:"12px 18px"}}>
                             <div style={{display:"flex",fontSize:11,color:"#4A5E78",marginBottom:10,padding:"0 4px"}}><span style={{flex:1}}>PLAYER</span><span style={{width:90}}>ROLE</span><span style={{width:70,textAlign:"right"}}>POINTS</span></div>
                             {breakdown.map((p,idx)=>(
-                              <div key={p.id} style={{display:"flex",alignItems:"center",padding:"9px 4px",borderBottom:"1px solid #1E2D45"}}>
-                                <div style={{flex:1,fontWeight:idx<3?700:400,fontSize:14,color:idx===0?"#F5A623":"#E2EAF4"}}>{p.name}</div>
+                              <div key={p.id} style={{display:"flex",alignItems:"center",padding:"9px 4px",borderBottom:"1px solid #1E2D45",opacity:p.status==="snatched-out"||p.status==="snatch-returned-in"?0.6:1}}>
+                                <div style={{flex:1,fontWeight:idx<3?700:400,fontSize:14,color:idx===0&&p.status==="active"?"#F5A623":"#E2EAF4",textDecoration:p.status==="snatched-out"||p.status==="snatch-returned-in"?"line-through":"none"}}>
+                                  {p.name}
+                                  {p.status==="snatched-out"&&<span style={{fontSize:9,color:"#A855F7",marginLeft:6,textDecoration:"none",fontWeight:700}}> SNATCHED</span>}
+                                  {p.status==="snatched-in"&&<span style={{fontSize:9,color:"#2ECC71",marginLeft:6,textDecoration:"none",fontWeight:700}}> ON LOAN</span>}
+                                  {p.status==="snatch-returned-in"&&<span style={{fontSize:9,color:"#4A5E78",marginLeft:6,textDecoration:"none"}}> RETURNED</span>}
+                                  {p.status==="released"&&<span style={{fontSize:9,color:"#4A5E78",marginLeft:6,textDecoration:"none"}}> RELEASED</span>}
+                                </div>
                                 <div style={{width:90}}><Badge label={p.role||"—"} color={ROLE_COLORS[p.role]||"#4A5E78"} /></div>
-                                <div style={{width:70,textAlign:"right",fontWeight:700,color:p.total>0?"#E2EAF4":"#4A5E78",fontFamily:"Rajdhani",fontSize:17}}>{p.total}</div>
+                                <div style={{width:70,textAlign:"right",fontWeight:700,color:p.status==="snatched-out"||p.status==="snatch-returned-in"?"#4A5E78":p.total>0?"#E2EAF4":"#4A5E78",fontFamily:"Rajdhani",fontSize:17}}>{p.total}</div>
                               </div>
                             ))}
                           </div>
