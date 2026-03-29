@@ -268,6 +268,15 @@ const storeGet = (key) => sbGet(_pitchId + "_" + key);
 const storeSet = (key, val) => sbSet(_pitchId + "_" + key, val);
 const storeDel = (key) => sbDel(_pitchId + "_" + key);
 
+// User auth helpers
+async function getUsers() {
+  const data = await sbGet("users");
+  return Array.isArray(data) ? data : [];
+}
+async function saveUsers(users) {
+  await sbSet("users", users);
+}
+
 async function hashPw(str) {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
   return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
@@ -798,8 +807,143 @@ function SmartStatsModal({ match, players, assignments, existingStats, onSave, o
   );
 }
 
+
+// ── SPLASH / AUTH SCREEN ─────────────────────────────────────────────────────
+function SplashScreen({ onLogin }) {
+  const [mode, setMode] = useState('splash'); // splash | login | signup
+  const [email, setEmail] = useState('');
+  const [pw, setPw] = useState('');
+  const [pw2, setPw2] = useState('');
+  const [err, setErr] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const inputStyle = (hasErr) => ({
+    width:"100%", background:"#080C14",
+    border:"1px solid "+(hasErr?"#FF3D5A":"#1E2D45"),
+    borderRadius:8, padding:"12px 16px", color:"#E2EAF4",
+    fontSize:16, fontFamily:"Barlow Condensed,sans-serif",
+    outline:"none", marginBottom:12, boxSizing:"border-box"
+  });
+
+  const handleSignup = async () => {
+    if (!email.trim()) { setErr("Enter your email"); return; }
+    if (!email.includes('@')) { setErr("Enter a valid email"); return; }
+    if (!pw.trim() || pw.length < 6) { setErr("Password must be at least 6 characters"); return; }
+    if (pw !== pw2) { setErr("Passwords don't match"); return; }
+    setLoading(true); setErr('');
+    try {
+      const users = await getUsers();
+      if (users.find(u => u.email.toLowerCase() === email.toLowerCase().trim())) {
+        setErr("Email already registered. Please log in."); setLoading(false); return;
+      }
+      const hash = await hashPw(pw);
+      const newUser = { email: email.toLowerCase().trim(), hash, createdAt: new Date().toISOString() };
+      await saveUsers([...users, newUser]);
+      onLogin(newUser);
+    } catch(e) { setErr("Error: " + e.message); }
+    setLoading(false);
+  };
+
+  const handleLogin = async () => {
+    if (!email.trim()) { setErr("Enter your email"); return; }
+    if (!pw.trim()) { setErr("Enter your password"); return; }
+    setLoading(true); setErr('');
+    try {
+      const users = await getUsers();
+      const user = users.find(u => u.email.toLowerCase() === email.toLowerCase().trim());
+      if (!user) { setErr("Email not found. Please sign up."); setLoading(false); return; }
+      const hash = await hashPw(pw);
+      if (hash !== user.hash) { setErr("Wrong password."); setLoading(false); return; }
+      onLogin(user);
+    } catch(e) { setErr("Error: " + e.message); }
+    setLoading(false);
+  };
+
+  if (mode === 'splash') return (
+    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#080C14 0%,#0E1521 50%,#080C14 100%)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"20px",fontFamily:"Barlow Condensed,sans-serif"}}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Barlow+Condensed:wght@400;600;700;800&display=swap');*{box-sizing:border-box;margin:0;padding:0;}body{background:#080C14;}`}</style>
+
+      {/* Logo area */}
+      <div style={{textAlign:"center",marginBottom:48}}>
+        <div style={{fontSize:72,marginBottom:16}}>🏏</div>
+        <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:42,color:"#F5A623",letterSpacing:4,lineHeight:1}}>TEEKHA</div>
+        <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:42,color:"#E2EAF4",letterSpacing:4,lineHeight:1}}>BOUNCER</div>
+        <div style={{fontSize:13,color:"#4A5E78",letterSpacing:6,marginTop:8,textTransform:"uppercase"}}>Fantasy Cricket League</div>
+      </div>
+
+      {/* Tagline */}
+      <div style={{background:"#0E1521",border:"1px solid #1E2D45",borderRadius:12,padding:"16px 24px",marginBottom:40,textAlign:"center",maxWidth:320}}>
+        <div style={{fontSize:14,color:"#94A3B8",lineHeight:1.6}}>
+          Track fantasy points, manage squads, and compete with your friends across multiple leagues 🏆
+        </div>
+      </div>
+
+      {/* Buttons */}
+      <div style={{width:"100%",maxWidth:320,display:"flex",flexDirection:"column",gap:12}}>
+        <button onClick={() => setMode('signup')}
+          style={{background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:12,padding:"16px",color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:18,cursor:"pointer",letterSpacing:2}}>
+          GET STARTED
+        </button>
+        <button onClick={() => setMode('login')}
+          style={{background:"transparent",border:"2px solid #1E2D45",borderRadius:12,padding:"14px",color:"#E2EAF4",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:16,cursor:"pointer",letterSpacing:1}}>
+          I HAVE AN ACCOUNT
+        </button>
+      </div>
+
+      <div style={{marginTop:32,fontSize:11,color:"#2D3E52",letterSpacing:2}}>POWERED BY CRICBUZZ</div>
+    </div>
+  );
+
+  return (
+    <div style={{minHeight:"100vh",background:"#080C14",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"20px",fontFamily:"Barlow Condensed,sans-serif"}}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Barlow+Condensed:wght@400;600;700;800&display=swap');*{box-sizing:border-box;margin:0;padding:0;}body{background:#080C14;color:#E2EAF4;}`}</style>
+
+      <div style={{width:"100%",maxWidth:380}}>
+        {/* Header */}
+        <div style={{textAlign:"center",marginBottom:32}}>
+          <div style={{fontSize:36}}>🏏</div>
+          <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:28,color:"#F5A623",letterSpacing:3,marginTop:8}}>
+            {mode==='login' ? "WELCOME BACK" : "CREATE ACCOUNT"}
+          </div>
+          <div style={{fontSize:13,color:"#4A5E78",marginTop:4}}>
+            {mode==='login' ? "Sign in to your Teekha Bouncer account" : "Join Teekha Bouncer League"}
+          </div>
+        </div>
+
+        {/* Form */}
+        <div style={{background:"#0E1521",borderRadius:16,border:"1px solid #1E2D45",padding:28}}>
+          <input type="email" value={email} onChange={e=>{setEmail(e.target.value);setErr('');}} placeholder="Email address" style={inputStyle(err && !pw)} />
+          <input type="password" value={pw} onChange={e=>{setPw(e.target.value);setErr('');}} onKeyDown={e=>e.key==="Enter"&&(mode==='login'?handleLogin():null)} placeholder="Password" style={inputStyle(err && pw && !pw2)} />
+          {mode==='signup' && (
+            <input type="password" value={pw2} onChange={e=>{setPw2(e.target.value);setErr('');}} onKeyDown={e=>e.key==="Enter"&&handleSignup()} placeholder="Confirm password" style={inputStyle(false)} />
+          )}
+          {err && <div style={{color:"#FF3D5A",fontSize:13,marginBottom:12,textAlign:"center"}}>{err}</div>}
+          <button onClick={mode==='login' ? handleLogin : handleSignup} disabled={loading}
+            style={{width:"100%",background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:14,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:16,cursor:loading?"not-allowed":"pointer",opacity:loading?0.7:1,letterSpacing:1}}>
+            {loading ? "PLEASE WAIT..." : mode==='login' ? "SIGN IN" : "CREATE ACCOUNT"}
+          </button>
+        </div>
+
+        {/* Toggle */}
+        <div style={{textAlign:"center",marginTop:20,fontSize:14,color:"#4A5E78"}}>
+          {mode==='login' ? "Don't have an account? " : "Already have an account? "}
+          <button onClick={()=>{setMode(mode==='login'?'signup':'login');setErr('');setPw('');setPw2('');}}
+            style={{background:"none",border:"none",color:"#F5A623",fontSize:14,cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,textDecoration:"underline"}}>
+            {mode==='login' ? "Sign up" : "Sign in"}
+          </button>
+        </div>
+
+        <button onClick={() => setMode('splash')}
+          style={{display:"block",margin:"16px auto 0",background:"none",border:"none",color:"#4A5E78",fontSize:12,cursor:"pointer"}}>
+          ← Back
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── PITCH HOME SCREEN ────────────────────────────────────────────────────────
-function PitchHome({ onEnter }) {
+function PitchHome({ onEnter, user, onLogout }) {
   const [pitches, setPitches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -839,7 +983,7 @@ function PitchHome({ onEnter }) {
     if (pitches.length >= 1000) { setErr("Max 1000 pitches reached"); return; }
     const id = "p" + Date.now();
     const hash = await hashPw(newPw);
-    const pitch = { id, name: newName.trim(), hash, createdAt: new Date().toISOString() };
+    const pitch = { id, name: newName.trim(), hash, createdAt: new Date().toISOString(), creatorEmail: user?.email || '' };
     const updated = [...pitches, pitch];
     await sbSet("pitches", updated);
     setPitches(updated);
@@ -938,8 +1082,16 @@ function PitchHome({ onEnter }) {
 
       {/* Header */}
       <div style={{background:"#0E1521",borderBottom:"1px solid #1E2D45",padding:"16px 20px",display:"flex",alignItems:"center",gap:12}}>
-        <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:24,color:"#F5A623",letterSpacing:3}}>🏏 TEEKHA BOUNCER</div>
-        <div style={{fontSize:12,color:"#4A5E78",letterSpacing:2}}>LEAGUE PITCHES</div>
+        <div style={{display:"flex",alignItems:"center",gap:10,flex:1}}>
+          <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:22,color:"#F5A623",letterSpacing:3}}>🏏 TEEKHA BOUNCER</div>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <div style={{fontSize:11,color:"#4A5E78",textAlign:"right"}}>
+            <div style={{color:"#E2EAF4",fontWeight:700}}>{user?.email?.split('@')[0]}</div>
+            <div>{user?.email?.split('@')[1]}</div>
+          </div>
+          <button onClick={onLogout} style={{background:"transparent",border:"1px solid #1E2D45",borderRadius:6,padding:"5px 10px",color:"#4A5E78",fontSize:11,cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>LOGOUT</button>
+        </div>
       </div>
 
       <div style={{maxWidth:600,margin:"0 auto",padding:"24px 16px 100px"}}>
@@ -1071,7 +1223,7 @@ function PitchHome({ onEnter }) {
   );
 }
 
-function App({ pitch, onLeave }) {
+function App({ pitch, onLeave, user }) {
   const [page, setPage] = useState("setup");
   const [teams, setTeams] = useState([]);
   const [players, setPlayers] = useState([]);
@@ -1090,6 +1242,7 @@ function App({ pitch, onLeave }) {
   const [recoveryHash, setRecoveryHash] = useState(null);
   const [appReady, setAppReady] = useState(false);
   const [unlocked, setUnlocked] = useState(false);
+  const isAdmin = user && pitch && (pitch.creatorEmail === user.email || !pitch.creatorEmail);
   const [showPwModal, setShowPwModal] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
   const [editPlayer, setEditPlayer] = useState(null); // player being edited
@@ -1747,6 +1900,7 @@ function App({ pitch, onLeave }) {
             <div>
               <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:17,color:"#F5A623",letterSpacing:2,lineHeight:1}}>TEEKHA</div>
               <div style={{fontSize:9,color:"#4A5E78",letterSpacing:2,textTransform:"uppercase"}}>{pitch ? pitch.name : "Bouncer League"}</div>
+              {user && <div style={{fontSize:9,color:"#2ECC7188",letterSpacing:1}}>{user.email.split("@")[0]}</div>}
             </div>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
@@ -2441,11 +2595,17 @@ function App({ pitch, onLeave }) {
 }
 
 function Root() {
+  const [currentUser, setCurrentUser] = useState(null);
   const [currentPitch, setCurrentPitch] = useState(null);
+
+  const handleLogin = (user) => { setCurrentUser(user); };
+  const handleLogout = () => { setCurrentUser(null); setCurrentPitch(null); };
   const handleEnter = (pitch) => { setCurrentPitch(pitch); };
   const handleLeave = () => { setCurrentPitch(null); };
-  if (!currentPitch) return <PitchHome onEnter={handleEnter} />;
-  return <App pitch={currentPitch} onLeave={handleLeave} />;
+
+  if (!currentUser) return <SplashScreen onLogin={handleLogin} />;
+  if (!currentPitch) return <PitchHome onEnter={handleEnter} user={currentUser} onLogout={handleLogout} />;
+  return <App pitch={currentPitch} onLeave={handleLeave} user={currentUser} />;
 }
 
 export default Root;
