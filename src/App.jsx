@@ -1465,7 +1465,7 @@ export default function App() {
   const shareToWhatsApp = (text) => window.open(`https://wa.me/?text=${encodeURIComponent(text)}`,'_blank');
   const shareLeaderboard = () => {
     const medals=['🥇','🥈','🥉'];const lb = leaderboard.map((t,i)=>(medals[i]||('#'+(i+1)))+' '+t.name+': '+t.total+' pts').join('\n');
-    shareToWhatsApp(`🏏 *Teekha Bouncer League*\n*Leaderboard*\n\n${lb}\n\nteekha-bouncer.vercel.app`);
+    shareToWhatsApp("🏏 *Teekha Bouncer League*\n*Leaderboard*\n\n"+lb+"\n\nteekha-bouncer.vercel.app");
   };
   const exportToPDF = async () => {
     try {
