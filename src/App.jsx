@@ -865,7 +865,7 @@ function SplashScreen({ onLogin }) {
 
       {/* Logo area */}
       <div style={{textAlign:"center",marginBottom:48}}>
-        <div style={{fontSize:72,marginBottom:16}}>🏏</div>
+        <img src="/logo.png" alt="Teekha Bouncer" style={{width:120,height:120,objectFit:"contain",borderRadius:20,marginBottom:16,boxShadow:"0 0 40px #F5A62344"}} />
         <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:42,color:"#F5A623",letterSpacing:4,lineHeight:1}}>TEEKHA</div>
         <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:42,color:"#E2EAF4",letterSpacing:4,lineHeight:1}}>BOUNCER</div>
         <div style={{fontSize:13,color:"#4A5E78",letterSpacing:6,marginTop:8,textTransform:"uppercase"}}>Fantasy Cricket League</div>
@@ -901,7 +901,7 @@ function SplashScreen({ onLogin }) {
       <div style={{width:"100%",maxWidth:380}}>
         {/* Header */}
         <div style={{textAlign:"center",marginBottom:32}}>
-          <div style={{fontSize:36}}>🏏</div>
+          <img src="/logo.png" alt="Teekha Bouncer" style={{width:64,height:64,objectFit:"contain",borderRadius:12,margin:"0 auto",display:"block"}} />
           <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:28,color:"#F5A623",letterSpacing:3,marginTop:8}}>
             {mode==='login' ? "WELCOME BACK" : "CREATE ACCOUNT"}
           </div>
