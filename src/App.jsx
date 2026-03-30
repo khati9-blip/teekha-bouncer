@@ -1276,6 +1276,7 @@ function PitchHome({ onEnter, user, onLogout }) {
                 <div style={{fontSize:12,color:COLORS[i % COLORS.length],fontWeight:700,letterSpacing:1}}>ENTER →</div>
                 <button onClick={e=>{e.stopPropagation();setChangingPasswordFor(pitch.id);setOldPitchPw("");setNewChangePw("");setChangeErr("");}}
                   style={{background:"transparent",border:"none",color:"#4A5E78",fontSize:10,cursor:"pointer",textDecoration:"underline",padding:0,fontFamily:"Barlow Condensed,sans-serif"}}>change password</button>
+
               </div>
             </div>
           ))}
@@ -1374,15 +1375,17 @@ function PitchHome({ onEnter, user, onLogout }) {
                 <button onClick={()=>{setForgotMode(true);setForgotStep('email');setForgotEmail("");setForgotCode("");setEnterErr("");}}
                   style={{background:"none",border:"none",color:"#FF3D5A",fontSize:12,cursor:"pointer",textDecoration:"underline"}}>Forgot pitch password?</button>
               </div>
-              <div style={{borderTop:"1px solid #1E2D45",marginTop:16,paddingTop:14,textAlign:"center"}}>
-                <button onClick={()=>{
-                  const pitch = pitches.find(p=>p.id===enterPitchId);
-                  if(pitch){ setEnterPitchId(null); setEnterPw(""); setEnterErr(""); onEnter(pitch, true); }
-                }} style={{background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:"8px 20px",color:"#4A5E78",fontSize:12,cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>
-                  👁 CONTINUE AS GUEST
-                </button>
-                <div style={{fontSize:10,color:"#2D3E52",marginTop:6}}>View only — no editing or transfers</div>
-              </div>
+              {pitches.find(p=>p.id===enterPitchId)?.guestAllowed !== false && (
+                <div style={{borderTop:"1px solid #1E2D45",marginTop:16,paddingTop:14,textAlign:"center"}}>
+                  <button onClick={()=>{
+                    const pitch = pitches.find(p=>p.id===enterPitchId);
+                    if(pitch){ setEnterPitchId(null); setEnterPw(""); setEnterErr(""); onEnter(pitch, true); }
+                  }} style={{background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:"8px 20px",color:"#4A5E78",fontSize:12,cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>
+                    👁 CONTINUE AS GUEST
+                  </button>
+                  <div style={{fontSize:10,color:"#2D3E52",marginTop:6}}>View only — no editing or transfers</div>
+                </div>
+              )}
             </> : <>
               {forgotStep==='email' ? <>
                 <div style={{fontSize:13,color:"#4A5E78",textAlign:"center",marginBottom:20}}>Enter the admin email to receive a reset code</div>
@@ -4193,6 +4196,29 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
                 {pendingVote && <span style={{width:8,height:8,background:"#FF3D5A",borderRadius:"50%",flexShrink:0}} />}
               </button>
 
+              {/* Guest Access toggle */}
+              <div style={{padding:"8px 14px 0"}}>
+                <button onClick={()=>withPassword(async()=>{
+                  const cur = pitch?.guestAllowed;
+                  const nowAllowed = cur === false ? true : false;
+                  // Update pitch in Supabase via PitchHome's sbSet — use storeSet on pitches key
+                  const pws = await sbGet("pitches") || [];
+                  const updated = pws.map(p=>p.id===pitch.id?{...p,guestAllowed:nowAllowed}:p);
+                  await sbSet("pitches", updated);
+                  // Reflect in current pitch object
+                  pitch.guestAllowed = nowAllowed;
+                  alert("Guest access " + (nowAllowed?"enabled":"disabled") + " for this pitch.");
+                })}
+                style={{width:"100%",background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:"10px 14px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:10,fontFamily:"Barlow Condensed,sans-serif"}}>
+                  <span style={{fontSize:16}}>{pitch?.guestAllowed===false?"🚫":"👁"}</span>
+                  <div style={{flex:1}}>
+                    <div style={{fontWeight:700,fontSize:13,color:pitch?.guestAllowed===false?"#FF3D5A":"#2ECC71"}}>
+                      {pitch?.guestAllowed===false?"Guest Access OFF":"Guest Access ON"}
+                    </div>
+                    <div style={{fontSize:10,color:"#4A5E78",marginTop:1}}>Toggle whether guests can view this pitch</div>
+                  </div>
+                </button>
+              </div>
               <div style={{padding:"16px",borderTop:"1px solid #1E2D45"}}>
                 <button onClick={onLogout} style={{width:"100%",background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:8,padding:"10px",color:"#FF3D5A",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>LOGOUT</button>
               </div>
