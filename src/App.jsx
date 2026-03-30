@@ -1732,6 +1732,16 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
     longestSix:50, captainMult:2, vcMult:1.5
   }); // loaded from supabase
   const [showRulesPanel, setShowRulesPanel] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatMaximized, setChatMaximized] = useState(false);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatInput, setChatInput] = useState('');
+  const [chatUnread, setChatUnread] = useState(0);
+  const [chatLastSeen, setChatLastSeen] = useState(() => { try { return parseInt(localStorage.getItem('tb_chatLastSeen')||'0'); } catch { return 0; } });
+  const [chatMentionDropdown, setChatMentionDropdown] = useState(false);
+  const [pinnedMessage, setPinnedMessage] = useState(null);
+  const chatEndRef = React.useRef(null);
+  const chatPollRef = React.useRef(null);
   const [guestAllowed, setGuestAllowed] = useState(() => pitch?.guestAllowed !== false);
   const [votePin, setVotePin] = useState('');
   const [votePinErr, setVotePinErr] = useState(''); // {pid, fromTeamId}
@@ -2003,6 +2013,100 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
       alert("CricketData player fetch coming soon — use Cricbuzz for now.");
     }
   };
+
+
+  // ── CHAT ─────────────────────────────────────────────────────────────────
+  const loadChat = async () => {
+    const data = await storeGet("chat") || {};
+    const msgs = data.messages || [];
+    const pinned = data.pinned || null;
+    setChatMessages(msgs);
+    setPinnedMessage(pinned);
+    // Count unread
+    const unread = msgs.filter(m => m.ts > chatLastSeen && m.senderId !== myTeam?.id).length;
+    setChatUnread(unread);
+  };
+
+  const sendChatMessage = async () => {
+    if (!chatInput.trim() || !myTeam) return;
+    if (chatInput.length > 200) { alert("Max 200 characters"); return; }
+    const msg = {
+      id: Date.now().toString(),
+      text: chatInput.trim(),
+      senderId: myTeam.id,
+      senderName: myTeam.name,
+      senderColor: myTeam.color,
+      ts: Date.now(),
+      reactions: {},
+      mentions: [],
+    };
+    // Extract @mentions
+    const mentionMatches = chatInput.match(/@(\S+)/g) || [];
+    msg.mentions = mentionMatches.map(m => m.slice(1).trim());
+
+    const data = await storeGet("chat") || {};
+    const msgs = [...(data.messages || []), msg].slice(-50); // keep last 50
+    await storeSet("chat", {...data, messages: msgs});
+    setChatMessages(msgs);
+    setChatInput('');
+    setChatMentionDropdown(false);
+    setTimeout(() => chatEndRef.current?.scrollIntoView({behavior:'smooth'}), 50);
+  };
+
+  const addReaction = async (msgId, emoji) => {
+    const data = await storeGet("chat") || {};
+    const msgs = (data.messages || []).map(m => {
+      if (m.id !== msgId) return m;
+      const reactions = {...(m.reactions||{})};
+      const key = emoji;
+      const users = reactions[key] || [];
+      if (users.includes(myTeam?.id)) {
+        reactions[key] = users.filter(u => u !== myTeam?.id);
+        if (!reactions[key].length) delete reactions[key];
+      } else {
+        reactions[key] = [...users, myTeam?.id];
+      }
+      return {...m, reactions};
+    });
+    await storeSet("chat", {...data, messages: msgs});
+    setChatMessages(msgs);
+  };
+
+  const deleteMessage = async (msgId, isAdmin) => {
+    const data = await storeGet("chat") || {};
+    const msgs = (data.messages || []).filter(m => m.id !== msgId);
+    await storeSet("chat", {...data, messages: msgs});
+    setChatMessages(msgs);
+  };
+
+  const pinMessage = async (msg) => {
+    const data = await storeGet("chat") || {};
+    const newPinned = pinnedMessage?.id === msg.id ? null : msg;
+    await storeSet("chat", {...data, pinned: newPinned});
+    setPinnedMessage(newPinned);
+  };
+
+  const markChatRead = () => {
+    const now = Date.now();
+    setChatLastSeen(now);
+    setChatUnread(0);
+    try { localStorage.setItem('tb_chatLastSeen', now.toString()); } catch {}
+  };
+
+  // Poll chat every 15s
+  React.useEffect(() => {
+    loadChat();
+    chatPollRef.current = setInterval(loadChat, 15000);
+    return () => clearInterval(chatPollRef.current);
+  }, []);
+
+  // Auto-scroll on open
+  React.useEffect(() => {
+    if (chatOpen) {
+      markChatRead();
+      setTimeout(() => chatEndRef.current?.scrollIntoView({behavior:'smooth'}), 100);
+    }
+  }, [chatOpen, chatMessages.length]);
 
   const nav=(pg)=>{setPage(pg);storeSet("page",pg);};
   const upd=(setter,key)=>(val)=>{setter(val);storeSet(key,val);};
@@ -4086,6 +4190,165 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
             </div>
           </div>
         )}
+
+        {/* ── CHAT WINDOW ── */}
+        <div style={{position:"fixed",bottom:20,left:20,zIndex:500,fontFamily:"Barlow Condensed,sans-serif"}}>
+
+          {/* Chat toggle button */}
+          {!chatOpen && (
+            <button onClick={()=>{setChatOpen(true);markChatRead();}}
+              style={{width:52,height:52,borderRadius:"50%",background:"linear-gradient(135deg,#4F8EF7,#1a5fb4)",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 16px rgba(79,142,247,0.4)",position:"relative"}}>
+              <span style={{fontSize:22}}>💬</span>
+              {chatUnread > 0 && (
+                <span style={{position:"absolute",top:-2,right:-2,background:"#FF3D5A",borderRadius:"50%",width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"#fff"}}>{chatUnread > 9 ? "9+" : chatUnread}</span>
+              )}
+            </button>
+          )}
+
+          {/* Chat window */}
+          {chatOpen && (
+            <div style={{
+              width: chatMaximized ? "min(520px,90vw)" : "min(320px,85vw)",
+              height: chatMaximized ? "min(600px,80vh)" : "min(420px,60vh)",
+              background:"#0E1521",
+              borderRadius:16,
+              border:"1px solid #4F8EF744",
+              display:"flex",
+              flexDirection:"column",
+              boxShadow:"0 8px 32px rgba(0,0,0,0.6)",
+              overflow:"hidden",
+              transition:"all 0.2s",
+            }}>
+
+              {/* Header */}
+              <div style={{background:"linear-gradient(135deg,#4F8EF722,#1a5fb422)",borderBottom:"1px solid #4F8EF733",padding:"10px 14px",display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontSize:16}}>💬</span>
+                <div style={{flex:1,fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:15,color:"#4F8EF7",letterSpacing:1}}>PITCH CHAT</div>
+                <button onClick={()=>setChatMaximized(v=>!v)} style={{background:"transparent",border:"none",color:"#4A5E78",cursor:"pointer",fontSize:14,padding:"2px 6px"}}>{chatMaximized?"⊡":"⊞"}</button>
+                <button onClick={()=>setChatOpen(false)} style={{background:"transparent",border:"none",color:"#4A5E78",cursor:"pointer",fontSize:16,padding:"2px 6px"}}>✕</button>
+              </div>
+
+              {/* Pinned message */}
+              {pinnedMessage && (
+                <div style={{background:"#F5A62311",borderBottom:"1px solid #F5A62322",padding:"6px 14px",display:"flex",alignItems:"center",gap:6}}>
+                  <span style={{fontSize:11}}>📌</span>
+                  <div style={{flex:1,fontSize:11,color:"#F5A623",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{pinnedMessage.senderName}: {pinnedMessage.text}</div>
+                  {unlocked && <button onClick={()=>pinMessage(pinnedMessage)} style={{background:"transparent",border:"none",color:"#4A5E78",cursor:"pointer",fontSize:10}}>✕</button>}
+                </div>
+              )}
+
+              {/* Messages */}
+              <div style={{flex:1,overflowY:"auto",padding:"10px 12px",display:"flex",flexDirection:"column",gap:8}}>
+                {chatMessages.length === 0 && (
+                  <div style={{textAlign:"center",color:"#2D3E52",fontSize:13,marginTop:40}}>No messages yet. Say hello! 👋</div>
+                )}
+                {chatMessages.map(msg => {
+                  const isMe = msg.senderId === myTeam?.id;
+                  const isMentioned = msg.mentions?.some(m => teams.find(t=>t.id===myTeam?.id&&t.name.toLowerCase().includes(m.toLowerCase())));
+                  // Render text with @mentions highlighted
+                  const renderText = (text) => {
+                    const parts = text.split(/(@\S+)/g);
+                    return parts.map((part, i) => {
+                      if (part.startsWith('@')) {
+                        const tName = part.slice(1);
+                        const t = teams.find(t=>t.name.toLowerCase().includes(tName.toLowerCase()));
+                        return <span key={i} style={{color:t?t.color:"#4F8EF7",fontWeight:700}}>{part}</span>;
+                      }
+                      return <span key={i}>{part}</span>;
+                    });
+                  };
+                  return (
+                    <div key={msg.id} style={{display:"flex",flexDirection:"column",alignItems:isMe?"flex-end":"flex-start"}}>
+                      <div style={{
+                        maxWidth:"80%",
+                        background:isMentioned?"#F5A62322":isMe?"#4F8EF722":"#141E2E",
+                        border:"1px solid "+(isMentioned?"#F5A62344":isMe?"#4F8EF744":"#1E2D45"),
+                        borderRadius:isMe?"12px 12px 4px 12px":"12px 12px 12px 4px",
+                        padding:"7px 10px",
+                      }}>
+                        {!isMe && <div style={{fontSize:10,color:msg.senderColor||"#4F8EF7",fontWeight:700,marginBottom:3}}>{msg.senderName}</div>}
+                        <div style={{fontSize:13,color:"#E2EAF4",lineHeight:1.4}}>{renderText(msg.text)}</div>
+                        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:4,gap:6}}>
+                          <div style={{fontSize:9,color:"#2D3E52"}}>{new Date(msg.ts).toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"})}</div>
+                          <div style={{display:"flex",gap:3}}>
+                            {/* Reactions */}
+                            {Object.entries(msg.reactions||{}).map(([emoji,users])=>(
+                              <button key={emoji} onClick={()=>addReaction(msg.id,emoji)}
+                                style={{background:users.includes(myTeam?.id)?"#4F8EF733":"#1E2D45",border:"none",borderRadius:10,padding:"1px 6px",cursor:"pointer",fontSize:11,color:"#E2EAF4"}}>
+                                {emoji} {users.length}
+                              </button>
+                            ))}
+                            {/* Add reaction */}
+                            {["👍","🔥","😂","💀","🏏"].map(emoji=>(
+                              <button key={emoji} onClick={()=>addReaction(msg.id,emoji)}
+                                style={{background:"transparent",border:"none",cursor:"pointer",fontSize:11,opacity:0.4,padding:"1px 2px"}}>
+                                {emoji}
+                              </button>
+                            ))}
+                            {/* Delete */}
+                            {(isMe || unlocked) && (
+                              <button onClick={()=>withPassword(()=>deleteMessage(msg.id))}
+                                style={{background:"transparent",border:"none",color:"#FF3D5A",cursor:"pointer",fontSize:10,opacity:0.5,padding:"1px 4px"}}>✕</button>
+                            )}
+                            {/* Pin (admin) */}
+                            {unlocked && (
+                              <button onClick={()=>withPassword(()=>pinMessage(msg))}
+                                style={{background:"transparent",border:"none",color:"#F5A623",cursor:"pointer",fontSize:10,opacity:0.5,padding:"1px 4px"}}>📌</button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                <div ref={chatEndRef} />
+              </div>
+
+              {/* Input */}
+              {myTeam && !isGuest ? (
+                <div style={{borderTop:"1px solid #1E2D45",padding:"8px 10px"}}>
+                  {/* @mention dropdown */}
+                  {chatMentionDropdown && (
+                    <div style={{background:"#141E2E",border:"1px solid #1E2D45",borderRadius:8,marginBottom:6,overflow:"hidden"}}>
+                      {teams.map(t=>(
+                        <button key={t.id} onClick={()=>{
+                          const lastAt = chatInput.lastIndexOf('@');
+                          setChatInput(chatInput.slice(0,lastAt)+'@'+t.name+' ');
+                          setChatMentionDropdown(false);
+                        }} style={{width:"100%",background:"transparent",border:"none",padding:"7px 12px",textAlign:"left",cursor:"pointer",color:t.color,fontSize:13,fontWeight:700,fontFamily:"Barlow Condensed,sans-serif"}}>
+                          @{t.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <div style={{display:"flex",gap:6}}>
+                    <input value={chatInput}
+                      onChange={e=>{
+                        const val = e.target.value;
+                        setChatInput(val);
+                        // Show mention dropdown when @ is typed
+                        const lastAt = val.lastIndexOf('@');
+                        if(lastAt >= 0 && lastAt === val.length-1) setChatMentionDropdown(true);
+                        else setChatMentionDropdown(false);
+                      }}
+                      onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendChatMessage();}}}
+                      placeholder={"Message as "+myTeam.name+"..."}
+                      maxLength={200}
+                      style={{flex:1,background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"8px 10px",color:"#E2EAF4",fontSize:13,fontFamily:"Barlow Condensed,sans-serif",outline:"none"}} />
+                    <button onClick={sendChatMessage}
+                      style={{background:"#4F8EF7",border:"none",borderRadius:8,padding:"8px 12px",color:"#fff",cursor:"pointer",fontSize:14}}>➤</button>
+                  </div>
+                  <div style={{fontSize:9,color:"#2D3E52",marginTop:4,textAlign:"right"}}>{chatInput.length}/200</div>
+                </div>
+              ) : (
+                <div style={{borderTop:"1px solid #1E2D45",padding:"10px",textAlign:"center",fontSize:11,color:"#2D3E52"}}>
+                  {isGuest ? "👁 Guests can read but not send messages" : "Claim a team to chat"}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
 
         {/* SNATCH PIN MODAL */}
         {snatchPinModal && (
