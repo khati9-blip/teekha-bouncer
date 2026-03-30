@@ -1937,11 +1937,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
         const id = m?.matchId || m?.matchInfo?.matchId || m?.id;
         if (id) liveMap[String(id)] = m;
       });
-      // Debug alert for first CD refresh with live data
-      if (liveMatches.length > 0) {
-        const sample = liveMatches[0];
-        alert("Live matches found: " + liveMatches.length + "\nSample ID fields: matchId=" + sample?.matchId + " id=" + sample?.id + "\nStored IDs: " + matches.map(m=>m.cricbuzzId).join(", "));
-      }
+
 
 
 
@@ -4282,6 +4278,47 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
                     style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:11,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:15,cursor:"pointer"}}>FETCH SQUADS</button>
                 )}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* CAPTAIN PICKER MODAL */}
+        {captainMatch && (
+          <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.96)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,padding:16,fontFamily:"Barlow Condensed,sans-serif"}}>
+            <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #1E2D45",padding:24,width:"100%",maxWidth:480,maxHeight:"85vh",overflowY:"auto"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:"#F5A623",letterSpacing:2}}>👑 SET C / VC</div>
+                <button onClick={()=>setCaptainMatch(null)} style={{background:"transparent",border:"none",color:"#4A5E78",fontSize:18,cursor:"pointer"}}>✕</button>
+              </div>
+              <div style={{fontSize:12,color:"#4A5E78",marginBottom:16}}>M{captainMatch.matchNum} — {captainMatch.team1} vs {captainMatch.team2}</div>
+              {teams.map(team => {
+                const cap = captains[captainMatch.id+"_"+team.id] || {};
+                const teamPlayers = players.filter(p => assignments[p.id] === team.id);
+                return (
+                  <div key={team.id} style={{background:"#0E1521",borderRadius:10,border:"1px solid "+team.color+"33",padding:14,marginBottom:10}}>
+                    <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:14,color:team.color,marginBottom:10}}>{team.name}</div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                      {["captain","vc"].map(role => (
+                        <div key={role}>
+                          <div style={{fontSize:10,color:"#4A5E78",letterSpacing:1,marginBottom:6}}>{role==="captain"?"⭐ CAPTAIN (2×)":"🥈 VICE CAPTAIN (1.5×)"}</div>
+                          <select value={cap[role]||""} onChange={e=>{
+                            const newCap = {...cap,[role]:e.target.value};
+                            const key = captainMatch.id+"_"+team.id;
+                            const updated = {...captains,[key]:newCap};
+                            updCaptains(updated);
+                          }} style={{width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"7px 10px",color:"#E2EAF4",fontSize:13,fontFamily:"Barlow Condensed,sans-serif",cursor:"pointer",outline:"none"}}>
+                            <option value="">— None —</option>
+                            {teamPlayers.map(p => (
+                              <option key={p.id} value={p.id} disabled={role==="vc"&&cap.captain===p.id||role==="captain"&&cap.vc===p.id}>{p.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+              <button onClick={()=>setCaptainMatch(null)} style={{width:"100%",background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:10,padding:12,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:15,cursor:"pointer",marginTop:4}}>SAVE & CLOSE</button>
             </div>
           </div>
         )}
