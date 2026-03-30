@@ -2041,7 +2041,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
       mentions: [],
     };
     // Extract @mentions
-    const mentionMatches = chatInput.match(/@(\S+)/g) || [];
+    const mentionMatches = chatInput.split(' ').filter(w=>w.startsWith('@')) || [];
     msg.mentions = mentionMatches.map(m => m.slice(1).trim());
 
     const data = await storeGet("chat") || {};
@@ -4247,7 +4247,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
                   const isMentioned = msg.mentions?.some(m => teams.find(t=>t.id===myTeam?.id&&t.name.toLowerCase().includes(m.toLowerCase())));
                   // Render text with @mentions highlighted
                   const renderText = (text) => {
-                    const parts = text.split(/(@\S+)/g);
+                    const parts = text.split(/([@][^\s]+)/g);
                     return parts.map((part, i) => {
                       if (part.startsWith('@')) {
                         const tName = part.slice(1);
