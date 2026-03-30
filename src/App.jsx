@@ -1938,6 +1938,13 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
         if (id) liveMap[String(id)] = m;
       });
 
+      // Show live IDs in alert for debugging
+      const liveIds = Object.keys(liveMap);
+      const storedIds = matches.map(m=>String(m.cricbuzzId)).filter(Boolean);
+      if (liveIds.length > 0 || liveMatches.length > 0) {
+        alert("Live from CD: [" + liveIds.join(", ") + "]\nStored IDs: [" + storedIds.join(", ") + "]\nRaw sample: " + JSON.stringify(liveMatches[0]||{}).slice(0,200));
+      }
+
 
 
       // Update match statuses using cricbuzzId (same IDs across both sources)
