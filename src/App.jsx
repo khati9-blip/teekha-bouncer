@@ -4387,6 +4387,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
         </div>
       </div>
     </div>
+  </div>
 
     </>
   );
