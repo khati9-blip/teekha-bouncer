@@ -612,7 +612,7 @@ function SmartStatsModal({ match, players, assignments, existingStats, onSave, o
 
       // CricketData scorecard structure
       const scorecard = data?.response?.scorecard || data?.scorecard || [];
-      if (!scorecard.length) { setFetchStatus("❌ No scorecard. Raw keys: " + Object.keys(data?.response||data||{}).join(", ") + " | Sample: " + JSON.stringify(data).slice(0,150)); setFetching(false); return; }
+      if (!scorecard.length) { alert("Raw CD response: " + JSON.stringify(data).slice(0,300) + "\n\nMatchId used: " + match.cricbuzzId); setFetchStatus("❌ No scorecard data"); setFetching(false); return; }
 
       const nameToPlayer = {};
       matchPlayers.forEach(p => {
