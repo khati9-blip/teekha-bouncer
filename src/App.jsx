@@ -1912,11 +1912,16 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
     setLoading("Fetching from CricketData for " + tournamentName + "…");
     try {
       // First fetch series to understand structure
-      const [scheduleRes, seriesRes, liveRes] = await Promise.all([
-        fetch("/api/cricketdata?path=cricket-schedule").then(r=>r.json()).catch(()=>({})),
-        fetch("/api/cricketdata?path=cricket-series").then(r=>r.json()).catch(()=>({})),
-        fetch("/api/cricketdata?path=cricket-livescores").then(r=>r.json()).catch(()=>({})),
+      const fetchWithTimeout = (url, ms=8000) => {
+        const controller = new AbortController();
+        const timer = setTimeout(()=>controller.abort(), ms);
+        return fetch(url, {signal:controller.signal}).then(r=>r.json()).catch(()=>({})).finally(()=>clearTimeout(timer));
+      };
+      const [scheduleRes, liveRes] = await Promise.all([
+        fetchWithTimeout("/api/cricketdata?path=cricket-schedule"),
+        fetchWithTimeout("/api/cricketdata?path=cricket-livescores"),
       ]);
+      const seriesRes = {};
 
       // Parse matches from CricketData schedule structure:
       // response.schedules[].scheduleAdWrapper.matchScheduleList[].{seriesName, matchInfo[]}
@@ -1933,16 +1938,16 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
         if (id) liveMap[String(id)] = m;
       });
 
-      // Debug: log live IDs vs stored IDs
-      console.log("Live IDs from CD:", Object.keys(liveMap));
-      console.log("Stored cricbuzzIds:", matches.map(m=>String(m.cricbuzzId)));
-      console.log("Live raw sample:", JSON.stringify(liveMatches[0]||{}).slice(0,300));
 
-      // Also update existing matches that are live right now
+
+      // Update match statuses using cricbuzzId (same IDs across both sources)
       const updatedExisting = matches.map(m => {
         if (m.status === "completed") return m;
         const lm = liveMap[String(m.cricbuzzId)];
-        if (lm) return {...m, status: "live"};
+        if (lm) {
+          const isComplete = lm?.matchStatus === "complete" || lm?.status === "Complete";
+          return {...m, status: isComplete ? "completed" : "live"};
+        }
         return m;
       });
       if (JSON.stringify(updatedExisting) !== JSON.stringify(matches)) {
@@ -1985,13 +1990,14 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
 
       found.forEach(({ info: m, live }) => {
         if (!m?.matchId) return;
-        const existing = updated.find(x => x.cricbuzzId === m.matchId);
+        const existing = updated.find(x => x.cdMatchId === m.matchId || x.cricbuzzId === m.matchId);
         const isLive = !!live;
         const isComplete = m?.status === "Complete" || m?.matchStatus === "complete";
         const status = isComplete ? "completed" : isLive ? "live" : "upcoming";
 
         if (existing) {
           existing.status = existing.status === "completed" ? "completed" : status;
+          if (!existing.cdMatchId) existing.cdMatchId = m.matchId;
         } else if (!existingIds.has(m.matchId)) {
           updated.push({
             id: "cd_" + m.matchId,
