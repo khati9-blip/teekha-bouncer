@@ -1828,6 +1828,10 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
     longestSix:50, captainMult:2, vcMult:1.5
   }); // loaded from supabase
   const [showRulesPanel, setShowRulesPanel] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifLastRead, setNotifLastRead] = useState(() => { try { return parseInt(localStorage.getItem('tb_notifLastRead')||'0'); } catch { return 0; } });
+  const [broadcastInput, setBroadcastInput] = useState('');
   const [votePin, setVotePin] = useState('');
   const [votePinErr, setVotePinErr] = useState(''); // {pid, fromTeamId}
   const [snatchPin, setSnatchPin] = useState('');
@@ -2096,6 +2100,47 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
     }
   };
 
+
+  // ── NOTIFICATIONS ─────────────────────────────────────────────────────────
+  const pushNotif = async (type, text, emoji) => {
+    const data = await storeGet("notifications") || {};
+    const existing = data.list || [];
+    const notif = { id: Date.now().toString(), type, text, emoji: emoji||"🔔", ts: Date.now() };
+    const updated = [...existing, notif].slice(-30);
+    await storeSet("notifications", {list: updated});
+    setNotifications(updated);
+  };
+
+  const loadNotifications = async () => {
+    const data = await storeGet("notifications") || {};
+    setNotifications(data.list || []);
+  };
+
+  const markNotifsRead = () => {
+    const now = Date.now();
+    setNotifLastRead(now);
+    try { localStorage.setItem('tb_notifLastRead', now.toString()); } catch {}
+  };
+
+  const clearNotifications = async () => {
+    await storeSet("notifications", {list: []});
+    setNotifications([]);
+  };
+
+  const broadcastNotif = async () => {
+    if (!broadcastInput.trim()) return;
+    await pushNotif("broadcast", broadcastInput.trim(), "📢");
+    setBroadcastInput('');
+  };
+
+  React.useEffect(() => {
+    loadNotifications();
+    const t = setInterval(loadNotifications, 30000);
+    return () => clearInterval(t);
+  }, []);
+
+  const unreadNotifCount = notifications.filter(n => n.ts > notifLastRead).length;
+
   const nav=(pg)=>{setPage(pg);storeSet("page",pg);};
   const upd=(setter,key)=>(val)=>{setter(val);storeSet(key,val);};
   const updTeams=upd(setTeams,"teams"),updAssign=upd(setAssignments,"assignments"),
@@ -2160,6 +2205,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
   const openReleaseWindow = () => withPassword(() => {
     const updated = {...transfers, phase:'release', weekNum: transfers.weekNum};
     updTransfers(updated);
+    pushNotif('transfer', 'Transfer window opened — release your players now', '📤');
     alert("✅ Release window is now OPEN. Teams can release up to 3 players until Monday 11 AM.");
   });
 
@@ -2297,6 +2343,10 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
     updSnatch({...snatch, active, weekNum: snatch.weekNum});
     setSnatchPinModal(null);
     alert("Snatch activated! Player moves to " + (teams.find(t=>t.id===byTeamId)?.name) + " until Friday 11:58 PM.");
+    const sp = players.find(x=>x.id===pid);
+    const bt = teams.find(t=>t.id===byTeamId);
+    const ft = teams.find(t=>t.id===fromTeamId);
+    pushNotif('snatch', (bt?.name||'A team') + ' snatched ' + (sp?.name||'a player') + ' from ' + (ft?.name||''), '⚡');
   };
 
   const returnSnatched = () => withPassword(() => {
@@ -2854,6 +2904,9 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
         const a = {...assignments, [pid]: fromTeamId};
         updAssign(a);
         updSnatch({...snatch, active: null, history: newHistory, weekNum: snatch.weekNum + 1});
+        const rp = players.find(x=>x.id===pid);
+        const rt = teams.find(t=>t.id===fromTeamId);
+        pushNotif('snatch', (rp?.name||'Player') + ' returned to ' + (rt?.name||'original team'), '↩️');
       }
     };
     check();
@@ -2966,6 +3019,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
             }
             updPoints(newPts);
             setSmartStatsMatch(null);
+            pushNotif("stats", "Match "+smartStatsMatch.matchNum+" stats synced — points updated", "📊");
             alert("✅ Points saved for " + statsList.length + " players!");
           }}
           onClose={()=>setSmartStatsMatch(null)}
@@ -2981,7 +3035,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
               <span style={{display:"block",width:20,height:2,background:"#E2EAF4",borderRadius:2}} />
               <span style={{display:"block",width:20,height:2,background:"#E2EAF4",borderRadius:2}} />
               <span style={{display:"block",width:20,height:2,background:"#E2EAF4",borderRadius:2}} />
-              {pendingVote && <span style={{position:"absolute",top:2,right:2,width:8,height:8,background:"#FF3D5A",borderRadius:"50%"}} />}
+              {(pendingVote || unreadNotifCount > 0) && <span style={{position:"absolute",top:2,right:2,width:8,height:8,background:"#FF3D5A",borderRadius:"50%"}} />}
             </button>
             <div style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={onLeave} title="Back to pitches">
             <img src="/logo.png" alt="Teekha Bouncer" style={{height:36,width:36,objectFit:"contain",borderRadius:6}} />
@@ -4229,6 +4283,49 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
                     <div style={{fontSize:11,color:"#4A5E78",marginTop:1}}>Compare two teams across matches</div>
                   </div>
                 </button>
+
+                {/* Notifications */}
+                <div style={{marginTop:4}}>
+                  <button onClick={()=>{setNotifOpen(o=>!o);if(!notifOpen)markNotifsRead();}} style={{width:"100%",background:"transparent",border:"none",padding:"10px 14px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12}}>
+                    <span style={{fontSize:20,position:"relative"}}>
+                      🔔
+                      {unreadNotifCount>0 && <span style={{position:"absolute",top:-4,right:-4,background:"#FF3D5A",borderRadius:"50%",width:14,height:14,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,fontWeight:700,color:"#fff"}}>{unreadNotifCount}</span>}
+                    </span>
+                    <div style={{flex:1}}>
+                      <div style={{fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,color:"#E2EAF4"}}>Notifications</div>
+                      <div style={{fontSize:11,color:"#4A5E78",marginTop:1}}>{unreadNotifCount>0?unreadNotifCount+" unread":"All caught up"}</div>
+                    </div>
+                    <span style={{color:"#4A5E78",fontSize:11}}>{notifOpen?"▲":"▼"}</span>
+                  </button>
+                  {notifOpen && (
+                    <div style={{background:"#080C14",borderRadius:10,margin:"0 8px 8px",border:"1px solid #1E2D45",maxHeight:280,overflowY:"auto"}}>
+                      {notifications.length===0 && <div style={{padding:16,textAlign:"center",color:"#2D3E52",fontSize:12}}>No notifications yet</div>}
+                      {[...notifications].reverse().map(n=>(
+                        <div key={n.id} style={{padding:"10px 14px",borderBottom:"1px solid #1E2D4433",background:n.ts>notifLastRead?"#F5A62308":"transparent"}}>
+                          <div style={{display:"flex",alignItems:"flex-start",gap:8}}>
+                            <span style={{fontSize:14,flexShrink:0}}>{n.emoji}</span>
+                            <div style={{flex:1}}>
+                              <div style={{fontSize:12,color:"#E2EAF4",lineHeight:1.4}}>{n.text}</div>
+                              <div style={{fontSize:10,color:"#2D3E52",marginTop:3}}>{new Date(n.ts).toLocaleString("en-IN",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</div>
+                            </div>
+                            {n.ts>notifLastRead && <span style={{width:6,height:6,borderRadius:"50%",background:"#F5A623",flexShrink:0,marginTop:4}} />}
+                          </div>
+                        </div>
+                      ))}
+                      {unlocked && (
+                        <div style={{padding:"8px 10px",borderTop:"1px solid #1E2D45"}}>
+                          <div style={{display:"flex",gap:6,marginBottom:6}}>
+                            <input value={broadcastInput} onChange={e=>setBroadcastInput(e.target.value)} placeholder="Broadcast message..."
+                              onKeyDown={e=>e.key==="Enter"&&broadcastNotif()}
+                              style={{flex:1,background:"#141E2E",border:"1px solid #1E2D45",borderRadius:6,padding:"6px 10px",color:"#E2EAF4",fontSize:12,fontFamily:"Barlow Condensed,sans-serif",outline:"none"}} />
+                            <button onClick={broadcastNotif} style={{background:"#F5A62322",border:"1px solid #F5A62344",color:"#F5A623",borderRadius:6,padding:"5px 8px",cursor:"pointer",fontSize:12,fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>📢</button>
+                          </div>
+                          <button onClick={()=>withPassword(clearNotifications)} style={{width:"100%",background:"transparent",border:"1px solid #1E2D45",borderRadius:6,padding:"5px",color:"#4A5E78",fontSize:11,cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif"}}>Clear all notifications</button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
 
                 {/* Team IDs - collapsible */}
                 <div style={{marginTop:8,paddingTop:8,borderTop:"1px solid #1E2D45"}}>
