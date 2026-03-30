@@ -582,7 +582,7 @@ function EditPlayerModal({ player, onSave, onAdd, onClose }) {
 
 
 // ── SMART STATS MODAL (Cricbuzz auto-fill + manual edit) ────────────────────
-function SmartStatsModal({ match, players, assignments, existingStats, onSave, onClose }) {
+function SmartStatsModal({ match, players, assignments, existingStats, onSave, onClose, pointsConfig }) {
   const matchPlayers = players.filter(p => assignments[p.id]);
   const emptyStats = (p) => ({ runs:0, balls:0, fours:0, sixes:0, wickets:0, economy:"", overs:0, maidens:0, catches:0, stumpings:0, runouts:0, longestSix:false, mom:false, playingXI:false, dismissed:false, played:false });
 
@@ -859,10 +859,7 @@ function SmartStatsModal({ match, players, assignments, existingStats, onSave, o
               style={{background:"linear-gradient(135deg,#4F8EF7,#1a5fb4)",border:"none",borderRadius:8,padding:"9px 18px",color:"#fff",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:fetching?"not-allowed":"pointer",opacity:fetching?0.6:1,letterSpacing:1}}>
               {fetching?"⏳ FETCHING…":"🟠 CRICBUZZ"}
             </button>
-            <button onClick={fetchFromCricketData} disabled={fetching}
-              style={{background:"linear-gradient(135deg,#2ECC71,#16a34a)",border:"none",borderRadius:8,padding:"9px 18px",color:"#fff",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:fetching?"not-allowed":"pointer",opacity:fetching?0.6:1,letterSpacing:1}}>
-              {fetching?"⏳ FETCHING…":"🟢 CRICKETDATA"}
-            </button>
+            <span style={{fontSize:11,color:"#4A5E78",padding:"4px 0"}}>🔄 Cricbuzz resets April 1st</span>
             {fetchStatus && <span style={{fontSize:12,color:fetchStatus.startsWith("✅")?"#2ECC71":fetchStatus.startsWith("❌")?"#FF3D5A":"#F5A623"}}>{fetchStatus}</span>}
           </div>
         </div>
@@ -978,9 +975,9 @@ function SmartStatsModal({ match, players, assignments, existingStats, onSave, o
               {activeTab==="preview" && (
                 <div style={{marginTop:8}}>
                   <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,marginBottom:10}}>POINTS PREVIEW (before captain multiplier)</div>
-                  {playingPlayers.sort((a,b)=>calcPoints(stats[b.id]||{}, pointsConfig)-calcPoints(stats[a.id]||{}, pointsConfig)).map(p => {
+                  {playingPlayers.sort((a,b)=>calcPoints(stats[b.id]||{}, pointsConfig||DEFAULT_POINTS)-calcPoints(stats[a.id]||{}, pointsConfig||DEFAULT_POINTS)).map(p => {
                     const s = stats[p.id] || {};
-                    const pts = calcPoints(s, pointsConfig);
+                    const pts = calcPoints(s, pointsConfig||DEFAULT_POINTS);
                     const bd = calcBreakdown(s);
                     return (
                       <div key={p.id} style={{background:"#0E1521",borderRadius:8,padding:"10px 14px",marginBottom:6,display:"flex",alignItems:"flex-start",gap:12}}>
@@ -3116,7 +3113,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
           onSave={(updated)=>{const up=players.map(p=>p.id===updated.id?updated:p);setPlayers(up);storeSet("players",up);setEditPlayer(null);}}
           onAdd={(np)=>{const all=[...players,np];setPlayers(all);storeSet("players",all);setEditPlayer(null);}}
           onClose={()=>setEditPlayer(null)} />}
-        {smartStatsMatch&&<SmartStatsModal
+        {smartStatsMatch&&<SmartStatsModal pointsConfig={pointsConfig}
           match={smartStatsMatch}
           players={players}
           assignments={assignments}
