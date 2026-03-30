@@ -3089,6 +3089,233 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
             </div>
           )}
 
+          {page==="transfer" && (
+            <div className="fade-in">
+              <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2,marginBottom:6}}>TRANSFER WINDOW</h2>
+              <div style={{fontSize:13,color:"#4A5E78",marginBottom:20}}>Week {transfers.weekNum} • Status: <span style={{color:transfers.phase==="closed"?"#FF3D5A":transfers.phase==="release"?"#F5A623":transfers.phase==="pick"?"#2ECC71":"#4A5E78",fontWeight:700,textTransform:"uppercase"}}>{transfers.phase}</span></div>
+
+              {/* Admin Controls */}
+              <div style={{background:"#0E1521",borderRadius:12,padding:16,marginBottom:16,border:"1px solid #1E2D45"}}>
+                <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginBottom:12}}>⚙️ ADMIN CONTROLS</div>
+
+                {/* Team Identity Management */}
+                <div style={{background:"#080C14",borderRadius:10,padding:"14px 16px",marginBottom:12,border:"1px solid #1E2D45"}}>
+                  <div style={{fontSize:11,color:"#F5A623",letterSpacing:2,fontWeight:700,marginBottom:10}}>🔑 TEAM IDs</div>
+                  <div style={{fontSize:11,color:"#4A5E78",marginBottom:10}}>Share these codes with each team manager so they can claim their team</div>
+                  {teams.map(t => {
+                    const ti = teamIdentity[t.id] || {};
+                    return (
+                      <div key={t.id} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,padding:"8px 12px",background:"#0E1521",borderRadius:8,border:"1px solid "+t.color+"33"}}>
+                        <div style={{flex:1}}>
+                          <div style={{fontWeight:700,fontSize:13,color:t.color}}>{t.name}</div>
+                          <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>{ti.claimedBy ? "Claimed by "+ti.claimedBy : "Unclaimed"}</div>
+                        </div>
+                        {ti.claimedBy ? (
+                          <span style={{fontSize:11,color:"#2ECC71",fontWeight:700,background:"#2ECC7122",padding:"4px 10px",borderRadius:6}}>✓ CLAIMED</span>
+                        ) : ti.teamId ? (
+                          <div style={{display:"flex",alignItems:"center",gap:6}}>
+                            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:16,fontWeight:800,color:"#F5A623",letterSpacing:2,background:"#F5A62322",padding:"4px 10px",borderRadius:6}}>{ti.teamId}</div>
+                            <button onClick={async()=>{
+                              if(!confirm("Reset Team ID?")) return;
+                              const updated = {...teamIdentity, [t.id]: {teamId: generateTeamId()}};
+                              setTeamIdentity(updated);
+                              await storeSet("teamIdentity", updated);
+                            }} style={{background:"transparent",border:"1px solid #1E2D45",color:"#4A5E78",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:10,fontFamily:"Barlow Condensed,sans-serif"}}>↺</button>
+                          </div>
+                        ) : (
+                          <button onClick={async()=>{
+                            const newId = generateTeamId();
+                            const updated = {...teamIdentity, [t.id]: {...ti, teamId: newId}};
+                            setTeamIdentity(updated);
+                            await storeSet("teamIdentity", updated);
+                          }} style={{background:"#F5A62322",border:"1px solid #F5A62344",color:"#F5A623",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:11,fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>GENERATE</button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                  {transfers.phase==="closed" && <Btn onClick={openReleaseWindow} sx={{fontSize:13}}>📤 OPEN RELEASE WINDOW</Btn>}
+                  {transfers.phase==="release" && <Btn onClick={closeReleaseWindow} variant="blue" sx={{fontSize:13}}>🔒 CLOSE RELEASES & START PICKS</Btn>}
+                  {transfers.phase==="pick" && <Btn onClick={skipCurrentTeam} variant="ghost" sx={{fontSize:13}}>⏭ SKIP CURRENT TEAM</Btn>}
+                  {(transfers.phase==="done"||transfers.phase==="closed") && <Btn onClick={resetTransferWindow} variant="ghost" sx={{fontSize:13}}>🔁 RESET FOR NEXT WEEK</Btn>}
+                  {(transfers.phase==="release"||transfers.phase==="pick") && <Btn onClick={()=>withPassword(()=>{if(!confirm("Cancel transfer window? All releases and picks this week will be discarded."))return;updTransfers({...transfers,phase:"closed",releases:{},picks:[],currentPickTeam:null,pickDeadline:null});alert("Transfer window cancelled.");})  } variant="ghost" sx={{fontSize:13,color:"#FF3D5A"}}>✕ CANCEL WINDOW</Btn>}
+                </div>
+              </div>
+
+              {/* Release Phase */}
+              {(transfers.phase==="release"||transfers.phase==="pick"||transfers.phase==="done") && (
+                <div style={{marginBottom:16}}>
+                  <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginBottom:12}}>TEAM RELEASES</div>
+                  <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                    {teams.map(team=>{
+                      const released = (transfers.releases[team.id]||[]);
+                      const teamPlayers = players.filter(p=>assignments[p.id]===team.id);
+                      return (
+                        <div key={team.id} style={{background:"#0E1521",borderRadius:10,border:"1px solid "+team.color+"33",padding:14}}>
+                          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:released.length>0||transfers.phase==="release"?10:0}}>
+                            <span style={{fontWeight:700,color:team.color,fontFamily:"Rajdhani,sans-serif",fontSize:15}}>{team.name}</span>
+                            <span style={{fontSize:12,color:"#4A5E78"}}>{released.length}/3 released</span>
+                          </div>
+                          {released.length>0 && (
+                            <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:transfers.phase==="release"?10:0}}>
+                              {released.map(pid=>{
+                                const p=players.find(x=>x.id===pid);
+                                return <span key={pid} style={{background:"#FF3D5A22",color:"#FF3D5A",border:"1px solid #FF3D5A44",borderRadius:16,padding:"3px 10px",fontSize:12}}>{p?.name||pid}</span>;
+                              })}
+                            </div>
+                          )}
+                          {transfers.phase==="release" && released.length<3 && (
+                            <div>
+                              <div style={{fontSize:11,color:"#4A5E78",marginBottom:6}}>Select players to release (max 3, safe players excluded):</div>
+                              <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+                                {teamPlayers.filter(p=>!released.includes(p.id)&&!isPlayerSafeForTeam(team.id,p.id)).map(p=>(
+                                  <button key={p.id} onClick={()=>releasePlayer(team.id,p.id)}
+                                    style={{padding:"4px 10px",borderRadius:16,border:"1px solid #1E2D45",background:"transparent",color:"#4A5E78",fontSize:12,fontFamily:"Barlow Condensed,sans-serif",cursor:"pointer"}}>
+                                    📤 {p.name}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Pick Phase */}
+              {transfers.phase==="pick" && (
+                <div>
+                  <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginBottom:12}}>PICK PHASE — UNSOLD POOL</div>
+
+                  {/* Current turn indicator */}
+                  {transfers.currentPickTeam && (() => {
+                    const team = teams.find(t=>t.id===transfers.currentPickTeam);
+                    const deadline = transfers.pickDeadline ? new Date(transfers.pickDeadline) : null;
+                    const minsLeft = deadline ? Math.max(0, Math.round((deadline-Date.now())/60000)) : 0;
+                    return (
+                      <div style={{background:team?.color+"22",border:"1px solid "+(team?.color||"#1E2D45")+"44",borderRadius:10,padding:14,marginBottom:12}}>
+                        <div style={{fontWeight:700,color:team?.color,fontFamily:"Rajdhani,sans-serif",fontSize:18}}>{team?.name}'s TURN</div>
+                        <div style={{fontSize:13,color:"#4A5E78",marginTop:4}}>
+                          ⏱ {minsLeft} minutes remaining •
+                          Can pick: {(transfers.releases[transfers.currentPickTeam]||[]).length - transfers.picks.filter(pk=>pk.teamId===transfers.currentPickTeam).length} player(s)
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Unsold pool to pick from */}
+                  <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                    {unsoldPool.map(pid=>{
+                      const p=players.find(x=>x.id===pid);
+                      if(!p) return null;
+                      return (
+                        <div key={pid} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:"#0E1521",borderRadius:8}}>
+                          <div style={{flex:1}}>
+                            <div style={{fontWeight:700,fontSize:14,color:"#E2EAF4"}}>{p.name}</div>
+                            <div style={{fontSize:12,color:"#4A5E78"}}>{p.iplTeam} • {p.role}</div>
+                          </div>
+                          <button onClick={()=>pickPlayer(pid)}
+                            style={{background:"linear-gradient(135deg,#2ECC71,#16a34a)",border:"none",borderRadius:6,padding:"7px 14px",color:"#fff",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+                            PICK ✓
+                          </button>
+                        </div>
+                      );
+                    })}
+                    {unsoldPool.length===0&&<div style={{textAlign:"center",padding:24,color:"#4A5E78"}}>Unsold pool is empty</div>}
+                  </div>
+                </div>
+              )}
+
+              {transfers.phase==="done" && (
+                <div style={{textAlign:"center",padding:40,background:"#0E1521",borderRadius:12}}>
+                  <div style={{fontSize:48}}>✅</div>
+                  <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,color:"#2ECC71",fontWeight:700,marginTop:8}}>WEEK {transfers.weekNum} TRANSFERS COMPLETE</div>
+                  <div style={{fontSize:13,color:"#4A5E78",marginTop:8}}>{transfers.picks.length} players transferred this week</div>
+                </div>
+              )}
+
+              {transfers.phase==="closed" && transfers.weekNum===1 && (
+                <div style={{textAlign:"center",padding:40,background:"#0E1521",borderRadius:12}}>
+                  <div style={{fontSize:48}}>🔒</div>
+                  <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,color:"#4A5E78",fontWeight:700,marginTop:8}}>TRANSFER WINDOW CLOSED</div>
+                  <div style={{fontSize:13,color:"#4A5E78",marginTop:8}}>Opens Sunday 11:59 PM — Week {transfers.weekNum}</div>
+                </div>
+              )}
+
+              {/* Snatch Power Section */}
+              <div style={{marginTop:24,background:"#0E1521",borderRadius:12,border:"1px solid #A855F744",padding:16}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
+                  <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:18,fontWeight:700,color:"#A855F7",letterSpacing:2}}>⚡ SNATCH POWER</div>
+                  <div style={{fontSize:10,fontWeight:700,color:snatchWindowStatus.open?"#2ECC71":"#FF3D5A",background:snatchWindowStatus.open?"#2ECC7122":"#FF3D5A22",padding:"3px 8px",borderRadius:20,letterSpacing:1}}>{snatchWindowStatus.label}</div>
+                </div>
+                {!snatchWindowStatus.open && <div style={{fontSize:11,color:"#4A5E78",marginBottom:8}}>{snatchWindowStatus.countdown}</div>}
+                <div style={{fontSize:12,color:"#4A5E78",marginBottom:14}}>Week {snatch.weekNum} • #1 team gets to snatch 1 player (Sat 12AM–12PM IST). Returns Friday 11:58 PM.</div>
+
+                {snatch.active ? (
+                  <div>
+                    <div style={{background:"#A855F722",border:"1px solid #A855F744",borderRadius:8,padding:12,marginBottom:12}}>
+                      <div style={{fontSize:11,color:"#A855F7",fontWeight:700,letterSpacing:1,marginBottom:6}}>ACTIVE SNATCH</div>
+                      {(() => {
+                        const p=players.find(x=>x.id===snatch.active.pid);
+                        const byTeam=teams.find(t=>t.id===snatch.active.byTeamId);
+                        const fromTeam=teams.find(t=>t.id===snatch.active.fromTeamId);
+                        const returnDate = "Friday 11:58 PM";
+                        return (
+                          <div>
+                            <div style={{fontSize:13,color:"#E2EAF4",marginBottom:4}}><strong>{p?.name}</strong> snatched by <span style={{color:byTeam?.color,fontWeight:700}}>{byTeam?.name}</span></div>
+                            <div style={{fontSize:11,color:"#4A5E78"}}>From: <span style={{color:fromTeam?.color}}>{fromTeam?.name}</span> • {snatch.active.pointsAtSnatch} pts at snatch • Returns: {returnDate}</div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                    {unlocked && <Btn onClick={returnSnatched} variant="ghost" sx={{fontSize:12}}>↩️ FORCE RETURN (ADMIN)</Btn>}
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{fontSize:13,color:"#E2EAF4",marginBottom:10}}>
+                      Snatch power this week: <span style={{color:leaderboard[0]?.color,fontWeight:700}}>{leaderboard[0]?.name||"—"}</span>
+                    </div>
+                    {snatchWindowStatus.open ? (
+                      <div>
+                        <div style={{fontSize:11,color:"#4A5E78",marginBottom:8}}>⚡ Window is open — {leaderboard[0]?.name} can snatch 1 player now. Safe players excluded.</div>
+                        <div style={{maxHeight:220,overflowY:"auto",display:"flex",flexDirection:"column",gap:5}}>
+                          {players.filter(p=>assignments[p.id]&&assignments[p.id]!==leaderboard[0]?.id&&!isPlayerSafe(p.id)).map(p=>{
+                            const fromTeam=teams.find(t=>t.id===assignments[p.id]);
+                            const isMyTeam = myTeam?.id === leaderboard[0]?.id;
+                            return (
+                              <div key={p.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:"#141E2E",borderRadius:7}}>
+                                <div style={{flex:1}}>
+                                  <div style={{fontWeight:600,fontSize:13,color:"#E2EAF4"}}>{p.name}</div>
+                                  <div style={{fontSize:11,color:fromTeam?.color}}>{fromTeam?.name}</div>
+                                </div>
+                                {isMyTeam ? (
+                                  <button onClick={()=>initiateSnatch(p.id,assignments[p.id])}
+                                    style={{background:"#A855F722",border:"1px solid #A855F744",color:"#A855F7",borderRadius:6,padding:"5px 10px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:12}}>
+                                    ⚡ SNATCH
+                                  </button>
+                                ) : (
+                                  <div style={{fontSize:10,color:"#4A5E78"}}>Only {leaderboard[0]?.name} can snatch</div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{fontSize:12,color:"#4A5E78",padding:"12px",background:"#141E2E",borderRadius:8,textAlign:"center"}}>
+                        Snatch window opens Saturday 12:00 AM IST
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+
           {page==="results" && (
             <div className="fade-in">
               <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2,marginBottom:24}}>MATCH RESULTS</h2>
