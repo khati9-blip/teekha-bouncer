@@ -1410,7 +1410,7 @@ function PitchHome({ onEnter, user, onLogout }) {
 
 
 // ── TEAM CLAIM SCREEN ────────────────────────────────────────────────────────
-function TeamClaimScreen({ pitch, user, teams, onClaimed, onBack }) {
+function TeamClaimScreen({ pitch, user, teams, onClaimed, onBack, onGuest }) {
   const [teamIdentity, setTeamIdentity] = useState({});
   const [loading, setLoading] = useState(true);
   const [enteredCode, setEnteredCode] = useState("");
@@ -1479,9 +1479,12 @@ function TeamClaimScreen({ pitch, user, teams, onClaimed, onBack }) {
     <div style={{minHeight:"100vh",background:"#080C14",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,fontFamily:"Barlow Condensed,sans-serif"}}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Barlow+Condensed:wght@400;600;700;800&display=swap');*{box-sizing:border-box;margin:0;padding:0;}body{background:#080C14;color:#E2EAF4;}`}</style>
       <div style={{width:"100%",maxWidth:380}}>
-        <div style={{width:"100%",marginBottom:16}}>
+        <div style={{width:"100%",marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <button onClick={onBack} style={{background:"transparent",border:"none",color:"#4A5E78",fontSize:13,cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",padding:0,display:"flex",alignItems:"center",gap:4}}>
             ← Back to Pitches
+          </button>
+          <button onClick={onGuest} style={{background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:"5px 12px",color:"#4A5E78",fontSize:12,cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>
+            👁 VIEW AS GUEST
           </button>
         </div>
         <div style={{textAlign:"center",marginBottom:32}}>
@@ -1666,7 +1669,7 @@ function ProposeRulesForm({ teams, eligibleVoters, onPropose, withPassword, tour
 }
 
 
-function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
+function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
   const [page, setPage] = useState("setup");
   const [teams, setTeams] = useState([]);
   const [players, setPlayers] = useState([]);
@@ -2835,6 +2838,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
 
   return (
     <>
+      {guestBanner}
       <style>{css}</style>
       <div style={{minHeight:"100vh",background:"var(--bg)"}}>
         {editPlayer&&<EditPlayerModal player={editPlayer}
@@ -4210,7 +4214,10 @@ function Root() {
     try { return localStorage.getItem('tb_pinHash') || null; } catch { return null; }
   });
   const [teamsClaimed, setTeamsClaimed] = useState(() => {
-    try { return !!localStorage.getItem('tb_myteam'); } catch { return false; }
+    try { return !!localStorage.getItem('tb_myteam') || !!localStorage.getItem('tb_guest'); } catch { return false; }
+  });
+  const [isGuest, setIsGuest] = useState(() => {
+    try { return !!localStorage.getItem('tb_guest'); } catch { return false; }
   });
 
   const handleLogin = (user) => {
@@ -4218,31 +4225,71 @@ function Root() {
     try { localStorage.setItem('tb_user', JSON.stringify(user)); } catch {}
   };
   const handleLogout = () => {
-    setCurrentUser(null); setCurrentPitch(null); setMyTeam(null); setMyPinHash(null); setTeamsClaimed(false);
-    try { ['tb_user','tb_pitch','tb_myteam','tb_pinHash'].forEach(k=>localStorage.removeItem(k)); } catch {}
+    setCurrentUser(null); setCurrentPitch(null); setMyTeam(null); setMyPinHash(null); setIsGuest(false); setTeamsClaimed(false);
+    try {
+      // Clear all tb_ keys
+      const keys = Object.keys(localStorage).filter(k=>k.startsWith('tb_'));
+      keys.forEach(k=>localStorage.removeItem(k));
+    } catch {}
   };
   const handleEnter = (pitch) => {
     _pitchId = pitch.id;
     setCurrentPitch(pitch);
-    // Reset team claim when entering a new pitch
-    const savedTeam = localStorage.getItem('tb_myteam');
-    const skipped = localStorage.getItem('tb_skipped');
-    if (!savedTeam && !skipped) { setMyTeam(null); setMyPinHash(null); setTeamsClaimed(false); }
-    try { localStorage.setItem('tb_pitch', JSON.stringify(pitch)); } catch {}
+    // Check if this user already claimed a team in this pitch (stored per pitch)
+    try {
+      const pitchTeamKey = 'tb_myteam_' + pitch.id;
+      const pitchPinKey = 'tb_pinHash_' + pitch.id;
+      const pitchGuestKey = 'tb_guest_' + pitch.id;
+      const savedTeam = localStorage.getItem(pitchTeamKey);
+      const savedPin = localStorage.getItem(pitchPinKey);
+      const savedGuest = localStorage.getItem(pitchGuestKey);
+      if (savedTeam) {
+        setMyTeam(JSON.parse(savedTeam));
+        setMyPinHash(savedPin || null);
+        setIsGuest(false);
+        setTeamsClaimed(true);
+      } else if (savedGuest) {
+        setMyTeam(null);
+        setMyPinHash(null);
+        setIsGuest(true);
+        setTeamsClaimed(true);
+      } else {
+        setMyTeam(null); setMyPinHash(null); setIsGuest(false); setTeamsClaimed(false);
+      }
+      localStorage.setItem('tb_pitch', JSON.stringify(pitch));
+    } catch {
+      setMyTeam(null); setMyPinHash(null); setIsGuest(false); setTeamsClaimed(false);
+    }
   };
   const handleLeave = () => {
+    setIsGuest(false); setTeamsClaimed(false); setMyTeam(null); setMyPinHash(null);
     setCurrentPitch(null);
     try { localStorage.removeItem('tb_pitch'); } catch {}
   };
   const handleClaimed = (team, pinHash) => {
-    setMyTeam(team); setMyPinHash(pinHash); setTeamsClaimed(true);
-    try { localStorage.setItem('tb_myteam', JSON.stringify(team)); if(pinHash) localStorage.setItem('tb_pinHash', pinHash); } catch {}
+    setMyTeam(team); setMyPinHash(pinHash); setIsGuest(false); setTeamsClaimed(true);
+    try {
+      const pitchId = currentPitch?.id || 'default';
+      localStorage.setItem('tb_myteam_' + pitchId, JSON.stringify(team));
+      if(pinHash) localStorage.setItem('tb_pinHash_' + pitchId, pinHash);
+      // Legacy keys for backwards compat
+      localStorage.setItem('tb_myteam', JSON.stringify(team));
+      if(pinHash) localStorage.setItem('tb_pinHash', pinHash);
+    } catch {}
+  };
+
+  const handleGuestEnter = () => {
+    setMyTeam(null); setMyPinHash(null); setIsGuest(true); setTeamsClaimed(true);
+    try {
+      const pitchId = currentPitch?.id || 'default';
+      localStorage.setItem('tb_guest_' + pitchId, '1');
+    } catch {}
   };
   try {
     if (!currentUser) return <SplashScreen onLogin={handleLogin} />;
     if (!currentPitch) return <PitchHome onEnter={handleEnter} user={currentUser} onLogout={handleLogout} />;
-    if (!teamsClaimed) return <TeamClaimScreen pitch={currentPitch} user={currentUser} teams={[]} onClaimed={handleClaimed} onBack={handleLeave} />;
-    return <App pitch={currentPitch} onLeave={handleLeave} user={currentUser} onLogout={handleLogout} myTeam={myTeam} myPinHash={myPinHash} />;
+    if (!teamsClaimed) return <TeamClaimScreen pitch={currentPitch} user={currentUser} teams={[]} onClaimed={handleClaimed} onBack={handleLeave} onGuest={handleGuestEnter} />;
+    return <App pitch={currentPitch} onLeave={handleLeave} user={currentUser} onLogout={handleLogout} myTeam={myTeam} myPinHash={myPinHash} isGuest={isGuest} />;
   } catch(e) {
     return <div style={{minHeight:"100vh",background:"#080C14",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16,padding:24,fontFamily:"Barlow Condensed,sans-serif"}}>
       <div style={{fontSize:48}}>⚠️</div>
