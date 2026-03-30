@@ -3239,7 +3239,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
                               });
                             }
                           }}
-                          title={tStarted&&isOn?"Irreversible — tournament started":"Toggle Trade & Snatch rules"}
+                          title={tStarted&&isOn?"Trade & Snatch — LOCKED (tournament started, irreversible)":isOn?"Trade & Snatch — ON (click to disable, admin password required)":"Trade & Snatch — OFF (click to enable, admin password required)"}
                           style={{background:isOn?"#A855F722":"transparent",border:"1px solid "+(isOn?"#A855F744":"#1E2D45"),borderRadius:20,padding:"3px 10px",cursor:tStarted&&isOn?"not-allowed":"pointer",display:"flex",alignItems:"center",gap:5,flexShrink:0}}>
                             <span style={{width:24,height:13,background:isOn?"#A855F7":"#1E2D45",borderRadius:10,position:"relative",transition:"background .2s",display:"inline-block",flexShrink:0}}>
                               <span style={{position:"absolute",top:2,left:isOn?12:2,width:9,height:9,background:"#fff",borderRadius:"50%",transition:"left .2s",display:"block"}} />
