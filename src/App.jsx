@@ -1922,13 +1922,28 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
       // response.schedules[].scheduleAdWrapper.matchScheduleList[].{seriesName, matchInfo[]}
       const found = [];
       const schedules = scheduleRes?.response?.schedules || [];
-      const liveMatches = liveRes?.response?.matches || liveRes?.response || [];
+      // CricketData live scores structure: response is array of live match objects
+      const liveList = liveRes?.response || [];
+      const liveMatches = Array.isArray(liveList) ? liveList : [];
 
 
       const liveMap = {};
-      (Array.isArray(liveMatches) ? liveMatches : []).forEach(m => {
-        if (m?.matchInfo?.matchId) liveMap[m.matchInfo.matchId] = m;
+      liveMatches.forEach(m => {
+        // CricketData live: matchId at top level or under matchInfo
+        const id = m?.matchId || m?.matchInfo?.matchId || m?.id;
+        if (id) liveMap[String(id)] = m;
       });
+
+      // Also update existing matches that are live right now
+      const updatedExisting = matches.map(m => {
+        if (m.status === "completed") return m;
+        const lm = liveMap[String(m.cricbuzzId)];
+        if (lm) return {...m, status: "live"};
+        return m;
+      });
+      if (JSON.stringify(updatedExisting) !== JSON.stringify(matches)) {
+        updMatches(updatedExisting);
+      }
 
       schedules.forEach(s => {
         (s?.scheduleAdWrapper?.matchScheduleList || []).forEach(item => {
