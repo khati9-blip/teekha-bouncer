@@ -3894,8 +3894,9 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
                 </div>
               ) : (
                 <div style={{display:"flex",flexDirection:"column",gap:12}}>
-                  {matches.filter(m=>m.status==="completed"&&Object.keys(points).some(pid=>points[pid][m.id])).map(match=>{
+                  {[...matches.filter(m=>m.status==="completed"&&Object.keys(points).some(pid=>points[pid][m.id]))].sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999")).map((match,idx,arr)=>{
                     const open = expandedMatch===match.id;
+                    const displayNum = idx + 1;
 
                     // Build per-team breakdown for this match
                     const teamBreakdowns = teams.map(team=>{
@@ -3920,7 +3921,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
                         <div style={{display:"flex",alignItems:"center",padding:"14px 18px",cursor:"pointer",gap:14}} onClick={()=>setExpandedMatch(open?null:match.id)}>
                           <div style={{background:"#080C14",borderRadius:6,padding:"4px 10px",minWidth:44,textAlign:"center"}}>
                             <div style={{fontSize:11,color:"#4A5E78"}}>M</div>
-                            <div style={{fontSize:18,fontWeight:800,color:"#F5A623",fontFamily:"Rajdhani"}}>{match.matchNum}</div>
+                            <div style={{fontSize:18,fontWeight:800,color:"#F5A623",fontFamily:"Rajdhani"}}>{displayNum}</div>
                           </div>
                           <div style={{flex:1}}>
                             <div style={{fontWeight:700,fontSize:15,color:"#E2EAF4"}}>{match.team1} <span style={{color:"#4A5E78"}}>vs</span> {match.team2}</div>
