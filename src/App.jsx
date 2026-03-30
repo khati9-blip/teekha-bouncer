@@ -601,9 +601,14 @@ function SmartStatsModal({ match, players, assignments, existingStats, onSave, o
     setFetching(true);
     setFetchStatus("Fetching from CricketData…");
     try {
-      const res = await fetch("/api/cricketdata?path=cricket-scorecard&matchId=" + match.cricbuzzId);
+      // CricketData: /cricket-match-scoreboard?matchid=ID (correct endpoint)
+      const res = await fetch("/api/cricketdata?path=cricket-match-scoreboard&matchid=" + match.cricbuzzId);
       const data = await res.json();
-      if (data.message || data.error) throw new Error(data.message || data.error);
+      if (data?.message?.includes("not exist") || data?.error) {
+        setFetchStatus("❌ CricketData: " + (data.message || data.error || "scorecard not found"));
+        setFetching(false); return;
+      }
+
 
       // CricketData scorecard structure
       const scorecard = data?.response?.scorecard || data?.scorecard || [];
