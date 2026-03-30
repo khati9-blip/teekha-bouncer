@@ -611,8 +611,8 @@ function SmartStatsModal({ match, players, assignments, existingStats, onSave, o
 
 
       // CricketData scorecard structure
-      const scorecard = data?.response?.scorecard || data?.scorecard || [];
-      if (!scorecard.length) { alert("Raw CD response: " + JSON.stringify(data).slice(0,300) + "\n\nMatchId used: " + match.cricbuzzId); setFetchStatus("❌ No scorecard data"); setFetching(false); return; }
+      // CricketData structure: response.firstInnings & response.secondInnings
+      const innings = [data?.response?.firstInnings, data?.response?.secondInnings].filter(Boolean);
 
       const nameToPlayer = {};
       matchPlayers.forEach(p => {
@@ -631,10 +631,10 @@ function SmartStatsModal({ match, players, assignments, existingStats, onSave, o
       const newStats = {...stats};
       let matched = 0;
 
-      scorecard.forEach(innings => {
+      innings.forEach(inn => {
         // Batting
-        (innings.batting || []).forEach(b => {
-          const p = findPlayer(b.batsman?.name || b.name);
+        (inn.batters || inn.batting || innings.batting || []).forEach(b => {
+          const p = findPlayer(b.name || b.batsman?.name);
           if (!p) return;
           matched++;
           newStats[p.id] = {
@@ -648,8 +648,8 @@ function SmartStatsModal({ match, players, assignments, existingStats, onSave, o
           };
         });
         // Bowling
-        (innings.bowling || []).forEach(bw => {
-          const p = findPlayer(bw.bowler?.name || bw.name);
+        (inn.bowlers || inn.bowling || []).forEach(bw => {
+          const p = findPlayer(bw.name || bw.bowler?.name);
           if (!p) return;
           matched++;
           const overs = parseFloat(bw.o || bw.overs || 0);
