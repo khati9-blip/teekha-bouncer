@@ -1811,7 +1811,14 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
       });
 
       if (found.length === 0) {
-        alert("No matches found for "" + tournamentName + "" in CricketData. Check the tournament name.");
+        // Show available series names to help admin find correct name
+        const availableSeries = [];
+        const allSched = scheduleRes?.matchScheduleMap || scheduleRes?.data || [];
+        (Array.isArray(allSched) ? allSched : []).forEach(item => {
+          const n = item?.seriesName || item?.series?.name || "";
+          if (n && !availableSeries.includes(n)) availableSeries.push(n);
+        });
+        alert("No matches found for [" + tournamentName + "] in CricketData.\n\nAvailable series:\n" + (availableSeries.slice(0,10).join("\n") || "None returned"));
         setLoading(""); return;
       }
 
