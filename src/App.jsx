@@ -1672,6 +1672,7 @@ function ChatWindow({ myTeam, teams, unlocked, withPassword, storeGet, storeSet,
   const [messages, setMessages] = React.useState([]);
   const [input, setInput] = React.useState('');
   const [unread, setUnread] = React.useState(0);
+  const [showMention, setShowMention] = React.useState(false);
   const [pinned, setPinned] = React.useState(null);
   const [lastSeen] = React.useState(() => { try { return parseInt(localStorage.getItem('tb_chatLastSeen')||'0'); } catch { return 0; } });
   const endRef = React.useRef(null);
@@ -1764,8 +1765,11 @@ function ChatWindow({ myTeam, teams, unlocked, withPassword, storeGet, storeSet,
       ),
       myTeam && !isGuest
         ? React.createElement('div',{style:{borderTop:"1px solid #1E2D45",padding:"8px 10px"}},
+            showMention && React.createElement('div',{style:{background:"#141E2E",border:"1px solid #1E2D45",borderRadius:8,marginBottom:6,overflow:"hidden"}},
+              ...teams.map(t=>React.createElement('button',{key:t.id,onClick:()=>{const last=input.lastIndexOf('@');setInput(input.slice(0,last)+'@'+t.name+' ');setShowMention(false);},style:{width:"100%",background:"transparent",border:"none",padding:"8px 12px",textAlign:"left",cursor:"pointer",color:t.color,fontSize:13,fontWeight:700,fontFamily:"Barlow Condensed,sans-serif",display:"block"}},"@"+t.name))
+            ),
             React.createElement('div',{style:{display:"flex",gap:6}},
-              React.createElement('input',{value:input,onChange:e=>setInput(e.target.value),onKeyDown:e=>{if(e.key==="Enter"){e.preventDefault();send();}},placeholder:"Message as "+myTeam.name+"... (@ to tag)",maxLength:200,style:{flex:1,background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"8px 10px",color:"#E2EAF4",fontSize:13,fontFamily:"Barlow Condensed,sans-serif",outline:"none"}}),
+              React.createElement('input',{value:input,onChange:e=>{const v=e.target.value;setInput(v);const last=v.lastIndexOf('@');setShowMention(last>=0&&last===v.length-1);},onKeyDown:e=>{if(e.key==="Enter"){e.preventDefault();send();setShowMention(false);}if(e.key==="Escape")setShowMention(false);},placeholder:"Message as "+myTeam.name+"... (@ to tag)",maxLength:200,style:{flex:1,background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"8px 10px",color:"#E2EAF4",fontSize:13,fontFamily:"Barlow Condensed,sans-serif",outline:"none"}}),
               React.createElement('button',{onClick:send,style:{background:"#4F8EF7",border:"none",borderRadius:8,padding:"8px 12px",color:"#fff",cursor:"pointer",fontSize:14}},"➤")
             ),
             React.createElement('div',{style:{fontSize:9,color:"#2D3E52",marginTop:4,textAlign:"right"}},input.length+"/200")
