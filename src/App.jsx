@@ -1732,6 +1732,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
     longestSix:50, captainMult:2, vcMult:1.5
   }); // loaded from supabase
   const [showRulesPanel, setShowRulesPanel] = useState(false);
+  const [guestAllowed, setGuestAllowed] = useState(() => pitch?.guestAllowed !== false);
   const [votePin, setVotePin] = useState('');
   const [votePinErr, setVotePinErr] = useState(''); // {pid, fromTeamId}
   const [snatchPin, setSnatchPin] = useState('');
@@ -4204,15 +4205,14 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
                     <div style={{fontSize:10,color:"#4A5E78",marginTop:2}}>Allow guests to view this pitch</div>
                   </div>
                   <button onClick={()=>withPassword(async()=>{
-                    const nowAllowed = pitch?.guestAllowed === false ? true : false;
+                    const nowAllowed = !guestAllowed;
                     const pws = await sbGet("pitches") || [];
                     const updated = pws.map(p=>p.id===pitch.id?{...p,guestAllowed:nowAllowed}:p);
                     await sbSet("pitches", updated);
-                    pitch.guestAllowed = nowAllowed;
-                    alert("Guest access " + (nowAllowed?"enabled":"disabled") + ".");
+                    setGuestAllowed(nowAllowed);
                   })} style={{background:"none",border:"none",cursor:"pointer",padding:0,flexShrink:0}}>
-                    <span style={{width:44,height:24,borderRadius:12,background:pitch?.guestAllowed===false?"#1E2D45":"#2ECC71",position:"relative",transition:"background 0.2s",boxShadow:"inset 0 1px 3px rgba(0,0,0,0.3)",display:"inline-block"}}>
-                      <span style={{position:"absolute",top:3,left:pitch?.guestAllowed===false?3:23,width:18,height:18,borderRadius:"50%",background:"#fff",transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.3)",display:"block"}} />
+                    <span style={{width:44,height:24,borderRadius:12,background:guestAllowed?"#2ECC71":"#1E2D45",position:"relative",transition:"background 0.2s",boxShadow:"inset 0 1px 3px rgba(0,0,0,0.3)",display:"inline-block"}}>
+                      <span style={{position:"absolute",top:3,left:guestAllowed?23:3,width:18,height:18,borderRadius:"50%",background:"#fff",transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.3)",display:"block"}} />
                     </span>
                   </button>
                 </div>
