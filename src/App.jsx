@@ -1937,6 +1937,11 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
         const id = m?.matchId || m?.matchInfo?.matchId || m?.id;
         if (id) liveMap[String(id)] = m;
       });
+      // Debug alert for first CD refresh with live data
+      if (liveMatches.length > 0) {
+        const sample = liveMatches[0];
+        alert("Live matches found: " + liveMatches.length + "\nSample ID fields: matchId=" + sample?.matchId + " id=" + sample?.id + "\nStored IDs: " + matches.map(m=>m.cricbuzzId).join(", "));
+      }
 
 
 
@@ -3519,6 +3524,18 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
                                             {unlocked && <div><button onClick={e=>{e.stopPropagation();const upd=matches.map(m=>m.id===match.id?{...m,status:"live"}:m);updMatches(upd);}} style={{fontSize:9,color:"#FF3D5A",background:"transparent",border:"1px solid #FF3D5A44",borderRadius:4,padding:"2px 5px",cursor:"pointer",marginTop:2}}>🔴 Mark Live</button></div>}
                                           </div>
                                         )}
+                                    {/* Expandable actions for upcoming matches */}
+                                    {expandedMatchId===match.id && !completed && (
+                                      <div style={{borderTop:"1px solid #1E2D45",padding:"10px 14px",display:"flex",gap:8,flexWrap:"wrap"}}>
+                                        <button onClick={()=>setCaptainMatch(match)}
+                                          style={{background:"#4F8EF722",border:"1px solid #4F8EF744",color:"#4F8EF7",borderRadius:7,padding:"6px 12px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:12}}>
+                                          👑 SET C/VC
+                                        </button>
+                                        {captains[match.id+"_"+teams[0]?.id] && (
+                                          <span style={{fontSize:11,color:"#4A5E78",padding:"6px 0"}}>Captains set for this match</span>
+                                        )}
+                                      </div>
+                                    )}
                                       </div>
                                     </div>
 
