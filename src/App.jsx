@@ -3520,15 +3520,28 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
                                             {unlocked && <div><button onClick={e=>{e.stopPropagation();const upd=matches.map(m=>m.id===match.id?{...m,status:"live"}:m);updMatches(upd);}} style={{fontSize:9,color:"#FF3D5A",background:"transparent",border:"1px solid #FF3D5A44",borderRadius:4,padding:"2px 5px",cursor:"pointer",marginTop:2}}>🔴 Mark Live</button></div>}
                                           </div>
                                         )}
-                                    {/* Expandable actions for upcoming matches */}
-                                    {expandedMatchId===match.id && !completed && (
-                                      <div style={{borderTop:"1px solid #1E2D45",padding:"10px 14px",display:"flex",gap:8,flexWrap:"wrap"}}>
+                                    {/* Expandable actions for all matches */}
+                                    {expandedMatchId===match.id && (
+                                      <div style={{borderTop:"1px solid #1E2D45",padding:"10px 14px",display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
                                         <button onClick={()=>setCaptainMatch(match)}
                                           style={{background:"#4F8EF722",border:"1px solid #4F8EF744",color:"#4F8EF7",borderRadius:7,padding:"6px 12px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:12}}>
                                           👑 SET C/VC
                                         </button>
-                                        {captains[match.id+"_"+teams[0]?.id] && (
-                                          <span style={{fontSize:11,color:"#4A5E78",padding:"6px 0"}}>Captains set for this match</span>
+                                        {completed && unlocked && (
+                                          <button onClick={()=>withPassword(()=>setSmartStatsMatch(match))}
+                                            style={{background:"#F5A62322",border:"1px solid #F5A62344",color:"#F5A623",borderRadius:7,padding:"6px 12px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:12}}>
+                                            📊 {isSynced?"EDIT STATS":"SYNC STATS"}
+                                          </button>
+                                        )}
+                                        {unlocked && (
+                                          <div style={{display:"flex",gap:6,marginLeft:"auto"}}>
+                                            {match.status!=="live" && <button onClick={()=>{const upd=matches.map(m=>m.id===match.id?{...m,status:"live"}:m);updMatches(upd);}}
+                                              style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:"#FF3D5A",borderRadius:7,padding:"6px 10px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:11}}>🔴 LIVE</button>}
+                                            {match.status!=="completed" && <button onClick={()=>{const upd=matches.map(m=>m.id===match.id?{...m,status:"completed"}:m);updMatches(upd);}}
+                                              style={{background:"#2ECC7122",border:"1px solid #2ECC7144",color:"#2ECC71",borderRadius:7,padding:"6px 10px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:11}}>✓ DONE</button>}
+                                            {match.status!=="upcoming" && <button onClick={()=>{const upd=matches.map(m=>m.id===match.id?{...m,status:"upcoming"}:m);updMatches(upd);}}
+                                              style={{background:"#4A5E7822",border:"1px solid #4A5E7844",color:"#4A5E78",borderRadius:7,padding:"6px 10px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:11}}>↩ RESET</button>}
+                                          </div>
                                         )}
                                       </div>
                                     )}
