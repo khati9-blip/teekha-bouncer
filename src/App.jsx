@@ -1788,45 +1788,42 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
         fetch("/api/cricketdata?path=cricket-livescores").then(r=>r.json()).catch(()=>({})),
       ]);
 
-      // Debug: show raw keys to understand structure
-      const schedKeys = Object.keys(scheduleRes||{}).join(", ");
-      const seriesKeys = Object.keys(seriesRes||{}).join(", ");
-      console.log("Schedule keys:", schedKeys, "| Series keys:", seriesKeys);
-      console.log("Schedule raw:", JSON.stringify(scheduleRes).slice(0,500));
-      console.log("Series raw:", JSON.stringify(seriesRes).slice(0,500));
-
-      // Parse matches from schedule - try all possible keys
+      // Parse matches from CricketData schedule structure:
+      // response.schedules[].scheduleAdWrapper.matchScheduleList[].{seriesName, matchInfo[]}
       const found = [];
-      const scheduleMatches = scheduleRes?.matchScheduleMap || scheduleRes?.data || scheduleRes?.matches || scheduleRes?.fixture || [];
-      const liveMatches = liveRes?.matchDetailsList || liveRes?.data || liveRes?.matches || [];
+      const schedules = scheduleRes?.response?.schedules || [];
+      const liveMatches = liveRes?.response?.matches || liveRes?.response || [];
 
-      // Build live match lookup
+
       const liveMap = {};
       (Array.isArray(liveMatches) ? liveMatches : []).forEach(m => {
         if (m?.matchInfo?.matchId) liveMap[m.matchInfo.matchId] = m;
       });
 
-      const allMatches = Array.isArray(scheduleMatches) ? scheduleMatches : [];
-      allMatches.forEach(item => {
-        const seriesName = item?.seriesName || item?.series?.name || "";
-        if (!seriesName.toLowerCase().includes(tournamentName.toLowerCase())) return;
-        const mList = item?.matchInfo || item?.matches || [];
-        (Array.isArray(mList) ? mList : []).forEach(m => {
-          const info = m?.matchInfo || m;
-          const live = liveMap[info?.matchId];
-          found.push({ info, live });
+      schedules.forEach(s => {
+        (s?.scheduleAdWrapper?.matchScheduleList || []).forEach(item => {
+          const seriesName = item?.seriesName || "";
+          if (!seriesName.toLowerCase().includes(tournamentName.toLowerCase())) return;
+          (item?.matchInfo || []).forEach(m => {
+            const live = liveMap[m?.matchId];
+            found.push({ info: m, live });
+          });
         });
       });
 
       if (found.length === 0) {
         // Show available series names to help admin find correct name
         const availableSeries = [];
-        const allSched = scheduleRes?.matchScheduleMap || scheduleRes?.data || scheduleRes?.matches || scheduleRes?.fixture || [];
-        // Also check series endpoint
-        const seriesData = seriesRes?.data || seriesRes?.series || seriesRes || [];
-        const allItems = [...(Array.isArray(allSched)?allSched:[]), ...(Array.isArray(seriesData)?seriesData:[])];
-        allItems.forEach(item => {
-          const n = item?.seriesName || item?.series?.name || item?.name || item?.title || "";
+        const debugSeries = [];
+        schedules.forEach(s => {
+          (s?.scheduleAdWrapper?.matchScheduleList || []).forEach(item => {
+            const n = item?.seriesName || "";
+            if(n && !debugSeries.includes(n)) debugSeries.push(n);
+          });
+        });
+        const allItems2 = debugSeries;
+        allItems2.forEach(item => {
+          const n = item || "";
           if (n && !availableSeries.includes(n)) availableSeries.push(n);
         });
         alert("No matches found for [" + tournamentName + "] in CricketData.\n\nAvailable series:\n" + (availableSeries.slice(0,10).join("\n") || "None returned"));
@@ -1852,13 +1849,13 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
             cricbuzzId: m.matchId,
             tournamentId,
             matchNum: nextNum++,
-            date: m.startDate ? new Date(parseInt(m.startDate)).toISOString().split("T")[0] : (m.dateTimeGMT?.split("T")[0] || "TBD"),
-            time: m.startDate ? new Date(parseInt(m.startDate)).toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit",timeZone:"Asia/Kolkata"}) : (m.dateTimeGMT?.split("T")[1]?.slice(0,5) || ""),
-            team1: m.team1?.teamSName || m.team1?.name || m.t1 || "TBA",
-            team2: m.team2?.teamSName || m.team2?.name || m.t2 || "TBA",
-            venue: m.venueInfo?.ground || m.venue || "TBD",
+            date: m.startDate ? new Date(parseInt(m.startDate)).toISOString().split("T")[0] : "TBD",
+            time: m.startDate ? new Date(parseInt(m.startDate)).toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit",timeZone:"Asia/Kolkata"}) : "",
+            team1: m.team1?.teamSName || m.team1?.teamName || "TBA",
+            team2: m.team2?.teamSName || m.team2?.teamName || "TBA",
+            venue: m.venueInfo?.ground ? m.venueInfo.ground + (m.venueInfo.city ? ", " + m.venueInfo.city : "") : "TBD",
             status,
-            result: m.status || null,
+            result: m.matchDesc || null,
           });
         }
       });
