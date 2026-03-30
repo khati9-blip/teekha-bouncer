@@ -1919,7 +1919,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
       };
       const [scheduleRes, liveRes] = await Promise.all([
         fetchWithTimeout("/api/cricketdata?path=cricket-schedule"),
-        fetchWithTimeout("/api/cricketdata?path=cricket-livescores"),
+        fetchWithTimeout("/api/cricketdata?path=currentMatches"),
       ]);
       const seriesRes = {};
 
@@ -1938,12 +1938,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
         if (id) liveMap[String(id)] = m;
       });
 
-      // Show live IDs in alert for debugging
-      const liveIds = Object.keys(liveMap);
-      const storedIds = matches.map(m=>String(m.cricbuzzId)).filter(Boolean);
-      if (liveIds.length > 0 || liveMatches.length > 0) {
-        alert("Live from CD: [" + liveIds.join(", ") + "]\nStored IDs: [" + storedIds.join(", ") + "]\nRaw sample: " + JSON.stringify(liveMatches[0]||{}).slice(0,200));
-      }
+
 
 
 
@@ -3504,7 +3499,12 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
                                         {live ? (
                                           <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:3}}>
                                             <span style={{fontSize:10,color:"#FF3D5A",fontWeight:700}}>🔴 LIVE</span>
-                                            {unlocked && <button onClick={e=>{e.stopPropagation();const upd=matches.map(m=>m.id===match.id?{...m,status:"completed"}:m);updMatches(upd);}} style={{fontSize:9,color:"#4A5E78",background:"transparent",border:"1px solid #1E2D45",borderRadius:4,padding:"2px 6px",cursor:"pointer"}}>Mark Done</button>}
+                                            {unlocked && (
+                                              <div style={{display:"flex",gap:3}}>
+                                                <button onClick={e=>{e.stopPropagation();const upd=matches.map(m=>m.id===match.id?{...m,status:"completed"}:m);updMatches(upd);}} style={{fontSize:9,color:"#4A5E78",background:"transparent",border:"1px solid #1E2D45",borderRadius:4,padding:"2px 5px",cursor:"pointer"}}>✓ Done</button>
+                                                <button onClick={e=>{e.stopPropagation();const upd=matches.map(m=>m.id===match.id?{...m,status:"upcoming"}:m);updMatches(upd);}} style={{fontSize:9,color:"#4A5E78",background:"transparent",border:"1px solid #1E2D45",borderRadius:4,padding:"2px 5px",cursor:"pointer"}}>↩ Reset</button>
+                                              </div>
+                                            )}
                                           </div>
                                         ) : completed ? (
                                           <div style={{textAlign:"right"}}>
@@ -3514,7 +3514,10 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
                                             <div style={{fontSize:9,color:"#4A5E78",marginTop:1}}>COMPLETED</div>
                                           </div>
                                         ) : (
-                                          <span style={{fontSize:10,color:"#4A5E78",fontWeight:700}}>UPCOMING</span>
+                                          <div style={{textAlign:"right"}}>
+                                            <span style={{fontSize:10,color:"#4A5E78",fontWeight:700}}>UPCOMING</span>
+                                            {unlocked && <div><button onClick={e=>{e.stopPropagation();const upd=matches.map(m=>m.id===match.id?{...m,status:"live"}:m);updMatches(upd);}} style={{fontSize:9,color:"#FF3D5A",background:"transparent",border:"1px solid #FF3D5A44",borderRadius:4,padding:"2px 5px",cursor:"pointer",marginTop:2}}>🔴 Mark Live</button></div>}
+                                          </div>
                                         )}
                                       </div>
                                     </div>
