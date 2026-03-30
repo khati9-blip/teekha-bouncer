@@ -4198,26 +4198,24 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
 
               {/* Guest Access toggle */}
               <div style={{padding:"8px 14px 0"}}>
-                <button onClick={()=>withPassword(async()=>{
-                  const cur = pitch?.guestAllowed;
-                  const nowAllowed = cur === false ? true : false;
-                  // Update pitch in Supabase via PitchHome's sbSet — use storeSet on pitches key
-                  const pws = await sbGet("pitches") || [];
-                  const updated = pws.map(p=>p.id===pitch.id?{...p,guestAllowed:nowAllowed}:p);
-                  await sbSet("pitches", updated);
-                  // Reflect in current pitch object
-                  pitch.guestAllowed = nowAllowed;
-                  alert("Guest access " + (nowAllowed?"enabled":"disabled") + " for this pitch.");
-                })}
-                style={{width:"100%",background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:"10px 14px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:10,fontFamily:"Barlow Condensed,sans-serif"}}>
-                  <span style={{fontSize:16}}>{pitch?.guestAllowed===false?"🚫":"👁"}</span>
-                  <div style={{flex:1}}>
-                    <div style={{fontWeight:700,fontSize:13,color:pitch?.guestAllowed===false?"#FF3D5A":"#2ECC71"}}>
-                      {pitch?.guestAllowed===false?"Guest Access OFF":"Guest Access ON"}
-                    </div>
-                    <div style={{fontSize:10,color:"#4A5E78",marginTop:1}}>Toggle whether guests can view this pitch</div>
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",background:"#080C14",borderRadius:10,border:"1px solid #1E2D45"}}>
+                  <div>
+                    <div style={{fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,color:"#E2EAF4"}}>👁 Guest Access</div>
+                    <div style={{fontSize:10,color:"#4A5E78",marginTop:2}}>Allow guests to view this pitch</div>
                   </div>
-                </button>
+                  <button onClick={()=>withPassword(async()=>{
+                    const nowAllowed = pitch?.guestAllowed === false ? true : false;
+                    const pws = await sbGet("pitches") || [];
+                    const updated = pws.map(p=>p.id===pitch.id?{...p,guestAllowed:nowAllowed}:p);
+                    await sbSet("pitches", updated);
+                    pitch.guestAllowed = nowAllowed;
+                    alert("Guest access " + (nowAllowed?"enabled":"disabled") + ".");
+                  })} style={{background:"none",border:"none",cursor:"pointer",padding:0,flexShrink:0}}>
+                    <span style={{width:44,height:24,borderRadius:12,background:pitch?.guestAllowed===false?"#1E2D45":"#2ECC71",position:"relative",transition:"background 0.2s",boxShadow:"inset 0 1px 3px rgba(0,0,0,0.3)",display:"inline-block"}}>
+                      <span style={{position:"absolute",top:3,left:pitch?.guestAllowed===false?3:23,width:18,height:18,borderRadius:"50%",background:"#fff",transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.3)",display:"block"}} />
+                    </span>
+                  </button>
+                </div>
               </div>
               <div style={{padding:"16px",borderTop:"1px solid #1E2D45"}}>
                 <button onClick={onLogout} style={{width:"100%",background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:8,padding:"10px",color:"#FF3D5A",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>LOGOUT</button>
