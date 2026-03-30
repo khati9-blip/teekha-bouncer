@@ -1781,16 +1781,24 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
   const fetchFromCricketData = async (tournamentId, tournamentName) => {
     setLoading("Fetching from CricketData for " + tournamentName + "…");
     try {
-      // Fetch schedule and live scores in parallel
-      const [scheduleRes, liveRes] = await Promise.all([
+      // First fetch series to understand structure
+      const [scheduleRes, seriesRes, liveRes] = await Promise.all([
         fetch("/api/cricketdata?path=cricket-schedule").then(r=>r.json()).catch(()=>({})),
+        fetch("/api/cricketdata?path=cricket-series").then(r=>r.json()).catch(()=>({})),
         fetch("/api/cricketdata?path=cricket-livescores").then(r=>r.json()).catch(()=>({})),
       ]);
 
-      // Parse matches from schedule - filter by tournament name
+      // Debug: show raw keys to understand structure
+      const schedKeys = Object.keys(scheduleRes||{}).join(", ");
+      const seriesKeys = Object.keys(seriesRes||{}).join(", ");
+      console.log("Schedule keys:", schedKeys, "| Series keys:", seriesKeys);
+      console.log("Schedule raw:", JSON.stringify(scheduleRes).slice(0,500));
+      console.log("Series raw:", JSON.stringify(seriesRes).slice(0,500));
+
+      // Parse matches from schedule - try all possible keys
       const found = [];
-      const scheduleMatches = scheduleRes?.matchScheduleMap || scheduleRes?.data || [];
-      const liveMatches = liveRes?.matchDetailsList || liveRes?.data || [];
+      const scheduleMatches = scheduleRes?.matchScheduleMap || scheduleRes?.data || scheduleRes?.matches || scheduleRes?.fixture || [];
+      const liveMatches = liveRes?.matchDetailsList || liveRes?.data || liveRes?.matches || [];
 
       // Build live match lookup
       const liveMap = {};
@@ -1813,9 +1821,12 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
       if (found.length === 0) {
         // Show available series names to help admin find correct name
         const availableSeries = [];
-        const allSched = scheduleRes?.matchScheduleMap || scheduleRes?.data || [];
-        (Array.isArray(allSched) ? allSched : []).forEach(item => {
-          const n = item?.seriesName || item?.series?.name || "";
+        const allSched = scheduleRes?.matchScheduleMap || scheduleRes?.data || scheduleRes?.matches || scheduleRes?.fixture || [];
+        // Also check series endpoint
+        const seriesData = seriesRes?.data || seriesRes?.series || seriesRes || [];
+        const allItems = [...(Array.isArray(allSched)?allSched:[]), ...(Array.isArray(seriesData)?seriesData:[])];
+        allItems.forEach(item => {
+          const n = item?.seriesName || item?.series?.name || item?.name || item?.title || "";
           if (n && !availableSeries.includes(n)) availableSeries.push(n);
         });
         alert("No matches found for [" + tournamentName + "] in CricketData.\n\nAvailable series:\n" + (availableSeries.slice(0,10).join("\n") || "None returned"));
