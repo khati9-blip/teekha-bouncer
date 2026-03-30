@@ -1828,6 +1828,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
     longestSix:50, captainMult:2, vcMult:1.5
   }); // loaded from supabase
   const [showRulesPanel, setShowRulesPanel] = useState(false);
+  const TOURNEY_COLORS = ["#F5A623","#4F8EF7","#2ECC71","#A855F7","#FF3D5A","#06B6D4","#F97316","#EC4899"];
   const [notifications, setNotifications] = useState([]);
   const [notifOpen, setNotifOpen] = useState(false);
   const [notifLastRead, setNotifLastRead] = useState(() => { try { return parseInt(localStorage.getItem('tb_notifLastRead')||'0'); } catch { return 0; } });
@@ -3955,7 +3956,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
                         <div style={{display:"flex",alignItems:"center",padding:"14px 18px",cursor:"pointer"}} onClick={()=>setExpandedTeam(isOpen?null:team.id)}>
                           <div style={{flex:1}}><span style={{fontWeight:700,color:team.color,fontFamily:"Rajdhani",fontSize:17,letterSpacing:1}}>{team.name}</span><span style={{color:"#4A5E78",marginLeft:10,fontSize:13}}>{breakdown.length} players</span></div>
                           <span style={{color:"#F5A623",fontWeight:800,fontFamily:"Rajdhani",fontSize:22,marginRight:16}}>{team.total} pts</span>
-                          <span style={{color:tColor,fontSize:12,opacity:0.7}}>{isOpen?"▲":"▼"}</span>
+                          <span style={{color:team.color,fontSize:12,opacity:0.7}}>{isOpen?"▲":"▼"}</span>
                         </div>
                         {isOpen&&breakdown.length>0&&(
                           <div style={{borderTop:"1px solid #1E2D45",padding:"12px 18px"}}>
