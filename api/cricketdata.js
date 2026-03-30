@@ -3,10 +3,11 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS");
   if (req.method === "OPTIONS") return res.status(200).end();
 
-  const { path } = req.query;
+  const { path, matchId } = req.query;
   if (!path) return res.status(400).json({ error: "Missing path" });
 
-  const url = "https://cricket-api-free-data.p.rapidapi.com/" + path;
+  let url = "https://cricket-api-free-data.p.rapidapi.com/" + path;
+  if (matchId) url += "?matchId=" + matchId;
 
   try {
     const response = await fetch(url, {

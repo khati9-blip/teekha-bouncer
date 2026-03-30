@@ -595,6 +595,80 @@ function SmartStatsModal({ match, players, assignments, existingStats, onSave, o
     return s;
   });
 
+
+  const fetchFromCricketData = async () => {
+    if (!match.cricbuzzId) { setFetchStatus("❌ No match ID available"); return; }
+    setFetching(true);
+    setFetchStatus("Fetching from CricketData…");
+    try {
+      const res = await fetch("/api/cricketdata?path=cricket-scorecard&matchId=" + match.cricbuzzId);
+      const data = await res.json();
+      if (data.message || data.error) throw new Error(data.message || data.error);
+
+      // CricketData scorecard structure
+      const scorecard = data?.response?.scorecard || data?.scorecard || [];
+      if (!scorecard.length) { setFetchStatus("❌ No scorecard data from CricketData"); setFetching(false); return; }
+
+      const nameToPlayer = {};
+      matchPlayers.forEach(p => {
+        nameToPlayer[p.name.toLowerCase().trim()] = p;
+        p.name.toLowerCase().split(" ").forEach(part => { if(part.length>2) nameToPlayer[part.trim()] = p; });
+      });
+      const findPlayer = (name) => {
+        if (!name) return null;
+        const n = name.toLowerCase().trim();
+        if (nameToPlayer[n]) return nameToPlayer[n];
+        const parts = n.split(" ");
+        for (const part of parts) { if (part.length >= 5 && nameToPlayer[part]) return nameToPlayer[part]; }
+        return null;
+      };
+
+      const newStats = {...stats};
+      let matched = 0;
+
+      scorecard.forEach(innings => {
+        // Batting
+        (innings.batting || []).forEach(b => {
+          const p = findPlayer(b.batsman?.name || b.name);
+          if (!p) return;
+          matched++;
+          newStats[p.id] = {
+            ...newStats[p.id],
+            runs: parseInt(b.r || b.runs || 0),
+            balls: parseInt(b.b || b.balls || 0),
+            fours: parseInt(b["4s"] || b.fours || 0),
+            sixes: parseInt(b["6s"] || b.sixes || 0),
+            dismissed: !!(b.dismissal || b.wicket),
+            played: true,
+          };
+        });
+        // Bowling
+        (innings.bowling || []).forEach(bw => {
+          const p = findPlayer(bw.bowler?.name || bw.name);
+          if (!p) return;
+          matched++;
+          const overs = parseFloat(bw.o || bw.overs || 0);
+          const runs = parseInt(bw.r || bw.runs || 0);
+          const eco = overs > 0 ? Math.round((runs/overs)*100)/100 : 0;
+          newStats[p.id] = {
+            ...newStats[p.id],
+            wickets: parseInt(bw.w || bw.wickets || 0),
+            overs,
+            economy: eco,
+            maidens: parseInt(bw.m || bw.maidens || 0),
+            played: true,
+          };
+        });
+      });
+
+      setStats(newStats);
+      setFetchStatus("✅ CricketData: filled " + matched + " player entries");
+    } catch(e) {
+      setFetchStatus("❌ CricketData: " + e.message);
+    }
+    setFetching(false);
+  };
+
   const [search, setSearch] = React.useState("");
   const [activeTab, setActiveTab] = React.useState("batting");
   const [fetching, setFetching] = React.useState(false);
@@ -778,7 +852,11 @@ function SmartStatsModal({ match, players, assignments, existingStats, onSave, o
           <div style={{marginTop:12,display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
             <button onClick={fetchFromCricbuzz} disabled={fetching}
               style={{background:"linear-gradient(135deg,#4F8EF7,#1a5fb4)",border:"none",borderRadius:8,padding:"9px 18px",color:"#fff",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:fetching?"not-allowed":"pointer",opacity:fetching?0.6:1,letterSpacing:1}}>
-              {fetching?"⏳ FETCHING…":"🌐 AUTO-FILL FROM CRICBUZZ"}
+              {fetching?"⏳ FETCHING…":"🟠 CRICBUZZ"}
+            </button>
+            <button onClick={fetchFromCricketData} disabled={fetching}
+              style={{background:"linear-gradient(135deg,#2ECC71,#16a34a)",border:"none",borderRadius:8,padding:"9px 18px",color:"#fff",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:fetching?"not-allowed":"pointer",opacity:fetching?0.6:1,letterSpacing:1}}>
+              {fetching?"⏳ FETCHING…":"🟢 CRICKETDATA"}
             </button>
             {fetchStatus && <span style={{fontSize:12,color:fetchStatus.startsWith("✅")?"#2ECC71":fetchStatus.startsWith("❌")?"#FF3D5A":"#F5A623"}}>{fetchStatus}</span>}
           </div>
