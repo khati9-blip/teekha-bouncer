@@ -4305,9 +4305,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
             </div>
           </div>
         )}
-      </div>
-
-        {/* CHAT WINDOW */}
+      {/* CHAT WINDOW */}
         <div style={{position:"fixed",bottom:20,left:20,zIndex:500,fontFamily:"Barlow Condensed,sans-serif"}}>
           {!chatOpen && (
             <button onClick={()=>{setChatOpen(true);markChatRead();}}
@@ -4388,6 +4386,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
           )}
         </div>
       </div>
+    </div>
 
     </>
   );
