@@ -1276,7 +1276,6 @@ function PitchHome({ onEnter, user, onLogout }) {
                 <div style={{fontSize:12,color:COLORS[i % COLORS.length],fontWeight:700,letterSpacing:1}}>ENTER →</div>
                 <button onClick={e=>{e.stopPropagation();setChangingPasswordFor(pitch.id);setOldPitchPw("");setNewChangePw("");setChangeErr("");}}
                   style={{background:"transparent",border:"none",color:"#4A5E78",fontSize:10,cursor:"pointer",textDecoration:"underline",padding:0,fontFamily:"Barlow Condensed,sans-serif"}}>change password</button>
-
               </div>
             </div>
           ))}
@@ -1375,17 +1374,6 @@ function PitchHome({ onEnter, user, onLogout }) {
                 <button onClick={()=>{setForgotMode(true);setForgotStep('email');setForgotEmail("");setForgotCode("");setEnterErr("");}}
                   style={{background:"none",border:"none",color:"#FF3D5A",fontSize:12,cursor:"pointer",textDecoration:"underline"}}>Forgot pitch password?</button>
               </div>
-              {pitches.find(p=>p.id===enterPitchId)?.guestAllowed !== false && (
-                <div style={{borderTop:"1px solid #1E2D45",marginTop:16,paddingTop:14,textAlign:"center"}}>
-                  <button onClick={()=>{
-                    const pitch = pitches.find(p=>p.id===enterPitchId);
-                    if(pitch){ setEnterPitchId(null); setEnterPw(""); setEnterErr(""); onEnter(pitch, true); }
-                  }} style={{background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:"8px 20px",color:"#4A5E78",fontSize:12,cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>
-                    👁 CONTINUE AS GUEST
-                  </button>
-                  <div style={{fontSize:10,color:"#2D3E52",marginTop:6}}>View only — no editing or transfers</div>
-                </div>
-              )}
             </> : <>
               {forgotStep==='email' ? <>
                 <div style={{fontSize:13,color:"#4A5E78",textAlign:"center",marginBottom:20}}>Enter the admin email to receive a reset code</div>
@@ -1492,12 +1480,8 @@ function TeamClaimScreen({ pitch, user, teams, onClaimed, onBack, onGuest }) {
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Barlow+Condensed:wght@400;600;700;800&display=swap');*{box-sizing:border-box;margin:0;padding:0;}body{background:#080C14;color:#E2EAF4;}`}</style>
       <div style={{width:"100%",maxWidth:380}}>
         <div style={{width:"100%",marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <button onClick={onBack} style={{background:"transparent",border:"none",color:"#4A5E78",fontSize:13,cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",padding:0,display:"flex",alignItems:"center",gap:4}}>
-            ← Back to Pitches
-          </button>
-          <button onClick={onGuest} style={{background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:"5px 12px",color:"#4A5E78",fontSize:12,cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>
-            👁 VIEW AS GUEST
-          </button>
+          <button onClick={onBack} style={{background:"transparent",border:"none",color:"#4A5E78",fontSize:13,cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",padding:0,display:"flex",alignItems:"center",gap:4}}>← Back to Pitches</button>
+          {onGuest && <button onClick={onGuest} style={{background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:"5px 12px",color:"#4A5E78",fontSize:12,cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>👁 GUEST</button>}
         </div>
         <div style={{textAlign:"center",marginBottom:32}}>
           <div style={{fontSize:40,marginBottom:8}}>🏏</div>
@@ -1688,10 +1672,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
   const [assignments, setAssignments] = useState({});
   const [matches, setMatches] = useState([]);
   const [tournaments, setTournaments] = useState([{id:"t_ipl",name:"Indian Premier League",open:true}]);
-  const [expandedTournaments, setExpandedTournaments] = useState(() => {
-    // All tournaments open by default
-    try { const s = localStorage.getItem('tb_expandedTournaments'); return s ? JSON.parse(s) : {}; } catch { return {}; }
-  });
+  const [expandedTournaments, setExpandedTournaments] = useState({"t_ipl":true});
   const [newTournamentName, setNewTournamentName] = useState("");
   const [expandedMatchId, setExpandedMatchId] = useState(null);
   const [captainMatch, setCaptainMatch] = useState(null);
@@ -1732,17 +1713,16 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
     longestSix:50, captainMult:2, vcMult:1.5
   }); // loaded from supabase
   const [showRulesPanel, setShowRulesPanel] = useState(false);
+  const [guestAllowed, setGuestAllowed] = useState(() => true);
   const [chatOpen, setChatOpen] = useState(false);
   const [chatMaximized, setChatMaximized] = useState(false);
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
   const [chatUnread, setChatUnread] = useState(0);
   const [chatLastSeen, setChatLastSeen] = useState(() => { try { return parseInt(localStorage.getItem('tb_chatLastSeen')||'0'); } catch { return 0; } });
-  const [chatMentionDropdown, setChatMentionDropdown] = useState(false);
   const [pinnedMessage, setPinnedMessage] = useState(null);
   const chatEndRef = React.useRef(null);
   const chatPollRef = React.useRef(null);
-  const [guestAllowed, setGuestAllowed] = useState(() => pitch?.guestAllowed !== false);
   const [votePin, setVotePin] = useState('');
   const [votePinErr, setVotePinErr] = useState(''); // {pid, fromTeamId}
   const [snatchPin, setSnatchPin] = useState('');
@@ -1809,10 +1789,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
         const pc = results[keys.indexOf('pointsConfig')];
         if(pc && typeof pc === 'object') setPointsConfig(prev=>({...prev,...pc}));
         const tv = results[keys.indexOf('tournaments')];
-        if(tv && Array.isArray(tv)) {
-          setTournaments(tv);
-          // Don't auto-expand — user controls this via clicks
-        }
+        if(tv && Array.isArray(tv)) { setTournaments(tv); const exp={}; tv.forEach(t=>exp[t.id]=true); setExpandedTournaments(exp); }
       } catch(e) {
         console.error("Load error:", e.message);
       } finally {
@@ -1958,7 +1935,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
     };
     const updated = [...tournaments, newT];
     setTournaments(updated);
-    setExpandedTournaments(prev => {const next={...prev,[newT.id]:true};try{localStorage.setItem('tb_expandedTournaments',JSON.stringify(next));}catch{}return next;});
+    setExpandedTournaments(prev => ({...prev, [newT.id]: true}));
     storeSet("tournaments", updated);
     setAddTournamentModal(false);
     setAddTournamentSource(null);
@@ -2015,14 +1992,13 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
   };
 
 
-  // ── CHAT ─────────────────────────────────────────────────────────────────
+  // ── CHAT ────────────────────────────────────────────────────────────────
   const loadChat = async () => {
     const data = await storeGet("chat") || {};
     const msgs = data.messages || [];
     const pinned = data.pinned || null;
     setChatMessages(msgs);
     setPinnedMessage(pinned);
-    // Count unread
     const unread = msgs.filter(m => m.ts > chatLastSeen && m.senderId !== myTeam?.id).length;
     setChatUnread(unread);
   };
@@ -2038,18 +2014,12 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
       senderColor: myTeam.color,
       ts: Date.now(),
       reactions: {},
-      mentions: [],
     };
-    // Extract @mentions
-    const mentionMatches = chatInput.split(' ').filter(w=>w.startsWith('@')) || [];
-    msg.mentions = mentionMatches.map(m => m.slice(1).trim());
-
     const data = await storeGet("chat") || {};
-    const msgs = [...(data.messages || []), msg].slice(-50); // keep last 50
+    const msgs = [...(data.messages || []), msg].slice(-50);
     await storeSet("chat", {...data, messages: msgs});
     setChatMessages(msgs);
     setChatInput('');
-    setChatMentionDropdown(false);
     setTimeout(() => chatEndRef.current?.scrollIntoView({behavior:'smooth'}), 50);
   };
 
@@ -2058,13 +2028,12 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
     const msgs = (data.messages || []).map(m => {
       if (m.id !== msgId) return m;
       const reactions = {...(m.reactions||{})};
-      const key = emoji;
-      const users = reactions[key] || [];
+      const users = reactions[emoji] || [];
       if (users.includes(myTeam?.id)) {
-        reactions[key] = users.filter(u => u !== myTeam?.id);
-        if (!reactions[key].length) delete reactions[key];
+        reactions[emoji] = users.filter(u => u !== myTeam?.id);
+        if (!reactions[emoji].length) delete reactions[emoji];
       } else {
-        reactions[key] = [...users, myTeam?.id];
+        reactions[emoji] = [...users, myTeam?.id];
       }
       return {...m, reactions};
     });
@@ -2072,14 +2041,14 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
     setChatMessages(msgs);
   };
 
-  const deleteMessage = async (msgId, isAdmin) => {
+  const deleteChatMsg = async (msgId) => {
     const data = await storeGet("chat") || {};
     const msgs = (data.messages || []).filter(m => m.id !== msgId);
     await storeSet("chat", {...data, messages: msgs});
     setChatMessages(msgs);
   };
 
-  const pinMessage = async (msg) => {
+  const pinChatMsg = async (msg) => {
     const data = await storeGet("chat") || {};
     const newPinned = pinnedMessage?.id === msg.id ? null : msg;
     await storeSet("chat", {...data, pinned: newPinned});
@@ -2093,20 +2062,30 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
     try { localStorage.setItem('tb_chatLastSeen', now.toString()); } catch {}
   };
 
-  // Poll chat every 15s
   React.useEffect(() => {
     loadChat();
     chatPollRef.current = setInterval(loadChat, 15000);
     return () => clearInterval(chatPollRef.current);
   }, []);
 
-  // Auto-scroll on open
   React.useEffect(() => {
     if (chatOpen) {
       markChatRead();
       setTimeout(() => chatEndRef.current?.scrollIntoView({behavior:'smooth'}), 100);
     }
   }, [chatOpen, chatMessages.length]);
+
+  const renderChatText = (text) => {
+    const words = text.split(' ');
+    return words.map((word, i) => {
+      if (word.startsWith('@')) {
+        const tName = word.slice(1);
+        const t = teams.find(t => t.name.toLowerCase().includes(tName.toLowerCase()));
+        return <span key={i}>{i>0?' ':''}<span style={{color:t?t.color:"#4F8EF7",fontWeight:700}}>{word}</span></span>;
+      }
+      return <span key={i}>{i>0?' ':''}{word}</span>;
+    });
+  };
 
   const nav=(pg)=>{setPage(pg);storeSet("page",pg);};
   const upd=(setter,key)=>(val)=>{setter(val);storeSet(key,val);};
@@ -3326,7 +3305,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
                   <div key={tournament.id} style={{marginBottom:12,background:"#0E1521",borderRadius:12,border:"1px solid "+tColor+"44",overflow:"hidden"}}>
                     {/* Tournament header */}
                     <div style={{display:"flex",alignItems:"center",padding:"12px 16px",cursor:"pointer",gap:10,background:tColor+"0D",borderBottom:isOpen?"1px solid "+tColor+"33":"none"}}
-                      onClick={()=>setExpandedTournaments(prev=>{const next={...prev,[tournament.id]:!prev[tournament.id]};try{localStorage.setItem('tb_expandedTournaments',JSON.stringify(next));}catch{}return next;})}>
+                      onClick={()=>setExpandedTournaments(prev=>({...prev,[tournament.id]:!prev[tournament.id]}))}>
                       <div style={{flex:1}}>
                         <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:16,fontWeight:700,color:tColor,letterSpacing:1}}>{tournament.name}</div>
                         <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>
@@ -4191,166 +4170,6 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
           </div>
         )}
 
-        {/* ── CHAT WINDOW ── */}
-        <div style={{position:"fixed",bottom:20,left:20,zIndex:500,fontFamily:"Barlow Condensed,sans-serif"}}>
-
-          {/* Chat toggle button */}
-          {!chatOpen && (
-            <button onClick={()=>{setChatOpen(true);markChatRead();}}
-              style={{width:52,height:52,borderRadius:"50%",background:"linear-gradient(135deg,#4F8EF7,#1a5fb4)",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 16px rgba(79,142,247,0.4)",position:"relative"}}>
-              <span style={{fontSize:22}}>💬</span>
-              {chatUnread > 0 && (
-                <span style={{position:"absolute",top:-2,right:-2,background:"#FF3D5A",borderRadius:"50%",width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"#fff"}}>{chatUnread > 9 ? "9+" : chatUnread}</span>
-              )}
-            </button>
-          )}
-
-          {/* Chat window */}
-          {chatOpen && (
-            <div style={{
-              width: chatMaximized ? "min(520px,90vw)" : "min(320px,85vw)",
-              height: chatMaximized ? "min(600px,80vh)" : "min(420px,60vh)",
-              background:"#0E1521",
-              borderRadius:16,
-              border:"1px solid #4F8EF744",
-              display:"flex",
-              flexDirection:"column",
-              boxShadow:"0 8px 32px rgba(0,0,0,0.6)",
-              overflow:"hidden",
-              transition:"all 0.2s",
-            }}>
-
-              {/* Header */}
-              <div style={{background:"linear-gradient(135deg,#4F8EF722,#1a5fb422)",borderBottom:"1px solid #4F8EF733",padding:"10px 14px",display:"flex",alignItems:"center",gap:8}}>
-                <span style={{fontSize:16}}>💬</span>
-                <div style={{flex:1,fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:15,color:"#4F8EF7",letterSpacing:1}}>PITCH CHAT</div>
-                <button onClick={()=>setChatMaximized(v=>!v)} style={{background:"transparent",border:"none",color:"#4A5E78",cursor:"pointer",fontSize:14,padding:"2px 6px"}}>{chatMaximized?"⊡":"⊞"}</button>
-                <button onClick={()=>setChatOpen(false)} style={{background:"transparent",border:"none",color:"#4A5E78",cursor:"pointer",fontSize:16,padding:"2px 6px"}}>✕</button>
-              </div>
-
-              {/* Pinned message */}
-              {pinnedMessage && (
-                <div style={{background:"#F5A62311",borderBottom:"1px solid #F5A62322",padding:"6px 14px",display:"flex",alignItems:"center",gap:6}}>
-                  <span style={{fontSize:11}}>📌</span>
-                  <div style={{flex:1,fontSize:11,color:"#F5A623",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{pinnedMessage.senderName}: {pinnedMessage.text}</div>
-                  {unlocked && <button onClick={()=>pinMessage(pinnedMessage)} style={{background:"transparent",border:"none",color:"#4A5E78",cursor:"pointer",fontSize:10}}>✕</button>}
-                </div>
-              )}
-
-              {/* Messages */}
-              <div style={{flex:1,overflowY:"auto",padding:"10px 12px",display:"flex",flexDirection:"column",gap:8}}>
-                {chatMessages.length === 0 && (
-                  <div style={{textAlign:"center",color:"#2D3E52",fontSize:13,marginTop:40}}>No messages yet. Say hello! 👋</div>
-                )}
-                {chatMessages.map(msg => {
-                  const isMe = msg.senderId === myTeam?.id;
-                  const isMentioned = msg.mentions?.some(m => teams.find(t=>t.id===myTeam?.id&&t.name.toLowerCase().includes(m.toLowerCase())));
-                  // Render text with @mentions highlighted
-                  const renderText = (text) => {
-                    const parts = text.split(/([@][^\s]+)/g);
-                    return parts.map((part, i) => {
-                      if (part.startsWith('@')) {
-                        const tName = part.slice(1);
-                        const t = teams.find(t=>t.name.toLowerCase().includes(tName.toLowerCase()));
-                        return <span key={i} style={{color:t?t.color:"#4F8EF7",fontWeight:700}}>{part}</span>;
-                      }
-                      return <span key={i}>{part}</span>;
-                    });
-                  };
-                  return (
-                    <div key={msg.id} style={{display:"flex",flexDirection:"column",alignItems:isMe?"flex-end":"flex-start"}}>
-                      <div style={{
-                        maxWidth:"80%",
-                        background:isMentioned?"#F5A62322":isMe?"#4F8EF722":"#141E2E",
-                        border:"1px solid "+(isMentioned?"#F5A62344":isMe?"#4F8EF744":"#1E2D45"),
-                        borderRadius:isMe?"12px 12px 4px 12px":"12px 12px 12px 4px",
-                        padding:"7px 10px",
-                      }}>
-                        {!isMe && <div style={{fontSize:10,color:msg.senderColor||"#4F8EF7",fontWeight:700,marginBottom:3}}>{msg.senderName}</div>}
-                        <div style={{fontSize:13,color:"#E2EAF4",lineHeight:1.4}}>{renderText(msg.text)}</div>
-                        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:4,gap:6}}>
-                          <div style={{fontSize:9,color:"#2D3E52"}}>{new Date(msg.ts).toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"})}</div>
-                          <div style={{display:"flex",gap:3}}>
-                            {/* Reactions */}
-                            {Object.entries(msg.reactions||{}).map(([emoji,users])=>(
-                              <button key={emoji} onClick={()=>addReaction(msg.id,emoji)}
-                                style={{background:users.includes(myTeam?.id)?"#4F8EF733":"#1E2D45",border:"none",borderRadius:10,padding:"1px 6px",cursor:"pointer",fontSize:11,color:"#E2EAF4"}}>
-                                {emoji} {users.length}
-                              </button>
-                            ))}
-                            {/* Add reaction */}
-                            {["👍","🔥","😂","💀","🏏"].map(emoji=>(
-                              <button key={emoji} onClick={()=>addReaction(msg.id,emoji)}
-                                style={{background:"transparent",border:"none",cursor:"pointer",fontSize:11,opacity:0.4,padding:"1px 2px"}}>
-                                {emoji}
-                              </button>
-                            ))}
-                            {/* Delete */}
-                            {(isMe || unlocked) && (
-                              <button onClick={()=>withPassword(()=>deleteMessage(msg.id))}
-                                style={{background:"transparent",border:"none",color:"#FF3D5A",cursor:"pointer",fontSize:10,opacity:0.5,padding:"1px 4px"}}>✕</button>
-                            )}
-                            {/* Pin (admin) */}
-                            {unlocked && (
-                              <button onClick={()=>withPassword(()=>pinMessage(msg))}
-                                style={{background:"transparent",border:"none",color:"#F5A623",cursor:"pointer",fontSize:10,opacity:0.5,padding:"1px 4px"}}>📌</button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-                <div ref={chatEndRef} />
-              </div>
-
-              {/* Input */}
-              {myTeam && !isGuest ? (
-                <div style={{borderTop:"1px solid #1E2D45",padding:"8px 10px"}}>
-                  {/* @mention dropdown */}
-                  {chatMentionDropdown && (
-                    <div style={{background:"#141E2E",border:"1px solid #1E2D45",borderRadius:8,marginBottom:6,overflow:"hidden"}}>
-                      {teams.map(t=>(
-                        <button key={t.id} onClick={()=>{
-                          const lastAt = chatInput.lastIndexOf('@');
-                          setChatInput(chatInput.slice(0,lastAt)+'@'+t.name+' ');
-                          setChatMentionDropdown(false);
-                        }} style={{width:"100%",background:"transparent",border:"none",padding:"7px 12px",textAlign:"left",cursor:"pointer",color:t.color,fontSize:13,fontWeight:700,fontFamily:"Barlow Condensed,sans-serif"}}>
-                          @{t.name}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                  <div style={{display:"flex",gap:6}}>
-                    <input value={chatInput}
-                      onChange={e=>{
-                        const val = e.target.value;
-                        setChatInput(val);
-                        // Show mention dropdown when @ is typed
-                        const lastAt = val.lastIndexOf('@');
-                        if(lastAt >= 0 && lastAt === val.length-1) setChatMentionDropdown(true);
-                        else setChatMentionDropdown(false);
-                      }}
-                      onKeyDown={e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendChatMessage();}}}
-                      placeholder={"Message as "+myTeam.name+"..."}
-                      maxLength={200}
-                      style={{flex:1,background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"8px 10px",color:"#E2EAF4",fontSize:13,fontFamily:"Barlow Condensed,sans-serif",outline:"none"}} />
-                    <button onClick={sendChatMessage}
-                      style={{background:"#4F8EF7",border:"none",borderRadius:8,padding:"8px 12px",color:"#fff",cursor:"pointer",fontSize:14}}>➤</button>
-                  </div>
-                  <div style={{fontSize:9,color:"#2D3E52",marginTop:4,textAlign:"right"}}>{chatInput.length}/200</div>
-                </div>
-              ) : (
-                <div style={{borderTop:"1px solid #1E2D45",padding:"10px",textAlign:"center",fontSize:11,color:"#2D3E52"}}>
-                  {isGuest ? "👁 Guests can read but not send messages" : "Claim a team to chat"}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-      </div>
-
         {/* SNATCH PIN MODAL */}
         {snatchPinModal && (
           <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.96)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,padding:24}}>
@@ -4461,7 +4280,6 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
                 {pendingVote && <span style={{width:8,height:8,background:"#FF3D5A",borderRadius:"50%",flexShrink:0}} />}
               </button>
 
-              {/* Guest Access toggle */}
               <div style={{padding:"8px 14px 0"}}>
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",background:"#080C14",borderRadius:10,border:"1px solid #1E2D45"}}>
                   <div>
@@ -4469,14 +4287,14 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
                     <div style={{fontSize:10,color:"#4A5E78",marginTop:2}}>Allow guests to view this pitch</div>
                   </div>
                   <button onClick={()=>withPassword(async()=>{
-                    const nowAllowed = !guestAllowed;
+                    const now = !guestAllowed;
                     const pws = await sbGet("pitches") || [];
-                    const updated = pws.map(p=>p.id===pitch.id?{...p,guestAllowed:nowAllowed}:p);
+                    const updated = pws.map(p=>p.id===pitch.id?{...p,guestAllowed:now}:p);
                     await sbSet("pitches", updated);
-                    setGuestAllowed(nowAllowed);
+                    setGuestAllowed(now);
                   })} style={{background:"none",border:"none",cursor:"pointer",padding:0,flexShrink:0}}>
-                    <span style={{width:44,height:24,borderRadius:12,background:guestAllowed?"#2ECC71":"#1E2D45",position:"relative",transition:"background 0.2s",boxShadow:"inset 0 1px 3px rgba(0,0,0,0.3)",display:"inline-block"}}>
-                      <span style={{position:"absolute",top:3,left:guestAllowed?23:3,width:18,height:18,borderRadius:"50%",background:"#fff",transition:"left 0.2s",boxShadow:"0 1px 3px rgba(0,0,0,0.3)",display:"block"}} />
+                    <span style={{width:44,height:24,borderRadius:12,background:guestAllowed?"#2ECC71":"#1E2D45",position:"relative",transition:"background 0.2s",display:"inline-block"}}>
+                      <span style={{position:"absolute",top:3,left:guestAllowed?23:3,width:18,height:18,borderRadius:"50%",background:"#fff",transition:"left 0.2s",display:"block"}} />
                     </span>
                   </button>
                 </div>
@@ -4488,6 +4306,89 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
           </div>
         )}
       </div>
+
+        {/* CHAT WINDOW */}
+        <div style={{position:"fixed",bottom:20,left:20,zIndex:500,fontFamily:"Barlow Condensed,sans-serif"}}>
+          {!chatOpen && (
+            <button onClick={()=>{setChatOpen(true);markChatRead();}}
+              style={{width:52,height:52,borderRadius:"50%",background:"linear-gradient(135deg,#4F8EF7,#1a5fb4)",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 16px rgba(79,142,247,0.4)",position:"relative"}}>
+              <span style={{fontSize:22}}>💬</span>
+              {chatUnread > 0 && (
+                <span style={{position:"absolute",top:-2,right:-2,background:"#FF3D5A",borderRadius:"50%",width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"#fff"}}>{chatUnread > 9 ? "9+" : chatUnread}</span>
+              )}
+            </button>
+          )}
+          {chatOpen && (
+            <div style={{width:chatMaximized?"min(520px,90vw)":"min(320px,85vw)",height:chatMaximized?"min(600px,80vh)":"min(420px,60vh)",background:"#0E1521",borderRadius:16,border:"1px solid #4F8EF744",display:"flex",flexDirection:"column",boxShadow:"0 8px 32px rgba(0,0,0,0.6)",overflow:"hidden"}}>
+              <div style={{background:"#4F8EF711",borderBottom:"1px solid #4F8EF733",padding:"10px 14px",display:"flex",alignItems:"center",gap:8}}>
+                <span style={{fontSize:16}}>💬</span>
+                <div style={{flex:1,fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:15,color:"#4F8EF7",letterSpacing:1}}>PITCH CHAT</div>
+                <button onClick={()=>setChatMaximized(v=>!v)} style={{background:"transparent",border:"none",color:"#4A5E78",cursor:"pointer",fontSize:14,padding:"2px 6px"}}>{chatMaximized?"⊡":"⊞"}</button>
+                <button onClick={()=>setChatOpen(false)} style={{background:"transparent",border:"none",color:"#4A5E78",cursor:"pointer",fontSize:16,padding:"2px 6px"}}>✕</button>
+              </div>
+              {pinnedMessage && (
+                <div style={{background:"#F5A62311",borderBottom:"1px solid #F5A62322",padding:"6px 14px",display:"flex",alignItems:"center",gap:6}}>
+                  <span style={{fontSize:11}}>📌</span>
+                  <div style={{flex:1,fontSize:11,color:"#F5A623",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{pinnedMessage.senderName}: {pinnedMessage.text}</div>
+                  {unlocked && <button onClick={()=>withPassword(()=>pinChatMsg(pinnedMessage))} style={{background:"transparent",border:"none",color:"#4A5E78",cursor:"pointer",fontSize:10}}>✕</button>}
+                </div>
+              )}
+              <div style={{flex:1,overflowY:"auto",padding:"10px 12px",display:"flex",flexDirection:"column",gap:8}}>
+                {chatMessages.length === 0 && (
+                  <div style={{textAlign:"center",color:"#2D3E52",fontSize:13,marginTop:40}}>No messages yet. Say hello! 👋</div>
+                )}
+                {chatMessages.map(msg => {
+                  const isMe = msg.senderId === myTeam?.id;
+                  return (
+                    <div key={msg.id} style={{display:"flex",flexDirection:"column",alignItems:isMe?"flex-end":"flex-start"}}>
+                      <div style={{maxWidth:"80%",background:isMe?"#4F8EF722":"#141E2E",border:"1px solid "+(isMe?"#4F8EF744":"#1E2D45"),borderRadius:isMe?"12px 12px 4px 12px":"12px 12px 12px 4px",padding:"7px 10px"}}>
+                        {!isMe && <div style={{fontSize:10,color:msg.senderColor||"#4F8EF7",fontWeight:700,marginBottom:3}}>{msg.senderName}</div>}
+                        <div style={{fontSize:13,color:"#E2EAF4",lineHeight:1.4}}>{renderChatText(msg.text)}</div>
+                        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:4,gap:6}}>
+                          <div style={{fontSize:9,color:"#2D3E52"}}>{new Date(msg.ts).toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"})}</div>
+                          <div style={{display:"flex",gap:3,flexWrap:"wrap"}}>
+                            {Object.entries(msg.reactions||{}).map(([emoji,users])=>(
+                              <button key={emoji} onClick={()=>addReaction(msg.id,emoji)}
+                                style={{background:users.includes(myTeam?.id)?"#4F8EF733":"#1E2D45",border:"none",borderRadius:10,padding:"1px 6px",cursor:"pointer",fontSize:11,color:"#E2EAF4"}}>{emoji} {users.length}</button>
+                            ))}
+                            {["👍","🔥","😂","💀","🏏"].map(emoji=>(
+                              <button key={emoji} onClick={()=>addReaction(msg.id,emoji)}
+                                style={{background:"transparent",border:"none",cursor:"pointer",fontSize:11,opacity:0.4,padding:"1px 2px"}}>{emoji}</button>
+                            ))}
+                            {(isMe || unlocked) && <button onClick={()=>{ if(isMe){deleteChatMsg(msg.id);}else{withPassword(()=>deleteChatMsg(msg.id));}}} style={{background:"transparent",border:"none",color:"#FF3D5A",cursor:"pointer",fontSize:10,opacity:0.5,padding:"1px 4px"}}>✕</button>}
+                            {unlocked && <button onClick={()=>withPassword(()=>pinChatMsg(msg))} style={{background:"transparent",border:"none",color:"#F5A623",cursor:"pointer",fontSize:10,opacity:0.5,padding:"1px 4px"}}>📌</button>}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                <div ref={chatEndRef} />
+              </div>
+              {myTeam && !isGuest ? (
+                <div style={{borderTop:"1px solid #1E2D45",padding:"8px 10px"}}>
+                  <div style={{display:"flex",gap:6}}>
+                    <input value={chatInput}
+                      onChange={e=>setChatInput(e.target.value)}
+                      onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();sendChatMessage();}}}
+                      placeholder={"Message as "+myTeam.name+"... (type @ to tag)"}
+                      maxLength={200}
+                      style={{flex:1,background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"8px 10px",color:"#E2EAF4",fontSize:13,fontFamily:"Barlow Condensed,sans-serif",outline:"none"}} />
+                    <button onClick={sendChatMessage}
+                      style={{background:"#4F8EF7",border:"none",borderRadius:8,padding:"8px 12px",color:"#fff",cursor:"pointer",fontSize:14}}>➤</button>
+                  </div>
+                  <div style={{fontSize:9,color:"#2D3E52",marginTop:4,textAlign:"right"}}>{chatInput.length}/200</div>
+                </div>
+              ) : (
+                <div style={{borderTop:"1px solid #1E2D45",padding:"10px",textAlign:"center",fontSize:11,color:"#2D3E52"}}>
+                  {isGuest ? "👁 Guests can read but not send messages" : "Claim a team to chat"}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
     </>
   );
 }
@@ -4504,6 +4405,7 @@ function Root() {
       return p;
     } catch { return null; }
   });
+  const [isGuest, setIsGuest] = useState(false);
   const [myTeam, setMyTeam] = useState(() => {
     try { const s = localStorage.getItem('tb_myteam'); return s ? JSON.parse(s) : null; } catch { return null; }
   });
@@ -4511,76 +4413,35 @@ function Root() {
     try { return localStorage.getItem('tb_pinHash') || null; } catch { return null; }
   });
   const [teamsClaimed, setTeamsClaimed] = useState(() => {
-    try { return !!localStorage.getItem('tb_myteam') || !!localStorage.getItem('tb_guest'); } catch { return false; }
+    try { return !!localStorage.getItem('tb_myteam'); } catch { return false; }
   });
-  const [isGuest, setIsGuest] = useState(() => {
-    try { return !!localStorage.getItem('tb_guest'); } catch { return false; }
-  });
+  const [isGuest, setIsGuest] = useState(false);
 
   const handleLogin = (user) => {
     setCurrentUser(user);
     try { localStorage.setItem('tb_user', JSON.stringify(user)); } catch {}
   };
   const handleLogout = () => {
-    setCurrentUser(null); setCurrentPitch(null); setMyTeam(null); setMyPinHash(null); setIsGuest(false); setTeamsClaimed(false);
-    try {
-      // Clear all tb_ keys
-      const keys = Object.keys(localStorage).filter(k=>k.startsWith('tb_'));
-      keys.forEach(k=>localStorage.removeItem(k));
-    } catch {}
+    setCurrentUser(null); setCurrentPitch(null); setMyTeam(null); setMyPinHash(null); setTeamsClaimed(false);
+    try { ['tb_user','tb_pitch','tb_myteam','tb_pinHash'].forEach(k=>localStorage.removeItem(k)); } catch {}
   };
-  const handleEnter = (pitch, asGuest) => {
+  const handleEnter = (pitch) => {
     _pitchId = pitch.id;
     setCurrentPitch(pitch);
-    try {
-      const pitchTeamKey = 'tb_myteam_' + pitch.id;
-      const pitchPinKey = 'tb_pinHash_' + pitch.id;
-      const pitchGuestKey = 'tb_guest_' + pitch.id;
-      const savedTeam = localStorage.getItem(pitchTeamKey);
-      const savedPin = localStorage.getItem(pitchPinKey);
-      const savedGuest = localStorage.getItem(pitchGuestKey);
-      if (asGuest) {
-        // Entering as guest from password screen
-        localStorage.setItem(pitchGuestKey, '1');
-        setMyTeam(null); setMyPinHash(null); setIsGuest(true); setTeamsClaimed(true);
-      } else if (savedTeam) {
-        setMyTeam(JSON.parse(savedTeam));
-        setMyPinHash(savedPin || null);
-        setIsGuest(false);
-        setTeamsClaimed(true);
-      } else if (savedGuest) {
-        setMyTeam(null); setMyPinHash(null); setIsGuest(true); setTeamsClaimed(true);
-      } else {
-        setMyTeam(null); setMyPinHash(null); setIsGuest(false); setTeamsClaimed(false);
-      }
-      localStorage.setItem('tb_pitch', JSON.stringify(pitch));
-    } catch {
-      setMyTeam(null); setMyPinHash(null); setIsGuest(false); setTeamsClaimed(false);
-    }
+    // Reset team claim when entering a new pitch
+    const savedTeam = localStorage.getItem('tb_myteam');
+    const skipped = localStorage.getItem('tb_skipped');
+    if (!savedTeam && !skipped) { setMyTeam(null); setMyPinHash(null); setTeamsClaimed(false); }
+    try { localStorage.setItem('tb_pitch', JSON.stringify(pitch)); } catch {}
   };
   const handleLeave = () => {
-    setIsGuest(false); setTeamsClaimed(false); setMyTeam(null); setMyPinHash(null);
-    setCurrentPitch(null);
+    setCurrentPitch(null); setIsGuest(false); setTeamsClaimed(false);
     try { localStorage.removeItem('tb_pitch'); } catch {}
   };
+  const handleGuestEnter = () => { setIsGuest(true); setTeamsClaimed(true); };
   const handleClaimed = (team, pinHash) => {
-    setMyTeam(team); setMyPinHash(pinHash); setIsGuest(false); setTeamsClaimed(true);
-    try {
-      const pitchId = currentPitch?.id || 'default';
-      localStorage.setItem('tb_myteam_' + pitchId, JSON.stringify(team));
-      if(pinHash) localStorage.setItem('tb_pinHash_' + pitchId, pinHash);
-      // Legacy keys for backwards compat
-      localStorage.setItem('tb_myteam', JSON.stringify(team));
-      if(pinHash) localStorage.setItem('tb_pinHash', pinHash);
-    } catch {}
-  };
-
-  const handleGuestEnter = () => {
-    setMyTeam(null); setMyPinHash(null); setIsGuest(true); setTeamsClaimed(true);
-    try {
-      const pitchId = currentPitch?.id || 'default';
-      localStorage.setItem('tb_guest_' + pitchId, '1');
-    } catch {}
+    setMyTeam(team); setMyPinHash(pinHash); setTeamsClaimed(true);
+    try { localStorage.setItem('tb_myteam', JSON.stringify(team)); if(pinHash) localStorage.setItem('tb_pinHash', pinHash); } catch {}
   };
   try {
     if (!currentUser) return <SplashScreen onLogin={handleLogin} />;
