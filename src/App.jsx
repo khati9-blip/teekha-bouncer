@@ -3170,17 +3170,15 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
                 <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2}}>MATCHES</h2>
               </div>
 
-              {/* Add tournament - admin only */}
-              {unlocked && (
-                <button onClick={()=>withPassword(()=>setAddTournamentModal(true))}
-                  style={{width:"100%",background:"#0E1521",borderRadius:10,border:"1px solid #1E2D45",padding:"12px 16px",marginBottom:16,cursor:"pointer",display:"flex",alignItems:"center",gap:10,fontFamily:"Barlow Condensed,sans-serif"}}>
-                  <span style={{fontSize:18}}>➕</span>
-                  <div style={{textAlign:"left"}}>
-                    <div style={{fontWeight:700,fontSize:14,color:"#F5A623"}}>ADD TOURNAMENT</div>
-                    <div style={{fontSize:11,color:"#4A5E78",marginTop:1}}>Fetch from Cricbuzz or CricketData</div>
-                  </div>
-                </button>
-              )}
+              {/* Add tournament - always visible, password on click */}
+              <button onClick={()=>withPassword(()=>setAddTournamentModal(true))}
+                style={{width:"100%",background:"#0E1521",borderRadius:10,border:"1px solid #1E2D45",padding:"12px 16px",marginBottom:16,cursor:"pointer",display:"flex",alignItems:"center",gap:10,fontFamily:"Barlow Condensed,sans-serif"}}>
+                <span style={{fontSize:18}}>➕</span>
+                <div style={{textAlign:"left"}}>
+                  <div style={{fontWeight:700,fontSize:14,color:"#F5A623"}}>ADD TOURNAMENT</div>
+                  <div style={{fontSize:11,color:"#4A5E78",marginTop:1}}>Fetch from Cricbuzz or CricketData</div>
+                </div>
+              </button>
 
               {/* Source legend */}
               {unlocked && (
