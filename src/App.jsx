@@ -3200,7 +3200,10 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
                       onClick={()=>setExpandedTournaments(prev=>({...prev,[tournament.id]:!prev[tournament.id]}))}>
                       <div style={{flex:1}}>
                         <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:16,fontWeight:700,color:"#E2EAF4",letterSpacing:1}}>{tournament.name}</div>
-                        <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>{tMatches.length} matches{liveCount>0?" • "+liveCount+" LIVE 🔴":""}</div>
+                        <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>
+                          {tMatches.length} matches{liveCount>0?" • "+liveCount+" LIVE 🔴":""}
+                          {tournament.tradeSnatchEnabled && <span style={{marginLeft:6,color:"#A855F7",fontSize:10,fontWeight:700}}>⚡ TRADE & SNATCH ON</span>}
+                        </div>
                       </div>
                       <div style={{display:"flex",gap:4}}>
                         <div style={{position:"relative",display:"inline-block"}} className="tooltip-wrap">
@@ -3214,6 +3217,37 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
                             title="CricketData — 100 req/day free. Resets daily.">🟢 CD</button>
                         </div>
                       </div>
+                      {/* Trade & Snatch toggle */}
+                      {(() => {
+                        const tStarted = tMatches.some(m => m.status === "completed");
+                        // Auto-enable if matches already played and not explicitly set
+                        const isOn = tournament.tradeSnatchEnabled === undefined ? tStarted : !!tournament.tradeSnatchEnabled;
+                        return (
+                          <button onClick={e=>{
+                            e.stopPropagation();
+                            if (tStarted && isOn) { alert("Tournament has started — Trade & Snatch cannot be disabled."); return; }
+                            if (!isOn && !confirm("Enable Trade & Snatch for " + tournament.name + "? Once the tournament starts this cannot be turned off.")) return;
+                            if (isOn && !tStarted) {
+                              withPassword(()=>{
+                                const updated = tournaments.map(t=>t.id===tournament.id?{...t,tradeSnatchEnabled:false}:t);
+                                setTournaments(updated); storeSet("tournaments",updated);
+                              });
+                            } else {
+                              withPassword(()=>{
+                                const updated = tournaments.map(t=>t.id===tournament.id?{...t,tradeSnatchEnabled:true}:t);
+                                setTournaments(updated); storeSet("tournaments",updated);
+                              });
+                            }
+                          }}
+                          title={tStarted&&isOn?"Irreversible — tournament started":"Toggle Trade & Snatch rules"}
+                          style={{background:isOn?"#A855F722":"transparent",border:"1px solid "+(isOn?"#A855F744":"#1E2D45"),borderRadius:20,padding:"3px 10px",cursor:tStarted&&isOn?"not-allowed":"pointer",display:"flex",alignItems:"center",gap:5,flexShrink:0}}>
+                            <span style={{width:24,height:13,background:isOn?"#A855F7":"#1E2D45",borderRadius:10,position:"relative",transition:"background .2s",display:"inline-block",flexShrink:0}}>
+                              <span style={{position:"absolute",top:2,left:isOn?12:2,width:9,height:9,background:"#fff",borderRadius:"50%",transition:"left .2s",display:"block"}} />
+                            </span>
+                            <span style={{fontSize:9,color:isOn?"#A855F7":"#4A5E78",fontWeight:700,whiteSpace:"nowrap"}}>T&S</span>
+                          </button>
+                        );
+                      })()}
                       {unlocked && tournament.id !== "t_ipl" && (
                         <button onClick={e=>{e.stopPropagation();if(!confirm("Remove this tournament?"))return;const updated=tournaments.filter(t=>t.id!==tournament.id);setTournaments(updated);storeSet("tournaments",updated);}}
                           style={{background:"transparent",border:"1px solid #1E2D45",color:"#4A5E78",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:11}}>✕</button>
