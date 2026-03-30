@@ -1675,6 +1675,8 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
   const [tournaments, setTournaments] = useState([{id:"t_ipl",name:"Indian Premier League",open:true}]);
   const [expandedTournaments, setExpandedTournaments] = useState({"t_ipl":true});
   const [newTournamentName, setNewTournamentName] = useState("");
+  const [expandedMatchId, setExpandedMatchId] = useState(null);
+  const [captainMatch, setCaptainMatch] = useState(null);
   const [captains, setCaptains] = useState({});
   const [points, setPoints] = useState({});
   const [loading, setLoading] = useState("");
