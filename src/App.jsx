@@ -3139,7 +3139,11 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
                           <div style={{display:"flex",flexDirection:"column",gap:6}}>
                             {(() => {
                               const sorted = [...tMatches].sort((a,b)=>{
-                                const o={completed:0,live:1,upcoming:2};
+                                // Sort by date first, then by status (live first within same date)
+                                const dateA = a.date || "9999";
+                                const dateB = b.date || "9999";
+                                if (dateA !== dateB) return dateA.localeCompare(dateB);
+                                const o={live:0,completed:1,upcoming:2};
                                 return (o[a.status]||2)-(o[b.status]||2);
                               });
                               return sorted.map((match,idx) => {
@@ -3165,10 +3169,15 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
                                             <span style={{fontSize:10,color:"#FF3D5A",fontWeight:700}}>🔴 LIVE</span>
                                             {unlocked && <button onClick={e=>{e.stopPropagation();const upd=matches.map(m=>m.id===match.id?{...m,status:"completed"}:m);updMatches(upd);}} style={{fontSize:9,color:"#4A5E78",background:"transparent",border:"1px solid #1E2D45",borderRadius:4,padding:"2px 6px",cursor:"pointer"}}>Mark Done</button>}
                                           </div>
+                                        ) : completed ? (
+                                          <div style={{textAlign:"right"}}>
+                                            <div style={{fontSize:10,fontWeight:700,color:isSynced?"#2ECC71":"#F5A623"}}>
+                                              {isSynced ? "✓ SYNCED" : "⚠ UNSYNCED"}
+                                            </div>
+                                            <div style={{fontSize:9,color:"#4A5E78",marginTop:1}}>COMPLETED</div>
+                                          </div>
                                         ) : (
-                                          <span style={{fontSize:10,color:completed?"#2ECC71":"#F5A623",fontWeight:700,maxWidth:80,textAlign:"right",lineHeight:1.3}}>
-                                            {completed?(isSynced?"✓ SYNCED":match.result?"✓ "+match.result.slice(0,20):"DONE"):"UPCOMING"}
-                                          </span>
+                                          <span style={{fontSize:10,color:"#4A5E78",fontWeight:700}}>UPCOMING</span>
                                         )}
                                       </div>
                                     </div>
