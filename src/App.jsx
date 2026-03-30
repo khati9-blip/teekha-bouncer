@@ -1673,7 +1673,10 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
   const [assignments, setAssignments] = useState({});
   const [matches, setMatches] = useState([]);
   const [tournaments, setTournaments] = useState([{id:"t_ipl",name:"Indian Premier League",open:true}]);
-  const [expandedTournaments, setExpandedTournaments] = useState({"t_ipl":true});
+  const [expandedTournaments, setExpandedTournaments] = useState(() => {
+    // All tournaments open by default
+    try { const s = localStorage.getItem('tb_expandedTournaments'); return s ? JSON.parse(s) : {}; } catch { return {}; }
+  });
   const [newTournamentName, setNewTournamentName] = useState("");
   const [expandedMatchId, setExpandedMatchId] = useState(null);
   const [captainMatch, setCaptainMatch] = useState(null);
@@ -1780,7 +1783,10 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
         const pc = results[keys.indexOf('pointsConfig')];
         if(pc && typeof pc === 'object') setPointsConfig(prev=>({...prev,...pc}));
         const tv = results[keys.indexOf('tournaments')];
-        if(tv && Array.isArray(tv)) { setTournaments(tv); const exp={}; tv.forEach(t=>exp[t.id]=true); setExpandedTournaments(exp); }
+        if(tv && Array.isArray(tv)) {
+          setTournaments(tv);
+          // Don't auto-expand — user controls this via clicks
+        }
       } catch(e) {
         console.error("Load error:", e.message);
       } finally {
@@ -1926,7 +1932,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
     };
     const updated = [...tournaments, newT];
     setTournaments(updated);
-    setExpandedTournaments(prev => ({...prev, [newT.id]: true}));
+    setExpandedTournaments(prev => {const next={...prev,[newT.id]:true};try{localStorage.setItem('tb_expandedTournaments',JSON.stringify(next));}catch{}return next;});
     storeSet("tournaments", updated);
     setAddTournamentModal(false);
     setAddTournamentSource(null);
@@ -3199,7 +3205,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
                   <div key={tournament.id} style={{marginBottom:12,background:"#0E1521",borderRadius:12,border:"1px solid "+tColor+"44",overflow:"hidden"}}>
                     {/* Tournament header */}
                     <div style={{display:"flex",alignItems:"center",padding:"12px 16px",cursor:"pointer",gap:10,background:tColor+"0D",borderBottom:isOpen?"1px solid "+tColor+"33":"none"}}
-                      onClick={()=>setExpandedTournaments(prev=>({...prev,[tournament.id]:!prev[tournament.id]}))}>
+                      onClick={()=>setExpandedTournaments(prev=>{const next={...prev,[tournament.id]:!prev[tournament.id]};try{localStorage.setItem('tb_expandedTournaments',JSON.stringify(next));}catch{}return next;})}>
                       <div style={{flex:1}}>
                         <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:16,fontWeight:700,color:tColor,letterSpacing:1}}>{tournament.name}</div>
                         <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>
