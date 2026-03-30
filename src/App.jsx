@@ -2838,7 +2838,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
 
   return (
     <>
-      {guestBanner}
+      {isGuest && <div style={{background:"#4A5E7822",borderBottom:"1px solid #1E2D45",padding:"6px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:11,fontFamily:"Barlow Condensed,sans-serif"}}><span style={{color:"#4A5E78"}}>👁 Viewing as Guest — read only</span><button onClick={onLeave} style={{background:"transparent",border:"none",color:"#F5A623",fontSize:11,cursor:"pointer",fontWeight:700,fontFamily:"Barlow Condensed,sans-serif"}}>CLAIM A TEAM →</button></div>}
       <style>{css}</style>
       <div style={{minHeight:"100vh",background:"var(--bg)"}}>
         {editPlayer&&<EditPlayerModal player={editPlayer}
