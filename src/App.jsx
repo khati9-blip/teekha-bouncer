@@ -1777,6 +1777,83 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
     })();
   }, []);
 
+  // ── CRICKETDATA fetch ──────────────────────────────────────────────────────
+  const fetchFromCricketData = async (tournamentId, tournamentName) => {
+    setLoading("Fetching from CricketData for " + tournamentName + "…");
+    try {
+      // Fetch schedule and live scores in parallel
+      const [scheduleRes, liveRes] = await Promise.all([
+        fetch("/api/cricketdata?path=cricket-schedule").then(r=>r.json()).catch(()=>({})),
+        fetch("/api/cricketdata?path=cricket-livescores").then(r=>r.json()).catch(()=>({})),
+      ]);
+
+      // Parse matches from schedule - filter by tournament name
+      const found = [];
+      const scheduleMatches = scheduleRes?.matchScheduleMap || scheduleRes?.data || [];
+      const liveMatches = liveRes?.matchDetailsList || liveRes?.data || [];
+
+      // Build live match lookup
+      const liveMap = {};
+      (Array.isArray(liveMatches) ? liveMatches : []).forEach(m => {
+        if (m?.matchInfo?.matchId) liveMap[m.matchInfo.matchId] = m;
+      });
+
+      const allMatches = Array.isArray(scheduleMatches) ? scheduleMatches : [];
+      allMatches.forEach(item => {
+        const seriesName = item?.seriesName || item?.series?.name || "";
+        if (!seriesName.toLowerCase().includes(tournamentName.toLowerCase())) return;
+        const mList = item?.matchInfo || item?.matches || [];
+        (Array.isArray(mList) ? mList : []).forEach(m => {
+          const info = m?.matchInfo || m;
+          const live = liveMap[info?.matchId];
+          found.push({ info, live });
+        });
+      });
+
+      if (found.length === 0) {
+        alert("No matches found for "" + tournamentName + "" in CricketData. Check the tournament name.");
+        setLoading(""); return;
+      }
+
+      const existingIds = new Set(matches.map(m => m.cricbuzzId).filter(Boolean));
+      const updated = [...matches];
+      let nextNum = matches.length + 1;
+
+      found.forEach(({ info: m, live }) => {
+        if (!m?.matchId) return;
+        const existing = updated.find(x => x.cricbuzzId === m.matchId);
+        const isLive = !!live;
+        const isComplete = m?.status === "Complete" || m?.matchStatus === "complete";
+        const status = isComplete ? "completed" : isLive ? "live" : "upcoming";
+
+        if (existing) {
+          existing.status = existing.status === "completed" ? "completed" : status;
+        } else if (!existingIds.has(m.matchId)) {
+          updated.push({
+            id: "cd_" + m.matchId,
+            cricbuzzId: m.matchId,
+            tournamentId,
+            matchNum: nextNum++,
+            date: m.startDate ? new Date(parseInt(m.startDate)).toISOString().split("T")[0] : (m.dateTimeGMT?.split("T")[0] || "TBD"),
+            time: m.startDate ? new Date(parseInt(m.startDate)).toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit",timeZone:"Asia/Kolkata"}) : (m.dateTimeGMT?.split("T")[1]?.slice(0,5) || ""),
+            team1: m.team1?.teamSName || m.team1?.name || m.t1 || "TBA",
+            team2: m.team2?.teamSName || m.team2?.name || m.t2 || "TBA",
+            venue: m.venueInfo?.ground || m.venue || "TBD",
+            status,
+            result: m.status || null,
+          });
+        }
+      });
+
+      updMatches(updated);
+      const tM = updated.filter(m => m.tournamentId === tournamentId);
+      alert("CricketData: " + tM.filter(m=>m.status==="completed").length + " completed, " + tM.filter(m=>m.status==="live").length + " live, " + tM.filter(m=>m.status==="upcoming").length + " upcoming.");
+    } catch(e) {
+      alert("CricketData error: " + e.message);
+    }
+    setLoading("");
+  };
+
   const nav=(pg)=>{setPage(pg);storeSet("page",pg);};
   const upd=(setter,key)=>(val)=>{setter(val);storeSet(key,val);};
   const updTeams=upd(setTeams,"teams"),updAssign=upd(setAssignments,"assignments"),
@@ -2163,8 +2240,9 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
     return 0;
   });
 
+  // ── CRICBUZZ fetch ────────────────────────────────────────────────────────
   const fetchMatchesForTournament = async (tournamentId, tournamentName) => {
-    setLoading("Fetching matches for " + tournamentName + "…");
+    setLoading("Fetching from Cricbuzz for " + tournamentName + "…");
     try {
       const extractForTournament = (data) => {
         const found = [];
@@ -2989,8 +3067,16 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
                       setExpandedTournaments(prev=>({...prev,[newT.id]:true}));
                       storeSet("tournaments",updated);
                       setNewTournamentName("");
-                    }} style={{background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:"8px 16px",color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>ADD</button>
+                    }} style={{background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:"8px 16px",color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:"pointer",whiteSpace:"nowrap"}}>+ ADD</button>
                   </div>
+                </div>
+              )}
+
+              {/* Source legend */}
+              {unlocked && (
+                <div style={{display:"flex",gap:8,marginBottom:12,fontSize:11,color:"#4A5E78"}}>
+                  <span style={{color:"#F5A623"}}>🟠 CB</span> Cricbuzz · 100/month
+                  <span style={{marginLeft:8,color:"#2ECC71"}}>🟢 CD</span> CricketData · 100/day
                 </div>
               )}
 
@@ -3008,8 +3094,18 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
                         <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:16,fontWeight:700,color:"#E2EAF4",letterSpacing:1}}>{tournament.name}</div>
                         <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>{tMatches.length} matches{liveCount>0?" • "+liveCount+" LIVE 🔴":""}</div>
                       </div>
-                      <button onClick={e=>{e.stopPropagation();fetchMatchesForTournament(tournament.id,tournament.name);}}
-                        style={{background:"#4F8EF722",border:"1px solid #4F8EF744",color:"#4F8EF7",borderRadius:8,padding:"5px 10px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:11}}>↻ REFRESH</button>
+                      <div style={{display:"flex",gap:4}}>
+                        <div style={{position:"relative",display:"inline-block"}} className="tooltip-wrap">
+                          <button onClick={e=>{e.stopPropagation();withPassword(()=>fetchMatchesForTournament(tournament.id,tournament.name));}}
+                            style={{background:"#F5A62322",border:"1px solid #F5A62344",color:"#F5A623",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:10}}
+                            title="Cricbuzz — 100 req/month free. Resets monthly.">🟠 CB</button>
+                        </div>
+                        <div style={{position:"relative",display:"inline-block"}}>
+                          <button onClick={e=>{e.stopPropagation();withPassword(()=>fetchFromCricketData(tournament.id,tournament.name));}}
+                            style={{background:"#2ECC7122",border:"1px solid #2ECC7144",color:"#2ECC71",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:10}}
+                            title="CricketData — 100 req/day free. Resets daily.">🟢 CD</button>
+                        </div>
+                      </div>
                       {unlocked && tournament.id !== "t_ipl" && (
                         <button onClick={e=>{e.stopPropagation();if(!confirm("Remove this tournament?"))return;const updated=tournaments.filter(t=>t.id!==tournament.id);setTournaments(updated);storeSet("tournaments",updated);}}
                           style={{background:"transparent",border:"1px solid #1E2D45",color:"#4A5E78",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:11}}>✕</button>
