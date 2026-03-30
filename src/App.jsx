@@ -3138,15 +3138,21 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
                         ) : (
                           <div style={{display:"flex",flexDirection:"column",gap:6}}>
                             {(() => {
-                              const sorted = [...tMatches].sort((a,b)=>{
-                                // Sort by date first, then by status (live first within same date)
+                              // Sort all tournament matches by date globally and renumber
+                              const allTourneyMatches = [...matches.filter(m => m.tournamentId === tournament.id || (!m.tournamentId && tournament.id === "t_ipl"))];
+                              allTourneyMatches.sort((a,b)=>{
                                 const dateA = a.date || "9999";
                                 const dateB = b.date || "9999";
                                 if (dateA !== dateB) return dateA.localeCompare(dateB);
                                 const o={live:0,completed:1,upcoming:2};
                                 return (o[a.status]||2)-(o[b.status]||2);
                               });
+                              // Assign correct match numbers based on date order
+                              const matchNumMap = {};
+                              allTourneyMatches.forEach((m, i) => { matchNumMap[m.id] = i + 1; });
+                              const sorted = allTourneyMatches;
                               return sorted.map((match,idx) => {
+                                const displayNum = matchNumMap[match.id] || match.matchNum;
                                 const completed = match.status==="completed";
                                 const live = match.status==="live";
                                 const liveScore = liveScores[match.id];
@@ -3156,7 +3162,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
                                     <div style={{display:"flex",alignItems:"center",padding:"10px 14px",gap:12,cursor:"pointer"}} onClick={()=>setExpandedMatchId(expandedMatchId===match.id?null:match.id)}>
                                       <div style={{background:"#080C14",borderRadius:6,padding:"3px 8px",minWidth:38,textAlign:"center",flexShrink:0}}>
                                         <div style={{fontSize:9,color:"#4A5E78"}}>M</div>
-                                        <div style={{fontSize:16,fontWeight:800,color:"#F5A623",fontFamily:"Rajdhani"}}>{match.matchNum}</div>
+                                        <div style={{fontSize:16,fontWeight:800,color:"#F5A623",fontFamily:"Rajdhani"}}>{displayNum}</div>
                                       </div>
                                       <div style={{flex:1,minWidth:0}}>
                                         <div style={{fontWeight:700,fontSize:14,color:"#E2EAF4"}}>{match.team1} <span style={{color:"#4A5E78"}}>vs</span> {match.team2}</div>
