@@ -3189,17 +3189,19 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
               )}
 
               {/* Tournament collapsible sections */}
-              {tournaments.map(tournament => {
+              {tournaments.map((tournament, tIdx) => {
                 const tMatches = matches.filter(m => m.tournamentId === tournament.id || (!m.tournamentId && tournament.id === "t_ipl"));
                 const isOpen = expandedTournaments[tournament.id];
                 const liveCount = tMatches.filter(m=>m.status==="live").length;
+                const TOURNEY_COLORS = ["#F5A623","#4F8EF7","#2ECC71","#A855F7","#FF3D5A","#06B6D4","#F97316","#EC4899"];
+                const tColor = TOURNEY_COLORS[tIdx % TOURNEY_COLORS.length];
                 return (
-                  <div key={tournament.id} style={{marginBottom:12,background:"#0E1521",borderRadius:12,border:"1px solid #1E2D45",overflow:"hidden"}}>
+                  <div key={tournament.id} style={{marginBottom:12,background:"#0E1521",borderRadius:12,border:"1px solid "+tColor+"44",overflow:"hidden"}}>
                     {/* Tournament header */}
-                    <div style={{display:"flex",alignItems:"center",padding:"12px 16px",cursor:"pointer",gap:10}}
+                    <div style={{display:"flex",alignItems:"center",padding:"12px 16px",cursor:"pointer",gap:10,background:tColor+"0D",borderBottom:isOpen?"1px solid "+tColor+"33":"none"}}
                       onClick={()=>setExpandedTournaments(prev=>({...prev,[tournament.id]:!prev[tournament.id]}))}>
                       <div style={{flex:1}}>
-                        <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:16,fontWeight:700,color:"#E2EAF4",letterSpacing:1}}>{tournament.name}</div>
+                        <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:16,fontWeight:700,color:tColor,letterSpacing:1}}>{tournament.name}</div>
                         <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>
                           {tMatches.length} matches{liveCount>0?" • "+liveCount+" LIVE 🔴":""}
                           {tournament.tradeSnatchEnabled && <span style={{marginLeft:6,color:"#A855F7",fontSize:10,fontWeight:700}}>⚡ TRADE & SNATCH ON</span>}
@@ -3240,7 +3242,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
                             }
                           }}
                           title={tStarted&&isOn?"Trade & Snatch — LOCKED (tournament started, irreversible)":isOn?"Trade & Snatch — ON (click to disable, admin password required)":"Trade & Snatch — OFF (click to enable, admin password required)"}
-                          style={{background:isOn?"#A855F722":"transparent",border:"1px solid "+(isOn?"#A855F744":"#1E2D45"),borderRadius:20,padding:"3px 10px",cursor:tStarted&&isOn?"not-allowed":"pointer",display:"flex",alignItems:"center",gap:5,flexShrink:0}}>
+                          style={{background:isOn?"#A855F722":"transparent",border:"2px solid "+(isOn?"#A855F7":tColor+"44"),borderRadius:20,padding:"3px 10px",cursor:tStarted&&isOn?"not-allowed":"pointer",display:"flex",alignItems:"center",gap:5,flexShrink:0}}>
                             <span style={{width:24,height:13,background:isOn?"#A855F7":"#1E2D45",borderRadius:10,position:"relative",transition:"background .2s",display:"inline-block",flexShrink:0}}>
                               <span style={{position:"absolute",top:2,left:isOn?12:2,width:9,height:9,background:"#fff",borderRadius:"50%",transition:"left .2s",display:"block"}} />
                             </span>
@@ -3252,7 +3254,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
                         <button onClick={e=>{e.stopPropagation();if(!confirm("Remove this tournament?"))return;const updated=tournaments.filter(t=>t.id!==tournament.id);setTournaments(updated);storeSet("tournaments",updated);}}
                           style={{background:"transparent",border:"1px solid #1E2D45",color:"#4A5E78",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:11}}>✕</button>
                       )}
-                      <span style={{color:"#4A5E78",fontSize:12}}>{isOpen?"▲":"▼"}</span>
+                      <span style={{color:tColor,fontSize:12,opacity:0.7}}>{isOpen?"▲":"▼"}</span>
                     </div>
 
                     {/* Matches list */}
@@ -3722,7 +3724,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
                         <div style={{display:"flex",alignItems:"center",padding:"14px 18px",cursor:"pointer"}} onClick={()=>setExpandedTeam(isOpen?null:team.id)}>
                           <div style={{flex:1}}><span style={{fontWeight:700,color:team.color,fontFamily:"Rajdhani",fontSize:17,letterSpacing:1}}>{team.name}</span><span style={{color:"#4A5E78",marginLeft:10,fontSize:13}}>{breakdown.length} players</span></div>
                           <span style={{color:"#F5A623",fontWeight:800,fontFamily:"Rajdhani",fontSize:22,marginRight:16}}>{team.total} pts</span>
-                          <span style={{color:"#4A5E78",fontSize:12}}>{isOpen?"▲":"▼"}</span>
+                          <span style={{color:tColor,fontSize:12,opacity:0.7}}>{isOpen?"▲":"▼"}</span>
                         </div>
                         {isOpen&&breakdown.length>0&&(
                           <div style={{borderTop:"1px solid #1E2D45",padding:"12px 18px"}}>
