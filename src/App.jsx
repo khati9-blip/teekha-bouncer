@@ -1692,6 +1692,12 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [teamIdentity, setTeamIdentity] = useState({});
   const [snatchPinModal, setSnatchPinModal] = useState(null);
+  const [fetchPlayerModal, setFetchPlayerModal] = useState(false);
+  const [fetchPlayerSource, setFetchPlayerSource] = useState(null); // 'cb' | 'cd'
+  const [fetchPlayerSeries, setFetchPlayerSeries] = useState([]);
+  const [fetchPlayerSeriesLoading, setFetchPlayerSeriesLoading] = useState(false);
+  const [fetchPlayerSeriesInput, setFetchPlayerSeriesInput] = useState('');
+  const [fetchPlayerSelectedSeries, setFetchPlayerSelectedSeries] = useState(null);
   const [teamIdsOpen, setTeamIdsOpen] = useState(false);
   const [ruleProposal, setRuleProposal] = useState(null);
   const [pointsConfig, setPointsConfig] = useState({
@@ -1867,6 +1873,54 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
       alert("CricketData error: " + e.message);
     }
     setLoading("");
+  };
+
+
+  const fetchSeriesSuggestions = async (source) => {
+    setFetchPlayerSeriesLoading(true);
+    setFetchPlayerSeries([]);
+    try {
+      if (source === 'cb') {
+        // Cricbuzz: fetch series list
+        const res = await fetch("/api/cricbuzz?path=" + encodeURIComponent("series/v1/domestic")).then(r=>r.json()).catch(()=>({}));
+        const res2 = await fetch("/api/cricbuzz?path=" + encodeURIComponent("series/v1/international")).then(r=>r.json()).catch(()=>({}));
+        const all = [];
+        [res, res2].forEach(data => {
+          (data?.seriesMapProto || data?.seriesMap || []).forEach(month => {
+            (month?.series || []).forEach(s => {
+              if (s?.id && s?.name) all.push({ id: s.id, name: s.name });
+            });
+          });
+        });
+        setFetchPlayerSeries(all);
+      } else {
+        // CricketData: fetch series
+        const res = await fetch("/api/cricketdata?path=cricket-series").then(r=>r.json()).catch(()=>({}));
+        const seriesData = res?.response || [];
+        const all = [];
+        (Array.isArray(seriesData) ? seriesData : []).forEach(s => {
+          const name = s?.title || s?.series || s?.name || "";
+          const id = s?.url || s?.id || name;
+          if (name) all.push({ id, name });
+        });
+        setFetchPlayerSeries(all);
+      }
+    } catch(e) {
+      console.error("Series fetch error:", e);
+    }
+    setFetchPlayerSeriesLoading(false);
+  };
+
+  const fetchPlayersFromSeries = async () => {
+    if (!fetchPlayerSelectedSeries) return;
+    setFetchPlayerModal(false);
+    if (fetchPlayerSource === 'cb') {
+      // Use existing Cricbuzz fetchPlayers with selected series ID
+      const seriesId = fetchPlayerSelectedSeries.id;
+      await fetchPlayersFromCricbuzz(seriesId);
+    } else {
+      alert("CricketData player fetch coming soon — use Cricbuzz for now.");
+    }
   };
 
   const nav=(pg)=>{setPage(pg);storeSet("page",pg);};
@@ -2115,16 +2169,16 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
     updTeams(t);storeSet("tnames",tNames);storeSet("numteams",numTeams);nav("draft");
   };
 
-  const fetchPlayers=async()=>{
-    setLoading("Fetching IPL 2026 squads from Cricbuzz…");
+  const fetchPlayersFromCricbuzz=async(seriesId)=>{
+    const useSeriesId = seriesId || 9241;
+    setLoading("Fetching squads from Cricbuzz…");
     try {
       let allPlayers = [];
       let cricbuzzSuccess = false;
-      const IPL_SERIES_ID = 9241; // IPL 2026 confirmed series ID
 
       try {
         setLoading("Fetching squad list from Cricbuzz…");
-        const squadsRes = await fetch(`/api/cricbuzz?path=${encodeURIComponent("series/v1/" + IPL_SERIES_ID + "/squads")}`);
+        const squadsRes = await fetch(`/api/cricbuzz?path=${encodeURIComponent("series/v1/" + useSeriesId + "/squads")}`);
         const squadsData = await squadsRes.json();
 
         const squadList = squadsData.squads || squadsData.squadItems ||
@@ -2143,7 +2197,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
           const teamName = squad.squadType || "";
           setLoading(`Cricbuzz: Fetching ${teamName}… (${i+1}/${realSquads.length})`);
 
-          const teamRes = await fetch(`/api/cricbuzz?path=${encodeURIComponent("series/v1/" + IPL_SERIES_ID + "/squads/" + squadId)}`);
+          const teamRes = await fetch(`/api/cricbuzz?path=${encodeURIComponent("series/v1/" + useSeriesId + "/squads/" + squadId)}`);
           const teamData = await teamRes.json();
 
           // Players are under "player" key, with isHeader rows mixed in
@@ -2839,7 +2893,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,flexWrap:"wrap",gap:8}}>
                   <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2}}>PLAYER DRAFT</h2>
                   <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                    <Btn variant="blue" onClick={()=>withPassword(fetchPlayers)} sx={{fontSize:13,padding:"8px 14px"}}>{players.length>0?"↻ REFRESH":"🌐 FETCH PLAYERS"}</Btn>
+                    <Btn variant="blue" onClick={()=>withPassword(()=>setFetchPlayerModal(true))} sx={{fontSize:13,padding:"8px 14px"}}>🌐 FETCH PLAYERS</Btn>
                     <Btn variant="ghost" onClick={()=>withPassword(()=>setEditPlayer({name:"",iplTeam:"",role:"Batsman"}))} sx={{fontSize:13,padding:"8px 14px"}}>✚ ADD</Btn>
                     <Btn variant={squadView?"primary":"ghost"} onClick={()=>setSquadView(v=>!v)} sx={{fontSize:13,padding:"8px 14px"}}>{squadView?"📋 LIST":"👥 SQUAD"}</Btn>
                   </div>
@@ -3772,6 +3826,88 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
               {showRulesPanel === true && (!ruleProposal || ruleProposal.status !== "pending") && (
                 <ProposeRulesForm teams={teams} eligibleVoters={eligibleVoters} tournamentStarted={tournamentStarted} onPropose={proposeRuleChange} withPassword={withPassword} />
               )}
+            </div>
+          </div>
+        )}
+
+        {/* FETCH PLAYERS MODAL */}
+        {fetchPlayerModal && (
+          <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,padding:24,fontFamily:"Barlow Condensed,sans-serif"}}>
+            <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #1E2D45",padding:28,width:"100%",maxWidth:420}}>
+              <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,fontWeight:700,color:"#F5A623",letterSpacing:2,marginBottom:4}}>FETCH PLAYERS</div>
+              <div style={{fontSize:12,color:"#4A5E78",marginBottom:20}}>Choose source then select tournament to fetch squads</div>
+
+              {/* Source selector */}
+              {!fetchPlayerSource ? (
+                <div>
+                  <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,marginBottom:10}}>SELECT SOURCE</div>
+                  <div style={{display:"flex",gap:10}}>
+                    <button onClick={()=>{setFetchPlayerSource('cb');fetchSeriesSuggestions('cb');}}
+                      style={{flex:1,background:"#F5A62322",border:"2px solid #F5A62344",borderRadius:10,padding:"14px 10px",cursor:"pointer",textAlign:"center"}}>
+                      <div style={{fontSize:20,marginBottom:4}}>🟠</div>
+                      <div style={{fontWeight:700,fontSize:14,color:"#F5A623"}}>Cricbuzz</div>
+                      <div style={{fontSize:10,color:"#4A5E78",marginTop:2}}>100 req/month</div>
+                    </button>
+                    <button onClick={()=>{setFetchPlayerSource('cd');fetchSeriesSuggestions('cd');}}
+                      style={{flex:1,background:"#2ECC7122",border:"2px solid #2ECC7144",borderRadius:10,padding:"14px 10px",cursor:"pointer",textAlign:"center"}}>
+                      <div style={{fontSize:20,marginBottom:4}}>🟢</div>
+                      <div style={{fontWeight:700,fontSize:14,color:"#2ECC71"}}>CricketData</div>
+                      <div style={{fontSize:10,color:"#4A5E78",marginTop:2}}>100 req/day</div>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+                    <button onClick={()=>{setFetchPlayerSource(null);setFetchPlayerSeries([]);setFetchPlayerSeriesInput('');setFetchPlayerSelectedSeries(null);}}
+                      style={{background:"transparent",border:"none",color:"#4A5E78",cursor:"pointer",fontSize:18,padding:0}}>←</button>
+                    <div style={{fontSize:13,color:fetchPlayerSource==='cb'?"#F5A623":"#2ECC71",fontWeight:700}}>
+                      {fetchPlayerSource==='cb'?"🟠 Cricbuzz":"🟢 CricketData"}
+                    </div>
+                  </div>
+
+                  {/* Series search */}
+                  <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,marginBottom:8}}>SELECT TOURNAMENT</div>
+                  <input value={fetchPlayerSeriesInput} onChange={e=>setFetchPlayerSeriesInput(e.target.value)}
+                    placeholder="Search tournament..." autoFocus
+                    style={{width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"10px 14px",color:"#E2EAF4",fontSize:14,fontFamily:"Barlow Condensed,sans-serif",outline:"none",marginBottom:8,boxSizing:"border-box"}} />
+
+                  {fetchPlayerSeriesLoading ? (
+                    <div style={{textAlign:"center",padding:16,color:"#4A5E78",fontSize:13}}>Loading series...</div>
+                  ) : (
+                    <div style={{maxHeight:200,overflowY:"auto",border:"1px solid #1E2D45",borderRadius:8,marginBottom:12}}>
+                      {fetchPlayerSeries
+                        .filter(s => !fetchPlayerSeriesInput || s.name.toLowerCase().includes(fetchPlayerSeriesInput.toLowerCase()))
+                        .slice(0,20)
+                        .map(s => (
+                          <div key={s.id} onClick={()=>setFetchPlayerSelectedSeries(s)}
+                            style={{padding:"10px 14px",cursor:"pointer",borderBottom:"1px solid #1E2D4433",background:fetchPlayerSelectedSeries?.id===s.id?"#F5A62322":"transparent",color:fetchPlayerSelectedSeries?.id===s.id?"#F5A623":"#E2EAF4",fontSize:13}}>
+                            {s.name}
+                            {fetchPlayerSelectedSeries?.id===s.id && <span style={{marginLeft:8,color:"#F5A623"}}>✓</span>}
+                          </div>
+                        ))}
+                      {fetchPlayerSeries.filter(s => !fetchPlayerSeriesInput || s.name.toLowerCase().includes(fetchPlayerSeriesInput.toLowerCase())).length === 0 && (
+                        <div style={{padding:16,color:"#4A5E78",fontSize:13,textAlign:"center"}}>No series found</div>
+                      )}
+                    </div>
+                  )}
+
+                  {fetchPlayerSelectedSeries && (
+                    <div style={{background:"#F5A62311",border:"1px solid #F5A62333",borderRadius:8,padding:"8px 12px",marginBottom:12,fontSize:12,color:"#F5A623"}}>
+                      Selected: <strong>{fetchPlayerSelectedSeries.name}</strong>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div style={{display:"flex",gap:10,marginTop:16}}>
+                <button onClick={()=>{setFetchPlayerModal(false);setFetchPlayerSource(null);setFetchPlayerSeries([]);setFetchPlayerSeriesInput('');setFetchPlayerSelectedSeries(null);}}
+                  style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:11,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
+                {fetchPlayerSelectedSeries && (
+                  <button onClick={fetchPlayersFromSeries}
+                    style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:11,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:15,cursor:"pointer"}}>FETCH SQUADS</button>
+                )}
+              </div>
             </div>
           </div>
         )}
