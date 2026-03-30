@@ -1929,10 +1929,14 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
 
       const liveMap = {};
       liveMatches.forEach(m => {
-        // CricketData live: matchId at top level or under matchInfo
         const id = m?.matchId || m?.matchInfo?.matchId || m?.id;
         if (id) liveMap[String(id)] = m;
       });
+
+      // Debug: log live IDs vs stored IDs
+      console.log("Live IDs from CD:", Object.keys(liveMap));
+      console.log("Stored cricbuzzIds:", matches.map(m=>String(m.cricbuzzId)));
+      console.log("Live raw sample:", JSON.stringify(liveMatches[0]||{}).slice(0,300));
 
       // Also update existing matches that are live right now
       const updatedExisting = matches.map(m => {
