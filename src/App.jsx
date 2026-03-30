@@ -1693,6 +1693,12 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
   const [teamIdentity, setTeamIdentity] = useState({});
   const [snatchPinModal, setSnatchPinModal] = useState(null);
   const [fetchPlayerModal, setFetchPlayerModal] = useState(false);
+  const [addTournamentModal, setAddTournamentModal] = useState(false);
+  const [addTournamentSource, setAddTournamentSource] = useState(null);
+  const [addTournamentSeries, setAddTournamentSeries] = useState([]);
+  const [addTournamentSeriesLoading, setAddTournamentSeriesLoading] = useState(false);
+  const [addTournamentSeriesInput, setAddTournamentSeriesInput] = useState('');
+  const [addTournamentSelected, setAddTournamentSelected] = useState(null);
   const [fetchPlayerSource, setFetchPlayerSource] = useState(null); // 'cb' | 'cd'
   const [fetchPlayerSeries, setFetchPlayerSeries] = useState([]);
   const [fetchPlayerSeriesLoading, setFetchPlayerSeriesLoading] = useState(false);
@@ -1875,6 +1881,59 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
     setLoading("");
   };
 
+
+
+  const fetchTournamentSeriesSuggestions = async (source) => {
+    setAddTournamentSeriesLoading(true);
+    setAddTournamentSeries([]);
+    try {
+      if (source === 'cb') {
+        const [r1, r2] = await Promise.all([
+          fetch("/api/cricbuzz?path=" + encodeURIComponent("series/v1/domestic")).then(r=>r.json()).catch(()=>({})),
+          fetch("/api/cricbuzz?path=" + encodeURIComponent("series/v1/international")).then(r=>r.json()).catch(()=>({})),
+        ]);
+        const all = [];
+        [r1, r2].forEach(data => {
+          (data?.seriesMapProto || data?.seriesMap || []).forEach(month => {
+            (month?.series || []).forEach(s => {
+              if (s?.id && s?.name) all.push({ id: s.id, name: s.name, source: 'cb' });
+            });
+          });
+        });
+        setAddTournamentSeries(all);
+      } else {
+        const res = await fetch("/api/cricketdata?path=cricket-series").then(r=>r.json()).catch(()=>({}));
+        const seriesData = res?.response || [];
+        const all = [];
+        (Array.isArray(seriesData) ? seriesData : []).forEach(s => {
+          const name = s?.title || s?.series || s?.name || "";
+          const id = s?.url || s?.id || name;
+          if (name) all.push({ id, name, source: 'cd' });
+        });
+        setAddTournamentSeries(all);
+      }
+    } catch(e) { console.error(e); }
+    setAddTournamentSeriesLoading(false);
+  };
+
+  const confirmAddTournament = async () => {
+    if (!addTournamentSelected) return;
+    const newT = {
+      id: "t_" + Date.now(),
+      name: addTournamentSelected.name,
+      seriesId: addTournamentSelected.id,
+      source: addTournamentSource,
+    };
+    const updated = [...tournaments, newT];
+    setTournaments(updated);
+    setExpandedTournaments(prev => ({...prev, [newT.id]: true}));
+    storeSet("tournaments", updated);
+    setAddTournamentModal(false);
+    setAddTournamentSource(null);
+    setAddTournamentSeries([]);
+    setAddTournamentSeriesInput('');
+    setAddTournamentSelected(null);
+  };
 
   const fetchSeriesSuggestions = async (source) => {
     setFetchPlayerSeriesLoading(true);
@@ -3113,32 +3172,14 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
 
               {/* Add tournament - admin only */}
               {unlocked && (
-                <div style={{background:"#0E1521",borderRadius:10,border:"1px solid #1E2D45",padding:14,marginBottom:16}}>
-                  <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginBottom:10}}>+ ADD TOURNAMENT</div>
-                  <div style={{display:"flex",gap:8}}>
-                    <input value={newTournamentName} onChange={e=>setNewTournamentName(e.target.value)}
-                      placeholder="e.g. Indian Premier League" onKeyDown={e=>{
-                        if(e.key==="Enter"&&newTournamentName.trim()){
-                          const newT={id:"t_"+Date.now(),name:newTournamentName.trim()};
-                          const updated=[...tournaments,newT];
-                          setTournaments(updated);
-                          setExpandedTournaments(prev=>({...prev,[newT.id]:true}));
-                          storeSet("tournaments",updated);
-                          setNewTournamentName("");
-                        }
-                      }}
-                      style={{flex:1,background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"8px 12px",color:"#E2EAF4",fontSize:14,fontFamily:"Barlow Condensed,sans-serif",outline:"none"}} />
-                    <button onClick={()=>{
-                      if(!newTournamentName.trim()) return;
-                      const newT={id:"t_"+Date.now(),name:newTournamentName.trim()};
-                      const updated=[...tournaments,newT];
-                      setTournaments(updated);
-                      setExpandedTournaments(prev=>({...prev,[newT.id]:true}));
-                      storeSet("tournaments",updated);
-                      setNewTournamentName("");
-                    }} style={{background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:"8px 16px",color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:"pointer",whiteSpace:"nowrap"}}>+ ADD</button>
+                <button onClick={()=>withPassword(()=>setAddTournamentModal(true))}
+                  style={{width:"100%",background:"#0E1521",borderRadius:10,border:"1px solid #1E2D45",padding:"12px 16px",marginBottom:16,cursor:"pointer",display:"flex",alignItems:"center",gap:10,fontFamily:"Barlow Condensed,sans-serif"}}>
+                  <span style={{fontSize:18}}>➕</span>
+                  <div style={{textAlign:"left"}}>
+                    <div style={{fontWeight:700,fontSize:14,color:"#F5A623"}}>ADD TOURNAMENT</div>
+                    <div style={{fontSize:11,color:"#4A5E78",marginTop:1}}>Fetch from Cricbuzz or CricketData</div>
                   </div>
-                </div>
+                </button>
               )}
 
               {/* Source legend */}
@@ -3165,7 +3206,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
                       </div>
                       <div style={{display:"flex",gap:4}}>
                         <div style={{position:"relative",display:"inline-block"}} className="tooltip-wrap">
-                          <button onClick={e=>{e.stopPropagation();withPassword(()=>fetchMatchesForTournament(tournament.id,tournament.name));}}
+                          <button onClick={e=>{e.stopPropagation();withPassword(()=>fetchMatchesForTournament(tournament.id,tournament.name,tournament.seriesId));}}
                             style={{background:"#F5A62322",border:"1px solid #F5A62344",color:"#F5A623",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:10}}
                             title="Cricbuzz — 100 req/month free. Resets monthly.">🟠 CB</button>
                         </div>
@@ -3826,6 +3867,83 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash }) {
               {showRulesPanel === true && (!ruleProposal || ruleProposal.status !== "pending") && (
                 <ProposeRulesForm teams={teams} eligibleVoters={eligibleVoters} tournamentStarted={tournamentStarted} onPropose={proposeRuleChange} withPassword={withPassword} />
               )}
+            </div>
+          </div>
+        )}
+
+        {/* ADD TOURNAMENT MODAL */}
+        {addTournamentModal && (
+          <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,padding:24,fontFamily:"Barlow Condensed,sans-serif"}}>
+            <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #1E2D45",padding:28,width:"100%",maxWidth:420}}>
+              <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,fontWeight:700,color:"#F5A623",letterSpacing:2,marginBottom:4}}>ADD TOURNAMENT</div>
+              <div style={{fontSize:12,color:"#4A5E78",marginBottom:20}}>Choose source then search for your tournament</div>
+
+              {!addTournamentSource ? (
+                <div>
+                  <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,marginBottom:10}}>SELECT SOURCE</div>
+                  <div style={{display:"flex",gap:10}}>
+                    <button onClick={()=>{setAddTournamentSource('cb');fetchTournamentSeriesSuggestions('cb');}}
+                      style={{flex:1,background:"#F5A62322",border:"2px solid #F5A62344",borderRadius:10,padding:"14px 10px",cursor:"pointer",textAlign:"center"}}>
+                      <div style={{fontSize:20,marginBottom:4}}>🟠</div>
+                      <div style={{fontWeight:700,fontSize:14,color:"#F5A623"}}>Cricbuzz</div>
+                      <div style={{fontSize:10,color:"#4A5E78",marginTop:2}}>100 req/month</div>
+                    </button>
+                    <button onClick={()=>{setAddTournamentSource('cd');fetchTournamentSeriesSuggestions('cd');}}
+                      style={{flex:1,background:"#2ECC7122",border:"2px solid #2ECC7144",borderRadius:10,padding:"14px 10px",cursor:"pointer",textAlign:"center"}}>
+                      <div style={{fontSize:20,marginBottom:4}}>🟢</div>
+                      <div style={{fontWeight:700,fontSize:14,color:"#2ECC71"}}>CricketData</div>
+                      <div style={{fontSize:10,color:"#4A5E78",marginTop:2}}>100 req/day</div>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+                    <button onClick={()=>{setAddTournamentSource(null);setAddTournamentSeries([]);setAddTournamentSeriesInput('');setAddTournamentSelected(null);}}
+                      style={{background:"transparent",border:"none",color:"#4A5E78",cursor:"pointer",fontSize:18,padding:0}}>←</button>
+                    <div style={{fontSize:13,color:addTournamentSource==='cb'?"#F5A623":"#2ECC71",fontWeight:700}}>
+                      {addTournamentSource==='cb'?"🟠 Cricbuzz":"🟢 CricketData"}
+                    </div>
+                  </div>
+                  <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,marginBottom:8}}>SEARCH TOURNAMENT</div>
+                  <input value={addTournamentSeriesInput} onChange={e=>setAddTournamentSeriesInput(e.target.value)}
+                    placeholder="Search tournament..." autoFocus
+                    style={{width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"10px 14px",color:"#E2EAF4",fontSize:14,fontFamily:"Barlow Condensed,sans-serif",outline:"none",marginBottom:8,boxSizing:"border-box"}} />
+                  {addTournamentSeriesLoading ? (
+                    <div style={{textAlign:"center",padding:16,color:"#4A5E78",fontSize:13}}>Fetching tournaments...</div>
+                  ) : (
+                    <div style={{maxHeight:220,overflowY:"auto",border:"1px solid #1E2D45",borderRadius:8,marginBottom:12}}>
+                      {addTournamentSeries
+                        .filter(s=>!addTournamentSeriesInput||s.name.toLowerCase().includes(addTournamentSeriesInput.toLowerCase()))
+                        .slice(0,25)
+                        .map(s=>(
+                          <div key={s.id} onClick={()=>setAddTournamentSelected(s)}
+                            style={{padding:"10px 14px",cursor:"pointer",borderBottom:"1px solid #1E2D4433",background:addTournamentSelected?.id===s.id?"#F5A62322":"transparent",color:addTournamentSelected?.id===s.id?"#F5A623":"#E2EAF4",fontSize:13}}>
+                            {s.name}
+                            {addTournamentSelected?.id===s.id&&<span style={{marginLeft:8}}>✓</span>}
+                          </div>
+                        ))}
+                      {addTournamentSeries.filter(s=>!addTournamentSeriesInput||s.name.toLowerCase().includes(addTournamentSeriesInput.toLowerCase())).length===0&&(
+                        <div style={{padding:16,color:"#4A5E78",fontSize:13,textAlign:"center"}}>No tournaments found</div>
+                      )}
+                    </div>
+                  )}
+                  {addTournamentSelected&&(
+                    <div style={{background:"#F5A62311",border:"1px solid #F5A62333",borderRadius:8,padding:"8px 12px",marginBottom:4,fontSize:12,color:"#F5A623"}}>
+                      Selected: <strong>{addTournamentSelected.name}</strong>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div style={{display:"flex",gap:10,marginTop:16}}>
+                <button onClick={()=>{setAddTournamentModal(false);setAddTournamentSource(null);setAddTournamentSeries([]);setAddTournamentSeriesInput('');setAddTournamentSelected(null);}}
+                  style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:11,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
+                {addTournamentSelected&&(
+                  <button onClick={confirmAddTournament}
+                    style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:11,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:15,cursor:"pointer"}}>ADD TOURNAMENT</button>
+                )}
+              </div>
             </div>
           </div>
         )}
