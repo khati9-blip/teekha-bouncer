@@ -1374,6 +1374,15 @@ function PitchHome({ onEnter, user, onLogout }) {
                 <button onClick={()=>{setForgotMode(true);setForgotStep('email');setForgotEmail("");setForgotCode("");setEnterErr("");}}
                   style={{background:"none",border:"none",color:"#FF3D5A",fontSize:12,cursor:"pointer",textDecoration:"underline"}}>Forgot pitch password?</button>
               </div>
+              <div style={{borderTop:"1px solid #1E2D45",marginTop:16,paddingTop:14,textAlign:"center"}}>
+                <button onClick={()=>{
+                  const pitch = pitches.find(p=>p.id===enterPitchId);
+                  if(pitch){ setEnterPitchId(null); setEnterPw(""); setEnterErr(""); onEnter(pitch, true); }
+                }} style={{background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:"8px 20px",color:"#4A5E78",fontSize:12,cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>
+                  👁 CONTINUE AS GUEST
+                </button>
+                <div style={{fontSize:10,color:"#2D3E52",marginTop:6}}>View only — no editing or transfers</div>
+              </div>
             </> : <>
               {forgotStep==='email' ? <>
                 <div style={{fontSize:13,color:"#4A5E78",textAlign:"center",marginBottom:20}}>Enter the admin email to receive a reset code</div>
@@ -4232,10 +4241,9 @@ function Root() {
       keys.forEach(k=>localStorage.removeItem(k));
     } catch {}
   };
-  const handleEnter = (pitch) => {
+  const handleEnter = (pitch, asGuest) => {
     _pitchId = pitch.id;
     setCurrentPitch(pitch);
-    // Check if this user already claimed a team in this pitch (stored per pitch)
     try {
       const pitchTeamKey = 'tb_myteam_' + pitch.id;
       const pitchPinKey = 'tb_pinHash_' + pitch.id;
@@ -4243,16 +4251,17 @@ function Root() {
       const savedTeam = localStorage.getItem(pitchTeamKey);
       const savedPin = localStorage.getItem(pitchPinKey);
       const savedGuest = localStorage.getItem(pitchGuestKey);
-      if (savedTeam) {
+      if (asGuest) {
+        // Entering as guest from password screen
+        localStorage.setItem(pitchGuestKey, '1');
+        setMyTeam(null); setMyPinHash(null); setIsGuest(true); setTeamsClaimed(true);
+      } else if (savedTeam) {
         setMyTeam(JSON.parse(savedTeam));
         setMyPinHash(savedPin || null);
         setIsGuest(false);
         setTeamsClaimed(true);
       } else if (savedGuest) {
-        setMyTeam(null);
-        setMyPinHash(null);
-        setIsGuest(true);
-        setTeamsClaimed(true);
+        setMyTeam(null); setMyPinHash(null); setIsGuest(true); setTeamsClaimed(true);
       } else {
         setMyTeam(null); setMyPinHash(null); setIsGuest(false); setTeamsClaimed(false);
       }
