@@ -1429,7 +1429,7 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
               <button onClick={()=>{setCreating(false);setNewName("");setErr("");}}
                 style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:10,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
               <button onClick={createPitch}
-                style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:10,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:15,cursor:"pointer"}}>CREATE & SET UP →</button>
+                style={{flex:2,background:"#F5A623",border:"none",borderRadius:8,padding:10,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:15,cursor:"pointer"}}>CREATE & SET UP →</button>
             </div>
           </div>
         )}
