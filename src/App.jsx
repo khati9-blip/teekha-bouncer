@@ -1261,6 +1261,8 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
   const [loading, setLoading] = useState(true);
   const [newName, setNewName] = useState("");
   const [creating, setCreating] = useState(false);
+  const [matchCount, setMatchCount] = useState(0);
+  const [liveCount, setLiveCount] = useState(0);
   const [err, setErr] = useState("");
 
   const sbGet = async (key) => { try { const res = await fetch("https://rmcxhorijitrhqyrvvkn.supabase.co/rest/v1/league_data?key=eq."+encodeURIComponent(key), {headers:{"apikey":"sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm","Authorization":"Bearer sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm"}}); const d=await res.json(); return d[0]?.value; } catch { return null; } };
