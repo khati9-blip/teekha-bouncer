@@ -1494,7 +1494,6 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest, isAdm
   const [liveScores, setLiveScores] = useState({});
   const pollRef = React.useRef(null);
   const [unlocked, setUnlocked] = useState(false);
-  const isAdmin = user && pitch && (pitch.creatorEmail === user.email || !pitch.creatorEmail);
   const [showPwModal, setShowPwModal] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
   const [editPlayer, setEditPlayer] = useState(null); // player being edited
