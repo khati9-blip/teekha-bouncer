@@ -3380,8 +3380,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                   <div style={{fontSize:11,color:"#4A5E78",marginBottom:10}}>Share these codes with each team manager so they can claim their team</div>
                   {teams.map(t => {
                     const ti = teamIdentity[t.id] || {};
-                    // Debug: log first team's identity
-                    if(teams.indexOf(t)===0) console.log("TeamIdentity debug:", JSON.stringify(teamIdentity).slice(0,300));
+
                     return (
                       <div key={t.id} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,padding:"8px 12px",background:"#0E1521",borderRadius:8,border:"1px solid "+t.color+"33"}}>
                         <div style={{flex:1}}>
