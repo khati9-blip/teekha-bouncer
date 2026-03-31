@@ -1184,12 +1184,9 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
     if (pitches.length >= 1000) { setErr("Max 1000 pitches"); return; }
     const id = "p" + (pitches.length + 1) + "_" + Date.now();
     const newPitch = { id, name: newName.trim(), hash: "", createdAt: new Date().toISOString() };
-    const updated = [...pitches, newPitch];
-    await sbSet("pitches", updated);
-    setPitches(updated);
+    // Don't save pitch yet — only save after admin password is confirmed
     setNewName(""); setCreating(false); setErr("");
-    // New pitch - go straight to admin setup
-    onSetupAdmin(newPitch);
+    onSetupAdmin(newPitch, pitches); // pass pitches so we can save after
   };
 
   const COLORS = ["#FF3D5A","#4F8EF7","#2ECC71","#F5A623","#A855F7","#06B6D4"];
@@ -4376,6 +4373,7 @@ function Root() {
   });
   const [currentPitch, setCurrentPitch] = useState(null);
   const [screen, setScreen] = useState('pitches'); // pitches | join | adminSetup | app
+  const [pendingPitches, setPendingPitches] = useState(null);
   const [myTeam, setMyTeam] = useState(null);
   const [myPinHash, setMyPinHash] = useState(null);
   const [isGuest, setIsGuest] = useState(false);
@@ -4417,9 +4415,10 @@ function Root() {
     setScreen('join');
   };
 
-  const handleSetupAdmin = (pitch) => {
+  const handleSetupAdmin = (pitch, existingPitches) => {
     _pitchId = pitch.id;
     setCurrentPitch(pitch);
+    if (existingPitches) setPendingPitches(existingPitches);
     setScreen('adminSetup');
   };
 
@@ -4459,11 +4458,17 @@ function Root() {
     );
 
     if (screen === 'adminSetup') return (
-      <AdminSetupScreen pitch={currentPitch} onDone={(pitch)=>{
+      <AdminSetupScreen pitch={currentPitch} onDone={async (pitch)=>{
+        // Save pitch to Supabase only now that password is set
+        if (pendingPitches !== null) {
+          const updated = [...pendingPitches, pitch];
+          await sbSet("pitches", updated);
+          setPendingPitches(null);
+        }
         setCurrentPitch(pitch); setIsAdmin(true);
         try { localStorage.setItem('tb_admin_' + pitch.id, '1'); } catch {}
         setScreen('app');
-      }} onBack={handleLeave} sbGet={sbGet} sbSet={sbSet} hashPw={hashPw} />
+      }} onBack={()=>{ setPendingPitches(null); handleLeave(); }} sbGet={sbGet} sbSet={sbSet} hashPw={hashPw} />
     );
 
     if (screen === 'app') return (
