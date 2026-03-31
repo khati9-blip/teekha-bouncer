@@ -4450,7 +4450,9 @@ function Root() {
   const [currentUser, setCurrentUser] = useState(() => {
     try { const s = localStorage.getItem('tb_user'); return s ? JSON.parse(s) : null; } catch { return null; }
   });
-  const [currentPitch, setCurrentPitch] = useState(null);
+  const [currentPitch, setCurrentPitch] = useState(() => {
+    try { const s = localStorage.getItem('tb_pitch'); const p = s ? JSON.parse(s) : null; if(p) _pitchId = p.id; return p; } catch { return null; }
+  });
   const [pendingPitches, setPendingPitches] = useState(null);
   // Restore full session from localStorage on refresh
   const [screen, setScreen] = useState(() => {
