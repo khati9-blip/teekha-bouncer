@@ -1607,6 +1607,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest, isAdm
   }); // loaded from supabase
   const [showRulesPanel, setShowRulesPanel] = useState(false);
   const [guestToast, setGuestToast] = useState(false);
+  const [guestAllowed, setGuestAllowed] = useState(() => pitch?.guestAllowed !== false);
   const TOURNEY_COLORS = ["#F5A623","#4F8EF7","#2ECC71","#A855F7","#FF3D5A","#06B6D4","#F97316","#EC4899"];
   const [notifications, setNotifications] = useState([]);
   const [notifOpen, setNotifOpen] = useState(false);
