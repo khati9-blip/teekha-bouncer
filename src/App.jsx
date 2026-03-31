@@ -3387,7 +3387,15 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                           <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>{ti.claimedBy ? "Claimed by "+ti.claimedBy : "Unclaimed"}</div>
                         </div>
                         {ti.claimedBy ? (
-                          <span style={{fontSize:11,color:"#2ECC71",fontWeight:700,background:"#2ECC7122",padding:"4px 10px",borderRadius:6}}>✓ CLAIMED</span>
+                          <div style={{display:"flex",alignItems:"center",gap:6}}>
+                            <span style={{fontSize:11,color:"#2ECC71",fontWeight:700,background:"#2ECC7122",padding:"4px 8px",borderRadius:6}}>✓ {ti.claimedBy.split("@")[0]}</span>
+                            <button onClick={async()=>{
+                              if(!confirm("Reset claim for "+t.name+"? This will allow someone else to claim this team with the same Team ID.")) return;
+                              const updated = {...teamIdentity, [t.id]: {teamId: ti.teamId, teamRef: ti.teamRef}};
+                              setTeamIdentity(updated);
+                              await storeSet("teamIdentity", updated);
+                            }} style={{background:"#FF3D5A11",border:"1px solid #FF3D5A33",color:"#FF3D5A",borderRadius:6,padding:"3px 8px",cursor:"pointer",fontSize:10,fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>RESET</button>
+                          </div>
                         ) : ti.teamId ? (
                           <div style={{display:"flex",alignItems:"center",gap:6}}>
                             <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:16,fontWeight:800,color:"#F5A623",letterSpacing:2,background:"#F5A62322",padding:"4px 10px",borderRadius:6}}>{ti.teamId}</div>
