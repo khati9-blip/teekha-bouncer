@@ -1221,14 +1221,7 @@ class ErrorBoundary extends React.Component {
 
 
 
-function PitchHomeEnhancements({ pitches, user, onLogout }) {
-  const COLORS = ["#F5A623","#4F8EF7","#2ECC71","#A855F7","#FF3D5A","#06B6D4"];
-  const liveCount = pitches.reduce((a,p)=>{
-    try{ return a+(JSON.parse(localStorage.getItem("tb_matches_"+p.id)||"[]")).filter(m=>m.status==="live").length; }catch{return a;}
-  },0);
-  const matchCount = pitches.reduce((a,p)=>{
-    try{ return a+(JSON.parse(localStorage.getItem("tb_matches_"+p.id)||"[]")).length; }catch{return a;}
-  },0);
+function PitchHomeEnhancements({ pitches, matchCount, liveCount }) {
 
   return React.createElement("div", null,
     // Online indicator enhancement in header - skip, already handled
@@ -1277,8 +1270,17 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
     (async () => {
       try {
         const data = await sbGet("pitches");
-        if (data && Array.isArray(data)) setPitches(data);
-        else { const dp=[{id:"p1",name:"Pitch 1",hash:"",createdAt:new Date().toISOString()}]; await sbSet("pitches",dp); setPitches(dp); }
+        const list = (data && Array.isArray(data)) ? data : [{id:"p1",name:"Pitch 1",hash:"",createdAt:new Date().toISOString()}];
+        if (!data) await sbSet("pitches", list);
+        setPitches(list);
+        // Load match counts for stats
+        let mc = 0, lc = 0;
+        for (const p of list) {
+          const matches = await sbGet(p.id + "_matches") || [];
+          mc += matches.length;
+          lc += matches.filter(m=>m.status==="live").length;
+        }
+        setMatchCount(mc); setLiveCount(lc);
       } catch { setPitches([{id:"p1",name:"Pitch 1",hash:"",createdAt:new Date().toISOString()}]); }
       setLoading(false);
     })();
@@ -1316,7 +1318,7 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
       </div>
 
       <div style={{maxWidth:600,margin:"0 auto",padding:"40px 20px"}}>
-        <PitchHomeEnhancements pitches={pitches} user={user} onLogout={onLogout} />
+        <PitchHomeEnhancements pitches={pitches} matchCount={matchCount} liveCount={liveCount} />
         <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,fontWeight:700,color:"#E2EAF4",letterSpacing:2,marginBottom:4}}>SELECT YOUR PITCH</div>
         <div style={{fontSize:13,color:"#4A5E78",marginBottom:16}}>Each pitch is an independent league.</div>
 
