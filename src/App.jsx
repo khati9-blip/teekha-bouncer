@@ -1307,7 +1307,7 @@ function TeamClaimScreen({ pitch, user, onClaimed, onBack, onGuest, onAdmin, gue
     // Save claim
     const identity = await sbGet(pitch.id + "_teamIdentity") || {};
     const key = Object.keys(identity).find(k => identity[k].teamId === claimedTeamInfo.teamId);
-    if (key) { identity[key].claimedBy = user.email; await sbSet(pitch.id + "_teamIdentity", identity); }
+    if (key) { identity[key].claimedBy = user.email; identity[key].teamRef = claimedTeamInfo.id; identity[key].pinHash = pinHash; await sbSet(pitch.id + "_teamIdentity", identity); }
     // Save to localStorage
     try {
       localStorage.setItem("tb_myteam_" + pitch.id, JSON.stringify(claimedTeamInfo));
@@ -1333,6 +1333,8 @@ function TeamClaimScreen({ pitch, user, onClaimed, onBack, onGuest, onAdmin, gue
     // Migrate: save as adminHash for future logins
     if (!adminHash) await sbSet(pitch.id + "_adminHash", h);
     try { localStorage.setItem("tb_admin_" + pitch.id, "1"); } catch {}
+    // Save admin email to Supabase for cross-device recognition
+    await sbSet(pitch.id + "_adminEmail", user.email);
     onAdmin();
     setLoading(false);
   };
@@ -1608,6 +1610,11 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   const [showRulesPanel, setShowRulesPanel] = useState(false);
   const [guestToast, setGuestToast] = useState(false);
   const [guestAllowed, setGuestAllowed] = useState(() => pitch?.guestAllowed !== false);
+  const [adminClaimModal, setAdminClaimModal] = useState(false);
+  const [adminClaimTeam, setAdminClaimTeam] = useState(null);
+  const [adminPin, setAdminPin] = useState('');
+  const [adminPinConfirm, setAdminPinConfirm] = useState('');
+  const [adminPinErr, setAdminPinErr] = useState('');
   const TOURNEY_COLORS = ["#F5A623","#4F8EF7","#2ECC71","#A855F7","#FF3D5A","#06B6D4","#F97316","#EC4899"];
   const [notifications, setNotifications] = useState([]);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -3380,7 +3387,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                   <div style={{fontSize:11,color:"#4A5E78",marginBottom:10}}>Share these codes with each team manager so they can claim their team</div>
                   {teams.map(t => {
                     const ti = teamIdentity[t.id] || {};
-                    if(teams.indexOf(t)===0) alert("teamIdentity = "+JSON.stringify(teamIdentity).slice(0,400));
+
 
                     return (
                       <div key={t.id} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,padding:"8px 12px",background:"#0E1521",borderRadius:8,border:"1px solid "+t.color+"33"}}>
@@ -3393,7 +3400,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                             <span style={{fontSize:11,color:"#2ECC71",fontWeight:700,background:"#2ECC7122",padding:"4px 8px",borderRadius:6}}>✓ {ti.claimedBy.split("@")[0]}</span>
                             <button onClick={async()=>{
                               if(!confirm("Reset claim for "+t.name+"? This will allow someone else to claim this team with the same Team ID.")) return;
-                              const updated = {...teamIdentity, [t.id]: {teamId: ti.teamId, teamRef: ti.teamRef}};
+                              const updated = {...teamIdentity, [t.id]: {...ti, claimedBy: null, pinHash: null}};
                               setTeamIdentity(updated);
                               await storeSet("teamIdentity", updated);
                             }} style={{background:"#FF3D5A11",border:"1px solid #FF3D5A33",color:"#FF3D5A",borderRadius:6,padding:"3px 8px",cursor:"pointer",fontSize:10,fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>RESET</button>
@@ -3401,6 +3408,8 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                         ) : ti.teamId ? (
                           <div style={{display:"flex",alignItems:"center",gap:6}}>
                             <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:16,fontWeight:800,color:"#F5A623",letterSpacing:2,background:"#F5A62322",padding:"4px 10px",borderRadius:6}}>{ti.teamId}</div>
+                            <button onClick={()=>{setAdminClaimTeam(t);setAdminClaimModal(true);setAdminPin('');setAdminPinConfirm('');setAdminPinErr('');}}
+                              style={{background:"#2ECC7122",border:"1px solid #2ECC7144",color:"#2ECC71",borderRadius:6,padding:"3px 8px",cursor:"pointer",fontSize:10,fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>CLAIM</button>
                             <button onClick={async()=>{
                               if(!confirm("Reset Team ID?")) return;
                               const updated = {...teamIdentity, [t.id]: {teamId: generateTeamId()}};
@@ -3409,12 +3418,16 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                             }} style={{background:"transparent",border:"1px solid #1E2D45",color:"#4A5E78",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:10,fontFamily:"Barlow Condensed,sans-serif"}}>↺</button>
                           </div>
                         ) : (
-                          <button onClick={async()=>{
-                            const newId = generateTeamId();
-                            const updated = {...teamIdentity, [t.id]: {...ti, teamId: newId}};
-                            setTeamIdentity(updated);
-                            await storeSet("teamIdentity", updated);
-                          }} style={{background:"#F5A62322",border:"1px solid #F5A62344",color:"#F5A623",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:11,fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>GENERATE</button>
+                          <div style={{display:"flex",alignItems:"center",gap:6}}>
+                            <button onClick={async()=>{
+                              const newId = generateTeamId();
+                              const updated = {...teamIdentity, [t.id]: {...ti, teamId: newId}};
+                              setTeamIdentity(updated);
+                              await storeSet("teamIdentity", updated);
+                            }} style={{background:"#F5A62322",border:"1px solid #F5A62344",color:"#F5A623",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:11,fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>GENERATE</button>
+                            <button onClick={()=>{setAdminClaimTeam(t);setAdminClaimModal(true);setAdminPin('');setAdminPinConfirm('');setAdminPinErr('');}}
+                              style={{background:"#2ECC7122",border:"1px solid #2ECC7144",color:"#2ECC71",borderRadius:6,padding:"3px 8px",cursor:"pointer",fontSize:10,fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>CLAIM</button>
+                          </div>
                         )}
                       </div>
                     );
@@ -4137,6 +4150,54 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
           </div>
         )}
 
+        {/* ADMIN CLAIM TEAM MODAL */}
+        {adminClaimModal && adminClaimTeam && (
+          <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:400,padding:20,fontFamily:"Barlow Condensed,sans-serif"}}>
+            <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #1E2D45",padding:24,width:"100%",maxWidth:360}}>
+              <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:"#2ECC71",marginBottom:4}}>CLAIM YOUR TEAM</div>
+              <div style={{background:"#2ECC7111",border:"1px solid #2ECC7133",borderRadius:8,padding:"10px 14px",marginBottom:16,textAlign:"center"}}>
+                <div style={{fontSize:11,color:"#4A5E78",marginBottom:2}}>Claiming as admin</div>
+                <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:adminClaimTeam.color}}>{adminClaimTeam.name}</div>
+              </div>
+              <div style={{fontSize:12,color:"#4A5E78",marginBottom:12}}>Set a PIN for snatch, voting and approvals</div>
+              <input type="password" inputMode="numeric" value={adminPin}
+                onChange={e=>{setAdminPin(e.target.value);setAdminPinErr('');}}
+                placeholder="Choose a 4+ digit PIN" autoFocus
+                style={{width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"10px 14px",color:"#E2EAF4",fontSize:14,fontFamily:"Barlow Condensed,sans-serif",outline:"none",marginBottom:8,boxSizing:"border-box"}} />
+              <input type="password" inputMode="numeric" value={adminPinConfirm}
+                onChange={e=>{setAdminPinConfirm(e.target.value);setAdminPinErr('');}}
+                onKeyDown={async e=>{if(e.key==="Enter") await doAdminClaim();}}
+                placeholder="Confirm PIN"
+                style={{width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"10px 14px",color:"#E2EAF4",fontSize:14,fontFamily:"Barlow Condensed,sans-serif",outline:"none",marginBottom:8,boxSizing:"border-box"}} />
+              {adminPinErr && <div style={{color:"#FF3D5A",fontSize:12,marginBottom:8}}>{adminPinErr}</div>}
+              <div style={{display:"flex",gap:8,marginTop:4}}>
+                <button onClick={()=>{setAdminClaimModal(false);setAdminClaimTeam(null);}}
+                  style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:10,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
+                <button onClick={async()=>{
+                  if(adminPin.length<4){setAdminPinErr("PIN must be at least 4 digits");return;}
+                  if(adminPin!==adminPinConfirm){setAdminPinErr("PINs don't match");return;}
+                  const hashBuf = await crypto.subtle.digest("SHA-256",new TextEncoder().encode(adminPin));
+                  const pinHash = Array.from(new Uint8Array(hashBuf)).map(b=>b.toString(16).padStart(2,"0")).join("");
+                  // Save to teamIdentity
+                  const identity = await storeGet("teamIdentity") || {};
+                  const key = adminClaimTeam.id;
+                  identity[key] = {...(identity[key]||{}), claimedBy: user.email, pinHash, teamRef: adminClaimTeam.id};
+                  await storeSet("teamIdentity", identity);
+                  setTeamIdentity(identity);
+                  // Update myTeam so admin also has team context
+                  const teamData = {...adminClaimTeam};
+                  setMyTeam(teamData);
+                  setMyPinHash(pinHash);
+                  try { localStorage.setItem('tb_myteam_'+pitch.id, JSON.stringify(teamData)); localStorage.setItem('tb_pinHash_'+pitch.id, pinHash); } catch {}
+                  setAdminClaimModal(false); setAdminClaimTeam(null);
+                  alert("✅ You've claimed "+adminClaimTeam.name+"! You can now participate as a team manager.");
+                }}
+                  style={{flex:2,background:"linear-gradient(135deg,#2ECC71,#16a34a)",border:"none",borderRadius:8,padding:10,color:"#fff",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:15,cursor:"pointer"}}>CLAIM & SET PIN</button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* SNATCH PIN MODAL */}
         {snatchPinModal && (
           <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.96)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,padding:24}}>
@@ -4438,24 +4499,49 @@ function Root() {
     try { localStorage.removeItem('tb_user'); } catch {}
   };
 
-  const handleEnterPitch = (pitch) => {
+  const handleEnterPitch = async (pitch) => {
     _pitchId = pitch.id;
     setCurrentPitch(pitch);
-    // Check localStorage for returning user (per-pitch keys only, ignore legacy tb_myteam)
+    // Clear legacy keys
+    try { localStorage.removeItem('tb_myteam'); localStorage.removeItem('tb_pinHash'); localStorage.removeItem('tb_skipped'); } catch {}
+    // Guests always see 3-option screen
+    try { localStorage.removeItem('tb_guest_' + pitch.id); } catch {}
+
+    // Check localStorage first (fastest)
     try {
-      const savedTeam = localStorage.getItem('tb_myteam_' + pitch.id);
-      const savedPin = localStorage.getItem('tb_pinHash_' + pitch.id);
-      const savedGuest = localStorage.getItem('tb_guest_' + pitch.id);
       const savedAdmin = localStorage.getItem('tb_admin_' + pitch.id);
       if (savedAdmin) { setIsAdmin(true); setIsGuest(false); setMyTeam(null); setScreen('app'); return; }
+      const savedTeam = localStorage.getItem('tb_myteam_' + pitch.id);
+      const savedPin = localStorage.getItem('tb_pinHash_' + pitch.id);
       if (savedTeam) { setMyTeam(JSON.parse(savedTeam)); setMyPinHash(savedPin||null); setIsGuest(false); setIsAdmin(false); setScreen('app'); return; }
-      // Guests always see 3-option screen (don't auto-enter)
-      if (savedGuest) { localStorage.removeItem('tb_guest_' + pitch.id); }
-      // Clear any legacy (non-pitch-specific) keys so old users re-claim
-      localStorage.removeItem('tb_myteam');
-      localStorage.removeItem('tb_pinHash');
-      localStorage.removeItem('tb_skipped');
     } catch {}
+
+    // Check Supabase by email (works across devices)
+    try {
+      const userEmail = currentUser?.email;
+      if (userEmail) {
+        // Check if admin by email
+        const adminEmail = await sbGet(pitch.id + "_adminEmail");
+        if (adminEmail === userEmail) {
+          try { localStorage.setItem('tb_admin_' + pitch.id, '1'); } catch {}
+          setIsAdmin(true); setIsGuest(false); setMyTeam(null); setScreen('app'); return;
+        }
+        // Check teamIdentity for claimed team
+        const identity = await sbGet(pitch.id + "_teamIdentity") || {};
+        const entry = Object.values(identity).find(t => t.claimedBy === userEmail);
+        if (entry) {
+          // Find team details
+          const teams = await sbGet(pitch.id + "_teams") || [];
+          const team = teams.find(t => t.id === entry.teamRef) || teams.find((t,i) => "t"+i === Object.keys(identity).find(k=>identity[k].claimedBy===userEmail));
+          if (team) {
+            const teamData = {...team, teamId: entry.teamId};
+            try { localStorage.setItem('tb_myteam_' + pitch.id, JSON.stringify(teamData)); if(entry.pinHash) localStorage.setItem('tb_pinHash_' + pitch.id, entry.pinHash); } catch {}
+            setMyTeam(teamData); setMyPinHash(entry.pinHash||null); setIsGuest(false); setIsAdmin(false); setScreen('app'); return;
+          }
+        }
+      }
+    } catch(e) { console.error("Email check error:", e); }
+
     // First time - show join screen
     setScreen('join');
   };
