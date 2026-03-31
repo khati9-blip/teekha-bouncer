@@ -4451,12 +4451,40 @@ function Root() {
     try { const s = localStorage.getItem('tb_user'); return s ? JSON.parse(s) : null; } catch { return null; }
   });
   const [currentPitch, setCurrentPitch] = useState(null);
-  const [screen, setScreen] = useState('pitches'); // pitches | join | adminSetup | app
   const [pendingPitches, setPendingPitches] = useState(null);
-  const [myTeam, setMyTeam] = useState(null);
-  const [myPinHash, setMyPinHash] = useState(null);
+  // Restore full session from localStorage on refresh
+  const [screen, setScreen] = useState(() => {
+    try {
+      const pitch = JSON.parse(localStorage.getItem('tb_pitch') || 'null');
+      if (!pitch) return 'pitches';
+      if (localStorage.getItem('tb_admin_' + pitch.id)) return 'app';
+      if (localStorage.getItem('tb_myteam_' + pitch.id)) return 'app';
+      return 'pitches';
+    } catch { return 'pitches'; }
+  });
+  const [myTeam, setMyTeam] = useState(() => {
+    try {
+      const pitch = JSON.parse(localStorage.getItem('tb_pitch') || 'null');
+      if (!pitch) return null;
+      const t = localStorage.getItem('tb_myteam_' + pitch.id);
+      return t ? JSON.parse(t) : null;
+    } catch { return null; }
+  });
+  const [myPinHash, setMyPinHash] = useState(() => {
+    try {
+      const pitch = JSON.parse(localStorage.getItem('tb_pitch') || 'null');
+      if (!pitch) return null;
+      return localStorage.getItem('tb_pinHash_' + pitch.id) || null;
+    } catch { return null; }
+  });
   const [isGuest, setIsGuest] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(() => {
+    try {
+      const pitch = JSON.parse(localStorage.getItem('tb_pitch') || 'null');
+      if (!pitch) return false;
+      return !!localStorage.getItem('tb_admin_' + pitch.id);
+    } catch { return false; }
+  });
 
   const sbGet = async (key) => { try { const res = await fetch("https://rmcxhorijitrhqyrvvkn.supabase.co/rest/v1/league_data?key=eq."+encodeURIComponent(key), {headers:{"apikey":"sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm","Authorization":"Bearer sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm"}}); const d=await res.json(); return d[0]?.value; } catch { return null; } };
   const sbSet = async (key, value) => { try { await fetch("https://rmcxhorijitrhqyrvvkn.supabase.co/rest/v1/league_data", {method:"POST",headers:{"apikey":"sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm","Authorization":"Bearer sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm","Content-Type":"application/json","Prefer":"resolution=merge-duplicates"},body:JSON.stringify({key,value,updated_at:new Date().toISOString()})}); } catch {} };
