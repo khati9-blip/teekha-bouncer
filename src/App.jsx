@@ -4306,10 +4306,20 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                           <div style={{fontSize:10,color:"#4A5E78",marginTop:1}}>{ti.claimedBy ? ti.claimedBy.split("@")[0] : "Unclaimed"}</div>
                         </div>
                         {ti.claimedBy ? (
-                          <span style={{fontSize:10,color:"#2ECC71",fontWeight:700}}>✓ CLAIMED</span>
+                          <div style={{display:"flex",alignItems:"center",gap:4}}>
+                            <span style={{fontSize:10,color:"#2ECC71",fontWeight:700}}>✓ {ti.claimedBy.split("@")[0]}</span>
+                            <button onClick={async()=>{
+                              if(!confirm("Reset claim for "+t.name+"?")) return;
+                              const updated = {...teamIdentity, [t.id]: {...ti, claimedBy:null, pinHash:null}};
+                              setTeamIdentity(updated);
+                              await storeSet("teamIdentity", updated);
+                            }} style={{background:"#FF3D5A11",border:"1px solid #FF3D5A33",color:"#FF3D5A",borderRadius:4,padding:"2px 5px",cursor:"pointer",fontSize:9,fontWeight:700}}>RESET</button>
+                          </div>
                         ) : ti.teamId ? (
                           <div style={{display:"flex",alignItems:"center",gap:4}}>
                             <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:14,fontWeight:800,color:"#F5A623",letterSpacing:2,background:"#F5A62322",padding:"3px 8px",borderRadius:6}}>{ti.teamId}</div>
+                            <button onClick={()=>{setAdminClaimTeam(t);setAdminClaimModal(true);setAdminPin('');setAdminPinConfirm('');setAdminPinErr('');}}
+                              style={{background:"#2ECC7122",border:"1px solid #2ECC7144",color:"#2ECC71",borderRadius:4,padding:"2px 5px",cursor:"pointer",fontSize:9,fontWeight:700}}>CLAIM</button>
                             <button onClick={()=>withPassword(async()=>{
                               if(!confirm("Reset this Team ID?")) return;
                               const newId = generateTeamId();
@@ -4319,12 +4329,16 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                             })} style={{background:"transparent",border:"1px solid #1E2D45",color:"#4A5E78",borderRadius:4,padding:"2px 5px",cursor:"pointer",fontSize:10}}>↺</button>
                           </div>
                         ) : (
-                          <button onClick={()=>withPassword(async()=>{
-                            const newId = generateTeamId();
-                            const updated = {...teamIdentity, [t.id]: {...ti, teamId: newId}};
-                            setTeamIdentity(updated);
-                            await storeSet("teamIdentity", updated);
-                          })} style={{background:"#F5A62322",border:"1px solid #F5A62344",color:"#F5A623",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:11,fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>GENERATE</button>
+                          <div style={{display:"flex",alignItems:"center",gap:4}}>
+                            <button onClick={()=>withPassword(async()=>{
+                              const newId = generateTeamId();
+                              const updated = {...teamIdentity, [t.id]: {...ti, teamId: newId}};
+                              setTeamIdentity(updated);
+                              await storeSet("teamIdentity", updated);
+                            })} style={{background:"#F5A62322",border:"1px solid #F5A62344",color:"#F5A623",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:11,fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>GENERATE</button>
+                            <button onClick={()=>{setAdminClaimTeam(t);setAdminClaimModal(true);setAdminPin('');setAdminPinConfirm('');setAdminPinErr('');}}
+                              style={{background:"#2ECC7122",border:"1px solid #2ECC7144",color:"#2ECC71",borderRadius:4,padding:"2px 5px",cursor:"pointer",fontSize:9,fontWeight:700}}>CLAIM</button>
+                          </div>
                         )}
                       </div>
                     );
