@@ -1670,7 +1670,8 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
         if(m) setMatches(m);
         if(c) setCaptains(c);
         if(pts) setPoints(pts);
-        if(pg && typeof pg === 'string') setPage(pg);
+        // Page is persisted in localStorage, not Supabase
+        // if(pg && typeof pg === 'string') setPage(pg);
         if(tn) setTNames(tn);
         if(nt) setNumTeams(nt);
         if(ph) setPwHash(ph);
