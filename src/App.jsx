@@ -1606,6 +1606,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest, isAdm
     longestSix:50, captainMult:2, vcMult:1.5
   }); // loaded from supabase
   const [showRulesPanel, setShowRulesPanel] = useState(false);
+  const [guestToast, setGuestToast] = useState(false);
   const TOURNEY_COLORS = ["#F5A623","#4F8EF7","#2ECC71","#A855F7","#FF3D5A","#06B6D4","#F97316","#EC4899"];
   const [notifications, setNotifications] = useState([]);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -2176,7 +2177,13 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest, isAdm
     reader.readAsDataURL(file);
   };
 
+  const showGuestMsg = () => {
+    setGuestToast(true);
+    setTimeout(() => setGuestToast(false), 2500);
+  };
+
   const withPassword=(action)=>{
+    if(isGuest){showGuestMsg();return;}
     if(unlocked){action();return;}
     setPendingAction({fn:action});setShowPwModal(true);
   };
@@ -2803,6 +2810,10 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest, isAdm
   return (
     <>
       {isGuest && <div style={{background:"#4A5E7822",borderBottom:"1px solid #1E2D45",padding:"6px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:11,fontFamily:"Barlow Condensed,sans-serif"}}><span style={{color:"#4A5E78"}}>👁 Guest — read only</span><button onClick={onLeave} style={{background:"transparent",border:"none",color:"#F5A623",fontSize:11,cursor:"pointer",fontWeight:700,fontFamily:"Barlow Condensed,sans-serif"}}>CLAIM TEAM →</button></div>}
+      {guestToast && <div style={{position:"fixed",top:60,left:"50%",transform:"translateX(-50%)",background:"#1E2D45",border:"1px solid #4A5E78",borderRadius:10,padding:"10px 20px",zIndex:9999,fontFamily:"Barlow Condensed,sans-serif",fontSize:14,color:"#E2EAF4",display:"flex",alignItems:"center",gap:8,boxShadow:"0 4px 20px rgba(0,0,0,0.5)"}}>
+        <span style={{fontSize:18}}>👁</span>
+        <span>View only — <strong style={{color:"#F5A623"}}>guests cannot make changes</strong></span>
+      </div>}
       <ChatWindow myTeam={myTeam} teams={teams} unlocked={unlocked} withPassword={withPassword} storeGet={storeGet} storeSet={storeSet} isGuest={isGuest} />
       <style>{css}</style>
       <div style={{minHeight:"100vh",background:"var(--bg)"}}>
@@ -3301,10 +3312,10 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest, isAdm
                                     {/* Expandable actions for all matches */}
                                     {expandedMatchId===match.id && (
                                       <div style={{borderTop:"1px solid #1E2D45",padding:"10px 14px",display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
-                                        <button onClick={()=>setCaptainMatch(match)}
+                                        {!isGuest && <button onClick={()=>setCaptainMatch(match)}
                                           style={{background:"#4F8EF722",border:"1px solid #4F8EF744",color:"#4F8EF7",borderRadius:7,padding:"6px 12px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:12}}>
                                           👑 SET C/VC
-                                        </button>
+                                        </button>}
                                         {completed && unlocked && (
                                           <button onClick={()=>withPassword(()=>setSmartStatsMatch(match))}
                                             style={{background:"#F5A62322",border:"1px solid #F5A62344",color:"#F5A623",borderRadius:7,padding:"6px 12px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:12}}>
@@ -3333,10 +3344,10 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest, isAdm
                                           style={{background:"#F5A62322",border:"1px solid #F5A62344",color:"#F5A623",borderRadius:7,padding:"6px 12px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:12}}>
                                           📊 {isSynced?"EDIT STATS":"SYNC STATS"}
                                         </button>
-                                        <button onClick={()=>setCaptainMatch(match)}
+                                        {!isGuest && <button onClick={()=>setCaptainMatch(match)}
                                           style={{background:"#4F8EF722",border:"1px solid #4F8EF744",color:"#4F8EF7",borderRadius:7,padding:"6px 12px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:12}}>
                                           👑 SET C/VC
-                                        </button>
+                                        </button>}
                                       </div>
                                     )}
                                   </div>
@@ -4268,6 +4279,28 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest, isAdm
                 {pendingVote && <span style={{width:8,height:8,background:"#FF3D5A",borderRadius:"50%",flexShrink:0}} />}
               </button>
 
+              {/* Guest Access toggle - admin only */}
+              {unlocked && (
+                <div style={{padding:"8px 14px 0"}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",background:"#080C14",borderRadius:10,border:"1px solid #1E2D45"}}>
+                    <div>
+                      <div style={{fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,color:"#E2EAF4"}}>👁 Guest Access</div>
+                      <div style={{fontSize:10,color:"#4A5E78",marginTop:2}}>Allow guests to view this pitch</div>
+                    </div>
+                    <button onClick={()=>withPassword(async()=>{
+                      const now = !guestAllowed;
+                      const pws = await sbGet("pitches") || [];
+                      const updated = pws.map(p=>p.id===pitch.id?{...p,guestAllowed:now}:p);
+                      await sbSet("pitches", updated);
+                      setGuestAllowed(now);
+                    })} style={{background:"none",border:"none",cursor:"pointer",padding:0,flexShrink:0}}>
+                      <span style={{width:44,height:24,borderRadius:12,background:guestAllowed?"#2ECC71":"#1E2D45",position:"relative",transition:"background 0.2s",display:"inline-block"}}>
+                        <span style={{position:"absolute",top:3,left:guestAllowed?23:3,width:18,height:18,borderRadius:"50%",background:"#fff",transition:"left 0.2s",display:"block"}} />
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              )}
               <div style={{padding:"16px",borderTop:"1px solid #1E2D45"}}>
                 <button onClick={onLogout} style={{width:"100%",background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:8,padding:"10px",color:"#FF3D5A",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>LOGOUT</button>
               </div>
