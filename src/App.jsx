@@ -1271,7 +1271,7 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
 }
 
 
-function TeamClaimScreen({ pitch, user, onClaimed, onBack, onGuest, onAdmin }) {
+function TeamClaimScreen({ pitch, user, onClaimed, onBack, onGuest, onAdmin, guestAllowed }) {
   const [mode, setMode] = useState(null); // null | 'teamid' | 'admin'
   const [teamIdInput, setTeamIdInput] = useState("");
   const [adminPw, setAdminPw] = useState("");
@@ -1361,14 +1361,25 @@ function TeamClaimScreen({ pitch, user, onClaimed, onBack, onGuest, onAdmin }) {
                 <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>Use the Team ID given by your admin</div>
               </div>
             </button>
-            <button onClick={onGuest}
-              style={{background:"#141E2E",border:"2px solid #4A5E7833",borderRadius:12,padding:"16px 20px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14}}>
-              <span style={{fontSize:28}}>👁</span>
-              <div>
-                <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:17,color:"#E2EAF4"}}>Enter as Guest</div>
-                <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>View only — no editing or transfers</div>
+            {guestAllowed && (
+              <button onClick={onGuest}
+                style={{background:"#141E2E",border:"2px solid #4A5E7833",borderRadius:12,padding:"16px 20px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14}}>
+                <span style={{fontSize:28}}>👁</span>
+                <div>
+                  <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:17,color:"#E2EAF4"}}>Enter as Guest</div>
+                  <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>View only — no editing or transfers</div>
+                </div>
+              </button>
+            )}
+            {!guestAllowed && (
+              <div style={{background:"#141E2E",border:"2px solid #1E2D4533",borderRadius:12,padding:"16px 20px",display:"flex",alignItems:"center",gap:14,opacity:0.4}}>
+                <span style={{fontSize:28}}>🚫</span>
+                <div>
+                  <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:17,color:"#4A5E78"}}>Guest Access Disabled</div>
+                  <div style={{fontSize:11,color:"#2D3E52",marginTop:2}}>Admin has restricted guest viewing</div>
+                </div>
               </div>
-            </button>
+            )}
             <button onClick={()=>{setMode("admin");setErr("");}}
               style={{background:"#141E2E",border:"2px solid #4A5E7833",borderRadius:12,padding:"14px 20px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14}}>
               <span style={{fontSize:24}}>🔑</span>
@@ -4442,7 +4453,8 @@ function Root() {
     if (screen === 'join') return (
       <TeamClaimScreen pitch={currentPitch} user={currentUser}
         onClaimed={handleClaimed} onBack={handleLeave}
-        onGuest={handleGuestEnter} onAdmin={handleAdminEnter} />
+        onGuest={handleGuestEnter} onAdmin={handleAdminEnter}
+        guestAllowed={currentPitch?.guestAllowed !== false} />
     );
 
     if (screen === 'adminSetup') return (
