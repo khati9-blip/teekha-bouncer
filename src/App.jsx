@@ -448,12 +448,12 @@ function PasswordModal({ onSuccess, onClose, storedHash }) {
         {mode==="login" && <>
           <div style={{fontSize:36,textAlign:"center",marginBottom:8}}>🔐</div>
           <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,fontWeight:700,color:"#F5A623",textAlign:"center",letterSpacing:2,marginBottom:4}}>
-            {isFirstTime ? "SET LEAGUE PASSWORD" : "SQUAD LOCKED"}
+            {isFirstTime ? "SET ADMIN PASSWORD" : "ADMIN PASSWORD"}
           </div>
           <div style={{fontSize:13,color:"#4A5E78",textAlign:"center",marginBottom:24}}>
             {isFirstTime ? "Choose a password to protect squad changes" : "Enter password to modify squads"}
           </div>
-          <input type="password" value={pw} onChange={e=>{setPw(e.target.value);setErr("");}} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder={isFirstTime?"Choose a password…":"League password…"} autoFocus style={inp} />
+          <input type="password" value={pw} onChange={e=>{setPw(e.target.value);setErr("");}} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder={isFirstTime?"Choose admin password…":"Admin password…"} autoFocus style={inp} />
           {err && <div style={{color:"#FF3D5A",fontSize:13,marginBottom:16,textAlign:"center"}}>{err}</div>}
           <div style={{display:"flex",gap:10}}>
             <button onClick={onClose} style={cancelBtn}>CANCEL</button>
