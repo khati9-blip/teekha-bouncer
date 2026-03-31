@@ -1324,12 +1324,13 @@ function TeamClaimScreen({ pitch, user, onClaimed, onBack, onGuest, onAdmin, gue
     if (!adminPw.trim()) { setErr("Enter admin password"); return; }
     setLoading(true); setErr("");
     const h = await hashPw(adminPw);
-    // pwhash is the real admin password stored inside the pitch (used for all admin actions)
-    const pwhash = await sbGet(pitch.id + "_pwhash") || await sbGet("p1_pwhash");
-    // Also check pitch.hash (old pitch room password) and adminHash as fallbacks
+    // Check pitch-specific password keys only
+    const pwhash = await sbGet(pitch.id + "_pwhash");
     const adminHash = await sbGet(pitch.id + "_adminHash");
-    const oldPitchHash = pitch.hash;
-    if (h !== pwhash && h !== adminHash && h !== oldPitchHash) {
+    // For p1 (original pitch), also check legacy global key
+    const legacyHash = pitch.id === "p1" ? await sbGet("p1_pwhash") : null;
+    const oldPitchHash = pitch.hash && pitch.hash.length > 10 ? pitch.hash : null;
+    if (h !== pwhash && h !== adminHash && h !== legacyHash && h !== oldPitchHash) {
       setErr("Wrong admin password"); setLoading(false); return;
     }
     // Migrate: save as adminHash for future logins
@@ -4291,7 +4292,7 @@ function AdminSetupScreen({ pitch, onDone, onBack, sbGet, sbSet, hashPw }) {
   const [alreadySet, setAlreadySet] = useState(false);
   React.useEffect(() => {
     (async () => {
-      const existing = await sbGet(pitch.id + "_pwhash") || await sbGet("p1_pwhash") || await sbGet(pitch.id + "_adminHash") || pitch.hash;
+      const existing = await sbGet(pitch.id + "_adminHash") || (pitch.hash && pitch.hash.length > 10 ? pitch.hash : null);
       if (existing) setAlreadySet(true);
       setChecking(false);
     })();
@@ -4333,7 +4334,7 @@ function AdminSetupScreen({ pitch, onDone, onBack, sbGet, sbSet, hashPw }) {
                 if(e.key==="Enter"){
                   setLoading(true);setErr("");
                   const h=await hashPw(pw);
-                  const stored=await sbGet(pitch.id+"_pwhash")||await sbGet("p1_pwhash")||await sbGet(pitch.id+"_adminHash")||pitch.hash;
+                  const stored=await sbGet(pitch.id+"_pwhash")||(pitch.id==="p1"?await sbGet("p1_pwhash"):null)||await sbGet(pitch.id+"_adminHash")||pitch.hash||null;
                   if(h!==stored){setErr("Wrong password");setLoading(false);return;}
                   if(!await sbGet(pitch.id+"_adminHash")) await sbSet(pitch.id+"_adminHash",h);
                   onDone({...pitch,hash:h});setLoading(false);
