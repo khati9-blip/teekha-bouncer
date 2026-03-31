@@ -1672,6 +1672,11 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
         if(tn) setTNames(tn);
         if(nt) setNumTeams(nt);
         if(ph) setPwHash(ph);
+        else {
+          // Fallback: try adminHash for new-style pitches
+          const ah = await storeGet("adminHash");
+          if(ah) { setPwHash(ah); storeSet("pwhash", ah); }
+        }
         if(rh) setRecoveryHash(rh);
         if(tl) setTeamLogos(tl);
         if(sp) setSafePlayers(sp);
