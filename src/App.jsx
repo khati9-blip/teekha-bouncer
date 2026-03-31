@@ -3380,6 +3380,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                   <div style={{fontSize:11,color:"#4A5E78",marginBottom:10}}>Share these codes with each team manager so they can claim their team</div>
                   {teams.map(t => {
                     const ti = teamIdentity[t.id] || {};
+                    if(teams.indexOf(t)===0&&Object.keys(teamIdentity).length>0) alert("TI keys: "+Object.keys(teamIdentity).join(", ")+"\nFirst entry: "+JSON.stringify(Object.values(teamIdentity)[0]));
 
                     return (
                       <div key={t.id} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,padding:"8px 12px",background:"#0E1521",borderRadius:8,border:"1px solid "+t.color+"33"}}>
