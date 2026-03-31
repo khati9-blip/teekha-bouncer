@@ -1219,24 +1219,62 @@ class ErrorBoundary extends React.Component {
 
 // ── PITCH HOME SCREEN ────────────────────────────────────────────────────────
 function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
-  const [pitches, setPitches] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [newName, setNewName] = useState("");
-  const [creating, setCreating] = useState(false);
-  const [err, setErr] = useState("");
+  const [pitches, setPitches] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [newName, setNewName] = React.useState("");
+  const [creating, setCreating] = React.useState(false);
+  const [err, setErr] = React.useState("");
+  const [tick, setTick] = React.useState(0);
 
   const sbGet = async (key) => { try { const res = await fetch("https://rmcxhorijitrhqyrvvkn.supabase.co/rest/v1/league_data?key=eq."+encodeURIComponent(key), {headers:{"apikey":"sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm","Authorization":"Bearer sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm"}}); const d=await res.json(); return d[0]?.value; } catch { return null; } };
   const sbSet = async (key, value) => { try { await fetch("https://rmcxhorijitrhqyrvvkn.supabase.co/rest/v1/league_data", {method:"POST",headers:{"apikey":"sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm","Authorization":"Bearer sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm","Content-Type":"application/json","Prefer":"resolution=merge-duplicates"},body:JSON.stringify({key,value,updated_at:new Date().toISOString()})}); } catch {} };
 
-  useEffect(() => {
+  const [pitchData, setPitchData] = React.useState({});
+
+  React.useEffect(() => {
     (async () => {
       try {
         const data = await sbGet("pitches");
-        if (data && Array.isArray(data)) setPitches(data);
-        else { const dp=[{id:"p1",name:"Pitch 1",hash:"",createdAt:new Date().toISOString()}]; await sbSet("pitches",dp); setPitches(dp); }
+        if (data && Array.isArray(data)) {
+          setPitches(data);
+          // Load leaderboard data for each pitch
+          const pd = {};
+          for (const p of data) {
+            const teams = await sbGet(p.id + "_teams") || [];
+            const points = await sbGet(p.id + "_points") || {};
+            const matches = await sbGet(p.id + "_matches") || [];
+            // calc totals
+            const totals = teams.map(t => {
+              const tpts = Object.values(points).reduce((sum, mp) => {
+                return sum + Object.values(mp||{}).filter((_,i,arr)=>true).reduce((s,v)=>s+(typeof v==='number'?v:0),0);
+              }, 0);
+              const total = Object.values(points).reduce((sum, matchPts) => {
+                const tPlayers = Object.keys(matchPts||{}).filter(pid => {
+                  return true;
+                });
+                return sum;
+              }, 0);
+              return {id: t.id, name: t.name, color: t.color, total: 0};
+            });
+            // simpler: just get teams and matches count
+            const liveCount = matches.filter(m=>m.status==="live").length;
+            const completedCount = matches.filter(m=>m.status==="completed").length;
+            pd[p.id] = { teams, matchCount: matches.length, liveCount, completedCount };
+          }
+          setPitchData(pd);
+        } else {
+          const dp=[{id:"p1",name:"Pitch 1",hash:"",createdAt:new Date().toISOString()}];
+          await sbSet("pitches",dp); setPitches(dp);
+        }
       } catch { setPitches([{id:"p1",name:"Pitch 1",hash:"",createdAt:new Date().toISOString()}]); }
       setLoading(false);
     })();
+  }, []);
+
+  // Countdown tick
+  React.useEffect(() => {
+    const t = setInterval(() => setTick(v=>v+1), 1000);
+    return () => clearInterval(t);
   }, []);
 
   const createPitch = async () => {
@@ -1244,12 +1282,24 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
     if (pitches.length >= 1000) { setErr("Max 1000 pitches"); return; }
     const id = "p" + (pitches.length + 1) + "_" + Date.now();
     const newPitch = { id, name: newName.trim(), hash: "", createdAt: new Date().toISOString() };
-    // Don't save pitch yet — only save after admin password is confirmed
     setNewName(""); setCreating(false); setErr("");
-    onSetupAdmin(newPitch, pitches); // pass pitches so we can save after
+    onSetupAdmin(newPitch, pitches);
   };
 
-  const COLORS = ["#FF3D5A","#4F8EF7","#2ECC71","#F5A623","#A855F7","#06B6D4"];
+  // Next match countdown
+  const getNextMatchInfo = () => {
+    for (const p of pitches) {
+      const pd2 = pitchData[p.id];
+      if (!pd2) continue;
+    }
+    return null;
+  };
+
+  // Live match info
+  const liveMatches = pitches.reduce((acc, p) => acc + (pitchData[p.id]?.liveCount || 0), 0);
+  const totalMatches = pitches.reduce((acc, p) => acc + (pitchData[p.id]?.matchCount || 0), 0);
+
+  const COLORS = ["#F5A623","#4F8EF7","#2ECC71","#A855F7","#FF3D5A","#06B6D4"];
 
   if (loading) return (
     <div style={{minHeight:"100vh",background:"#080C14",display:"flex",alignItems:"center",justifyContent:"center"}}>
@@ -1259,71 +1309,125 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
 
   return (
     <div style={{minHeight:"100vh",background:"#080C14",fontFamily:"Barlow Condensed,sans-serif"}}>
-      <div style={{background:"#0A0F1A",borderBottom:"1px solid #1E2D45",padding:"14px 24px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-        <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,fontWeight:700,color:"#F5A623",letterSpacing:2}}>🏏 TEEKHA BOUNCER</div>
-        <div style={{display:"flex",alignItems:"center",gap:16}}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Barlow+Condensed:wght@400;600;700;800&display=swap');`}</style>
+
+      {/* Header */}
+      <div style={{background:"#0A0F1A",borderBottom:"1px solid #1E2D45",padding:"14px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,zIndex:50}}>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <img src="/logo.png" style={{width:32,height:32,borderRadius:8,objectFit:"contain"}} alt="" />
+          <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:20,color:"#F5A623",letterSpacing:2}}>TEEKHA BOUNCER</div>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:12}}>
           <div style={{textAlign:"right"}}>
-            <div style={{fontSize:13,color:"#E2EAF4",fontWeight:700}}>{user?.email?.split('@')[0]}</div>
-            <div style={{fontSize:10,color:"#4A5E78"}}>{user?.email?.split('@')[1]}</div>
+            <div style={{fontSize:12,color:"#E2EAF4",fontWeight:700}}>{user?.email?.split('@')[0]}</div>
+            <div style={{fontSize:10,color:"#4A5E78",display:"flex",alignItems:"center",gap:4,justifyContent:"flex-end"}}>
+              <span style={{width:5,height:5,borderRadius:"50%",background:"#2ECC71",display:"inline-block"}} />online
+            </div>
           </div>
           <button onClick={onLogout} style={{background:"transparent",border:"1px solid #1E2D45",borderRadius:6,padding:"5px 12px",color:"#4A5E78",fontSize:12,cursor:"pointer",fontWeight:700}}>LOGOUT</button>
         </div>
       </div>
 
-      <div style={{maxWidth:600,margin:"0 auto",padding:"40px 20px"}}>
-        <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:28,fontWeight:700,color:"#E2EAF4",letterSpacing:2,marginBottom:4}}>SELECT YOUR PITCH</div>
-        <div style={{fontSize:13,color:"#4A5E78",marginBottom:28}}>Each pitch is an independent league. Enter your pitch to manage teams, track points and view the leaderboard.</div>
+      {/* Hero - Live Match Banner */}
+      {liveMatches > 0 && (
+        <div style={{background:"linear-gradient(135deg,#FF3D5A11,#FF3D5A05)",borderBottom:"1px solid #FF3D5A22",padding:"14px 20px",display:"flex",alignItems:"center",gap:12}}>
+          <div style={{width:8,height:8,borderRadius:"50%",background:"#FF3D5A",flexShrink:0,animation:"pulse 1.5s infinite"}} />
+          <div style={{flex:1}}>
+            <div style={{fontSize:11,color:"#FF3D5A",fontWeight:700,letterSpacing:2}}>{liveMatches} MATCH{liveMatches>1?"ES":""} LIVE NOW</div>
+            <div style={{fontSize:12,color:"#4A5E78",marginTop:1}}>Check Matches tab for live scores</div>
+          </div>
+          <div style={{fontSize:11,color:"#FF3D5A",fontWeight:700}}>🔴 LIVE</div>
+        </div>
+      )}
 
-        <div style={{display:"flex",flexDirection:"column",gap:12,marginBottom:20}}>
-          {pitches.map((pitch, i) => {
-            const color = COLORS[i % COLORS.length];
-            const pitchTeamKey = "tb_myteam_" + pitch.id;
-            const pitchGuestKey = "tb_guest_" + pitch.id;
-            const pitchAdminKey = "tb_admin_" + pitch.id;
-            const savedTeam = (() => { try { const s=localStorage.getItem(pitchTeamKey); return s?JSON.parse(s):null; } catch { return null; } })();
-            const savedGuest = (() => { try { return !!localStorage.getItem(pitchGuestKey); } catch { return false; } })();
-            const savedAdmin = (() => { try { return !!localStorage.getItem(pitchAdminKey); } catch { return false; } })();
-            const returning = savedTeam || savedGuest || savedAdmin;
-            return (
-              <div key={pitch.id} style={{background:"#0E1521",borderRadius:12,border:"1px solid "+color+"44",overflow:"hidden"}}>
-                <div style={{padding:"16px 20px",display:"flex",alignItems:"center",gap:14}}>
-                  <div style={{width:44,height:44,borderRadius:10,background:color+"22",border:"1px solid "+color+"44",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"Rajdhani,sans-serif",fontWeight:800,fontSize:16,color:color,flexShrink:0}}>
-                    {"P"+(i+1)}
-                  </div>
-                  <div style={{flex:1}}>
-                    <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:18,color:"#E2EAF4",letterSpacing:1}}>{pitch.name}</div>
-                    <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>
-                      {returning ? (savedAdmin?"🔑 Admin":(savedTeam?"🏏 "+savedTeam.name:"👁 Guest")) + " · tap to enter" : "Created "+new Date(pitch.createdAt).toLocaleDateString("en-IN")}
-                    </div>
-                  </div>
-                  <button onClick={()=>onEnter(pitch)} style={{background:"linear-gradient(135deg,"+color+","+color+"99)",border:"none",borderRadius:8,padding:"8px 16px",color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:13,cursor:"pointer",letterSpacing:1}}>
-                    {returning ? "ENTER →" : "JOIN →"}
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+      {/* Quick Stats */}
+      <div style={{padding:"16px 20px 0"}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:20}}>
+          {[
+            {num: pitches.length, label: "PITCHES"},
+            {num: totalMatches, label: "MATCHES"},
+            {num: liveMatches, label: "LIVE NOW", color: liveMatches>0?"#FF3D5A":"#4A5E78"},
+          ].map((s,i) => (
+            <div key={i} style={{background:"#0E1521",border:"1px solid #1E2D45",borderRadius:10,padding:"12px",textAlign:"center"}}>
+              <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:26,fontWeight:700,color:s.color||"#F5A623",lineHeight:1}}>{s.num}</div>
+              <div style={{fontSize:9,color:"#4A5E78",letterSpacing:2,marginTop:3}}>{s.label}</div>
+            </div>
+          ))}
         </div>
 
+        {/* Pitches */}
+        <div style={{fontSize:10,color:"#4A5E78",letterSpacing:3,marginBottom:12}}>YOUR PITCHES</div>
+
+        {pitches.map((pitch, i) => {
+          const color = COLORS[i % COLORS.length];
+          const pd2 = pitchData[pitch.id] || {};
+          const savedAdmin = (() => { try { return !!localStorage.getItem('tb_admin_' + pitch.id); } catch { return false; } })();
+          const savedTeam = (() => { try { const s=localStorage.getItem('tb_myteam_' + pitch.id); return s?JSON.parse(s):null; } catch { return null; } })();
+          const myLabel = savedAdmin ? "🔑 Admin" : savedTeam ? "🏏 " + savedTeam.name : null;
+
+          return (
+            <div key={pitch.id} style={{background:"#0E1521",borderRadius:14,border:"1px solid "+color+"33",marginBottom:12,overflow:"hidden",boxShadow:"0 2px 12px "+color+"11"}}>
+              <div style={{padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
+                <div style={{width:44,height:44,borderRadius:10,background:color+"22",border:"1px solid "+color+"44",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"Rajdhani,sans-serif",fontWeight:800,fontSize:16,color:color,flexShrink:0}}>
+                  {"P"+(i+1)}
+                </div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:18,color:"#E2EAF4",letterSpacing:1}}>{pitch.name}</div>
+                  <div style={{fontSize:11,color:"#4A5E78",marginTop:2,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                    <span>{pd2.teams?.length||0} teams</span>
+                    {pd2.matchCount>0 && <span>· {pd2.matchCount} matches</span>}
+                    {pd2.liveCount>0 && <span style={{color:"#FF3D5A",fontWeight:700}}>· 🔴 {pd2.liveCount} live</span>}
+                    {myLabel && <span style={{color:color,fontWeight:700}}>· {myLabel}</span>}
+                  </div>
+                </div>
+                <button onClick={()=>onEnter(pitch)}
+                  style={{background:"linear-gradient(135deg,"+color+","+color+"99)",border:"none",borderRadius:8,padding:"8px 16px",color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:13,cursor:"pointer",letterSpacing:1,flexShrink:0}}>
+                  {myLabel ? "ENTER →" : "JOIN →"}
+                </button>
+              </div>
+
+              {/* Mini leaderboard if teams exist */}
+              {pd2.teams?.length > 0 && (
+                <div style={{borderTop:"1px solid "+color+"22",padding:"8px 16px",display:"flex",gap:6,flexWrap:"wrap"}}>
+                  {pd2.teams.map((t,ti) => (
+                    <div key={t.id} style={{display:"flex",alignItems:"center",gap:4,background:"#080C14",borderRadius:6,padding:"3px 8px"}}>
+                      <span style={{fontFamily:"Rajdhani,sans-serif",fontSize:11,color:"#4A5E78",minWidth:12}}>{ti+1}</span>
+                      <span style={{width:6,height:6,borderRadius:"50%",background:t.color,flexShrink:0}} />
+                      <span style={{fontSize:11,color:"#E2EAF4",fontWeight:600}}>{t.name.split(' ')[0]}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        {/* Create pitch */}
         {!creating ? (
-          <button onClick={()=>setCreating(true)} style={{width:"100%",background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:12,padding:"15px",color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:16,cursor:"pointer",letterSpacing:2}}>
-            + CREATE NEW PITCH
+          <button onClick={()=>setCreating(true)}
+            style={{width:"100%",background:"transparent",border:"1px dashed #1E2D45",borderRadius:14,padding:"16px",color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer",letterSpacing:1,display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:20}}>
+            <span style={{fontSize:18,color:"#F5A623"}}>＋</span> CREATE NEW PITCH
           </button>
         ) : (
-          <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #1E2D45",padding:20}}>
+          <div style={{background:"#0E1521",borderRadius:14,border:"1px solid #1E2D45",padding:20,marginBottom:20}}>
             <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:16,fontWeight:700,color:"#F5A623",marginBottom:12}}>NEW PITCH</div>
-            <input value={newName} onChange={e=>{setNewName(e.target.value);setErr("");}} placeholder="Pitch name (e.g. Office IPL League)" autoFocus
+            <input value={newName} onChange={e=>{setNewName(e.target.value);setErr("");}} placeholder="e.g. Office IPL League" autoFocus
               onKeyDown={e=>e.key==="Enter"&&createPitch()}
               style={{width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"10px 14px",color:"#E2EAF4",fontSize:15,fontFamily:"Barlow Condensed,sans-serif",outline:"none",marginBottom:10,boxSizing:"border-box"}} />
-            {err && <div style={{color:"#FF3D5A",fontSize:12,marginBottom:10}}>{err}</div>}
+            {err && <div style={{color:"#FF3D5A",fontSize:12,marginBottom:8}}>{err}</div>}
             <div style={{display:"flex",gap:8}}>
-              <button onClick={()=>{setCreating(false);setNewName("");setErr("");}} style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:10,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
-              <button onClick={createPitch} style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:10,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:15,cursor:"pointer"}}>CREATE & SET UP →</button>
+              <button onClick={()=>{setCreating(false);setNewName("");setErr("");}}
+                style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:10,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
+              <button onClick={createPitch}
+                style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:10,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:15,cursor:"pointer"}}>CREATE & SET UP →</button>
             </div>
           </div>
         )}
       </div>
+
+      <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}`}</style>
     </div>
+  </div>
   );
 }
 
