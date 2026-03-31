@@ -1221,6 +1221,48 @@ class ErrorBoundary extends React.Component {
 
 
 
+function PitchHomeEnhancements({ pitches, user, onLogout }) {
+  const COLORS = ["#F5A623","#4F8EF7","#2ECC71","#A855F7","#FF3D5A","#06B6D4"];
+  const liveCount = pitches.reduce((a,p)=>{
+    try{ return a+(JSON.parse(localStorage.getItem("tb_matches_"+p.id)||"[]")).filter(m=>m.status==="live").length; }catch{return a;}
+  },0);
+  const matchCount = pitches.reduce((a,p)=>{
+    try{ return a+(JSON.parse(localStorage.getItem("tb_matches_"+p.id)||"[]")).length; }catch{return a;}
+  },0);
+
+  return React.createElement("div", null,
+    // Online indicator enhancement in header - skip, already handled
+    // Live banner
+    liveCount > 0 && React.createElement("div", {
+      style:{background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:10,padding:"10px 16px",marginBottom:16,display:"flex",alignItems:"center",gap:10}
+    },
+      React.createElement("div", {style:{width:8,height:8,borderRadius:"50%",background:"#FF3D5A",flexShrink:0}}),
+      React.createElement("div", {style:{flex:1}},
+        React.createElement("div", {style:{fontSize:11,color:"#FF3D5A",fontWeight:700,letterSpacing:2}}, liveCount+" MATCH"+(liveCount>1?"ES":"")+" LIVE NOW"),
+        React.createElement("div", {style:{fontSize:11,color:"#4A5E78",marginTop:1}}, "Check Matches tab for live scores")
+      ),
+      React.createElement("div", {style:{fontSize:11,color:"#FF3D5A",fontWeight:700}}, "LIVE")
+    ),
+    // Stats row
+    React.createElement("div", {
+      style:{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8,marginBottom:20}
+    },
+      ...[
+        {n:pitches.length, l:"PITCHES", c:"#F5A623"},
+        {n:matchCount, l:"MATCHES", c:"#4F8EF7"},
+        {n:liveCount, l:"LIVE NOW", c:liveCount>0?"#FF3D5A":"#4A5E78"},
+      ].map((s,i) => React.createElement("div", {
+        key:i,
+        style:{background:"#0E1521",border:"1px solid #1E2D45",borderRadius:10,padding:"12px",textAlign:"center"}
+      },
+        React.createElement("div", {style:{fontFamily:"Rajdhani,sans-serif",fontSize:26,fontWeight:700,color:s.c,lineHeight:1}}, s.n),
+        React.createElement("div", {style:{fontSize:9,color:"#4A5E78",letterSpacing:2,marginTop:3}}, s.l)
+      ))
+    )
+  );
+}
+
+
 function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
   const [pitches, setPitches] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -1274,8 +1316,9 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
       </div>
 
       <div style={{maxWidth:600,margin:"0 auto",padding:"40px 20px"}}>
-        <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:28,fontWeight:700,color:"#E2EAF4",letterSpacing:2,marginBottom:4}}>SELECT YOUR PITCH</div>
-        <div style={{fontSize:13,color:"#4A5E78",marginBottom:28}}>Each pitch is an independent league. Enter your pitch to manage teams, track points and view the leaderboard.</div>
+        <PitchHomeEnhancements pitches={pitches} user={user} onLogout={onLogout} />
+        <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,fontWeight:700,color:"#E2EAF4",letterSpacing:2,marginBottom:4}}>SELECT YOUR PITCH</div>
+        <div style={{fontSize:13,color:"#4A5E78",marginBottom:16}}>Each pitch is an independent league.</div>
 
         <div style={{display:"flex",flexDirection:"column",gap:12,marginBottom:20}}>
           {pitches.map((pitch, i) => {
