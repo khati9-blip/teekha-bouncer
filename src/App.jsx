@@ -4184,13 +4184,12 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                   identity[key] = {...(identity[key]||{}), claimedBy: user.email, pinHash, teamRef: adminClaimTeam.id};
                   await storeSet("teamIdentity", identity);
                   setTeamIdentity(identity);
-                  // Update myTeam so admin also has team context
+                  // Save to localStorage and reload so Root picks up the new team
                   const teamData = {...adminClaimTeam};
-                  setMyTeam(teamData);
-                  setMyPinHash(pinHash);
                   try { localStorage.setItem('tb_myteam_'+pitch.id, JSON.stringify(teamData)); localStorage.setItem('tb_pinHash_'+pitch.id, pinHash); } catch {}
                   setAdminClaimModal(false); setAdminClaimTeam(null);
-                  alert("✅ You've claimed "+adminClaimTeam.name+"! You can now participate as a team manager.");
+                  alert("✅ You've claimed "+adminClaimTeam.name+"! Reloading to apply changes.");
+                  window.location.reload();
                 }}
                   style={{flex:2,background:"linear-gradient(135deg,#2ECC71,#16a34a)",border:"none",borderRadius:8,padding:10,color:"#fff",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:15,cursor:"pointer"}}>CLAIM & SET PIN</button>
               </div>
