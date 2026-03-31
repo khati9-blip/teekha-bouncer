@@ -3130,7 +3130,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                   </div>
                   <div style={{position:"relative",maxHeight:560,overflowY:"auto",display:"flex",flexDirection:"column",gap:5}}>
                     {teamFilter&&teamFilter!=="unassigned"&&teamLogos[teamFilter]&&(
-                      <img src={teamLogos[teamFilter]} style={{position:"sticky",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:280,opacity:0.06,pointerEvents:"none",zIndex:0,objectFit:"contain",margin:"0 auto",display:"block"}} />
+                      <img src={teamLogos[teamFilter]} style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:280,opacity:0.06,pointerEvents:"none",zIndex:0,objectFit:"contain"}} />
                     )}
                     {filteredPlayers.map(p=>{
                       const aTeam=teams.find(t=>t.id===assignments[p.id]);
