@@ -1558,7 +1558,7 @@ function ChatWindow({ myTeam, teams, unlocked, withPassword, storeGet, storeSet,
 }
 
 
-function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest, isAdmin }) {
+function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, isGuest, isAdmin }) {
   const [page, setPage] = useState("setup");
   const [teams, setTeams] = useState([]);
   const [players, setPlayers] = useState([]);
@@ -2810,7 +2810,7 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest, isAdm
 
   return (
     <>
-      {isGuest && <div style={{background:"#4A5E7822",borderBottom:"1px solid #1E2D45",padding:"6px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:11,fontFamily:"Barlow Condensed,sans-serif"}}><span style={{color:"#4A5E78"}}>👁 Guest — read only</span><button onClick={onLeave} style={{background:"transparent",border:"none",color:"#F5A623",fontSize:11,cursor:"pointer",fontWeight:700,fontFamily:"Barlow Condensed,sans-serif"}}>CLAIM TEAM →</button></div>}
+      {isGuest && <div style={{background:"#4A5E7822",borderBottom:"1px solid #1E2D45",padding:"6px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:11,fontFamily:"Barlow Condensed,sans-serif"}}><span style={{color:"#4A5E78"}}>👁 Guest — read only</span><button onClick={onLeaveGuest||onLeave} style={{background:"transparent",border:"none",color:"#F5A623",fontSize:11,cursor:"pointer",fontWeight:700,fontFamily:"Barlow Condensed,sans-serif"}}>CLAIM TEAM →</button></div>}
       {guestToast && <div style={{position:"fixed",top:60,left:"50%",transform:"translateX(-50%)",background:"#1E2D45",border:"1px solid #4A5E78",borderRadius:10,padding:"10px 20px",zIndex:9999,fontFamily:"Barlow Condensed,sans-serif",fontSize:14,color:"#E2EAF4",display:"flex",alignItems:"center",gap:8,boxShadow:"0 4px 20px rgba(0,0,0,0.5)"}}>
         <span style={{fontSize:18}}>👁</span>
         <span>View only — <strong style={{color:"#F5A623"}}>guests cannot make changes</strong></span>
@@ -4439,7 +4439,8 @@ function Root() {
       const savedAdmin = localStorage.getItem('tb_admin_' + pitch.id);
       if (savedAdmin) { setIsAdmin(true); setIsGuest(false); setMyTeam(null); setScreen('app'); return; }
       if (savedTeam) { setMyTeam(JSON.parse(savedTeam)); setMyPinHash(savedPin||null); setIsGuest(false); setIsAdmin(false); setScreen('app'); return; }
-      if (savedGuest) { setIsGuest(true); setIsAdmin(false); setMyTeam(null); setScreen('app'); return; }
+      // Guests always see 3-option screen (don't auto-enter)
+      if (savedGuest) { localStorage.removeItem('tb_guest_' + pitch.id); }
       // Clear any legacy (non-pitch-specific) keys so old users re-claim
       localStorage.removeItem('tb_myteam');
       localStorage.removeItem('tb_pinHash');
@@ -4473,6 +4474,12 @@ function Root() {
   };
 
   const handleLeave = () => {
+    setCurrentPitch(null); setMyTeam(null); setMyPinHash(null);
+    setIsGuest(false); setIsAdmin(false); setScreen('pitches');
+  };
+  const handleLeaveGuest = () => {
+    // Clear guest key so they see the 3-option screen next time
+    try { if (currentPitch) localStorage.removeItem('tb_guest_' + currentPitch.id); } catch {}
     setCurrentPitch(null); setMyTeam(null); setMyPinHash(null);
     setIsGuest(false); setIsAdmin(false); setScreen('pitches');
   };
