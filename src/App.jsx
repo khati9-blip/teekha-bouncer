@@ -4418,6 +4418,8 @@ function AdminSetupScreen({ pitch, onDone, onBack, sbGet, sbSet, hashPw }) {
     if (pw !== pwConfirm) { setErr("Passwords don't match"); return; }
     setLoading(true);
     const h = await hashPw(pw);
+    // Save as both pwhash (league admin password) and adminHash (entry password) - they are the same
+    await sbSet(pitch.id + "_pwhash", h);
     await sbSet(pitch.id + "_adminHash", h);
     const pitches = await sbGet("pitches") || [];
     const updated = pitches.map(p => p.id === pitch.id ? {...p, hash: h} : p);
@@ -4451,6 +4453,8 @@ function AdminSetupScreen({ pitch, onDone, onBack, sbGet, sbSet, hashPw }) {
                   const h=await hashPw(pw);
                   const stored=await sbGet(pitch.id+"_pwhash")||(pitch.id==="p1"?await sbGet("p1_pwhash"):null)||await sbGet(pitch.id+"_adminHash")||pitch.hash||null;
                   if(h!==stored){setErr("Wrong password");setLoading(false);return;}
+                  // Sync both keys to be the same
+                  if(!await sbGet(pitch.id+"_pwhash")) await sbSet(pitch.id+"_pwhash",h);
                   if(!await sbGet(pitch.id+"_adminHash")) await sbSet(pitch.id+"_adminHash",h);
                   onDone({...pitch,hash:h});setLoading(false);
                 }
