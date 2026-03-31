@@ -1339,9 +1339,9 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
                   <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:18,color:"#E2EAF4",letterSpacing:1}}>{pitch.name}</div>
                   <div style={{fontSize:11,color:"#4A5E78",marginTop:2,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
                     <span>{pd2.teams?.length||0} teams</span>
-                    {pd2.matchCount > 0 && <span>· {pd2.matchCount} matches</span>}
-                    {pd2.liveCount > 0 && <span style={{color:"#FF3D5A",fontWeight:700}}>· {pd2.liveCount} live</span>}
-                    {myLabel && <span style={{color:color,fontWeight:700}}>· {myIcon==="KEY"?"🔑":"🏏"} {myLabel}</span>}
+                    {pd2.matchCount > 0 && <span>— {pd2.matchCount} matches</span>}
+                    {pd2.liveCount > 0 && <span style={{color:"#FF3D5A",fontWeight:700}}>— {pd2.liveCount} live</span>}
+                    {myLabel && <span style={{color:color,fontWeight:700}}>— {myIcon==="KEY"?"🔑":"🏏"} {myLabel}</span>}
                   </div>
                 </div>
                 <button onClick={() => onEnter(pitch)}
