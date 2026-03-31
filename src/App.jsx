@@ -1008,12 +1008,16 @@ function SmartStatsModal({ match, players, assignments, existingStats, onSave, o
 
 // ── SPLASH / AUTH SCREEN ─────────────────────────────────────────────────────
 function SplashScreen({ onLogin }) {
-  const [mode, setMode] = useState('splash'); // splash | login | signup
+  const [mode, setMode] = useState('splash'); // splash | login | signup | forgot | reset
   const [email, setEmail] = useState('');
   const [pw, setPw] = useState('');
   const [pw2, setPw2] = useState('');
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resetCode, setResetCode] = useState('');
+  const [newPw, setNewPw] = useState('');
+  const [newPw2, setNewPw2] = useState('');
+  const [codeSent, setCodeSent] = useState(false);
 
   const inputStyle = (hasErr) => ({
     width:"100%", background:"#080C14",
@@ -1054,6 +1058,54 @@ function SplashScreen({ onLogin }) {
       if (hash !== user.hash) { setErr("Wrong password."); setLoading(false); return; }
       onLogin(user);
     } catch(e) { setErr("Error: " + e.message); }
+    setLoading(false);
+  };
+
+  const sendResetCode = async () => {
+    if (!email.trim() || !email.includes('@')) { setErr('Enter a valid email'); return; }
+    setLoading(true); setErr('');
+    try {
+      const users = await getUsers();
+      const user = users.find(u => u.email.toLowerCase() === email.toLowerCase().trim());
+      if (!user) { setErr('Email not found.'); setLoading(false); return; }
+      const res = await fetch('/api/reset-password', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ email: email.toLowerCase().trim() })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to send code');
+      setCodeSent(true); setErr('');
+    } catch(e) { setErr('Error: ' + e.message); }
+    setLoading(false);
+  };
+
+  const verifyResetCode = async () => {
+    if (!resetCode.trim()) { setErr('Enter the code'); return; }
+    setLoading(true); setErr('');
+    try {
+      const res = await fetch('/api/reset-password', {
+        method: 'POST', headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ verifyCode: resetCode.trim() })
+      });
+      const data = await res.json();
+      if (data.valid) { setMode('reset'); setErr(''); }
+      else { setErr('Wrong code. Try again.'); }
+    } catch(e) { setErr('Error: ' + e.message); }
+    setLoading(false);
+  };
+
+  const resetPassword = async () => {
+    if (newPw.length < 6) { setErr('Password must be at least 6 characters'); return; }
+    if (newPw !== newPw2) { setErr("Passwords don't match"); return; }
+    setLoading(true); setErr('');
+    try {
+      const users = await getUsers();
+      const hash = await hashPw(newPw);
+      const updated = users.map(u => u.email.toLowerCase() === email.toLowerCase().trim() ? {...u, hash} : u);
+      await saveUsers(updated);
+      setMode('login'); setPw(''); setPw2(''); setResetCode(''); setNewPw(''); setNewPw2('');
+      setErr(''); alert('✅ Password reset! Please log in with your new password.');
+    } catch(e) { setErr('Error: ' + e.message); }
     setLoading(false);
   };
 
