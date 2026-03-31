@@ -3388,58 +3388,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
               <div style={{background:"#0E1521",borderRadius:12,padding:16,marginBottom:16,border:"1px solid #1E2D45"}}>
                 <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginBottom:12}}>⚙️ ADMIN CONTROLS</div>
 
-                {/* Team Identity Management */}
-                <div style={{background:"#080C14",borderRadius:10,padding:"14px 16px",marginBottom:12,border:"1px solid #1E2D45"}}>
-                  <div style={{fontSize:11,color:"#F5A623",letterSpacing:2,fontWeight:700,marginBottom:10}}>🔑 TEAM IDs</div>
-                  <div style={{fontSize:11,color:"#4A5E78",marginBottom:10}}>Share these codes with each team manager so they can claim their team</div>
-                  {teams.map(t => {
-                    const ti = teamIdentity[t.id] || {};
-
-
-                    return (
-                      <div key={t.id} style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,padding:"8px 12px",background:"#0E1521",borderRadius:8,border:"1px solid "+t.color+"33"}}>
-                        <div style={{flex:1}}>
-                          <div style={{fontWeight:700,fontSize:13,color:t.color}}>{t.name}</div>
-                          <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>{ti.claimedBy ? "Claimed by "+ti.claimedBy : "Unclaimed"}</div>
-                        </div>
-                        {ti.claimedBy ? (
-                          <div style={{display:"flex",alignItems:"center",gap:6}}>
-                            <span style={{fontSize:11,color:"#2ECC71",fontWeight:700,background:"#2ECC7122",padding:"4px 8px",borderRadius:6}}>✓ {ti.claimedBy.split("@")[0]}</span>
-                            <button onClick={async()=>{
-                              if(!confirm("Reset claim for "+t.name+"? This will allow someone else to claim this team with the same Team ID.")) return;
-                              const updated = {...teamIdentity, [t.id]: {...ti, claimedBy: null, pinHash: null}};
-                              setTeamIdentity(updated);
-                              await storeSet("teamIdentity", updated);
-                            }} style={{background:"#FF3D5A11",border:"1px solid #FF3D5A33",color:"#FF3D5A",borderRadius:6,padding:"3px 8px",cursor:"pointer",fontSize:10,fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>RESET</button>
-                          </div>
-                        ) : ti.teamId ? (
-                          <div style={{display:"flex",alignItems:"center",gap:6}}>
-                            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:16,fontWeight:800,color:"#F5A623",letterSpacing:2,background:"#F5A62322",padding:"4px 10px",borderRadius:6}}>{ti.teamId}</div>
-                            <button onClick={()=>{setAdminClaimTeam(t);setAdminClaimModal(true);setAdminPin('');setAdminPinConfirm('');setAdminPinErr('');}}
-                              style={{background:"#2ECC7122",border:"1px solid #2ECC7144",color:"#2ECC71",borderRadius:6,padding:"3px 8px",cursor:"pointer",fontSize:10,fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>CLAIM</button>
-                            <button onClick={async()=>{
-                              if(!confirm("Reset Team ID?")) return;
-                              const updated = {...teamIdentity, [t.id]: {teamId: generateTeamId()}};
-                              setTeamIdentity(updated);
-                              await storeSet("teamIdentity", updated);
-                            }} style={{background:"transparent",border:"1px solid #1E2D45",color:"#4A5E78",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:10,fontFamily:"Barlow Condensed,sans-serif"}}>↺</button>
-                          </div>
-                        ) : (
-                          <div style={{display:"flex",alignItems:"center",gap:6}}>
-                            <button onClick={async()=>{
-                              const newId = generateTeamId();
-                              const updated = {...teamIdentity, [t.id]: {...ti, teamId: newId}};
-                              setTeamIdentity(updated);
-                              await storeSet("teamIdentity", updated);
-                            }} style={{background:"#F5A62322",border:"1px solid #F5A62344",color:"#F5A623",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:11,fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>GENERATE</button>
-                            <button onClick={()=>{setAdminClaimTeam(t);setAdminClaimModal(true);setAdminPin('');setAdminPinConfirm('');setAdminPinErr('');}}
-                              style={{background:"#2ECC7122",border:"1px solid #2ECC7144",color:"#2ECC71",borderRadius:6,padding:"3px 8px",cursor:"pointer",fontSize:10,fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>CLAIM</button>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+                
                 <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                   {transfers.phase==="closed" && <Btn onClick={openReleaseWindow} sx={{fontSize:13}}>📤 OPEN RELEASE WINDOW</Btn>}
                   {transfers.phase==="release" && <Btn onClick={closeReleaseWindow} variant="blue" sx={{fontSize:13}}>🔒 CLOSE RELEASES & START PICKS</Btn>}
