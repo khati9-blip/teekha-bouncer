@@ -1158,709 +1158,282 @@ class ErrorBoundary extends React.Component {
 }
 
 // ── PITCH HOME SCREEN ────────────────────────────────────────────────────────
-function PitchHome({ onEnter, user, onLogout }) {
+function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
   const [pitches, setPitches] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
-  const [newPw, setNewPw] = useState("");
+  const [creating, setCreating] = useState(false);
   const [err, setErr] = useState("");
-  const [enterPitchId, setEnterPitchId] = useState(null);
-  const [enterPw, setEnterPw] = useState("");
-  const [enterErr, setEnterErr] = useState("");
-  const [settingPasswordFor, setSettingPasswordFor] = useState(null);
-  const [newPitchPw, setNewPitchPw] = useState("");
-  const [changingPasswordFor, setChangingPasswordFor] = useState(null);
-  const [oldPitchPw, setOldPitchPw] = useState("");
-  const [newChangePw, setNewChangePw] = useState("");
-  const [changeErr, setChangeErr] = useState("");
-  const [forgotMode, setForgotMode] = useState(false);
-  const [forgotEmail, setForgotEmail] = useState("");
-  const [forgotStep, setForgotStep] = useState('email'); // email | code
-  const [forgotCode, setForgotCode] = useState("");
-  const [forgotSending, setForgotSending] = useState(false);
+
+  const sbGet = async (key) => { try { const res = await fetch("https://rmcxhorijitrhqyrvvkn.supabase.co/rest/v1/league_data?key=eq."+encodeURIComponent(key), {headers:{"apikey":"sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm","Authorization":"Bearer sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm"}}); const d=await res.json(); return d[0]?.value; } catch { return null; } };
+  const sbSet = async (key, value) => { try { await fetch("https://rmcxhorijitrhqyrvvkn.supabase.co/rest/v1/league_data", {method:"POST",headers:{"apikey":"sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm","Authorization":"Bearer sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm","Content-Type":"application/json","Prefer":"resolution=merge-duplicates"},body:JSON.stringify({key,value,updated_at:new Date().toISOString()})}); } catch {} };
 
   useEffect(() => {
     (async () => {
       try {
         const data = await sbGet("pitches");
-        if (data && Array.isArray(data)) {
-          setPitches(data);
-        } else {
-          const p1hash = await sbGet("p1_pwhash");
-          const defaultPitches = [{ id: "p1", name: "Pitch 1", hash: p1hash || "", createdAt: new Date().toISOString() }];
-          await sbSet("pitches", defaultPitches);
-          setPitches(defaultPitches);
-        }
-      } catch(e) {
-        console.error("PitchHome load error:", e);
-        setPitches([{ id: "p1", name: "Pitch 1", hash: "", createdAt: new Date().toISOString() }]);
-      }
+        if (data && Array.isArray(data)) setPitches(data);
+        else { const dp=[{id:"p1",name:"Pitch 1",hash:"",createdAt:new Date().toISOString()}]; await sbSet("pitches",dp); setPitches(dp); }
+      } catch { setPitches([{id:"p1",name:"Pitch 1",hash:"",createdAt:new Date().toISOString()}]); }
       setLoading(false);
     })();
   }, []);
 
   const createPitch = async () => {
     if (!newName.trim()) { setErr("Enter a pitch name"); return; }
-    if (!newPw.trim()) { setErr("Set a password"); return; }
-    if (pitches.length >= 1000) { setErr("Max 1000 pitches reached"); return; }
-    const id = "p" + Date.now();
-    const hash = await hashPw(newPw);
-    const pitch = { id, name: newName.trim(), hash, createdAt: new Date().toISOString(), creatorEmail: user?.email || '' };
-    const updated = [...pitches, pitch];
+    if (pitches.length >= 1000) { setErr("Max 1000 pitches"); return; }
+    const id = "p" + (pitches.length + 1) + "_" + Date.now();
+    const newPitch = { id, name: newName.trim(), hash: "", createdAt: new Date().toISOString() };
+    const updated = [...pitches, newPitch];
     await sbSet("pitches", updated);
     setPitches(updated);
-    setCreating(false);
-    setNewName(""); setNewPw(""); setErr("");
-    alert("Pitch created! You can now enter " + pitch.name);
+    setNewName(""); setCreating(false); setErr("");
+    // New pitch - go straight to admin setup
+    onSetupAdmin(newPitch);
   };
 
-  const tryEnter = async (pitch) => {
-    if (!pitch.hash) {
-      // No pitch password set yet — prompt to set one
-      setSettingPasswordFor(pitch.id);
-      setEnterPw(""); setEnterErr("");
-      return;
-    }
-    setEnterPitchId(pitch.id);
-    setEnterPw(""); setEnterErr("");
-  };
-
-  const submitEnter = async () => {
-    const pitch = pitches.find(p => p.id === enterPitchId);
-    if (!pitch) return;
-    const h = await hashPw(enterPw);
-    if (h === pitch.hash) {
-      _pitchId = pitch.id;
-      onEnter(pitch);
-    } else {
-      setEnterErr("Wrong password");
-      setEnterPw("");
-    }
-  };
-
-  const sendPitchResetCode = async () => {
-    if (!forgotEmail.trim()) { setEnterErr("Enter your email"); return; }
-    setForgotSending(true); setEnterErr("");
-    try {
-      const res = await fetch("/api/reset-password", {
-        method: "POST", headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({ email: forgotEmail.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed");
-      setForgotStep('code'); setForgotCode("");
-    } catch(e) { setEnterErr("❌ " + e.message); }
-    setForgotSending(false);
-  };
-
-  const verifyPitchResetCode = async () => {
-    if (!forgotCode.trim()) { setEnterErr("Enter the code"); return; }
-    try {
-      const res = await fetch("/api/reset-password", {
-        method: "POST", headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({ verifyCode: forgotCode.trim() }),
-      });
-      const data = await res.json();
-      if (data.valid) {
-        const newPw = prompt("Code verified! Enter your NEW pitch password:");
-        if (!newPw) return;
-        const h = await hashPw(newPw);
-        const updated = pitches.map(p => p.id === enterPitchId ? {...p, hash: h} : p);
-        await sbSet("pitches", updated);
-        setPitches(updated);
-        setForgotMode(false); setForgotStep('email'); setForgotEmail(""); setForgotCode("");
-        setEnterPitchId(null);
-        alert("Password reset! Please enter your new password.");
-      } else { setEnterErr("❌ Wrong code. Try again."); setForgotCode(""); }
-    } catch(e) { setEnterErr("❌ " + e.message); }
-  };
-
-  const setFirstPassword = async () => {
-    if (!newPitchPw.trim()) { setEnterErr("Enter a password"); return; }
-    const pitch = pitches.find(p => p.id === settingPasswordFor);
-    if (!pitch) return;
-    const h = await hashPw(newPitchPw);
-    const updated = pitches.map(p => p.id === settingPasswordFor ? {...p, hash: h} : p);
-    await sbSet("pitches", updated);
-    setPitches(updated);
-    _pitchId = pitch.id;
-    onEnter({...pitch, hash: h});
-    setSettingPasswordFor(null);
-    setNewPitchPw("");
-  };
-
-  const changePassword = async () => {
-    if (!oldPitchPw.trim()) { setChangeErr("Enter current password"); return; }
-    if (!newChangePw.trim()) { setChangeErr("Enter new password"); return; }
-    const pitch = pitches.find(p => p.id === changingPasswordFor);
-    if (!pitch) return;
-    const oldHash = await hashPw(oldPitchPw);
-    if (oldHash !== pitch.hash) { setChangeErr("Wrong current password"); setOldPitchPw(""); return; }
-    const newHash = await hashPw(newChangePw);
-    const updated = pitches.map(p => p.id === changingPasswordFor ? {...p, hash: newHash} : p);
-    await sbSet("pitches", updated);
-    setPitches(updated);
-    setChangingPasswordFor(null);
-    setOldPitchPw(""); setNewChangePw(""); setChangeErr("");
-    alert("Password changed successfully!");
-  };
-
-  const COLORS = ["#FF3D5A","#4F8EF7","#2ECC71","#F5A623","#A855F7","#06B6D4","#FF6B35","#EC4899"];
+  const COLORS = ["#FF3D5A","#4F8EF7","#2ECC71","#F5A623","#A855F7","#06B6D4"];
 
   if (loading) return (
-    <div style={{minHeight:"100vh",background:"#080C14",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16}}>
-      <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:28,fontWeight:700,color:"#F5A623",letterSpacing:3}}>TEEKHA BOUNCER</div>
-      <div style={{color:"#4A5E78",fontSize:14}}>Loading pitches...</div>
+    <div style={{minHeight:"100vh",background:"#080C14",display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <div style={{color:"#F5A623",fontFamily:"Rajdhani,sans-serif",fontSize:20,letterSpacing:2}}>Loading…</div>
     </div>
   );
 
   return (
-    <div style={{minHeight:"100vh",background:"#080C14",color:"#E2EAF4"}}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Barlow+Condensed:wght@400;600;700;800&display=swap');*{box-sizing:border-box;margin:0;padding:0;}body{font-family:'Barlow Condensed',sans-serif;background:#080C14;color:#E2EAF4;}`}</style>
-
-      {/* Header */}
-      <div style={{background:"#0E1521",borderBottom:"1px solid #1E2D45",padding:"16px 20px",display:"flex",alignItems:"center",gap:12}}>
-        <div style={{display:"flex",alignItems:"center",gap:10,flex:1}}>
-          <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:22,color:"#F5A623",letterSpacing:3}}>🏏 TEEKHA BOUNCER</div>
-        </div>
-        <div style={{display:"flex",alignItems:"center",gap:10}}>
-          <div style={{fontSize:11,color:"#4A5E78",textAlign:"right"}}>
-            <div style={{color:"#E2EAF4",fontWeight:700}}>{user?.email?.split('@')[0]}</div>
-            <div>{user?.email?.split('@')[1]}</div>
+    <div style={{minHeight:"100vh",background:"#080C14",fontFamily:"Barlow Condensed,sans-serif"}}>
+      <div style={{background:"#0A0F1A",borderBottom:"1px solid #1E2D45",padding:"14px 24px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,fontWeight:700,color:"#F5A623",letterSpacing:2}}>🏏 TEEKHA BOUNCER</div>
+        <div style={{display:"flex",alignItems:"center",gap:16}}>
+          <div style={{textAlign:"right"}}>
+            <div style={{fontSize:13,color:"#E2EAF4",fontWeight:700}}>{user?.email?.split('@')[0]}</div>
+            <div style={{fontSize:10,color:"#4A5E78"}}>{user?.email?.split('@')[1]}</div>
           </div>
-          <button onClick={onLogout} style={{background:"transparent",border:"1px solid #1E2D45",borderRadius:6,padding:"5px 10px",color:"#4A5E78",fontSize:11,cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>LOGOUT</button>
+          <button onClick={onLogout} style={{background:"transparent",border:"1px solid #1E2D45",borderRadius:6,padding:"5px 12px",color:"#4A5E78",fontSize:12,cursor:"pointer",fontWeight:700}}>LOGOUT</button>
         </div>
       </div>
 
-      <div style={{maxWidth:600,margin:"0 auto",padding:"24px 16px 100px"}}>
-        <div style={{marginBottom:24}}>
-          <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,fontWeight:700,color:"#E2EAF4",letterSpacing:2,marginBottom:4}}>SELECT YOUR PITCH</div>
-          <div style={{fontSize:13,color:"#4A5E78"}}>Each pitch is an independent league. Enter your pitch to manage teams, track points and view the leaderboard.</div>
+      <div style={{maxWidth:600,margin:"0 auto",padding:"40px 20px"}}>
+        <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:28,fontWeight:700,color:"#E2EAF4",letterSpacing:2,marginBottom:4}}>SELECT YOUR PITCH</div>
+        <div style={{fontSize:13,color:"#4A5E78",marginBottom:28}}>Each pitch is an independent league. Enter your pitch to manage teams, track points and view the leaderboard.</div>
+
+        <div style={{display:"flex",flexDirection:"column",gap:12,marginBottom:20}}>
+          {pitches.map((pitch, i) => {
+            const color = COLORS[i % COLORS.length];
+            const pitchTeamKey = "tb_myteam_" + pitch.id;
+            const pitchGuestKey = "tb_guest_" + pitch.id;
+            const pitchAdminKey = "tb_admin_" + pitch.id;
+            const savedTeam = (() => { try { const s=localStorage.getItem(pitchTeamKey); return s?JSON.parse(s):null; } catch { return null; } })();
+            const savedGuest = (() => { try { return !!localStorage.getItem(pitchGuestKey); } catch { return false; } })();
+            const savedAdmin = (() => { try { return !!localStorage.getItem(pitchAdminKey); } catch { return false; } })();
+            const returning = savedTeam || savedGuest || savedAdmin;
+            return (
+              <div key={pitch.id} style={{background:"#0E1521",borderRadius:12,border:"1px solid "+color+"44",overflow:"hidden"}}>
+                <div style={{padding:"16px 20px",display:"flex",alignItems:"center",gap:14}}>
+                  <div style={{width:44,height:44,borderRadius:10,background:color+"22",border:"1px solid "+color+"44",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"Rajdhani,sans-serif",fontWeight:800,fontSize:16,color:color,flexShrink:0}}>
+                    {"P"+(i+1)}
+                  </div>
+                  <div style={{flex:1}}>
+                    <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:18,color:"#E2EAF4",letterSpacing:1}}>{pitch.name}</div>
+                    <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>
+                      {returning ? (savedAdmin?"🔑 Admin":(savedTeam?"🏏 "+savedTeam.name:"👁 Guest")) + " · tap to enter" : "Created "+new Date(pitch.createdAt).toLocaleDateString("en-IN")}
+                    </div>
+                  </div>
+                  <button onClick={()=>onEnter(pitch)} style={{background:"linear-gradient(135deg,"+color+","+color+"99)",border:"none",borderRadius:8,padding:"8px 16px",color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:13,cursor:"pointer",letterSpacing:1}}>
+                    {returning ? "ENTER →" : "JOIN →"}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
         </div>
 
-        {/* Pitch list */}
-        <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:20}}>
-          {pitches.map((pitch, i) => (
-            <div key={pitch.id} onClick={() => tryEnter(pitch)}
-              style={{background:"#0E1521",borderRadius:12,border:"2px solid " + (COLORS[i % COLORS.length] + "44"),padding:"16px 20px",cursor:"pointer",display:"flex",alignItems:"center",gap:16,transition:"border .15s"}}
-            >
-              <div style={{width:44,height:44,borderRadius:10,background:COLORS[i % COLORS.length] + "22",border:"2px solid " + COLORS[i % COLORS.length] + "66",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
-                <span style={{fontFamily:"Rajdhani,sans-serif",fontWeight:800,fontSize:18,color:COLORS[i % COLORS.length]}}>{"P"+(i+1)}</span>
-              </div>
-              <div style={{flex:1}}>
-                <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:18,color:"#E2EAF4",letterSpacing:1}}>{pitch.name}</div>
-                <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>Created {new Date(pitch.createdAt).toLocaleDateString()}</div>
-              </div>
-              <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6}}>
-                <div style={{fontSize:12,color:COLORS[i % COLORS.length],fontWeight:700,letterSpacing:1}}>ENTER →</div>
-                <button onClick={e=>{e.stopPropagation();setChangingPasswordFor(pitch.id);setOldPitchPw("");setNewChangePw("");setChangeErr("");}}
-                  style={{background:"transparent",border:"none",color:"#4A5E78",fontSize:10,cursor:"pointer",textDecoration:"underline",padding:0,fontFamily:"Barlow Condensed,sans-serif"}}>change password</button>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Create new pitch */}
         {!creating ? (
-          <button onClick={() => setCreating(true)}
-            style={{width:"100%",background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:12,padding:"14px",color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:16,cursor:"pointer",letterSpacing:1}}>
+          <button onClick={()=>setCreating(true)} style={{width:"100%",background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:12,padding:"15px",color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:16,cursor:"pointer",letterSpacing:2}}>
             + CREATE NEW PITCH
           </button>
         ) : (
           <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #1E2D45",padding:20}}>
-            <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:18,color:"#F5A623",letterSpacing:2,marginBottom:16}}>NEW PITCH</div>
-            <input value={newName} onChange={e=>{setNewName(e.target.value);setErr("");}} placeholder="Pitch name (e.g. Office League 2026)"
-              style={{width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"11px 14px",color:"#E2EAF4",fontSize:15,fontFamily:"Barlow Condensed,sans-serif",marginBottom:10,boxSizing:"border-box"}} />
-            <input type="password" value={newPw} onChange={e=>{setNewPw(e.target.value);setErr("");}} placeholder="Set pitch password"
-              style={{width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"11px 14px",color:"#E2EAF4",fontSize:15,fontFamily:"Barlow Condensed,sans-serif",marginBottom:err?8:16,boxSizing:"border-box"}} />
-            {err && <div style={{color:"#FF3D5A",fontSize:13,marginBottom:12}}>{err}</div>}
-            <div style={{display:"flex",gap:10}}>
-              <button onClick={()=>{setCreating(false);setNewName("");setNewPw("");setErr("");}}
-                style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:11,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
-              <button onClick={createPitch}
-                style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:11,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CREATE PITCH</button>
+            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:16,fontWeight:700,color:"#F5A623",marginBottom:12}}>NEW PITCH</div>
+            <input value={newName} onChange={e=>{setNewName(e.target.value);setErr("");}} placeholder="Pitch name (e.g. Office IPL League)" autoFocus
+              onKeyDown={e=>e.key==="Enter"&&createPitch()}
+              style={{width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"10px 14px",color:"#E2EAF4",fontSize:15,fontFamily:"Barlow Condensed,sans-serif",outline:"none",marginBottom:10,boxSizing:"border-box"}} />
+            {err && <div style={{color:"#FF3D5A",fontSize:12,marginBottom:10}}>{err}</div>}
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>{setCreating(false);setNewName("");setErr("");}} style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:10,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
+              <button onClick={createPitch} style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:10,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:15,cursor:"pointer"}}>CREATE & SET UP →</button>
             </div>
           </div>
         )}
       </div>
-
-      {/* Set first password modal */}
-      {settingPasswordFor && (
-        <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.95)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300}}>
-          <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #1E2D45",padding:32,width:"100%",maxWidth:340,margin:"0 16px"}}>
-            <div style={{fontSize:32,textAlign:"center",marginBottom:8}}>🔐</div>
-            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,fontWeight:700,color:"#F5A623",textAlign:"center",letterSpacing:2,marginBottom:4}}>
-              SET PITCH PASSWORD
-            </div>
-            <div style={{fontSize:13,color:"#4A5E78",textAlign:"center",marginBottom:20}}>
-              {pitches.find(p=>p.id===settingPasswordFor)?.name} — set a password to protect this pitch
-            </div>
-            <input type="password" value={newPitchPw} onChange={e=>{setNewPitchPw(e.target.value);setEnterErr("");}} onKeyDown={e=>e.key==="Enter"&&setFirstPassword()} placeholder="Choose pitch password..." autoFocus
-              style={{width:"100%",background:"#080C14",border:"1px solid "+(enterErr?"#FF3D5A":"#1E2D45"),borderRadius:8,padding:"12px 16px",color:"#E2EAF4",fontSize:16,fontFamily:"Barlow Condensed,sans-serif",outline:"none",marginBottom:enterErr?8:20,boxSizing:"border-box"}} />
-            {enterErr && <div style={{color:"#FF3D5A",fontSize:13,marginBottom:16,textAlign:"center"}}>{enterErr}</div>}
-            <div style={{display:"flex",gap:10}}>
-              <button onClick={()=>{setSettingPasswordFor(null);setNewPitchPw("");setEnterErr("");}}
-                style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:11,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
-              <button onClick={setFirstPassword}
-                style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:11,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>SET & ENTER</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Change password modal */}
-      {changingPasswordFor && (
-        <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.95)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300}}>
-          <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #1E2D45",padding:32,width:"100%",maxWidth:340,margin:"0 16px"}}>
-            <div style={{fontSize:32,textAlign:"center",marginBottom:8}}>🔑</div>
-            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,fontWeight:700,color:"#F5A623",textAlign:"center",letterSpacing:2,marginBottom:4}}>CHANGE PASSWORD</div>
-            <div style={{fontSize:13,color:"#4A5E78",textAlign:"center",marginBottom:20}}>{pitches.find(p=>p.id===changingPasswordFor)?.name}</div>
-            <input type="password" value={oldPitchPw} onChange={e=>{setOldPitchPw(e.target.value);setChangeErr("");}} placeholder="Current password..." autoFocus
-              style={{width:"100%",background:"#080C14",border:"1px solid "+(changeErr?"#FF3D5A":"#1E2D45"),borderRadius:8,padding:"12px 16px",color:"#E2EAF4",fontSize:15,fontFamily:"Barlow Condensed,sans-serif",outline:"none",marginBottom:10,boxSizing:"border-box"}} />
-            <input type="password" value={newChangePw} onChange={e=>{setNewChangePw(e.target.value);setChangeErr("");}} onKeyDown={e=>e.key==="Enter"&&changePassword()} placeholder="New password..."
-              style={{width:"100%",background:"#080C14",border:"1px solid "+(changeErr?"#FF3D5A":"#1E2D45"),borderRadius:8,padding:"12px 16px",color:"#E2EAF4",fontSize:15,fontFamily:"Barlow Condensed,sans-serif",outline:"none",marginBottom:changeErr?8:20,boxSizing:"border-box"}} />
-            {changeErr && <div style={{color:"#FF3D5A",fontSize:13,marginBottom:16,textAlign:"center"}}>{changeErr}</div>}
-            <div style={{display:"flex",gap:10}}>
-              <button onClick={()=>{setChangingPasswordFor(null);setOldPitchPw("");setNewChangePw("");setChangeErr("");}}
-                style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:11,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
-              <button onClick={changePassword}
-                style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:11,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CHANGE PASSWORD</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Enter password modal */}
-      {enterPitchId && (
-        <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.95)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300}}>
-          <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #1E2D45",padding:32,width:"100%",maxWidth:340,margin:"0 16px"}}>
-            <div style={{fontSize:32,textAlign:"center",marginBottom:8}}>🏏</div>
-            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,fontWeight:700,color:"#F5A623",textAlign:"center",letterSpacing:2,marginBottom:4}}>
-              {pitches.find(p=>p.id===enterPitchId)?.name}
-            </div>
-            {!forgotMode ? <>
-              <div style={{fontSize:13,color:"#4A5E78",textAlign:"center",marginBottom:20}}>Enter pitch password to continue</div>
-              <input type="password" value={enterPw} onChange={e=>{setEnterPw(e.target.value);setEnterErr("");}} onKeyDown={e=>e.key==="Enter"&&submitEnter()} placeholder="Pitch password..." autoFocus
-                style={{width:"100%",background:"#080C14",border:"1px solid "+(enterErr?"#FF3D5A":"#1E2D45"),borderRadius:8,padding:"12px 16px",color:"#E2EAF4",fontSize:16,fontFamily:"Barlow Condensed,sans-serif",outline:"none",marginBottom:enterErr?8:20,boxSizing:"border-box"}} />
-              {enterErr && <div style={{color:"#FF3D5A",fontSize:13,marginBottom:16,textAlign:"center"}}>{enterErr}</div>}
-              <div style={{display:"flex",gap:10}}>
-                <button onClick={()=>{setEnterPitchId(null);setEnterPw("");setEnterErr("");}}
-                  style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:11,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
-                <button onClick={submitEnter}
-                  style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:11,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>ENTER PITCH</button>
-              </div>
-              <div style={{textAlign:"center",marginTop:14}}>
-                <button onClick={()=>{setForgotMode(true);setForgotStep('email');setForgotEmail("");setForgotCode("");setEnterErr("");}}
-                  style={{background:"none",border:"none",color:"#FF3D5A",fontSize:12,cursor:"pointer",textDecoration:"underline"}}>Forgot pitch password?</button>
-              </div>
-            </> : <>
-              {forgotStep==='email' ? <>
-                <div style={{fontSize:13,color:"#4A5E78",textAlign:"center",marginBottom:20}}>Enter the admin email to receive a reset code</div>
-                <input type="email" value={forgotEmail} onChange={e=>{setForgotEmail(e.target.value);setEnterErr("");}} onKeyDown={e=>e.key==="Enter"&&sendPitchResetCode()} placeholder="Admin email..." autoFocus
-                  style={{width:"100%",background:"#080C14",border:"1px solid "+(enterErr?"#FF3D5A":"#1E2D45"),borderRadius:8,padding:"12px 16px",color:"#E2EAF4",fontSize:16,fontFamily:"Barlow Condensed,sans-serif",outline:"none",marginBottom:enterErr?8:20,boxSizing:"border-box"}} />
-                {enterErr && <div style={{color:"#FF3D5A",fontSize:13,marginBottom:16,textAlign:"center"}}>{enterErr}</div>}
-                <div style={{display:"flex",gap:10}}>
-                  <button onClick={()=>{setForgotMode(false);setEnterErr("");}}
-                    style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:11,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>BACK</button>
-                  <button onClick={sendPitchResetCode} disabled={forgotSending}
-                    style={{flex:2,background:"linear-gradient(135deg,#4F8EF7,#1a5fb4)",border:"none",borderRadius:8,padding:11,color:"#fff",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:forgotSending?"not-allowed":"pointer",opacity:forgotSending?0.6:1}}>
-                    {forgotSending?"SENDING...":"SEND CODE"}
-                  </button>
-                </div>
-              </> : <>
-                <div style={{fontSize:13,color:"#2ECC71",textAlign:"center",marginBottom:20}}>Code sent! Check your email inbox.</div>
-                <input type="text" value={forgotCode} onChange={e=>{setForgotCode(e.target.value);setEnterErr("");}} onKeyDown={e=>e.key==="Enter"&&verifyPitchResetCode()} placeholder="Enter reset code..." autoFocus
-                  style={{width:"100%",background:"#080C14",border:"1px solid "+(enterErr?"#FF3D5A":"#1E2D45"),borderRadius:8,padding:"12px 16px",color:"#E2EAF4",fontSize:16,fontFamily:"Barlow Condensed,sans-serif",outline:"none",marginBottom:enterErr?8:20,boxSizing:"border-box",letterSpacing:4,textAlign:"center"}} />
-                {enterErr && <div style={{color:"#FF3D5A",fontSize:13,marginBottom:16,textAlign:"center"}}>{enterErr}</div>}
-                <div style={{display:"flex",gap:10}}>
-                  <button onClick={()=>{setForgotStep('email');setEnterErr("");}}
-                    style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:11,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>BACK</button>
-                  <button onClick={verifyPitchResetCode}
-                    style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:11,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>VERIFY & RESET</button>
-                </div>
-              </>}
-            </>}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
 
 
-// ── TEAM CLAIM SCREEN ────────────────────────────────────────────────────────
-function TeamClaimScreen({ pitch, user, teams, onClaimed, onBack, onGuest }) {
-  const [teamIdentity, setTeamIdentity] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [enteredCode, setEnteredCode] = useState("");
-  const [pin, setPin] = useState("");
-  const [pin2, setPin2] = useState("");
-  const [step, setStep] = useState("enter"); // enter | setpin | admin | adminpin
+function TeamClaimScreen({ pitch, user, onClaimed, onBack, onGuest, onAdmin }) {
+  const [mode, setMode] = useState(null); // null | 'teamid' | 'admin'
+  const [teamIdInput, setTeamIdInput] = useState("");
   const [adminPw, setAdminPw] = useState("");
-  const [claimingTeam, setClaimingTeam] = useState(null);
+  const [pin, setPin] = useState("");
+  const [pinConfirm, setPinConfirm] = useState("");
   const [err, setErr] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const [step, setStep] = useState(1); // 1=enter ID, 2=set PIN
+  const [claimedTeamInfo, setClaimedTeamInfo] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  const [teamsData, setTeamsData] = useState([]);
-  useEffect(() => {
-    (async () => {
-      const [ti, ts] = await Promise.all([storeGet("teamIdentity"), storeGet("teams")]);
-      setTeamIdentity(ti || {});
-      if (ts && Array.isArray(ts)) setTeamsData(ts);
-      setLoading(false);
-    })();
-  }, []);
+  const sbGet = async (key) => { try { const res = await fetch("https://rmcxhorijitrhqyrvvkn.supabase.co/rest/v1/league_data?key=eq."+encodeURIComponent(key), {headers:{"apikey":"sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm","Authorization":"Bearer sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm"}}); const d=await res.json(); return d[0]?.value; } catch { return null; } };
+  const sbSet = async (key, value) => { try { await fetch("https://rmcxhorijitrhqyrvvkn.supabase.co/rest/v1/league_data", {method:"POST",headers:{"apikey":"sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm","Authorization":"Bearer sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm","Content-Type":"application/json","Prefer":"resolution=merge-duplicates"},body:JSON.stringify({key,value,updated_at:new Date().toISOString()})}); } catch {} };
+  const hashPw = async (pw) => { const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(pw)); return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join(""); };
 
-  // Check if this user already has a team
-  const myTeam = teams.find(t => teamIdentity[t.id]?.claimedBy === user.email);
-
-  const handleEnterCode = () => {
-    setErr("");
-    const code = enteredCode.trim().toUpperCase();
-    // Find which team this code belongs to
-    const match = teamsData.find(t => teamIdentity[t.id]?.teamId === code);
-    if (!match) { setErr("Invalid Team ID. Ask your admin for the correct code."); return; }
-    if (teamIdentity[match.id]?.claimedBy && teamIdentity[match.id].claimedBy !== user.email) {
-      setErr("This team is already claimed by another player."); return;
-    }
-    setClaimingTeam(match);
-    setStep("setpin");
-    setPin(""); setPin2("");
+  const submitTeamId = async () => {
+    if (!teamIdInput.trim()) { setErr("Enter your Team ID"); return; }
+    setLoading(true); setErr("");
+    const identity = await sbGet(pitch.id + "_teamIdentity") || {};
+    const entry = Object.values(identity).find(t => t.teamId === teamIdInput.trim().toUpperCase());
+    if (!entry) { setErr("Invalid Team ID. Ask your admin for the correct ID."); setLoading(false); return; }
+    if (entry.claimedBy && entry.claimedBy !== user.email) { setErr("This Team ID is already claimed by another player."); setLoading(false); return; }
+    // Find team details
+    const teams = await sbGet(pitch.id + "_teams") || [];
+    const team = teams.find(t => t.id === entry.teamRef);
+    if (!team) { setErr("Team not found. Contact admin."); setLoading(false); return; }
+    setClaimedTeamInfo({...team, teamId: entry.teamId});
+    setStep(2);
+    setLoading(false);
   };
 
-  const handleSetPin = async () => {
+  const submitPin = async () => {
     if (pin.length < 4) { setErr("PIN must be at least 4 digits"); return; }
-    if (pin !== pin2) { setErr("PINs don't match"); return; }
-    setSubmitting(true);
+    if (pin !== pinConfirm) { setErr("PINs don't match"); return; }
+    setLoading(true);
+    const pinHash = await hashPw(pin);
+    // Save claim
+    const identity = await sbGet(pitch.id + "_teamIdentity") || {};
+    const key = Object.keys(identity).find(k => identity[k].teamId === claimedTeamInfo.teamId);
+    if (key) { identity[key].claimedBy = user.email; await sbSet(pitch.id + "_teamIdentity", identity); }
+    // Save to localStorage
     try {
-      const pinHash = await hashPw(pin);
-      const updated = { ...teamIdentity, [claimingTeam.id]: { ...teamIdentity[claimingTeam.id], claimedBy: user.email, pinHash } };
-      await storeSet("teamIdentity", updated);
-      setTeamIdentity(updated);
-      onClaimed(claimingTeam, pinHash);
-    } catch(e) { setErr("Error: " + e.message); }
-    setSubmitting(false);
+      localStorage.setItem("tb_myteam_" + pitch.id, JSON.stringify(claimedTeamInfo));
+      localStorage.setItem("tb_pinHash_" + pitch.id, pinHash);
+    } catch {}
+    onClaimed(claimedTeamInfo, pinHash);
+    setLoading(false);
   };
 
-  if (loading) return (
-    <div style={{minHeight:"100vh",background:"#080C14",display:"flex",alignItems:"center",justifyContent:"center"}}>
-      <div style={{color:"#F5A623",fontFamily:"Rajdhani,sans-serif",fontSize:20}}>Loading...</div>
-    </div>
-  );
+  const submitAdmin = async () => {
+    if (!adminPw.trim()) { setErr("Enter admin password"); return; }
+    setLoading(true); setErr("");
+    const h = await hashPw(adminPw);
+    // Check new per-pitch adminHash first, then fall back to old pitch.hash
+    const newHash = await sbGet(pitch.id + "_adminHash");
+    const oldHash = pitch.hash;
+    if (h !== newHash && h !== oldHash) { setErr("Wrong admin password"); setLoading(false); return; }
+    // If matched old hash, migrate to new storage
+    if (h === oldHash && h !== newHash) {
+      await sbSet(pitch.id + "_adminHash", h);
+    }
+    try { localStorage.setItem("tb_admin_" + pitch.id, "1"); } catch {}
+    onAdmin();
+    setLoading(false);
+  };
 
-  if (myTeam) {
-    // Already claimed — go straight in
-    onClaimed(myTeam, teamIdentity[myTeam.id]?.pinHash);
-    return null;
-  }
+  const inp = {width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"12px 16px",color:"#E2EAF4",fontSize:16,fontFamily:"Barlow Condensed,sans-serif",outline:"none",marginBottom:10,boxSizing:"border-box"};
 
   return (
-    <div style={{minHeight:"100vh",background:"#080C14",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24,fontFamily:"Barlow Condensed,sans-serif"}}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Barlow+Condensed:wght@400;600;700;800&display=swap');*{box-sizing:border-box;margin:0;padding:0;}body{background:#080C14;color:#E2EAF4;}`}</style>
+    <div style={{minHeight:"100vh",background:"#080C14",display:"flex",alignItems:"center",justifyContent:"center",padding:20,fontFamily:"Barlow Condensed,sans-serif"}}>
       <div style={{width:"100%",maxWidth:380}}>
-        <div style={{width:"100%",marginBottom:16,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <button onClick={onBack} style={{background:"transparent",border:"none",color:"#4A5E78",fontSize:13,cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",padding:0}}>← Back to Pitches</button>
-          {onGuest && <button onClick={onGuest} style={{background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:"5px 12px",color:"#4A5E78",fontSize:12,cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>👁 GUEST</button>}
-        </div>
-        <div style={{textAlign:"center",marginBottom:32}}>
+        <button onClick={onBack} style={{background:"transparent",border:"none",color:"#4A5E78",fontSize:13,cursor:"pointer",marginBottom:20,padding:0,display:"flex",alignItems:"center",gap:4}}>← Back to Pitches</button>
+        <div style={{textAlign:"center",marginBottom:24}}>
           <div style={{fontSize:40,marginBottom:8}}>🏏</div>
-          <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:28,fontWeight:700,color:"#F5A623",letterSpacing:3}}>{pitch.name}</div>
-          <div style={{fontSize:14,color:"#4A5E78",marginTop:4}}>Claim your fantasy team to continue</div>
+          <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:26,fontWeight:700,color:"#F5A623",letterSpacing:2}}>{pitch.name}</div>
+          <div style={{fontSize:12,color:"#4A5E78",marginTop:4}}>How would you like to enter?</div>
         </div>
 
-        <div style={{background:"#0E1521",borderRadius:16,border:"1px solid #1E2D45",padding:28}}>
-          {(() => {
-            if (step === "enter") return (
-              <>
-                <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:"#E2EAF4",letterSpacing:2,marginBottom:4}}>ENTER TEAM ID</div>
-                <div style={{fontSize:12,color:"#4A5E78",marginBottom:16}}>Ask your league admin for your Team ID code</div>
-                <input value={enteredCode} onChange={e=>{setEnteredCode(e.target.value.toUpperCase());setErr("");}}
-                  onKeyDown={e=>e.key==="Enter"&&handleEnterCode()}
-                  placeholder="e.g. TBL-X7K2" autoFocus maxLength={8}
-                  style={{width:"100%",background:"#080C14",border:"1px solid "+(err?"#FF3D5A":"#1E2D45"),borderRadius:8,padding:"12px 16px",color:"#F5A623",fontSize:22,fontFamily:"Rajdhani,sans-serif",fontWeight:700,letterSpacing:4,textAlign:"center",outline:"none",marginBottom:err?8:16,boxSizing:"border-box"}} />
-                {err && <div style={{color:"#FF3D5A",fontSize:13,marginBottom:16,textAlign:"center"}}>{err}</div>}
-                <button onClick={handleEnterCode} style={{width:"100%",background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:14,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:16,cursor:"pointer",letterSpacing:1}}>CLAIM TEAM</button>
-                <div style={{marginTop:20,paddingTop:16,borderTop:"1px solid #1E2D45"}}>
-                  <div style={{fontSize:11,color:"#4A5E78",marginBottom:8,textAlign:"center"}}>League admin? Use your admin password to enter and claim a team</div>
-                  <button onClick={()=>setStep("admin")} style={{width:"100%",background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:10,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>🔒 ADMIN ENTRY</button>
-                </div>
-              </>
-            );
-            if (step === "setpin") return (
-              <>
-                <div style={{background:claimingTeam.color+"22",border:"1px solid "+claimingTeam.color+"44",borderRadius:10,padding:"12px 16px",marginBottom:20,textAlign:"center"}}>
-                  <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,fontWeight:700,color:claimingTeam.color}}>{claimingTeam.name}</div>
-                  <div style={{fontSize:12,color:"#4A5E78",marginTop:4}}>You are claiming this team</div>
-                </div>
-                <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:18,fontWeight:700,color:"#E2EAF4",letterSpacing:2,marginBottom:4}}>SET YOUR PIN</div>
-                <div style={{fontSize:12,color:"#4A5E78",marginBottom:16}}>You will use this PIN to authorize snatch actions</div>
-                <input type="password" value={pin} onChange={e=>{setPin(e.target.value);setErr("");}}
-                  placeholder="Enter 4+ digit PIN" maxLength={6}
-                  style={{width:"100%",background:"#080C14",border:"1px solid "+(err?"#FF3D5A":"#1E2D45"),borderRadius:8,padding:"12px 16px",color:"#E2EAF4",fontSize:20,letterSpacing:6,textAlign:"center",fontFamily:"Rajdhani,sans-serif",outline:"none",marginBottom:10,boxSizing:"border-box"}} />
-                <input type="password" value={pin2} onChange={e=>{setPin2(e.target.value);setErr("");}}
-                  onKeyDown={e=>e.key==="Enter"&&handleSetPin()}
-                  placeholder="Confirm PIN" maxLength={6}
-                  style={{width:"100%",background:"#080C14",border:"1px solid "+(err?"#FF3D5A":"#1E2D45"),borderRadius:8,padding:"12px 16px",color:"#E2EAF4",fontSize:20,letterSpacing:6,textAlign:"center",fontFamily:"Rajdhani,sans-serif",outline:"none",marginBottom:err?8:16,boxSizing:"border-box"}} />
-                {err && <div style={{color:"#FF3D5A",fontSize:13,marginBottom:16,textAlign:"center"}}>{err}</div>}
-                <div style={{display:"flex",gap:10}}>
-                  <button onClick={()=>{setStep("enter");setErr("");}} style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:12,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>BACK</button>
-                  <button onClick={handleSetPin} disabled={submitting} style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:12,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:16,cursor:submitting?"not-allowed":"pointer",opacity:submitting?0.7:1}}>{submitting?"SAVING...":"SET PIN & ENTER"}</button>
-                </div>
-              </>
-            );
-            if (step === "admin") return (
-              <>
-                <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:"#E2EAF4",letterSpacing:2,marginBottom:4}}>ADMIN ENTRY</div>
-                <div style={{fontSize:12,color:"#4A5E78",marginBottom:16}}>Enter your league admin password to continue</div>
-                <input type="password" value={adminPw} onChange={e=>{setAdminPw(e.target.value);setErr("");}} placeholder="Admin password..." autoFocus
-                  style={{width:"100%",background:"#080C14",border:"1px solid "+(err?"#FF3D5A":"#1E2D45"),borderRadius:8,padding:"12px 16px",color:"#E2EAF4",fontSize:16,fontFamily:"Barlow Condensed,sans-serif",outline:"none",marginBottom:err?8:16,boxSizing:"border-box"}} />
-                {err && <div style={{color:"#FF3D5A",fontSize:13,marginBottom:16,textAlign:"center"}}>{err}</div>}
-                <div style={{display:"flex",gap:10}}>
-                  <button onClick={()=>{setStep("enter");setAdminPw("");setErr("");}} style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:12,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>BACK</button>
-                  <button onClick={async()=>{
-                    const ph = await storeGet("pwhash");
-                    const h = await hashPw(adminPw);
-                    if(h===ph){const ti=await storeGet("teamIdentity");setTeamIdentity(ti||{});setStep("adminpick");setErr("");}
-                    else setErr("Wrong admin password");
-                  }} style={{flex:2,background:"linear-gradient(135deg,#4F8EF7,#1a5fb4)",border:"none",borderRadius:8,padding:12,color:"#fff",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:15,cursor:"pointer"}}>ENTER</button>
-                </div>
-              </>
-            );
-            if (step === "adminpick") return (
-              <>
-                <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:"#E2EAF4",letterSpacing:2,marginBottom:4}}>PICK YOUR TEAM</div>
-                <div style={{fontSize:12,color:"#4A5E78",marginBottom:16}}>Select the team you manage</div>
-                <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:16}}>
-                  {teamsData.map(t => {
-                    const claimed = teamIdentity[t.id]?.claimedBy;
-                    const isMe = claimed===user.email;
-                    return (
-                      <button key={t.id} onClick={()=>{if(!claimed||isMe){setClaimingTeam(t);setStep("setpin");setPin("");setPin2("");setErr("");}}}
-                        style={{padding:"12px 16px",borderRadius:10,border:"2px solid "+(isMe?"#2ECC71":claimed?"#1E2D45":t.color+"44"),background:isMe?"#2ECC7122":claimed?"#1E2D4522":t.color+"11",cursor:claimed&&!isMe?"not-allowed":"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12,opacity:claimed&&!isMe?0.5:1}}>
-                        <div style={{flex:1}}>
-                          <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:16,color:isMe?"#2ECC71":claimed?"#4A5E78":t.color}}>{t.name}</div>
-                          <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>{isMe?"Your team":claimed?"Claimed":"Available"}</div>
-                        </div>
-                        {!claimed && <span style={{color:t.color,fontSize:12,fontWeight:700}}>SELECT</span>}
-                        {isMe && <span style={{color:"#2ECC71",fontSize:12,fontWeight:700}}>YOUR TEAM</span>}
-                      </button>
-                    );
-                  })}
-                </div>
-                <button onClick={()=>setStep("enter")} style={{width:"100%",background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:10,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>BACK</button>
-              </>
-            );
-            return null;
-          })()}
-        </div>
+        {!mode && (
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            <button onClick={()=>{setMode("teamid");setErr("");}}
+              style={{background:"#141E2E",border:"2px solid #F5A62344",borderRadius:12,padding:"16px 20px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14}}>
+              <span style={{fontSize:28}}>🎫</span>
+              <div>
+                <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:17,color:"#F5A623"}}>Enter with Team ID</div>
+                <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>Use the Team ID given by your admin</div>
+              </div>
+            </button>
+            <button onClick={onGuest}
+              style={{background:"#141E2E",border:"2px solid #4A5E7833",borderRadius:12,padding:"16px 20px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14}}>
+              <span style={{fontSize:28}}>👁</span>
+              <div>
+                <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:17,color:"#E2EAF4"}}>Enter as Guest</div>
+                <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>View only — no editing or transfers</div>
+              </div>
+            </button>
+            <button onClick={()=>{setMode("admin");setErr("");}}
+              style={{background:"#141E2E",border:"2px solid #4A5E7833",borderRadius:12,padding:"14px 20px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14}}>
+              <span style={{fontSize:24}}>🔑</span>
+              <div>
+                <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:15,color:"#4A5E78"}}>Admin Entry</div>
+                <div style={{fontSize:11,color:"#2D3E52",marginTop:2}}>For pitch administrators only</div>
+              </div>
+            </button>
+          </div>
+        )}
+
+        {mode === "teamid" && step === 1 && (
+          <div>
+            <button onClick={()=>{setMode(null);setErr("");}} style={{background:"transparent",border:"none",color:"#4A5E78",cursor:"pointer",fontSize:13,marginBottom:16,padding:0}}>← Back</button>
+            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:18,fontWeight:700,color:"#E2EAF4",marginBottom:4}}>🎫 ENTER TEAM ID</div>
+            <div style={{fontSize:12,color:"#4A5E78",marginBottom:16}}>Your admin will have shared a unique Team ID with you</div>
+            <input value={teamIdInput} onChange={e=>{setTeamIdInput(e.target.value.toUpperCase());setErr("");}}
+              onKeyDown={e=>e.key==="Enter"&&submitTeamId()}
+              placeholder="e.g. TBL-X7K2" autoFocus style={inp} />
+            {err && <div style={{color:"#FF3D5A",fontSize:12,marginBottom:10}}>{err}</div>}
+            <button onClick={submitTeamId} disabled={loading}
+              style={{width:"100%",background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:12,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:15,cursor:"pointer"}}>
+              {loading ? "CHECKING…" : "VERIFY TEAM ID →"}
+            </button>
+          </div>
+        )}
+
+        {mode === "teamid" && step === 2 && claimedTeamInfo && (
+          <div>
+            <div style={{background:"#F5A62311",border:"1px solid #F5A62333",borderRadius:10,padding:"12px 16px",marginBottom:16,textAlign:"center"}}>
+              <div style={{fontSize:11,color:"#4A5E78",letterSpacing:1,marginBottom:4}}>YOU ARE CLAIMING</div>
+              <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,fontWeight:700,color:claimedTeamInfo.color||"#F5A623"}}>{claimedTeamInfo.name}</div>
+            </div>
+            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:16,fontWeight:700,color:"#E2EAF4",marginBottom:4}}>SET YOUR PIN</div>
+            <div style={{fontSize:12,color:"#4A5E78",marginBottom:12}}>This PIN is used for snatch, voting and approvals</div>
+            <input type="password" inputMode="numeric" value={pin} onChange={e=>{setPin(e.target.value);setErr("");}} placeholder="Choose a 4+ digit PIN" autoFocus style={inp} />
+            <input type="password" inputMode="numeric" value={pinConfirm} onChange={e=>{setPinConfirm(e.target.value);setErr("");}}
+              onKeyDown={e=>e.key==="Enter"&&submitPin()} placeholder="Confirm PIN" style={inp} />
+            {err && <div style={{color:"#FF3D5A",fontSize:12,marginBottom:10}}>{err}</div>}
+            <button onClick={submitPin} disabled={loading}
+              style={{width:"100%",background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:12,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:15,cursor:"pointer"}}>
+              {loading ? "SAVING…" : "CLAIM TEAM & ENTER →"}
+            </button>
+          </div>
+        )}
+
+        {mode === "admin" && (
+          <div>
+            <button onClick={()=>{setMode(null);setErr("");}} style={{background:"transparent",border:"none",color:"#4A5E78",cursor:"pointer",fontSize:13,marginBottom:16,padding:0}}>← Back</button>
+            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:18,fontWeight:700,color:"#E2EAF4",marginBottom:4}}>🔑 ADMIN ENTRY</div>
+            <div style={{fontSize:12,color:"#4A5E78",marginBottom:16}}>Enter the admin password for this pitch</div>
+            <input type="password" value={adminPw} onChange={e=>{setAdminPw(e.target.value);setErr("");}}
+              onKeyDown={e=>e.key==="Enter"&&submitAdmin()} placeholder="Admin password…" autoFocus style={inp} />
+            {err && <div style={{color:"#FF3D5A",fontSize:12,marginBottom:10}}>{err}</div>}
+            <button onClick={submitAdmin} disabled={loading}
+              style={{width:"100%",background:"linear-gradient(135deg,#4F8EF7,#1a5fb4)",border:"none",borderRadius:8,padding:12,color:"#fff",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:15,cursor:"pointer"}}>
+              {loading ? "VERIFYING…" : "ENTER AS ADMIN →"}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
 
-// ── EDIT POINTS FORM ─────────────────────────────────────────────────────────
-function EditPointsForm({ config, onSave, onCancel }) {
-  const [cfg, setCfg] = useState({...config});
-  const field = (label, key, step) => (
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid #1E2D4533"}}>
-      <div style={{fontSize:12,color:"#4A5E78",flex:1}}>{label}</div>
-      <input type="number" value={cfg[key]} step={step||1} min={0}
-        onChange={e=>setCfg(prev=>({...prev,[key]:parseFloat(e.target.value)||0}))}
-        style={{width:64,background:"#080C14",border:"1px solid #1E2D45",borderRadius:6,padding:"4px 8px",color:"#F5A623",fontSize:14,fontFamily:"Rajdhani,sans-serif",fontWeight:700,textAlign:"center",outline:"none"}} />
-    </div>
-  );
-  return (
-    <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #F5A62344",padding:20,marginBottom:16}}>
-      <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:18,fontWeight:700,color:"#F5A623",letterSpacing:2,marginBottom:16}}>EDIT POINTS SYSTEM</div>
-      <div style={{fontSize:11,color:"#4A5E78",letterSpacing:1,marginBottom:8}}>BATTING</div>
-      <div style={{fontSize:11,color:"#F5A623",letterSpacing:1,marginBottom:8}}>🏏 BATTING</div>
-      {field("Per run","run",0.5)}{field("Per four","four")}{field("Per six","six")}
-      {field("Half-century","fifty")}{field("Century","century")}
-      {field("SR Bonus pts","srBonus")}{field("SR Bonus threshold","srBonusThreshold")}
-      <div style={{fontSize:11,color:"#FF3D5A",letterSpacing:1,marginBottom:8,marginTop:12}}>PENALTIES</div>
-      {field("Duck penalty","duckPenalty")}{field("SR penalty pts","srPenalty")}{field("SR penalty threshold","srPenaltyThreshold")}
-      <div style={{fontSize:11,color:"#4F8EF7",letterSpacing:1,marginBottom:8,marginTop:12}}>🎳 BOWLING</div>
-      {field("Per wicket","wicket")}{field("4-wkt haul","fourWkt")}{field("5-wkt haul","fiveWkt")}
-      {field("Maiden over","maiden")}{field("Economy bonus","ecoBonus")}{field("Economy < threshold","ecoThreshold",0.5)}
-      {field("Min overs (eco)","ecoMinOvers",0.5)}{field("Economy penalty","ecoPenalty")}{field("Eco penalty > threshold","ecoPenaltyThreshold",0.5)}
-      <div style={{fontSize:11,color:"#2ECC71",letterSpacing:1,marginBottom:8,marginTop:12}}>🧤 FIELDING</div>
-      {field("Per catch","catch")}{field("Per stumping","stumping")}{field("Per run-out","runout")}
-      <div style={{fontSize:11,color:"#A855F7",letterSpacing:1,marginBottom:8,marginTop:12}}>⭐ BONUSES</div>
-      {field("All-round bonus","allRoundBonus")}{field("All-round min runs","allRoundMinRuns")}{field("All-round min wkts","allRoundMinWkts")}
-      {field("Longest six","longestSix")}{field("MOM bonus","momBonus")}{field("Playing XI bonus","playingXIBonus")}
-      {field("Captain mult","captainMult",0.5)}{field("VC mult","vcMult",0.5)}
-      <div style={{display:"flex",gap:8,marginTop:16}}>
-        <button onClick={onCancel} style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:10,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
-        <button onClick={()=>onSave(cfg)} style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:10,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:14,cursor:"pointer"}}>SAVE POINTS</button>
-      </div>
-    </div>
-  );
-}
-
-
-// ── PROPOSE RULES FORM ───────────────────────────────────────────────────────
-function ProposeRulesForm({ teams, eligibleVoters, onPropose, withPassword, tournamentStarted }) {
-  const [open, setOpen] = useState(false);
-  const [transferDay, setTransferDay] = useState("Sunday");
-  const [transferTime, setTransferTime] = useState("11:00 AM");
-  const [snatchStart, setSnatchStart] = useState("Saturday 12:00 AM");
-  const [snatchEnd, setSnatchEnd] = useState("Saturday 12:00 PM");
-  const [snatchReturn, setSnatchReturn] = useState("Friday 11:58 PM");
-
-  const days = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
-  const times = ["12:00 AM","1:00 AM","2:00 AM","3:00 AM","6:00 AM","9:00 AM","10:00 AM","11:00 AM","12:00 PM","1:00 PM","3:00 PM","6:00 PM","9:00 PM","10:00 PM","11:00 PM","11:58 PM"];
-
-  if (!open) return (
-    <button onClick={()=>withPassword(()=>setOpen(true))} style={{width:"100%",background:"#F5A62322",border:"1px solid #F5A62344",borderRadius:12,padding:14,color:"#F5A623",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:15,cursor:"pointer"}}>
-      ✏️ PROPOSE TIMING CHANGE (Admin)
-    </button>
-  );
-
-  const sel = (label, val, setVal, opts) => (
-    <div style={{marginBottom:12}}>
-      <div style={{fontSize:11,color:"#4A5E78",marginBottom:4,letterSpacing:1}}>{label}</div>
-      <select value={val} onChange={e=>setVal(e.target.value)} style={{width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"8px 12px",color:"#E2EAF4",fontSize:14,fontFamily:"Barlow Condensed,sans-serif",cursor:"pointer",outline:"none"}}>
-        {opts.map(o=><option key={o} value={o}>{o}</option>)}
-      </select>
-    </div>
-  );
-
-  return (
-    <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #F5A62344",padding:20}}>
-      <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:18,fontWeight:700,color:"#F5A623",letterSpacing:2,marginBottom:4}}>PROPOSE RULE CHANGE</div>
-      <div style={{fontSize:11,color:"#4A5E78",marginBottom:16}}>All {eligibleVoters.length} claimed teams must approve for changes to take effect.</div>
-      {sel("Transfer Window Start Day", transferDay, setTransferDay, days)}
-      {sel("Transfer Window End Time", transferTime, setTransferTime, times)}
-      {sel("Snatch Window Start", snatchStart, setSnatchStart, days.map(d=>d+" 12:00 AM").concat(days.map(d=>d+" 12:00 PM")))}
-      {sel("Snatch Window End", snatchEnd, setSnatchEnd, days.map(d=>d+" 12:00 PM").concat(days.map(d=>d+" 6:00 PM")))}
-      {sel("Snatch Return Time", snatchReturn, setSnatchReturn, days.map(d=>d+" 11:58 PM").concat(days.map(d=>d+" 11:00 PM")))}
-      <div style={{display:"flex",gap:8,marginTop:4}}>
-        <button onClick={()=>setOpen(false)} style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:10,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
-        <button onClick={()=>{onPropose({"Transfer Start":transferDay,"Transfer End":transferTime,"Snatch Window":snatchStart+" → "+snatchEnd,"Snatch Return":snatchReturn});setOpen(false);}} style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:10,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:14,cursor:"pointer"}}>SUBMIT FOR VOTE</button>
-      </div>
-    </div>
-  );
-}
-
-
-// ── CHAT WINDOW COMPONENT ────────────────────────────────────────────────────
-function ChatWindow({ myTeam, teams, unlocked, withPassword, storeGet, storeSet, isGuest }) {
-  const [open, setOpen] = React.useState(false);
-  const [maximized, setMaximized] = React.useState(false);
-  const [messages, setMessages] = React.useState([]);
-  const [input, setInput] = React.useState('');
-  const [unread, setUnread] = React.useState(0);
-  const [showMention, setShowMention] = React.useState(false);
-  const [pinned, setPinned] = React.useState(null);
-  const [lastSeen] = React.useState(() => { try { return parseInt(localStorage.getItem('tb_chatLastSeen')||'0'); } catch { return 0; } });
-  const endRef = React.useRef(null);
-
-  const load = async () => {
-    const data = await storeGet("chat") || {};
-    const msgs = data.messages || [];
-    setMessages(msgs);
-    setPinned(data.pinned || null);
-    if (!open) setUnread(msgs.filter(m => m.ts > lastSeen && m.senderId !== myTeam?.id).length);
-  };
-
-  React.useEffect(() => { load(); const t = setInterval(load, 15000); return () => clearInterval(t); }, []);
-  React.useEffect(() => { if (open) { setUnread(0); try { localStorage.setItem('tb_chatLastSeen', Date.now().toString()); } catch {} setTimeout(() => endRef.current?.scrollIntoView({behavior:'smooth'}), 100); } }, [open, messages.length]);
-
-  const send = async () => {
-    if (!input.trim() || !myTeam || input.length > 200) return;
-    const msg = { id: Date.now().toString(), text: input.trim(), senderId: myTeam.id, senderName: myTeam.name, senderColor: myTeam.color, ts: Date.now(), reactions: {} };
-    const data = await storeGet("chat") || {};
-    const msgs = [...(data.messages || []), msg].slice(-50);
-    await storeSet("chat", {...data, messages: msgs});
-    setMessages(msgs); setInput('');
-    setTimeout(() => endRef.current?.scrollIntoView({behavior:'smooth'}), 50);
-  };
-
-  const react = async (msgId, emoji) => {
-    const data = await storeGet("chat") || {};
-    const msgs = (data.messages || []).map(m => {
-      if (m.id !== msgId) return m;
-      const r = {...(m.reactions||{})}; const u = r[emoji] || [];
-      if (u.includes(myTeam?.id)) { r[emoji] = u.filter(x=>x!==myTeam?.id); if(!r[emoji].length) delete r[emoji]; }
-      else r[emoji] = [...u, myTeam?.id];
-      return {...m, reactions:r};
-    });
-    await storeSet("chat", {...data, messages: msgs}); setMessages(msgs);
-  };
-
-  const del = async (msgId, needPw) => {
-    const doDelete = async () => { const data = await storeGet("chat")||{}; const msgs=(data.messages||[]).filter(m=>m.id!==msgId); await storeSet("chat",{...data,messages:msgs}); setMessages(msgs); };
-    if (needPw) withPassword(doDelete); else doDelete();
-  };
-
-  const pin = async (msg) => {
-    withPassword(async () => { const data = await storeGet("chat")||{}; const np = pinned?.id===msg.id?null:msg; await storeSet("chat",{...data,pinned:np}); setPinned(np); });
-  };
-
-  const renderText = (text) => text.split(' ').map((w,i) => {
-    if (w.startsWith('@')) { const t = teams.find(t=>t.name.toLowerCase().includes(w.slice(1).toLowerCase())); return React.createElement('span',{key:i,style:{color:t?t.color:"#4F8EF7",fontWeight:700}},(i>0?' ':'')+w); }
-    return React.createElement('span',{key:i},(i>0?' ':'')+w);
-  });
-
-  return React.createElement('div', {style:{position:"fixed",bottom:20,left:20,zIndex:500,fontFamily:"Barlow Condensed,sans-serif"}},
-    !open && React.createElement('button',{onClick:()=>setOpen(true),style:{width:52,height:52,borderRadius:"50%",background:"linear-gradient(135deg,#4F8EF7,#1a5fb4)",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 16px rgba(79,142,247,0.4)",position:"relative"}},
-      React.createElement('span',{style:{fontSize:22}},"💬"),
-      unread>0 && React.createElement('span',{style:{position:"absolute",top:-2,right:-2,background:"#FF3D5A",borderRadius:"50%",width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"#fff"}},unread>9?"9+":unread)
-    ),
-    open && React.createElement('div',{style:{width:maximized?"min(520px,90vw)":"min(320px,85vw)",height:maximized?"min(600px,80vh)":"min(420px,60vh)",background:"#0E1521",borderRadius:16,border:"1px solid #4F8EF744",display:"flex",flexDirection:"column",boxShadow:"0 8px 32px rgba(0,0,0,0.6)",overflow:"hidden"}},
-      React.createElement('div',{style:{background:"#4F8EF711",borderBottom:"1px solid #4F8EF733",padding:"10px 14px",display:"flex",alignItems:"center",gap:8}},
-        React.createElement('span',{style:{fontSize:16}},"💬"),
-        React.createElement('div',{style:{flex:1,fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:15,color:"#4F8EF7",letterSpacing:1}},"PITCH CHAT"),
-        React.createElement('button',{onClick:()=>setMaximized(v=>!v),style:{background:"transparent",border:"none",color:"#4A5E78",cursor:"pointer",fontSize:14,padding:"2px 6px"}},maximized?"⊡":"⊞"),
-        React.createElement('button',{onClick:()=>setOpen(false),style:{background:"transparent",border:"none",color:"#4A5E78",cursor:"pointer",fontSize:16,padding:"2px 6px"}},"✕")
-      ),
-      pinned && React.createElement('div',{style:{background:"#F5A62311",borderBottom:"1px solid #F5A62322",padding:"6px 14px",display:"flex",alignItems:"center",gap:6}},
-        React.createElement('span',{style:{fontSize:11}},"📌"),
-        React.createElement('div',{style:{flex:1,fontSize:11,color:"#F5A623",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},pinned.senderName+": "+pinned.text),
-        unlocked && React.createElement('button',{onClick:()=>pin(pinned),style:{background:"transparent",border:"none",color:"#4A5E78",cursor:"pointer",fontSize:10}},"✕")
-      ),
-      React.createElement('div',{style:{flex:1,overflowY:"auto",padding:"10px 12px",display:"flex",flexDirection:"column",gap:8}},
-        messages.length===0 && React.createElement('div',{style:{textAlign:"center",color:"#2D3E52",fontSize:13,marginTop:40}},"No messages yet. Say hello! 👋"),
-        messages.map(msg => {
-          const isMe = msg.senderId === myTeam?.id;
-          return React.createElement('div',{key:msg.id,style:{display:"flex",flexDirection:"column",alignItems:isMe?"flex-end":"flex-start"}},
-            React.createElement('div',{style:{maxWidth:"80%",background:isMe?"#4F8EF722":"#141E2E",border:"1px solid "+(isMe?"#4F8EF744":"#1E2D45"),borderRadius:isMe?"12px 12px 4px 12px":"12px 12px 12px 4px",padding:"7px 10px"}},
-              !isMe && React.createElement('div',{style:{fontSize:10,color:msg.senderColor||"#4F8EF7",fontWeight:700,marginBottom:3}},msg.senderName),
-              React.createElement('div',{style:{fontSize:13,color:"#E2EAF4",lineHeight:1.4}},renderText(msg.text)),
-              React.createElement('div',{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:4,gap:4}},
-                React.createElement('div',{style:{fontSize:9,color:"#2D3E52"}},new Date(msg.ts).toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"})),
-                React.createElement('div',{style:{display:"flex",gap:3,flexWrap:"wrap"}},
-                  ...Object.entries(msg.reactions||{}).map(([emoji,users]) => React.createElement('button',{key:emoji,onClick:()=>react(msg.id,emoji),style:{background:users.includes(myTeam?.id)?"#4F8EF733":"#1E2D45",border:"none",borderRadius:10,padding:"1px 6px",cursor:"pointer",fontSize:11,color:"#E2EAF4"}},emoji+" "+users.length)),
-                  ...["👍","🔥","😂","💀","🏏"].map(emoji => React.createElement('button',{key:emoji,onClick:()=>react(msg.id,emoji),style:{background:"transparent",border:"none",cursor:"pointer",fontSize:11,opacity:0.4,padding:"1px 2px"}},emoji)),
-                  (isMe||unlocked) && React.createElement('button',{onClick:()=>del(msg.id,!isMe),style:{background:"transparent",border:"none",color:"#FF3D5A",cursor:"pointer",fontSize:10,opacity:0.5}},"✕"),
-                  unlocked && React.createElement('button',{onClick:()=>pin(msg),style:{background:"transparent",border:"none",color:"#F5A623",cursor:"pointer",fontSize:10,opacity:0.5}},"📌")
-                )
-              )
-            )
-          );
-        }),
-        React.createElement('div',{ref:endRef})
-      ),
-      myTeam && !isGuest
-        ? React.createElement('div',{style:{borderTop:"1px solid #1E2D45",padding:"8px 10px"}},
-            showMention && React.createElement('div',{style:{background:"#141E2E",border:"1px solid #1E2D45",borderRadius:8,marginBottom:6,overflow:"hidden"}},
-              ...teams.map(t=>React.createElement('button',{key:t.id,onClick:()=>{const last=input.lastIndexOf('@');setInput(input.slice(0,last)+'@'+t.name+' ');setShowMention(false);},style:{width:"100%",background:"transparent",border:"none",padding:"8px 12px",textAlign:"left",cursor:"pointer",color:t.color,fontSize:13,fontWeight:700,fontFamily:"Barlow Condensed,sans-serif",display:"block"}},"@"+t.name))
-            ),
-            React.createElement('div',{style:{display:"flex",gap:6}},
-              React.createElement('input',{value:input,onChange:e=>{const v=e.target.value;setInput(v);const last=v.lastIndexOf('@');setShowMention(last>=0&&last===v.length-1);},onKeyDown:e=>{if(e.key==="Enter"){e.preventDefault();send();setShowMention(false);}if(e.key==="Escape")setShowMention(false);},placeholder:"Message as "+myTeam.name+"... (@ to tag)",maxLength:200,style:{flex:1,background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"8px 10px",color:"#E2EAF4",fontSize:13,fontFamily:"Barlow Condensed,sans-serif",outline:"none"}}),
-              React.createElement('button',{onClick:send,style:{background:"#4F8EF7",border:"none",borderRadius:8,padding:"8px 12px",color:"#fff",cursor:"pointer",fontSize:14}},"➤")
-            ),
-            React.createElement('div',{style:{fontSize:9,color:"#2D3E52",marginTop:4,textAlign:"right"}},input.length+"/200")
-          )
-        : React.createElement('div',{style:{borderTop:"1px solid #1E2D45",padding:"10px",textAlign:"center",fontSize:11,color:"#2D3E52"}},isGuest?"👁 Guests can read only":"Claim a team to chat")
-    )
-  );
-}
-
-
-function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
+function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest, isAdmin }) {
   const [page, setPage] = useState("setup");
   const [teams, setTeams] = useState([]);
   const [players, setPlayers] = useState([]);
@@ -4582,68 +4155,202 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest }) {
   );
 }
 
+function AdminSetupScreen({ pitch, onDone, onBack, sbGet, sbSet, hashPw }) {
+  const [pw, setPw] = useState("");
+  const [pwConfirm, setPwConfirm] = useState("");
+  const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const [checking, setChecking] = useState(true);
+  const [alreadySet, setAlreadySet] = useState(false);
+  React.useEffect(() => {
+    (async () => {
+      const existing = await sbGet(pitch.id + "_adminHash") || pitch.hash;
+      if (existing) setAlreadySet(true);
+      setChecking(false);
+    })();
+  }, []);
+
+  const submit = async () => {
+    if (pw.length < 4) { setErr("Password must be at least 4 characters"); return; }
+    if (pw !== pwConfirm) { setErr("Passwords don't match"); return; }
+    setLoading(true);
+    const h = await hashPw(pw);
+    await sbSet(pitch.id + "_adminHash", h);
+    const pitches = await sbGet("pitches") || [];
+    const updated = pitches.map(p => p.id === pitch.id ? {...p, hash: h} : p);
+    await sbSet("pitches", updated);
+    onDone({...pitch, hash: h});
+    setLoading(false);
+  };
+
+  const inp = {width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"12px 16px",color:"#E2EAF4",fontSize:16,fontFamily:"Barlow Condensed,sans-serif",outline:"none",marginBottom:10,boxSizing:"border-box"};
+
+  return (
+    <div style={{minHeight:"100vh",background:"#080C14",display:"flex",alignItems:"center",justifyContent:"center",padding:20,fontFamily:"Barlow Condensed,sans-serif"}}>
+      <div style={{width:"100%",maxWidth:380}}>
+        <button onClick={onBack} style={{background:"transparent",border:"none",color:"#4A5E78",fontSize:13,cursor:"pointer",marginBottom:20,padding:0}}>← Back</button>
+        <div style={{textAlign:"center",marginBottom:24}}>
+          <div style={{fontSize:40,marginBottom:8}}>🔑</div>
+          <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:24,fontWeight:700,color:"#F5A623",letterSpacing:2}}>
+            {checking?"LOADING…":alreadySet?"ENTER ADMIN PASSWORD":"SET ADMIN PASSWORD"}
+          </div>
+          <div style={{fontSize:13,color:"#4A5E78",marginTop:6}}>{pitch.name}</div>
+          <div style={{fontSize:12,color:"#2D3E52",marginTop:4}}>
+            {alreadySet?"Enter your existing admin password to continue":"This password will be used for all admin actions in this pitch"}
+          </div>
+        </div>
+        {!checking && alreadySet ? (
+          <div>
+            <input type="password" value={pw} onChange={e=>{setPw(e.target.value);setErr("");}}
+              onKeyDown={async e=>{
+                if(e.key==="Enter"){
+                  setLoading(true);setErr("");
+                  const h=await hashPw(pw);
+                  const stored=await sbGet(pitch.id+"_adminHash")||pitch.hash;
+                  if(h!==stored){setErr("Wrong password");setLoading(false);return;}
+                  if(h===pitch.hash&&h!==await sbGet(pitch.id+"_adminHash")) await sbSet(pitch.id+"_adminHash",h);
+                  onDone({...pitch,hash:h});setLoading(false);
+                }
+              }}
+              placeholder="Admin password…" autoFocus style={inp} />
+            {err && <div style={{color:"#FF3D5A",fontSize:12,marginBottom:10}}>{err}</div>}
+            <button onClick={async()=>{
+              setLoading(true);setErr("");
+              const h=await hashPw(pw);
+              const stored=await sbGet(pitch.id+"_adminHash")||pitch.hash;
+              if(h!==stored){setErr("Wrong password");setLoading(false);return;}
+              onDone({...pitch,hash:h});setLoading(false);
+            }} disabled={loading}
+              style={{width:"100%",background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:13,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:16,cursor:"pointer"}}>
+              {loading?"VERIFYING…":"ENTER AS ADMIN →"}
+            </button>
+          </div>
+        ) : !checking ? (
+          <div>
+            <input type="password" value={pw} onChange={e=>{setPw(e.target.value);setErr("");}} placeholder="Choose admin password…" autoFocus style={inp} />
+            <input type="password" value={pwConfirm} onChange={e=>{setPwConfirm(e.target.value);setErr("");}} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder="Confirm password…" style={inp} />
+            {err && <div style={{color:"#FF3D5A",fontSize:12,marginBottom:10}}>{err}</div>}
+            <button onClick={submit} disabled={loading}
+              style={{width:"100%",background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:13,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:16,cursor:"pointer"}}>
+              {loading?"SETTING UP…":"SET PASSWORD & ENTER →"}
+            </button>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+
 function Root() {
   const [currentUser, setCurrentUser] = useState(() => {
     try { const s = localStorage.getItem('tb_user'); return s ? JSON.parse(s) : null; } catch { return null; }
   });
-  const [currentPitch, setCurrentPitch] = useState(() => {
-    try {
-      const s = localStorage.getItem('tb_pitch');
-      const p = s ? JSON.parse(s) : null;
-      if (p) _pitchId = p.id;
-      return p;
-    } catch { return null; }
-  });
-  const [myTeam, setMyTeam] = useState(() => {
-    try { const s = localStorage.getItem('tb_myteam'); return s ? JSON.parse(s) : null; } catch { return null; }
-  });
-  const [myPinHash, setMyPinHash] = useState(() => {
-    try { return localStorage.getItem('tb_pinHash') || null; } catch { return null; }
-  });
-  const [teamsClaimed, setTeamsClaimed] = useState(() => {
-    try { return !!localStorage.getItem('tb_myteam'); } catch { return false; }
-  });
+  const [currentPitch, setCurrentPitch] = useState(null);
+  const [screen, setScreen] = useState('pitches'); // pitches | join | adminSetup | app
+  const [myTeam, setMyTeam] = useState(null);
+  const [myPinHash, setMyPinHash] = useState(null);
   const [isGuest, setIsGuest] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  const sbGet = async (key) => { try { const res = await fetch("https://rmcxhorijitrhqyrvvkn.supabase.co/rest/v1/league_data?key=eq."+encodeURIComponent(key), {headers:{"apikey":"sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm","Authorization":"Bearer sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm"}}); const d=await res.json(); return d[0]?.value; } catch { return null; } };
+  const sbSet = async (key, value) => { try { await fetch("https://rmcxhorijitrhqyrvvkn.supabase.co/rest/v1/league_data", {method:"POST",headers:{"apikey":"sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm","Authorization":"Bearer sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm","Content-Type":"application/json","Prefer":"resolution=merge-duplicates"},body:JSON.stringify({key,value,updated_at:new Date().toISOString()})}); } catch {} };
+  const hashPw = async (pw) => { const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(pw)); return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join(""); };
 
   const handleLogin = (user) => {
     setCurrentUser(user);
     try { localStorage.setItem('tb_user', JSON.stringify(user)); } catch {}
   };
+
   const handleLogout = () => {
-    setCurrentUser(null); setCurrentPitch(null); setMyTeam(null); setMyPinHash(null); setTeamsClaimed(false);
-    try { ['tb_user','tb_pitch','tb_myteam','tb_pinHash'].forEach(k=>localStorage.removeItem(k)); } catch {}
+    setCurrentUser(null); setCurrentPitch(null); setMyTeam(null); setMyPinHash(null);
+    setIsGuest(false); setIsAdmin(false); setScreen('pitches');
+    try { localStorage.removeItem('tb_user'); } catch {}
   };
-  const handleEnter = (pitch) => {
+
+  const handleEnterPitch = (pitch) => {
     _pitchId = pitch.id;
     setCurrentPitch(pitch);
-    // Reset team claim when entering a new pitch
-    const savedTeam = localStorage.getItem('tb_myteam');
-    const skipped = localStorage.getItem('tb_skipped');
-    if (!savedTeam && !skipped) { setMyTeam(null); setMyPinHash(null); setTeamsClaimed(false); }
-    try { localStorage.setItem('tb_pitch', JSON.stringify(pitch)); } catch {}
+    // Check localStorage for returning user (per-pitch keys only, ignore legacy tb_myteam)
+    try {
+      const savedTeam = localStorage.getItem('tb_myteam_' + pitch.id);
+      const savedPin = localStorage.getItem('tb_pinHash_' + pitch.id);
+      const savedGuest = localStorage.getItem('tb_guest_' + pitch.id);
+      const savedAdmin = localStorage.getItem('tb_admin_' + pitch.id);
+      if (savedAdmin) { setIsAdmin(true); setIsGuest(false); setMyTeam(null); setScreen('app'); return; }
+      if (savedTeam) { setMyTeam(JSON.parse(savedTeam)); setMyPinHash(savedPin||null); setIsGuest(false); setIsAdmin(false); setScreen('app'); return; }
+      if (savedGuest) { setIsGuest(true); setIsAdmin(false); setMyTeam(null); setScreen('app'); return; }
+      // Clear any legacy (non-pitch-specific) keys so old users re-claim
+      localStorage.removeItem('tb_myteam');
+      localStorage.removeItem('tb_pinHash');
+      localStorage.removeItem('tb_skipped');
+    } catch {}
+    // First time - show join screen
+    setScreen('join');
   };
-  const handleLeave = () => {
-    setCurrentPitch(null); setIsGuest(false); setTeamsClaimed(false);
-    try { localStorage.removeItem('tb_pitch'); } catch {}
+
+  const handleSetupAdmin = (pitch) => {
+    _pitchId = pitch.id;
+    setCurrentPitch(pitch);
+    setScreen('adminSetup');
   };
-  const handleGuestEnter = () => { setIsGuest(true); setTeamsClaimed(true); };
+
   const handleClaimed = (team, pinHash) => {
-    setMyTeam(team); setMyPinHash(pinHash); setTeamsClaimed(true);
-    try { localStorage.setItem('tb_myteam', JSON.stringify(team)); if(pinHash) localStorage.setItem('tb_pinHash', pinHash); } catch {}
+    setMyTeam(team); setMyPinHash(pinHash); setIsGuest(false); setIsAdmin(false);
+    setScreen('app');
   };
+
+  const handleGuestEnter = () => {
+    try { localStorage.setItem('tb_guest_' + currentPitch.id, '1'); } catch {}
+    setIsGuest(true); setIsAdmin(false); setMyTeam(null);
+    setScreen('app');
+  };
+
+  const handleAdminEnter = () => {
+    setIsAdmin(true); setIsGuest(false); setMyTeam(null);
+    setScreen('app');
+  };
+
+  const handleLeave = () => {
+    setCurrentPitch(null); setMyTeam(null); setMyPinHash(null);
+    setIsGuest(false); setIsAdmin(false); setScreen('pitches');
+  };
+
   try {
     if (!currentUser) return <SplashScreen onLogin={handleLogin} />;
-    if (!currentPitch) return <PitchHome onEnter={handleEnter} user={currentUser} onLogout={handleLogout} />;
-    if (!teamsClaimed) return <TeamClaimScreen pitch={currentPitch} user={currentUser} teams={[]} onClaimed={handleClaimed} onBack={handleLeave} onGuest={handleGuestEnter} />;
-    return <App pitch={currentPitch} onLeave={handleLeave} user={currentUser} onLogout={handleLogout} myTeam={myTeam} myPinHash={myPinHash} isGuest={isGuest} />;
+
+    if (screen === 'pitches') return (
+      <PitchHome onEnter={handleEnterPitch} user={currentUser} onLogout={handleLogout} onSetupAdmin={handleSetupAdmin} />
+    );
+
+    if (screen === 'join') return (
+      <TeamClaimScreen pitch={currentPitch} user={currentUser}
+        onClaimed={handleClaimed} onBack={handleLeave}
+        onGuest={handleGuestEnter} onAdmin={handleAdminEnter} />
+    );
+
+    if (screen === 'adminSetup') return (
+      <AdminSetupScreen pitch={currentPitch} onDone={(pitch)=>{
+        setCurrentPitch(pitch); setIsAdmin(true);
+        try { localStorage.setItem('tb_admin_' + pitch.id, '1'); } catch {}
+        setScreen('app');
+      }} onBack={handleLeave} sbGet={sbGet} sbSet={sbSet} hashPw={hashPw} />
+    );
+
+    if (screen === 'app') return (
+      <App pitch={currentPitch} onLeave={handleLeave} user={currentUser}
+        onLogout={handleLogout} myTeam={myTeam} myPinHash={myPinHash}
+        isGuest={isGuest} isAdmin={isAdmin} />
+    );
   } catch(e) {
     return <div style={{minHeight:"100vh",background:"#080C14",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16,padding:24,fontFamily:"Barlow Condensed,sans-serif"}}>
       <div style={{fontSize:48}}>⚠️</div>
-      <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,color:"#FF3D5A",fontWeight:700}}>Something went wrong</div>
-      <div style={{color:"#4A5E78",fontSize:13,textAlign:"center"}}>{e.message}</div>
-      <button onClick={()=>{localStorage.clear();window.location.reload();}} style={{background:"#F5A623",border:"none",borderRadius:8,padding:"10px 20px",color:"#080C14",fontWeight:700,fontFamily:"Barlow Condensed,sans-serif",fontSize:14,cursor:"pointer",marginTop:8}}>CLEAR & RELOAD</button>
+      <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,color:"#FF3D5A",fontWeight:700}}>CRASH: {e.message}</div>
+      <button onClick={()=>{localStorage.clear();window.location.reload();}} style={{background:"#F5A623",border:"none",borderRadius:8,padding:"10px 20px",color:"#080C14",fontWeight:700,fontFamily:"Barlow Condensed,sans-serif",fontSize:14,cursor:"pointer",marginTop:8}}>CLEAR AND RELOAD</button>
     </div>;
   }
 }
+
 
 export default Root;
