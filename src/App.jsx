@@ -1292,7 +1292,9 @@ function TeamClaimScreen({ pitch, user, onClaimed, onBack, onGuest, onAdmin, gue
     if (entry.claimedBy && entry.claimedBy !== user.email) { setErr("This Team ID is already claimed by another player."); setLoading(false); return; }
     // Find team details
     const teams = await sbGet(pitch.id + "_teams") || [];
-    const team = teams.find(t => t.id === entry.teamRef);
+    // Find team by teamRef, or fall back to matching key (t0, t1 etc = team index)
+    const identityKey = Object.keys(identity).find(k => identity[k].teamId === teamIdInput.trim().toUpperCase());
+    const team = teams.find(t => t.id === entry.teamRef) || teams.find(t => t.id === identityKey);
     if (!team) { setErr("Team not found. Contact admin."); setLoading(false); return; }
     setClaimedTeamInfo({...team, teamId: entry.teamId});
     setStep(2);
