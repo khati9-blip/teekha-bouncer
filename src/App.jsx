@@ -1563,7 +1563,7 @@ function ChatWindow({ myTeam, teams, unlocked, withPassword, storeGet, storeSet,
 
 
 function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, isGuest, isAdmin }) {
-  const [page, setPage] = useState("setup");
+  const [page, setPage] = useState(() => { try { return localStorage.getItem("tb_page_" + _pitchId) || "setup"; } catch { return "setup"; } });
   const [teams, setTeams] = useState([]);
   const [players, setPlayers] = useState([]);
   const [assignments, setAssignments] = useState({});
@@ -1963,7 +1963,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
 
   const unreadNotifCount = notifications.filter(n => n.ts > notifLastRead).length;
 
-  const nav=(pg)=>{setPage(pg);storeSet("page",pg);};
+  const nav=(pg)=>{setPage(pg);storeSet("page",pg);try{localStorage.setItem("tb_page_"+_pitchId,pg);}catch{}};
   const upd=(setter,key)=>(val)=>{setter(val);storeSet(key,val);};
   const updTeams=upd(setTeams,"teams"),updAssign=upd(setAssignments,"assignments"),
         updMatches=upd(setMatches,"matches"),updCaptains=upd(setCaptains,"captains"),
