@@ -1172,6 +1172,14 @@ function SplashScreen({ onLogin }) {
             style={{width:"100%",background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:14,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:16,cursor:loading?"not-allowed":"pointer",opacity:loading?0.7:1,letterSpacing:1}}>
             {loading ? "PLEASE WAIT..." : mode==='login' ? "SIGN IN" : "CREATE ACCOUNT"}
           </button>
+          {mode==='login' && (
+            <div style={{textAlign:"center",marginTop:12}}>
+              <button onClick={()=>{setMode('forgot');setErr('');setPw('');setCodeSent(false);setResetCode('');}}
+                style={{background:"none",border:"none",color:"#FF3D5A",fontSize:12,cursor:"pointer",textDecoration:"underline",fontFamily:"Barlow Condensed,sans-serif"}}>
+                Forgot password?
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Toggle */}
