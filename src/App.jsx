@@ -4279,21 +4279,21 @@ function App({ pitch, onLeave, user, onLogout, myTeam, myPinHash, isGuest, isAdm
                 {pendingVote && <span style={{width:8,height:8,background:"#FF3D5A",borderRadius:"50%",flexShrink:0}} />}
               </button>
 
-              {/* Guest Access toggle - admin only */}
-              {unlocked && (
+              {/* Guest Access toggle - always visible to admin */}
+              {isAdmin && (
                 <div style={{padding:"8px 14px 0"}}>
                   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",background:"#080C14",borderRadius:10,border:"1px solid #1E2D45"}}>
                     <div>
                       <div style={{fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,color:"#E2EAF4"}}>👁 Guest Access</div>
                       <div style={{fontSize:10,color:"#4A5E78",marginTop:2}}>Allow guests to view this pitch</div>
                     </div>
-                    <button onClick={()=>withPassword(async()=>{
+                    <button onClick={async()=>{
                       const now = !guestAllowed;
                       const pws = await sbGet("pitches") || [];
                       const updated = pws.map(p=>p.id===pitch.id?{...p,guestAllowed:now}:p);
                       await sbSet("pitches", updated);
                       setGuestAllowed(now);
-                    })} style={{background:"none",border:"none",cursor:"pointer",padding:0,flexShrink:0}}>
+                    }} style={{background:"none",border:"none",cursor:"pointer",padding:0,flexShrink:0}}>
                       <span style={{width:44,height:24,borderRadius:12,background:guestAllowed?"#2ECC71":"#1E2D45",position:"relative",transition:"background 0.2s",display:"inline-block"}}>
                         <span style={{position:"absolute",top:3,left:guestAllowed?23:3,width:18,height:18,borderRadius:"50%",background:"#fff",transition:"left 0.2s",display:"block"}} />
                       </span>
