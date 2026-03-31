@@ -1334,7 +1334,7 @@ function TeamClaimScreen({ pitch, user, onClaimed, onBack, onGuest, onAdmin, gue
     }
     // Migrate: save as adminHash for future logins
     if (!adminHash) await sbSet(pitch.id + "_adminHash", h);
-    try { localStorage.setItem("tb_admin_" + pitch.id, "1"); } catch {}
+    try { localStorage.setItem('tb_admin_' + pitch.id, '1'); localStorage.setItem('tb_pitch', JSON.stringify(pitch)); } catch {}
     // Save admin email to Supabase for cross-device recognition
     await sbSet(pitch.id + "_adminEmail", user.email);
     onAdmin();
@@ -4506,6 +4506,8 @@ function Root() {
   const handleEnterPitch = async (pitch) => {
     _pitchId = pitch.id;
     setCurrentPitch(pitch);
+    // Save pitch to localStorage for refresh restoration
+    try { localStorage.setItem('tb_pitch', JSON.stringify(pitch)); } catch {}
     // Clear legacy keys
     try { localStorage.removeItem('tb_myteam'); localStorage.removeItem('tb_pinHash'); localStorage.removeItem('tb_skipped'); } catch {}
     // Guests always see 3-option screen
