@@ -2805,9 +2805,9 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
 
   const navItems=[
     {id:"draft",label:"Draft",icon:"📋",disabled:teams.length===0},
-    {id:"matches",label:"Matches",icon:"🏏",disabled:players.length===0},
+    {id:"matches",label:"Matches",icon:"🏏"},
     {id:"transfer",label:"Transfer",icon:"🔄",disabled:teams.length===0},
-    {id:"results",label:"Results",icon:"📊",disabled:teams.length===0||matches.length===0},
+    {id:"results",label:"Results",icon:"📊"},
     {id:"leaderboard",label:"Board",icon:"🏆",disabled:teams.length===0},
   ];
 
