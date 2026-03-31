@@ -1915,7 +1915,8 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
         if (!m?.matchId) return;
         const existing = updated.find(x => x.cdMatchId === m.matchId || x.cricbuzzId === m.matchId);
         const isLive = !!live;
-        const isComplete = m?.status === "Complete" || m?.matchStatus === "complete";
+        const isComplete = m?.status === "Complete" || m?.matchStatus === "complete" ||
+          (m?.startDate && (Date.now() - parseInt(m.startDate)) > 4*60*60*1000 && !isLive);
         const status = isComplete ? "completed" : isLive ? "live" : "upcoming";
 
         if (existing) {
