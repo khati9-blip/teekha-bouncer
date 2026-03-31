@@ -1277,6 +1277,16 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
     return () => clearInterval(t);
   }, []);
 
+  React.useEffect(() => {
+    const id = "tb-pulse-style";
+    if (!document.getElementById(id)) {
+      const s = document.createElement("style");
+      s.id = id;
+      s.textContent = "@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}";
+      document.head.appendChild(s);
+    }
+  }, []);
+
   const createPitch = async () => {
     if (!newName.trim()) { setErr("Enter a pitch name"); return; }
     if (pitches.length >= 1000) { setErr("Max 1000 pitches"); return; }
@@ -1425,7 +1435,7 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
         )}
       </div>
 
-      <style dangerouslySetInnerHTML={{__html:'@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}'}} />
+
     </div>
   </div>
   );
