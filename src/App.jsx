@@ -1324,14 +1324,16 @@ function TeamClaimScreen({ pitch, user, onClaimed, onBack, onGuest, onAdmin }) {
     if (!adminPw.trim()) { setErr("Enter admin password"); return; }
     setLoading(true); setErr("");
     const h = await hashPw(adminPw);
-    // Check new per-pitch adminHash first, then fall back to old pitch.hash
-    const newHash = await sbGet(pitch.id + "_adminHash");
-    const oldHash = pitch.hash;
-    if (h !== newHash && h !== oldHash) { setErr("Wrong admin password"); setLoading(false); return; }
-    // If matched old hash, migrate to new storage
-    if (h === oldHash && h !== newHash) {
-      await sbSet(pitch.id + "_adminHash", h);
+    // pwhash is the real admin password stored inside the pitch (used for all admin actions)
+    const pwhash = await sbGet(pitch.id + "_pwhash") || await sbGet("p1_pwhash");
+    // Also check pitch.hash (old pitch room password) and adminHash as fallbacks
+    const adminHash = await sbGet(pitch.id + "_adminHash");
+    const oldPitchHash = pitch.hash;
+    if (h !== pwhash && h !== adminHash && h !== oldPitchHash) {
+      setErr("Wrong admin password"); setLoading(false); return;
     }
+    // Migrate: save as adminHash for future logins
+    if (!adminHash) await sbSet(pitch.id + "_adminHash", h);
     try { localStorage.setItem("tb_admin_" + pitch.id, "1"); } catch {}
     onAdmin();
     setLoading(false);
@@ -4164,7 +4166,7 @@ function AdminSetupScreen({ pitch, onDone, onBack, sbGet, sbSet, hashPw }) {
   const [alreadySet, setAlreadySet] = useState(false);
   React.useEffect(() => {
     (async () => {
-      const existing = await sbGet(pitch.id + "_adminHash") || pitch.hash;
+      const existing = await sbGet(pitch.id + "_pwhash") || await sbGet("p1_pwhash") || await sbGet(pitch.id + "_adminHash") || pitch.hash;
       if (existing) setAlreadySet(true);
       setChecking(false);
     })();
@@ -4206,9 +4208,9 @@ function AdminSetupScreen({ pitch, onDone, onBack, sbGet, sbSet, hashPw }) {
                 if(e.key==="Enter"){
                   setLoading(true);setErr("");
                   const h=await hashPw(pw);
-                  const stored=await sbGet(pitch.id+"_adminHash")||pitch.hash;
+                  const stored=await sbGet(pitch.id+"_pwhash")||await sbGet("p1_pwhash")||await sbGet(pitch.id+"_adminHash")||pitch.hash;
                   if(h!==stored){setErr("Wrong password");setLoading(false);return;}
-                  if(h===pitch.hash&&h!==await sbGet(pitch.id+"_adminHash")) await sbSet(pitch.id+"_adminHash",h);
+                  if(!await sbGet(pitch.id+"_adminHash")) await sbSet(pitch.id+"_adminHash",h);
                   onDone({...pitch,hash:h});setLoading(false);
                 }
               }}
@@ -4221,7 +4223,7 @@ function AdminSetupScreen({ pitch, onDone, onBack, sbGet, sbSet, hashPw }) {
               if(h!==stored){setErr("Wrong password");setLoading(false);return;}
               onDone({...pitch,hash:h});setLoading(false);
             }} disabled={loading}
-              style={{width:"100%",background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:13,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:16,cursor:"pointer"}}>
+              style={{width:"100%",background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:13,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:16,cursor:"pointer",letterSpacing:1}}>
               {loading?"VERIFYING…":"ENTER AS ADMIN →"}
             </button>
           </div>
