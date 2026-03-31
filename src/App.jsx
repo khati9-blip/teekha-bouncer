@@ -1822,9 +1822,13 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
         const timer = setTimeout(()=>controller.abort(), ms);
         return fetch(url, {signal:controller.signal}).then(r=>r.json()).catch(()=>({})).finally(()=>clearTimeout(timer));
       };
-      const [scheduleRes, liveRes] = await Promise.all([
+      const tournament = tournaments.find(t => t.id === tournamentId);
+      const seriesId = tournament?.seriesId;
+
+      const [scheduleRes, liveRes, seriesMatchesRes] = await Promise.all([
         fetchWithTimeout("/api/cricketdata?path=cricket-schedule"),
         fetchWithTimeout("/api/cricketdata?path=currentMatches"),
+        seriesId ? fetchWithTimeout("/api/cricketdata?path=cricket-match-list&seriesid="+seriesId) : Promise.resolve({}),
       ]);
       const seriesRes = {};
 
@@ -1872,6 +1876,17 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
           });
         });
       });
+
+      // Also add from series-specific endpoint (completed matches)
+      const seriesMatchList = seriesMatchesRes?.response || [];
+      if (Array.isArray(seriesMatchList)) {
+        const existingFoundIds = new Set(found.map(f => f.info?.matchId).filter(Boolean));
+        seriesMatchList.forEach(m => {
+          if (!m?.matchId || existingFoundIds.has(m.matchId)) return;
+          const live = liveMap[String(m.matchId)];
+          found.push({ info: m, live });
+        });
+      }
 
       if (found.length === 0) {
         // Show available series names to help admin find correct name
@@ -2490,12 +2505,27 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
         }
         return found;
       };
+      // Also fetch series-specific schedule if seriesId available
+      const tournament = tournaments.find(t => t.id === tournamentId);
+      const seriesId = tournament?.seriesId;
 
-      const [recentData, upcomingData, liveData] = await Promise.all([
+      const [recentData, upcomingData, liveData, seriesData] = await Promise.all([
         fetch("/api/cricbuzz?path="+encodeURIComponent("matches/v1/recent")).then(r=>r.json()).catch(()=>({})),
         fetch("/api/cricbuzz?path="+encodeURIComponent("matches/v1/upcoming")).then(r=>r.json()).catch(()=>({})),
         fetch("/api/cricbuzz?path="+encodeURIComponent("matches/v1/live")).then(r=>r.json()).catch(()=>({})),
+        seriesId ? fetch("/api/cricbuzz?path="+encodeURIComponent("series/v1/"+seriesId+"/matches")).then(r=>r.json()).catch(()=>({})) : Promise.resolve({}),
       ]);
+
+      const extractFromSeries = (data) => {
+        const found = [];
+        if (!data || !data.matchDetails) return found;
+        for (const md of (data.matchDetails || [])) {
+          for (const m of (md.matchDetailsMap?.match || [])) {
+            if (m.matchInfo) found.push({info: m.matchInfo, score: m.matchScore});
+          }
+        }
+        return found;
+      };
 
       // Merge all three sources — "Complete" state always wins over "In Progress"
       const matchMap = new Map();
