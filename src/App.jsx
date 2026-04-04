@@ -3565,8 +3565,8 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                                     {expandedMatchId===match.id && (
                                       <div style={{borderTop:"1px solid #1E2D45",padding:"10px 14px",display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
                                         {!isGuest && <button onClick={()=>setCaptainMatch(match)}
-                                          style={{background:"#4F8EF722",border:"1px solid #4F8EF744",color:"#4F8EF7",borderRadius:7,padding:"6px 12px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:12}}>
-                                          👑 SET C/VC
+                                          style={{background:captains[match.id+"_locked"]?"#FF3D5A22":"#4F8EF722",border:"1px solid "+(captains[match.id+"_locked"]?"#FF3D5A44":"#4F8EF744"),color:captains[match.id+"_locked"]?"#FF3D5A":"#4F8EF7",borderRadius:7,padding:"6px 12px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:12}}>
+                                          {captains[match.id+"_locked"]?"🔒 C/VC":"👑 SET C/VC"}
                                         </button>}
                                         {completed && unlocked && (
                                           <button onClick={()=>withPassword(()=>setSmartStatsMatch(match))}
@@ -3597,8 +3597,8 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                                           📊 {isSynced?"EDIT STATS":"SYNC STATS"}
                                         </button>
                                         {!isGuest && <button onClick={()=>setCaptainMatch(match)}
-                                          style={{background:"#4F8EF722",border:"1px solid #4F8EF744",color:"#4F8EF7",borderRadius:7,padding:"6px 12px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:12}}>
-                                          👑 SET C/VC
+                                          style={{background:captains[match.id+"_locked"]?"#FF3D5A22":"#4F8EF722",border:"1px solid "+(captains[match.id+"_locked"]?"#FF3D5A44":"#4F8EF744"),color:captains[match.id+"_locked"]?"#FF3D5A":"#4F8EF7",borderRadius:7,padding:"6px 12px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:12}}>
+                                          {captains[match.id+"_locked"]?"🔒 C/VC":"👑 SET C/VC"}
                                         </button>}
                                       </div>
                                     )}
@@ -4303,45 +4303,91 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
         )}
 
         {/* CAPTAIN PICKER MODAL */}
-        {captainMatch && (
+        {captainMatch && (()=>{
+          const isLocked = !!captains[captainMatch.id+"_locked"];
+          return (
           <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.96)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,padding:16,fontFamily:"Barlow Condensed,sans-serif"}}>
             <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #1E2D45",padding:24,width:"100%",maxWidth:480,maxHeight:"85vh",overflowY:"auto"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-                <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:"#F5A623",letterSpacing:2}}>👑 SET C / VC</div>
+                <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:isLocked?"#FF3D5A":"#F5A623",letterSpacing:2}}>
+                  {isLocked?"🔒 C/VC LOCKED":"👑 SET C / VC"}
+                </div>
                 <button onClick={()=>setCaptainMatch(null)} style={{background:"transparent",border:"none",color:"#4A5E78",fontSize:18,cursor:"pointer"}}>✕</button>
               </div>
-              <div style={{fontSize:12,color:"#4A5E78",marginBottom:16}}>M{captainMatch.matchNum} — {captainMatch.team1} vs {captainMatch.team2}</div>
+              <div style={{fontSize:12,color:"#4A5E78",marginBottom:isLocked?8:16}}>M{captainMatch.matchNum} — {captainMatch.team1} vs {captainMatch.team2}</div>
+              {isLocked && (
+                <div style={{background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:8,padding:"8px 12px",marginBottom:14,fontSize:12,color:"#FF3D5A"}}>
+                  🔒 Captain/VC selections are locked by admin — no further changes allowed.
+                </div>
+              )}
               {teams.map(team => {
                 const cap = captains[captainMatch.id+"_"+team.id] || {};
                 const teamPlayers = players.filter(p => assignments[p.id] === team.id);
+                const capName = teamPlayers.find(p=>p.id===cap.captain)?.name || "—";
+                const vcName = teamPlayers.find(p=>p.id===cap.vc)?.name || "—";
                 return (
                   <div key={team.id} style={{background:"#0E1521",borderRadius:10,border:"1px solid "+team.color+"33",padding:14,marginBottom:10}}>
                     <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:14,color:team.color,marginBottom:10}}>{team.name}</div>
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-                      {["captain","vc"].map(role => (
-                        <div key={role}>
-                          <div style={{fontSize:10,color:"#4A5E78",letterSpacing:1,marginBottom:6}}>{role==="captain"?"⭐ CAPTAIN (2×)":"🥈 VICE CAPTAIN (1.5×)"}</div>
-                          <select value={cap[role]||""} onChange={e=>{
-                            const newCap = {...cap,[role]:e.target.value};
-                            const key = captainMatch.id+"_"+team.id;
-                            const updated = {...captains,[key]:newCap};
-                            updCaptains(updated);
-                          }} style={{width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"7px 10px",color:"#E2EAF4",fontSize:13,fontFamily:"Barlow Condensed,sans-serif",cursor:"pointer",outline:"none"}}>
-                            <option value="">— None —</option>
-                            {teamPlayers.map(p => (
-                              <option key={p.id} value={p.id} disabled={role==="vc"&&cap.captain===p.id||role==="captain"&&cap.vc===p.id}>{p.name}</option>
-                            ))}
-                          </select>
+                    {isLocked ? (
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                        <div style={{background:"#080C14",borderRadius:8,padding:"8px 12px"}}>
+                          <div style={{fontSize:10,color:"#4A5E78",letterSpacing:1,marginBottom:4}}>CAPTAIN (2x)</div>
+                          <div style={{fontWeight:700,color:"#F5A623",fontSize:14}}>{capName}</div>
                         </div>
-                      ))}
-                    </div>
+                        <div style={{background:"#080C14",borderRadius:8,padding:"8px 12px"}}>
+                          <div style={{fontSize:10,color:"#4A5E78",letterSpacing:1,marginBottom:4}}>VICE CAPTAIN (1.5x)</div>
+                          <div style={{fontWeight:700,color:"#94A3B8",fontSize:14}}>{vcName}</div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                        {["captain","vc"].map(role => (
+                          <div key={role}>
+                            <div style={{fontSize:10,color:"#4A5E78",letterSpacing:1,marginBottom:6}}>{role==="captain"?"⭐ CAPTAIN (2×)":"🥈 VICE CAPTAIN (1.5×)"}</div>
+                            <select value={cap[role]||""} onChange={e=>{
+                              const newCap = {...cap,[role]:e.target.value};
+                              const key = captainMatch.id+"_"+team.id;
+                              const updated = {...captains,[key]:newCap};
+                              updCaptains(updated);
+                            }} style={{width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"7px 10px",color:"#E2EAF4",fontSize:13,fontFamily:"Barlow Condensed,sans-serif",cursor:"pointer",outline:"none"}}>
+                              <option value="">— None —</option>
+                              {teamPlayers.map(p => (
+                                <option key={p.id} value={p.id} disabled={role==="vc"&&cap.captain===p.id||role==="captain"&&cap.vc===p.id}>{p.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 );
               })}
-              <button onClick={()=>setCaptainMatch(null)} style={{width:"100%",background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:10,padding:12,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:15,cursor:"pointer",marginTop:4}}>SAVE & CLOSE</button>
+              <div style={{display:"flex",gap:8,marginTop:4}}>
+                {!isLocked && unlocked && (
+                  <button onClick={()=>withPassword(()=>{
+                    const updated = {...captains,[captainMatch.id+"_locked"]:true};
+                    updCaptains(updated);
+                  })} style={{flex:1,background:"#FF3D5A22",border:"1px solid #FF3D5A44",borderRadius:10,padding:12,color:"#FF3D5A",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:14,cursor:"pointer"}}>
+                    🔒 LOCK C/VC
+                  </button>
+                )}
+                {isLocked && unlocked && (
+                  <button onClick={()=>withPassword(()=>{
+                    const updated = {...captains};
+                    delete updated[captainMatch.id+"_locked"];
+                    updCaptains(updated);
+                  })} style={{flex:1,background:"#2ECC7122",border:"1px solid #2ECC7133",borderRadius:10,padding:12,color:"#2ECC71",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:14,cursor:"pointer"}}>
+                    🔓 UNLOCK C/VC
+                  </button>
+                )}
+                <button onClick={()=>setCaptainMatch(null)} style={{flex:2,background:"#F5A623",border:"none",borderRadius:10,padding:12,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:15,cursor:"pointer"}}>
+                  {isLocked?"CLOSE":"SAVE & CLOSE"}
+                </button>
+              </div>
             </div>
           </div>
-        )}
+          );
+        })()}
 
         {/* ADMIN CLAIM TEAM MODAL */}
         {adminClaimModal && adminClaimTeam && (
