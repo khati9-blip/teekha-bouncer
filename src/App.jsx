@@ -2130,6 +2130,17 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
         updMatches=upd(setMatches,"matches"),updCaptains=upd(setCaptains,"captains"),
         updPoints=upd(setPoints,"points");
 
+  const saveHighlights = async (updated) => {
+    setMyHighlights(updated);
+    const key = "hl_" + (user?.email||"").replace(/[@.]/g,"_");
+    await storeSet(key, updated);
+  };
+  const saveNotes = async (updated) => {
+    setMyNotes(updated);
+    const key = "notes_" + (user?.email||"").replace(/[@.]/g,"_");
+    await storeSet(key, updated);
+  };
+
   const toggleSafePlayer = (teamId, pid) => {
     withPassword(() => {
       const current = safePlayers[teamId] || [];
