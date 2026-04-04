@@ -539,14 +539,15 @@ function EditPlayerModal({ player, onSave, onAdd, onClose }) {
   const [name, setName] = useState(player.name || "");
   const [iplTeam, setIplTeam] = useState(player.iplTeam || "");
   const [role, setRole] = useState(player.role || "Batsman");
+  const [tier, setTier] = useState(player.tier || "");
   const IPL_FRANCHISE = ["CSK","MI","RCB","KKR","SRH","RR","PBKS","DC","GT","LSG"];
 
   const submit = () => {
     if (!name.trim()) { alert("Enter player name"); return; }
     if (!iplTeam.trim()) { alert("Select IPL franchise"); return; }
     const id = name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") + "-" + Date.now();
-    if (isNew) onAdd({ id, name: name.trim(), iplTeam: iplTeam.trim(), role });
-    else onSave({ ...player, name: name.trim(), iplTeam: iplTeam.trim(), role });
+    if (isNew) onAdd({ id, name: name.trim(), iplTeam: iplTeam.trim(), role, tier });
+    else onSave({ ...player, name: name.trim(), iplTeam: iplTeam.trim(), role, tier });
   };
 
   return (
@@ -564,10 +565,20 @@ function EditPlayerModal({ player, onSave, onAdd, onClose }) {
             {IPL_FRANCHISE.map(t=><option key={t} value={t}>{t}</option>)}
           </select>
         </div>
-        <div style={{marginBottom:24}}>
+        <div style={{marginBottom:14}}>
           <div style={{fontSize:11,color:"#4A5E78",letterSpacing:1,marginBottom:6}}>ROLE</div>
           <select value={role} onChange={e=>setRole(e.target.value)} style={{width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"10px 14px",color:"#E2EAF4",fontSize:15,fontFamily:"Barlow Condensed,sans-serif",outline:"none"}}>
             {["Batsman","Bowler","All-Rounder","Wicket-Keeper"].map(r=><option key={r} value={r}>{r}</option>)}
+          </select>
+        </div>
+        <div style={{marginBottom:24}}>
+          <div style={{fontSize:11,color:"#4A5E78",letterSpacing:1,marginBottom:6}}>TIER</div>
+          <select value={tier} onChange={e=>setTier(e.target.value)} style={{width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"10px 14px",color:"#E2EAF4",fontSize:15,fontFamily:"Barlow Condensed,sans-serif",outline:"none"}}>
+            <option value="">— No Tier —</option>
+            <option value="platinum">🏅 Platinum</option>
+            <option value="gold">🥇 Gold</option>
+            <option value="silver">🥈 Silver</option>
+            <option value="bronze">🥉 Bronze</option>
           </select>
         </div>
         <div style={{display:"flex",gap:10}}>
@@ -1744,7 +1755,8 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   const [pendingAction, setPendingAction] = useState(null);
   const [editPlayer, setEditPlayer] = useState(null); // player being edited
   const [smartStatsMatch, setSmartStatsMatch] = useState(null);
-  const [squadView, setSquadView] = useState(false); // toggle squad view
+  const [squadView, setSquadView] = useState(false);
+  const [selectedBulk, setSelectedBulk] = useState([]); // toggle squad view
   const [teamFilter, setTeamFilter] = useState(null); // filter by fantasy team
   const [sortOrder, setSortOrder] = useState('default'); // default | az | za
   const [teamLogos, setTeamLogos] = useState({});
@@ -3282,7 +3294,13 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
                             <div style={{minWidth:0,flex:1}}>
                               <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                                {unlocked && <input type="checkbox" checked={selectedBulk.includes(p.id)} onChange={e=>setSelectedBulk(prev=>e.target.checked?[...prev,p.id]:prev.filter(x=>x!==p.id))} style={{width:14,height:14,cursor:"pointer",accentColor:"#F5A623",flexShrink:0}} />}
                                 <span style={{fontWeight:700,fontSize:14,color:"#E2EAF4"}}>{p.name}</span>
+                                {p.tier && <span style={{fontSize:9,fontWeight:800,letterSpacing:1,padding:"2px 6px",borderRadius:4,fontFamily:"Barlow Condensed,sans-serif",textTransform:"uppercase",
+  background:p.tier==="platinum"?"#4A5E7833":p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":"#CD7F3222",
+  border:"1px solid "+(p.tier==="platinum"?"#4A5E7866":p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":"#CD7F3255"),
+  color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32"
+}}>{p.tier==="platinum"?"PLAT":p.tier==="gold"?"GOLD":p.tier==="silver"?"SILV":"BRNZ"}</span>}
                                 {isAssigned&&isPlayerSafeForTeam(assignments[p.id],p.id)&&<span style={{background:"#2ECC7122",color:"#2ECC71",border:"1px solid #2ECC7144",borderRadius:10,fontSize:9,padding:"1px 5px",fontWeight:700}}>🛡️</span>}
                               </div>
                               <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>{p.iplTeam} • <span style={{color:ROLE_COLORS[p.role]||"#94A3B8"}}>{p.role}</span>{isAssigned&&<span style={{marginLeft:6,color:aTeam?.color,fontWeight:700}}>{aTeam?.name}</span>}</div>
