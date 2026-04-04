@@ -2727,7 +2727,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
               const from = new Date(o.from);
               const to = o.to ? new Date(o.to) : new Date('2099-01-01');
               return matchDate >= from && matchDate <= to;
-            });
+            }) || (assignments[pid]===tid && periods.some(o=>o.teamId===tid));
         if(!owned) continue;
         const cap=captains[`${mid}_${tid}`]||{};
         let pts=d.base;
