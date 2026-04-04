@@ -3286,6 +3286,23 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                     {teamFilter&&teamFilter!=="unassigned"&&teamLogos[teamFilter]&&(
                       <img src={teamLogos[teamFilter]} style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:280,opacity:0.06,pointerEvents:"none",zIndex:0,objectFit:"contain"}} />
                     )}
+                    {/* Bulk tier bar */}
+                    {unlocked && selectedBulk.length > 0 && (
+                      <div style={{background:"#0E1521",border:"1px solid #F5A62344",borderRadius:10,padding:"10px 14px",marginBottom:10,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                        <div style={{fontSize:12,color:"#F5A623",fontWeight:700,minWidth:60}}>{selectedBulk.length} selected</div>
+                        {[["platinum","PLATINUM","#B0BEC5","#4A5E7833","#4A5E7866"],["gold","GOLD","#F5A623","#F5A62322","#F5A62366"],["silver","SILVER","#94A3B8","#94A3B822","#94A3B855"],["bronze","BRONZE","#CD7F32","#CD7F3222","#CD7F3255"]].map(([t,label,col,bg,br])=>(
+                          <button key={t} onClick={()=>{
+                            const updated=players.map(p=>selectedBulk.includes(p.id)?{...p,tier:t}:p);
+                            setPlayers(updated);storeSet("players",updated);setSelectedBulk([]);
+                          }} style={{background:bg,border:"1px solid "+br,borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:11,fontWeight:800,fontFamily:"Barlow Condensed,sans-serif",color:col,letterSpacing:1}}>{label}</button>
+                        ))}
+                        <button onClick={()=>{
+                          const updated=players.map(p=>selectedBulk.includes(p.id)?{...p,tier:""}:p);
+                          setPlayers(updated);storeSet("players",updated);setSelectedBulk([]);
+                        }} style={{background:"transparent",border:"1px solid #1E2D45",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:11,fontFamily:"Barlow Condensed,sans-serif",color:"#4A5E78"}}>CLEAR</button>
+                        <button onClick={()=>setSelectedBulk([])} style={{background:"transparent",border:"none",color:"#4A5E78",cursor:"pointer",fontSize:11,marginLeft:"auto"}}>✕ deselect</button>
+                      </div>
+                    )}
                     {filteredPlayers.map(p=>{
                       const aTeam=teams.find(t=>t.id===assignments[p.id]);
                       const isAssigned=!!assignments[p.id];
