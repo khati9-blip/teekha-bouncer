@@ -1779,7 +1779,11 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   const [sortOrder, setSortOrder] = useState('default'); // default | az | za
   const [teamLogos, setTeamLogos] = useState({});
   const [safePlayers, setSafePlayers] = useState({}); // {teamId: [pid,pid,pid]}
-  const [unsoldPool, setUnsoldPool] = useState([]); // manually managed unsold list
+  const [unsoldPool, setUnsoldPool] = useState([]);
+  const [myHighlights, setMyHighlights] = useState({});
+  const [myNotes, setMyNotes] = useState({});
+  const [editingNote, setEditingNote] = useState(null);
+  const [noteInput, setNoteInput] = useState(''); // manually managed unsold list
   const [draftTab, setDraftTab] = useState('players'); // players | unsold
   // ownershipLog: {pid: [{teamId, from: isoDate, to: isoDate|null}]}
   const [ownershipLog, setOwnershipLog] = useState({});
@@ -3179,18 +3183,42 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                         const p = players.find(x=>x.id===pid);
                         if(!p) return null;
                         return (
-                          <div key={pid} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:"#0E1521",borderRadius:8,border:"1px solid #1E2D4566"}}>
-                            <div style={{flex:1}}>
-                              <div style={{display:"flex",alignItems:"center",gap:5}}>
-                                <span style={{fontWeight:700,fontSize:14,color:"#E2EAF4"}}>{p.name}</span>
+                          <div key={pid} style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",background:myHighlights[pid]?"#F5A62311":"#0E1521",borderRadius:8,border:"1px solid "+(myHighlights[pid]?"#F5A62344":"#1E2D4566"),flexWrap:"wrap"}}>
+                            <div style={{flex:1,minWidth:0}}>
+                              <div style={{display:"flex",alignItems:"center",gap:5,flexWrap:"wrap"}}>
+                                <span style={{fontWeight:700,fontSize:14,color:myHighlights[pid]?"#F5A623":"#E2EAF4"}}>{p.name}</span>
                                 {p.tier&&<span style={{fontSize:9,fontWeight:800,letterSpacing:1,padding:"1px 5px",borderRadius:4,fontFamily:"Barlow Condensed,sans-serif",textTransform:"uppercase",background:p.tier==="platinum"?"#4A5E7833":p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":"#CD7F3222",border:"1px solid "+(p.tier==="platinum"?"#4A5E7866":p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":"#CD7F3255"),color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32"}}>{p.tier==="platinum"?"PLAT":p.tier==="gold"?"GOLD":p.tier==="silver"?"SILV":"BRNZ"}</span>}
                               </div>
-                              <div style={{fontSize:12,color:"#4A5E78"}}>{p.iplTeam} • {p.role}</div>
+                              <div style={{fontSize:11,color:"#4A5E78"}}>{p.iplTeam} • {p.role}</div>
+                              {myNotes[pid] && editingNote!==pid && <div style={{fontSize:11,color:"#F5A623",marginTop:4,fontStyle:"italic",background:"#F5A62311",borderRadius:4,padding:"3px 8px",display:"inline-block"}}>"{myNotes[pid]}"</div>}
+                              {editingNote===pid && (
+                                <div style={{display:"flex",gap:6,marginTop:6}}>
+                                  <input autoFocus value={noteInput} onChange={e=>setNoteInput(e.target.value)}
+                                    onKeyDown={async e=>{if(e.key==="Enter"){const updated={...myNotes,[pid]:noteInput.trim()};if(!noteInput.trim()){delete updated[pid];}await saveNotes(updated);setEditingNote(null);}if(e.key==="Escape")setEditingNote(null);}}
+                                    placeholder="Your private note..." maxLength={100}
+                                    style={{flex:1,background:"#080C14",border:"1px solid #F5A62344",borderRadius:6,padding:"4px 8px",color:"#E2EAF4",fontSize:12,fontFamily:"Barlow Condensed,sans-serif",outline:"none"}} />
+                                  <button onClick={async()=>{const updated={...myNotes,[pid]:noteInput.trim()};if(!noteInput.trim()){delete updated[pid];}await saveNotes(updated);setEditingNote(null);}}
+                                    style={{background:"#F5A623",border:"none",borderRadius:6,padding:"4px 10px",color:"#080C14",fontWeight:800,fontSize:12,cursor:"pointer"}}>SAVE</button>
+                                  <button onClick={()=>setEditingNote(null)} style={{background:"transparent",border:"1px solid #1E2D45",borderRadius:6,padding:"4px 8px",color:"#4A5E78",fontSize:12,cursor:"pointer"}}>✕</button>
+                                </div>
+                              )}
                             </div>
-                            <button onClick={()=>removeFromUnsoldPool(pid)}
-                              style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:"#FF3D5A",borderRadius:6,padding:"5px 10px",cursor:"pointer",fontSize:12,fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>
-                              REMOVE
-                            </button>
+                            <div style={{display:"flex",gap:6,alignItems:"center",flexShrink:0}}>
+                              <button onClick={async()=>{const updated={...myHighlights};updated[pid]?delete updated[pid]:updated[pid]=true;await saveHighlights(updated);}}
+                                title={myHighlights[pid]?"Remove highlight":"Highlight player"}
+                                style={{background:myHighlights[pid]?"#F5A62333":"transparent",border:"1px solid "+(myHighlights[pid]?"#F5A62366":"#1E2D45"),borderRadius:6,padding:"5px 8px",cursor:"pointer",fontSize:14,lineHeight:1}}>
+                                {myHighlights[pid]?"⭐":"☆"}
+                              </button>
+                              <button onClick={()=>{setNoteInput(myNotes[pid]||"");setEditingNote(pid);}}
+                                title="Add private note"
+                                style={{background:myNotes[pid]?"#4F8EF722":"transparent",border:"1px solid "+(myNotes[pid]?"#4F8EF744":"#1E2D45"),borderRadius:6,padding:"5px 8px",cursor:"pointer",fontSize:13,lineHeight:1}}>
+                                📝
+                              </button>
+                              {unlocked && <button onClick={()=>removeFromUnsoldPool(pid)}
+                                style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:"#FF3D5A",borderRadius:6,padding:"5px 8px",cursor:"pointer",fontSize:11,fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>
+                                ✕
+                              </button>}
+                            </div>
                           </div>
                         );
                       })}
