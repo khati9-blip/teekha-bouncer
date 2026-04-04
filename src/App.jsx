@@ -2699,7 +2699,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
               const from = new Date(o.from);
               const to = o.to ? new Date(o.to) : new Date('2099-01-01');
               return matchDate >= from && matchDate <= to;
-            });
+            }) || (assignments[pid]===teamId && periods.some(o=>o.teamId===teamId));
         if(!owned) continue;
         const cap=captains[mid+"_"+teamId]||{};
         let pts=d.base;
