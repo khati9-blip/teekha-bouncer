@@ -517,7 +517,7 @@ export default function TransferWindow({
             const isMe = team.id === myTeamId;
             // Each team can edit their own releases freely — no lock needed
             // Admin (unlocked) sees all teams; non-admin only sees their own
-            const canEdit = isMe; // no lock required
+            const canEdit = isMe || unlocked; // own team OR admin can release
             const canSee = isMe || unlocked; // admins see all
             if (!canSee) return null;
 
