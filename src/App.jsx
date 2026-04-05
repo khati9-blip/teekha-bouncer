@@ -1330,12 +1330,14 @@ function ProposeRulesForm({ teams, eligibleVoters, onPropose, withPassword, tour
       <div style={{fontSize:11,color:"#4A5E78",marginBottom:16}}>All {eligibleVoters.length} claimed teams must approve for changes to take effect.</div>
       {sel("Transfer Window Start Day", transferDay, setTransferDay, days)}
       {sel("Transfer Window End Time", transferTime, setTransferTime, times)}
-      {sel("Snatch Window Start", snatchStart, setSnatchStart, days.map(d=>d+" 12:00 AM").concat(days.map(d=>d+" 12:00 PM")))}
-      {sel("Snatch Window End", snatchEnd, setSnatchEnd, days.map(d=>d+" 12:00 PM").concat(days.map(d=>d+" 6:00 PM")))}
-      {sel("Snatch Return Time", snatchReturn, setSnatchReturn, days.map(d=>d+" 11:58 PM").concat(days.map(d=>d+" 11:00 PM")))}
+      {(()=>{const am="12:00 AM",pm="12:00 PM",ep="6:00 PM",lp="11:58 PM",hp="11:00 PM";return(<>
+        {sel("Snatch Window Start",snatchStart,setSnatchStart,days.map(d=>d+" "+am).concat(days.map(d=>d+" "+pm)))}
+        {sel("Snatch Window End",snatchEnd,setSnatchEnd,days.map(d=>d+" "+pm).concat(days.map(d=>d+" "+ep)))}
+        {sel("Snatch Return Time",snatchReturn,setSnatchReturn,days.map(d=>d+" "+lp).concat(days.map(d=>d+" "+hp)))}
+      </>);})()}
       <div style={{display:"flex",gap:8,marginTop:4}}>
         <button onClick={()=>setOpen(false)} style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:10,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
-        <button onClick={()=>{onPropose({"Transfer Start":transferDay,"Transfer End":transferTime,"Snatch Window":snatchStart+" → "+snatchEnd,"Snatch Return":snatchReturn});setOpen(false);}} style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:10,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:14,cursor:"pointer"}}>SUBMIT FOR VOTE</button>
+        <button onClick={()=>{onPropose({"Transfer Start":transferDay,"Transfer End":transferTime,"Snatch Window":snatchStart+" to "+snatchEnd,"Snatch Return":snatchReturn});setOpen(false);}} style={{flex:2,background:"#F5A623",border:"none",borderRadius:8,padding:10,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:14,cursor:"pointer"}}>SUBMIT FOR VOTE</button>
       </div>
     </div>
   );
@@ -3998,12 +4000,14 @@ function ProposeRulesForm({ teams, eligibleVoters, onPropose, withPassword, tour
       <div style={{fontSize:11,color:"#4A5E78",marginBottom:16}}>All {eligibleVoters.length} claimed teams must approve for changes to take effect.</div>
       {sel("Transfer Window Start Day", transferDay, setTransferDay, days)}
       {sel("Transfer Window End Time", transferTime, setTransferTime, times)}
-      {sel("Snatch Window Start", snatchStart, setSnatchStart, days.map(d=>d+" 12:00 AM").concat(days.map(d=>d+" 12:00 PM")))}
-      {sel("Snatch Window End", snatchEnd, setSnatchEnd, days.map(d=>d+" 12:00 PM").concat(days.map(d=>d+" 6:00 PM")))}
-      {sel("Snatch Return Time", snatchReturn, setSnatchReturn, days.map(d=>d+" 11:58 PM").concat(days.map(d=>d+" 11:00 PM")))}
+      {(()=>{const am="12:00 AM",pm="12:00 PM",ep="6:00 PM",lp="11:58 PM",hp="11:00 PM";return(<>
+        {sel("Snatch Window Start",snatchStart,setSnatchStart,days.map(d=>d+" "+am).concat(days.map(d=>d+" "+pm)))}
+        {sel("Snatch Window End",snatchEnd,setSnatchEnd,days.map(d=>d+" "+pm).concat(days.map(d=>d+" "+ep)))}
+        {sel("Snatch Return Time",snatchReturn,setSnatchReturn,days.map(d=>d+" "+lp).concat(days.map(d=>d+" "+hp)))}
+      </>);})()}
       <div style={{display:"flex",gap:8,marginTop:4}}>
         <button onClick={()=>setOpen(false)} style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:10,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
-        <button onClick={()=>{onPropose({"Transfer Start":transferDay,"Transfer End":transferTime,"Snatch Window":snatchStart+" → "+snatchEnd,"Snatch Return":snatchReturn});setOpen(false);}} style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:10,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:14,cursor:"pointer"}}>SUBMIT FOR VOTE</button>
+        <button onClick={()=>{onPropose({"Transfer Start":transferDay,"Transfer End":transferTime,"Snatch Window":snatchStart+" to "+snatchEnd,"Snatch Return":snatchReturn});setOpen(false);}} style={{flex:2,background:"#F5A623",border:"none",borderRadius:8,padding:10,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:14,cursor:"pointer"}}>SUBMIT FOR VOTE</button>
       </div>
     </div>
   </div>
