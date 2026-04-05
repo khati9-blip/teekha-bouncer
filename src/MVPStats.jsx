@@ -17,29 +17,26 @@ function TierBadge({ tier }) {
   );
 }
 
-// Get current week boundaries: Saturday 11:00 AM → Friday 11:59 PM IST
-function getWeekBounds(weekOffset = 0) {
+// Returns YYYY-MM-DD strings for Sat and Fri of the week
+function getWeekBounds(weekOffset) {
+  // Today in IST as date string
   const IST_OFFSET = 5.5 * 60 * 60 * 1000;
-  const nowUTC = Date.now();
-  const nowIST = new Date(nowUTC + IST_OFFSET);
+  const nowIST = new Date(Date.now() + IST_OFFSET);
   const day = nowIST.getUTCDay(); // 0=Sun,6=Sat
-  // Days since last Saturday (Sat=6 -> 0, Sun=0 -> 1, Mon=1 -> 2, ...)
+  // Days since last Saturday
   const daysSinceSat = day === 6 ? 0 : day + 1;
-  const satIST = new Date(nowIST);
-  satIST.setUTCDate(nowIST.getUTCDate() - daysSinceSat);
-  satIST.setUTCHours(11, 0, 0, 0); // 11:00 AM IST = 05:30 UTC
-  // If before Saturday 11am IST, go to previous week
-  if (nowIST < satIST) satIST.setUTCDate(satIST.getUTCDate() - 7);
-  // Apply week offset (go back)
-  satIST.setUTCDate(satIST.getUTCDate() - weekOffset * 7);
-  const friIST = new Date(satIST);
-  friIST.setUTCDate(satIST.getUTCDate() + 6);
-  friIST.setUTCHours(23, 59, 59, 999); // 11:59 PM IST
-  // Convert back to UTC for comparison
-  const start = new Date(satIST.getTime() - IST_OFFSET);
-  const end = new Date(friIST.getTime() - IST_OFFSET);
-  const label = satIST.toLocaleDateString("en-IN",{day:"numeric",month:"short"}) + " — " + friIST.toLocaleDateString("en-IN",{day:"numeric",month:"short"});
-  return { start, end, label };
+  // Get Saturday date
+  const sat = new Date(nowIST);
+  sat.setUTCDate(nowIST.getUTCDate() - daysSinceSat - weekOffset * 7);
+  // Get Friday (Sat + 6)
+  const fri = new Date(sat);
+  fri.setUTCDate(sat.getUTCDate() + 6);
+  // Return as YYYY-MM-DD strings
+  const fmt = d => d.toISOString().split("T")[0];
+  const satStr = fmt(sat);
+  const friStr = fmt(fri);
+  const label = sat.toLocaleDateString("en-IN",{day:"numeric",month:"short"}) + " — " + fri.toLocaleDateString("en-IN",{day:"numeric",month:"short"});
+  return { satStr, friStr, label };
 }
 
 function medalColor(rank) {
@@ -50,75 +47,59 @@ function medalColor(rank) {
 }
 
 export default function MVPStats({ players, teams, assignments, points, captains, matches, onClose }) {
-  const [view, setView] = useState("weekly"); // weekly | bestmatch | team
-  const [weekOffset, setWeekOffset] = useState(-1); // -1 = all time
+  const [view, setView] = useState("weekly");
+  const [weekOffset, setWeekOffset] = useState(0);
 
   const week = useMemo(() => getWeekBounds(weekOffset), [weekOffset]);
 
-  // Get matches in this week
+  // All matches that have stats synced
   const allStatsMatches = useMemo(() =>
     matches.filter(m => players.some(p => points[p.id]?.[m.id]))
   , [matches, players, points]);
 
+  // Matches in selected week (compare date strings directly)
   const weekMatches = useMemo(() => {
-    if (weekOffset === -1) return allStatsMatches; // all time
-    return allStatsMatches.filter(m => {
-      const d = new Date(m.date);
-      return d >= week.start && d <= week.end;
-    });
+    if (weekOffset === -1) return allStatsMatches;
+    return allStatsMatches.filter(m => m.date >= week.satStr && m.date <= week.friStr);
   }, [allStatsMatches, week, weekOffset]);
 
-  // For each player, compute weekly total and best match
-  const playerStats = useMemo(() => {
-    const stats = [];
-    for (const player of players) {
-      const team = teams.find(t => t.id === assignments[player.id]);
-      if (!team) continue;
-      const playerPts = points[player.id] || {};
-      let weeklyTotal = 0;
-      let bestMatchPts = 0;
-      let bestMatchName = "";
-
-      for (const match of weekMatches) {
-        const d = playerPts[match.id];
-        if (!d) continue;
-        const cap = captains[match.id + "_" + team.id] || {};
-        let pts = d.base || 0;
-        if (cap.captain === player.id) pts = Math.round(pts * 2);
-        else if (cap.vc === player.id) pts = Math.round(pts * 1.5);
-        weeklyTotal += pts;
-        if (pts > bestMatchPts) {
-          bestMatchPts = pts;
-          bestMatchName = match.team1 + " vs " + match.team2;
-        }
-      }
-      if (weeklyTotal > 0 || bestMatchPts > 0) {
-        stats.push({ player, team, weeklyTotal, bestMatchPts, bestMatchName });
+  // Per-match per-player rows (BASE POINTS ONLY, no C/VC multiplier)
+  const matchRows = useMemo(() => {
+    const rows = [];
+    for (const match of weekMatches) {
+      for (const player of players) {
+        const d = points[player.id]?.[match.id];
+        if (!d || !d.base) continue;
+        const team = teams.find(t => t.id === assignments[player.id]);
+        if (!team) continue;
+        rows.push({
+          player, team, match,
+          pts: d.base,
+          matchLabel: match.team1 + " vs " + match.team2,
+          matchDate: match.date,
+        });
       }
     }
-    return stats;
-  }, [players, teams, assignments, points, captains, weekMatches]);
+    return rows.sort((a, b) => b.pts - a.pts);
+  }, [weekMatches, players, points, teams, assignments]);
 
-  // Weekly leaderboard sorted by total
-  const weeklyLeaderboard = useMemo(() =>
-    [...playerStats].sort((a, b) => b.weeklyTotal - a.weeklyTotal),
-  [playerStats]);
-
-  // Best single match leaderboard
-  const bestMatchLeaderboard = useMemo(() =>
-    [...playerStats].sort((a, b) => b.bestMatchPts - a.bestMatchPts),
-  [playerStats]);
-
-  // Team performance
+  // Team weekly totals (base points only)
   const teamPerformance = useMemo(() => {
-    const perf = teams.map(team => {
-      const teamStats = playerStats.filter(s => s.team.id === team.id);
-      const total = teamStats.reduce((sum, s) => sum + s.weeklyTotal, 0);
-      const best = teamStats.reduce((best, s) => s.weeklyTotal > best.pts ? {name:s.player.name,pts:s.weeklyTotal} : best, {name:"—",pts:0});
-      return { team, total, best, playerCount: teamStats.length };
+    return teams.map(team => {
+      let total = 0;
+      let best = { name:"—", pts:0 };
+      for (const player of players.filter(p => assignments[p.id] === team.id)) {
+        let playerTotal = 0;
+        for (const match of weekMatches) {
+          const d = points[player.id]?.[match.id];
+          if (d?.base) playerTotal += d.base;
+        }
+        total += playerTotal;
+        if (playerTotal > best.pts) best = { name: player.name, pts: playerTotal };
+      }
+      return { team, total, best };
     }).sort((a, b) => b.total - a.total);
-    return perf;
-  }, [teams, playerStats]);
+  }, [teams, players, assignments, points, weekMatches]);
 
   const maxTeamPts = teamPerformance[0]?.total || 1;
 
@@ -126,27 +107,23 @@ export default function MVPStats({ players, teams, assignments, points, captains
     wrap: { position:"fixed", inset:0, background:"rgba(8,12,20,0.98)", zIndex:600, display:"flex", flexDirection:"column", fontFamily:"Barlow Condensed,sans-serif", overflowY:"auto" },
     header: { background:"#0A0F1A", borderBottom:"1px solid #1E2D45", padding:"14px 20px", display:"flex", alignItems:"center", justifyContent:"space-between", position:"sticky", top:0, zIndex:10 },
     tab: (active) => ({ background:active?"#F5A62322":"transparent", border:"1px solid "+(active?"#F5A62366":"#1E2D45"), borderRadius:8, padding:"6px 14px", color:active?"#F5A623":"#4A5E78", fontFamily:"Barlow Condensed,sans-serif", fontWeight:700, fontSize:12, cursor:"pointer", letterSpacing:1 }),
-    card: (color) => ({ background:"#0E1521", borderRadius:12, border:"1px solid "+(color||"#1E2D45")+"44", padding:"12px 14px", marginBottom:8, display:"flex", alignItems:"center", gap:12 }),
-    rank: (r) => ({ fontFamily:"Rajdhani,sans-serif", fontSize:20, fontWeight:700, color:medalColor(r), minWidth:28, textAlign:"center" }),
-    pts: (col) => ({ fontFamily:"Rajdhani,sans-serif", fontSize:24, fontWeight:800, color:col||"#F5A623", minWidth:48, textAlign:"right" }),
   };
 
   const emptyMsg = (
     <div style={{textAlign:"center",padding:48,color:"#4A5E78"}}>
       <div style={{fontSize:32,marginBottom:12}}>📊</div>
-      <div style={{fontSize:14}}>No completed matches this week</div>
-      <div style={{fontSize:12,marginTop:4}}>Week: {week.label}</div>
+      <div style={{fontSize:14}}>No stats synced for this period</div>
+      <div style={{fontSize:12,marginTop:4}}>{weekOffset===-1?"All time":week.label}</div>
     </div>
   );
 
   return (
     <div style={styles.wrap}>
-      {/* Header */}
       <div style={styles.header}>
         <div>
           <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:"#F5A623",letterSpacing:2}}>MVP STATS</div>
           <div style={{fontSize:10,color:"#4A5E78",marginTop:2}}>
-            {weekOffset===-1?"All matches":week.label} &nbsp;•&nbsp; {weekMatches.length} match{weekMatches.length!==1?"es":""}
+            {weekOffset===-1?"All time":week.label} • {weekMatches.length} match{weekMatches.length!==1?"es":""}
           </div>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
@@ -159,59 +136,36 @@ export default function MVPStats({ players, teams, assignments, points, captains
         </div>
       </div>
 
-      {/* Tab bar */}
       <div style={{display:"flex",gap:8,padding:"12px 16px",borderBottom:"1px solid #1E2D45",background:"#080C14"}}>
-        <button style={styles.tab(view==="weekly")} onClick={()=>setView("weekly")}>WEEKLY</button>
-        <button style={styles.tab(view==="bestmatch")} onClick={()=>setView("bestmatch")}>BEST MATCH</button>
+        <button style={styles.tab(view==="weekly")} onClick={()=>setView("weekly")}>MATCH STATS</button>
         <button style={styles.tab(view==="team")} onClick={()=>setView("team")}>BY TEAM</button>
       </div>
 
       <div style={{padding:"16px",maxWidth:600,margin:"0 auto",width:"100%"}}>
 
-        {/* WEEKLY LEADERBOARD */}
+        {/* MATCH STATS — per match per player, base points only */}
         {view==="weekly" && (
           <div>
-            <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,marginBottom:12}}>WEEKLY POINTS LEADERS</div>
-            {weeklyLeaderboard.length === 0 ? emptyMsg : weeklyLeaderboard.map((s, idx) => (
-              <div key={s.player.id} style={styles.card(s.team.color)}>
-                <div style={styles.rank(idx+1)}>{idx+1}</div>
-                <div style={{width:10,height:10,borderRadius:"50%",background:s.team.color,flexShrink:0}} />
+            <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,marginBottom:12}}>PLAYER PERFORMANCE (BASE POINTS)</div>
+            {matchRows.length === 0 ? emptyMsg : matchRows.map((row, idx) => (
+              <div key={row.player.id+row.match.id} style={{background:"#0E1521",borderRadius:10,border:"1px solid "+row.team.color+"33",padding:"10px 14px",marginBottom:6,display:"flex",alignItems:"center",gap:10}}>
+                <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:18,fontWeight:700,color:medalColor(idx+1),minWidth:24,textAlign:"center"}}>{idx+1}</div>
+                <div style={{width:8,height:8,borderRadius:"50%",background:row.team.color,flexShrink:0}} />
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-                    <span style={{fontWeight:700,fontSize:14,color:"#E2EAF4"}}>{s.player.name}</span>
-                    <TierBadge tier={s.player.tier} />
+                    <span style={{fontWeight:700,fontSize:14,color:"#E2EAF4"}}>{row.player.name}</span>
+                    <TierBadge tier={row.player.tier} />
+                    <span style={{fontSize:10,color:row.team.color,fontWeight:700}}>{row.team.name}</span>
                   </div>
                   <div style={{fontSize:11,color:"#4A5E78",marginTop:1}}>
-                    <span style={{color:s.team.color,fontWeight:700}}>{s.team.name}</span>
-                    <span style={{marginLeft:6}}>{s.player.iplTeam}</span>
-                    <span style={{marginLeft:4,color:ROLE_COLORS[s.player.role]||"#4A5E78"}}>{s.player.role}</span>
+                    <span style={{color:ROLE_COLORS[row.player.role]||"#4A5E78"}}>{row.player.role}</span>
+                    <span style={{marginLeft:6}}>{row.matchLabel}</span>
+                    <span style={{marginLeft:6}}>{row.matchDate}</span>
                   </div>
                 </div>
-                <div style={styles.pts(medalColor(idx+1))}>{s.weeklyTotal}<span style={{fontSize:10,color:"#4A5E78",fontWeight:400,marginLeft:2}}>pts</span></div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* BEST SINGLE MATCH */}
-        {view==="bestmatch" && (
-          <div>
-            <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,marginBottom:12}}>BEST SINGLE MATCH PERFORMANCE</div>
-            {bestMatchLeaderboard.length === 0 ? emptyMsg : bestMatchLeaderboard.map((s, idx) => (
-              <div key={s.player.id} style={styles.card(s.team.color)}>
-                <div style={styles.rank(idx+1)}>{idx+1}</div>
-                <div style={{width:10,height:10,borderRadius:"50%",background:s.team.color,flexShrink:0}} />
-                <div style={{flex:1,minWidth:0}}>
-                  <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-                    <span style={{fontWeight:700,fontSize:14,color:"#E2EAF4"}}>{s.player.name}</span>
-                    <TierBadge tier={s.player.tier} />
-                  </div>
-                  <div style={{fontSize:11,color:"#4A5E78",marginTop:1}}>
-                    <span style={{color:s.team.color,fontWeight:700}}>{s.team.name}</span>
-                  </div>
-                  <div style={{fontSize:10,color:"#4A5E78",marginTop:2}}>{s.bestMatchName}</div>
+                <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:24,fontWeight:800,color:medalColor(idx+1),minWidth:48,textAlign:"right"}}>
+                  {row.pts}<span style={{fontSize:10,color:"#4A5E78",fontWeight:400,marginLeft:2}}>pts</span>
                 </div>
-                <div style={styles.pts(medalColor(idx+1))}>{s.bestMatchPts}<span style={{fontSize:10,color:"#4A5E78",fontWeight:400,marginLeft:2}}>pts</span></div>
               </div>
             ))}
           </div>
@@ -220,24 +174,24 @@ export default function MVPStats({ players, teams, assignments, points, captains
         {/* TEAM PERFORMANCE */}
         {view==="team" && (
           <div>
-            <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,marginBottom:12}}>TEAM WEEKLY PERFORMANCE</div>
+            <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,marginBottom:12}}>TEAM WEEKLY PERFORMANCE (BASE POINTS)</div>
             {teamPerformance.every(t=>t.total===0) ? emptyMsg : teamPerformance.map((tp, idx) => (
               <div key={tp.team.id} style={{background:"#0E1521",borderRadius:12,border:"1px solid "+tp.team.color+"33",padding:16,marginBottom:10}}>
                 <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
-                  <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:16,fontWeight:800,color:tp.team.color,minWidth:24}}>{idx+1}</div>
+                  <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:16,fontWeight:800,color:medalColor(idx+1),minWidth:24}}>{idx+1}</div>
                   <div style={{flex:1}}>
                     <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:16,fontWeight:700,color:tp.team.color}}>{tp.team.name}</div>
-                    <div style={{fontSize:11,color:"#4A5E78"}}>{tp.playerCount} active player{tp.playerCount!==1?"s":""} this week</div>
                   </div>
-                  <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:28,fontWeight:800,color:tp.team.color}}>{tp.total}<span style={{fontSize:11,color:"#4A5E78",fontWeight:400,marginLeft:2}}>pts</span></div>
+                  <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:28,fontWeight:800,color:tp.team.color}}>
+                    {tp.total}<span style={{fontSize:11,color:"#4A5E78",fontWeight:400,marginLeft:2}}>pts</span>
+                  </div>
                 </div>
-                {/* Progress bar */}
                 <div style={{background:"#080C14",borderRadius:6,height:6,marginBottom:8,overflow:"hidden"}}>
-                  <div style={{background:tp.team.color,height:"100%",borderRadius:6,width:(tp.total/maxTeamPts*100)+"%",transition:"width 0.5s"}} />
+                  <div style={{background:tp.team.color,height:"100%",borderRadius:6,width:(tp.total/maxTeamPts*100)+"%"}} />
                 </div>
                 {tp.best.pts > 0 && (
                   <div style={{fontSize:11,color:"#4A5E78"}}>
-                    Best: <span style={{color:"#E2EAF4",fontWeight:700}}>{tp.best.name}</span>
+                    Top player: <span style={{color:"#E2EAF4",fontWeight:700}}>{tp.best.name}</span>
                     <span style={{color:tp.team.color,marginLeft:4}}>{tp.best.pts} pts</span>
                   </div>
                 )}
