@@ -176,7 +176,13 @@ export default function TransferWindow({
         [teamId]: isReleased ? current.filter(x => x !== pid) : [...current, pid]
       }
     };
-    if (!isReleased && !unsoldPool.includes(pid)) onUpdateUnsoldPool([...unsoldPool, pid]);
+    if (!isReleased) {
+      // Adding to release — also add to unsold pool
+      if (!unsoldPool.includes(pid)) onUpdateUnsoldPool([...unsoldPool, pid]);
+    } else {
+      // Undoing release — remove from unsold pool, player stays with team
+      onUpdateUnsoldPool(unsoldPool.filter(id => id !== pid));
+    }
     onUpdateTransfers(updated);
   };
 
@@ -518,8 +524,8 @@ export default function TransferWindow({
             const isMe = team.id === myTeamId;
             // Each team can edit their own releases freely — no lock needed
             // Admin (unlocked) sees all teams; non-admin only sees their own
-            const canEdit = isMe; // no lock required
-            const canSee = isMe || unlocked; // admins see all
+            const canEdit = isMe || sessionTeamId === team.id || unlocked;
+            const canSee = isMe || sessionTeamId === team.id || unlocked;
             if (!canSee) return null;
 
             const teamPlayers = players.filter(p => assignments[p.id] === team.id);
