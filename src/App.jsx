@@ -2782,20 +2782,32 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
       }
     }
 
-    // A player traded IN and then later traded OUT → shows as traded-out only
+    // Players in BOTH sets = traded out then returned (boomerang)
+    const returnedPids    = new Set([...allTradedInPids].filter(id => allTradedOutPids.has(id) && assignments[id]===teamId));
+    // Net traded-in: came in but never went out (or went out but came back = returned)
     const netTradedInPids  = new Set([...allTradedInPids].filter(id => !allTradedOutPids.has(id)));
-    const netTradedOutPids = allTradedOutPids; // all traded-outs always shown
+    // Net traded-out: went out and never came back
+    const netTradedOutPids = new Set([...allTradedOutPids].filter(id => !returnedPids.has(id)));
 
-    // Active players — exclude anyone in traded-in or traded-out lists
+    // Active players — exclude traded-in, traded-out, and returned (handled separately)
     const active = players.filter(p=>
       assignments[p.id]===teamId &&
       !netTradedInPids.has(p.id) &&
-      !netTradedOutPids.has(p.id)
+      !netTradedOutPids.has(p.id) &&
+      !returnedPids.has(p.id)
     ).map(p=>{
       const tot = getPtsForTeam(p.id, teamId);
       const isSnatched = snatch.active?.pid===p.id && snatch.active?.fromTeamId===teamId;
       return{...p,total:tot,status:isSnatched?"snatched":"active"};
     });
+
+    // Returned players (↩️ yellow — traded out then came back)
+    const returnedPlayers = [...returnedPids].map(pid=>{
+      const p = players.find(x=>x.id===pid);
+      if(!p) return null;
+      const tot = getPtsForTeam(pid, teamId);
+      return {...p, total:tot, status:"returned", tradedFor: tradedInMeta[pid]||"?"};
+    }).filter(Boolean);
 
     // Traded-in players (permanent green ⬆️ — from any week, still on team)
     const currentTradedIn = [...netTradedInPids].map(pid=>{
@@ -2805,7 +2817,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
       return {...p, total:tot, status:"traded-in", tradedFor: tradedInMeta[pid]||"?"};
     }).filter(Boolean);
 
-    // Traded-out players (permanent strikethrough ⬇️ — from any week)
+    // Traded-out players (permanent strikethrough ⬇️ — from any week, still gone)
     const currentTradedAway = [...netTradedOutPids].map(pid=>{
       const p = players.find(x=>x.id===pid);
       if(!p) return null;
@@ -2845,7 +2857,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
     }).filter(Boolean);
 
     const allActive = [...active, ...(snatchedOut?[snatchedOut]:[])];
-    return [...allActive, ...currentTradedIn, ...currentTradedAway, ...historical, ...(snatchedIn?[snatchedIn]:[]), ...snatchHistoryForTeam].sort((a,b)=>b.total-a.total);
+    return [...allActive, ...returnedPlayers, ...currentTradedIn, ...currentTradedAway, ...historical, ...(snatchedIn?[snatchedIn]:[]), ...snatchHistoryForTeam].sort((a,b)=>b.total-a.total);
   };
 
   const shareLeaderboard = () => {
@@ -3825,7 +3837,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                   <div style={{fontWeight:700,color:"#4A5E78",letterSpacing:2,fontSize:12,marginBottom:16}}>TEAM PLAYER BREAKDOWN</div>
                   {leaderboard.map(team=>{
                     const breakdown=getPlayerBreakdown(team.id),isOpen=expandedTeam===team.id;
-                    const activeCount=breakdown.filter(p=>p.status!=="traded-out"&&p.status!=="snatched-out"&&p.status!=="snatch-returned-in").length;
+                    const activeCount=breakdown.filter(p=>p.status!=="traded-out"&&p.status!=="snatched-out"&&p.status!=="snatch-returned-in"&&p.status!=="released").length;
                     const safeCount=(safePlayers[team.id]||[]).length;
                     return(
                       <Card key={team.id} accent={team.color} sx={{marginBottom:12,overflow:"hidden"}}>
@@ -3840,13 +3852,15 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                             {breakdown.map((p,idx)=>(
                               <div key={p.id} style={{display:"flex",alignItems:"center",padding:"9px 4px",borderBottom:"1px solid #1E2D45",opacity:p.status==="snatched-out"||p.status==="snatch-returned-in"||p.status==="traded-out"?0.65:1}}>
                                 <div style={{flex:1,fontWeight:idx<3?700:400,fontSize:14,
-                                  color:p.status==="traded-in"?"#2ECC71":p.status==="traded-out"?"#FF3D5A":idx===0&&p.status==="active"?"#F5A623":"#E2EAF4",
+                                  color:p.status==="traded-in"?"#2ECC71":p.status==="returned"?"#F5A623":p.status==="traded-out"?"#FF3D5A":idx===0&&p.status==="active"?"#F5A623":"#E2EAF4",
                                   textDecoration:p.status==="snatched-out"||p.status==="snatch-returned-in"||p.status==="traded-out"?"line-through":"none"}}>
                                   {p.status==="traded-out"&&<span style={{marginRight:4}}>⬇️</span>}
                                   {p.status==="traded-in"&&<span style={{marginRight:4}}>⬆️</span>}
+                                  {p.status==="returned"&&<span style={{marginRight:4}}>↩️</span>}
                                   {p.name}
                                   {p.status==="traded-out"&&<span style={{fontSize:9,color:"#FF3D5A",marginLeft:6,textDecoration:"none",fontWeight:700}}>→ {p.tradedFor}</span>}
                                   {p.status==="traded-in"&&<span style={{fontSize:9,color:"#2ECC71",marginLeft:6,textDecoration:"none",fontWeight:700}}>FROM POOL</span>}
+                                  {p.status==="returned"&&<span style={{fontSize:9,color:"#F5A623",marginLeft:6,textDecoration:"none",fontWeight:700}}>↩ RETURNED</span>}
                                   {p.status==="snatched-out"&&<span style={{fontSize:9,color:"#A855F7",marginLeft:6,textDecoration:"none",fontWeight:700}}> SNATCHED</span>}
                                   {p.status==="snatched-in"&&<span style={{fontSize:9,color:"#2ECC71",marginLeft:6,textDecoration:"none",fontWeight:700}}> ON LOAN</span>}
                                   {p.status==="snatch-returned-in"&&<span style={{fontSize:9,color:"#4A5E78",marginLeft:6,textDecoration:"none"}}> RETURNED</span>}
@@ -3854,10 +3868,11 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                                 </div>
                                 <div style={{width:90}}><Badge label={p.role||"—"} color={ROLE_COLORS[p.role]||"#4A5E78"} /></div>
                                 <div style={{width:70,textAlign:"right",fontWeight:700,
-                                  color:p.status==="traded-in"?"#2ECC71":p.status==="traded-out"||p.status==="snatched-out"||p.status==="snatch-returned-in"?"#4A5E78":p.total>0?"#E2EAF4":"#4A5E78",
+                                  color:p.status==="traded-in"?"#2ECC71":p.status==="returned"?"#F5A623":p.status==="traded-out"||p.status==="snatched-out"||p.status==="snatch-returned-in"?"#4A5E78":p.total>0?"#E2EAF4":"#4A5E78",
                                   fontFamily:"Rajdhani",fontSize:17}}>
                                   {p.total}
                                   {p.status==="traded-in"&&<span style={{fontSize:9,display:"block",color:"#2ECC71",letterSpacing:0.5}}>RESET</span>}
+                                  {p.status==="returned"&&<span style={{fontSize:9,display:"block",color:"#F5A623",letterSpacing:0.5}}>BACK</span>}
                                   {p.status==="traded-out"&&<span style={{fontSize:9,display:"block",color:"#FF3D5A",letterSpacing:0.5}}>FROZEN</span>}
                                 </div>
                               </div>
