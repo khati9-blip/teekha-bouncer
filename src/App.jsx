@@ -1938,7 +1938,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
         const rp = results[keys.indexOf("ruleProposal")];
         if(rp && typeof rp === 'object') setRuleProposal(rp);
         const pc = results[keys.indexOf('pointsConfig')];
-        if(pc && typeof pc === 'object') setPointsConfig(prev=>({...prev,...pc}));
+        if(pc && typeof pc === 'object') setPointsConfig(prev=>({...prev,...Object.fromEntries(Object.entries(pc).filter(([,v])=>v!=null))}));
         const tv = results[keys.indexOf('tournaments')];
         if(tv && Array.isArray(tv)) { setTournaments(tv); const exp={}; tv.forEach(t=>exp[t.id]=true); setExpandedTournaments(exp); }
       } catch(e) {
