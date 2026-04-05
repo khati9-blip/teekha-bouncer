@@ -491,21 +491,23 @@ export default function TransferWindow({
           <div style={{fontSize:11,color:"#F5A623",letterSpacing:2,fontWeight:700,marginBottom:12}}>🔑 ADMIN CONTROLS</div>
           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
 
-            {phase === "closed" && (
+            {/* Always visible: Open / Close window */}
+            {(phase === "closed" || phase === "done") && (
               <button onClick={openReleaseManually} style={adminBtn("#F5A623")}>
-                📤 OPEN RELEASE WINDOW NOW
+                📤 OPEN WINDOW
+              </button>
+            )}
+            {(phase === "release" || phase === "trade") && (
+              <button onClick={closeWindow} style={adminBtn("#FF3D5A")}>
+                ✕ CLOSE WINDOW
               </button>
             )}
 
+            {/* Phase-specific actions */}
             {phase === "release" && (
-              <>
-                <button onClick={startTradePhase} style={adminBtn("#2ECC71")}>
-                  🏁 START TRADE PHASE
-                </button>
-                <button onClick={closeWindow} style={adminBtn("#FF3D5A")}>
-                  ✕ CANCEL WINDOW
-                </button>
-              </>
+              <button onClick={startTradePhase} style={adminBtn("#2ECC71")}>
+                🏁 START TRADE PHASE
+              </button>
             )}
 
             {phase === "trade" && (
@@ -530,11 +532,9 @@ export default function TransferWindow({
 
             {phase === "done" && (
               <button onClick={startNewWeek} style={adminBtn("#F5A623")}>
-                🔄 START NEW WEEK
+                📅 START NEW WEEK
               </button>
             )}
-          </div>
-
           {/* Teams not compliant warning */}
           {phase === "release" && (
             <div style={{marginTop:12,display:"flex",flexWrap:"wrap",gap:6}}>
