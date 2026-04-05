@@ -418,9 +418,11 @@ export default function TransferWindow({
                 const myReleased = getReleasedPlayers(myTeamId);
                 const tradedPids = getTradedPids(myTeamId);
                 const validMatches = isMyTurn ? getValidMatches(p, myReleased, tradedPids) : [];
-                const canPick = isMyTurn && validMatches.length > 0 && phase==="trade";
+                const myReleasedIds = (transfers.releases?.[myTeamId] || []);
+                const isMyOwnRelease = myReleasedIds.includes(p.id);
+                const canPick = isMyTurn && validMatches.length > 0 && phase==="trade" && !isMyOwnRelease;
                 return (
-                  <div key={p.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",background:canPick?"#2ECC7111":"#080C14",borderRadius:8,border:"1px solid "+(canPick?"#2ECC7144":"#1E2D4544"),marginBottom:6}}>
+                  <div key={p.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",background:canPick?"#2ECC7111":isMyOwnRelease?"#FF3D5A08":"#080C14",borderRadius:8,border:"1px solid "+(canPick?"#2ECC7144":isMyOwnRelease?"#FF3D5A22":"#1E2D4544"),marginBottom:6,opacity:isMyOwnRelease?0.5:1}}>
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{display:"flex",alignItems:"center",gap:5,flexWrap:"wrap"}}>
                         <span style={{fontWeight:700,fontSize:12,color:"#E2EAF4"}}>{p.name}</span>
@@ -428,12 +430,14 @@ export default function TransferWindow({
                       </div>
                       <div style={{fontSize:10,color:"#4A5E78"}}>{p.iplTeam} • {p.role}</div>
                     </div>
-                    {canPick && (
+                    {isMyOwnRelease ? (
+                      <span style={{fontSize:9,color:"#FF3D5A",fontWeight:700,flexShrink:0}}>YOUR RELEASE</span>
+                    ) : canPick ? (
                       <button onClick={()=>handlePickPlayer(p)}
                         style={{background:"#2ECC71",border:"none",borderRadius:6,padding:"4px 10px",color:"#080C14",fontSize:11,fontWeight:800,cursor:"pointer",flexShrink:0,fontFamily:"Barlow Condensed,sans-serif"}}>
                         PICK
                       </button>
-                    )}
+                    ) : null}
                   </div>
                 );
               })}
