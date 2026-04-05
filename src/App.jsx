@@ -2739,6 +2739,10 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   };
 
   const leaderboard=[...teams].map(t=>({...t,total:getTeamTotal(t.id)})).sort((a,b)=>b.total-a.total);
+  // Derive effective myTeam: use prop, or find by email in teamIdentity
+  const effectiveMyTeam = myTeam || (user?.email && Object.keys(teamIdentity).length > 0
+    ? teams.find(t => Object.values(teamIdentity).some(ti => ti.claimedBy === user.email && ti.teamRef === t.id))
+    : null);
   const getPlayerBreakdown=(teamId)=>{
     // Helper: get points for player during team's ownership period(s)
     const getPtsForTeam = (pid, tid) => {
@@ -3616,7 +3620,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                 unsoldPool={unsoldPool}
                 leaderboard={leaderboard}
                 isAdmin={isAdmin}
-                myTeam={myTeam}
+                myTeam={effectiveMyTeam}
                 unlocked={unlocked}
                 withPassword={withPassword}
                 ownershipLog={ownershipLog}

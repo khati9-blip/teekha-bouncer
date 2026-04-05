@@ -88,18 +88,14 @@ export default function TransferWindow({
   leaderboard, isAdmin, myTeam, unlocked, withPassword,
   onUpdateTransfers, onUpdateAssignments, onUpdateUnsoldPool,
   onUpdateOwnershipLog, ownershipLog, points, onUpdatePoints,
-  user, teamIdentity
+  user
 }) {
   const [pickModal, setPickModal] = useState(null); // {poolPlayer}
   const [tradeConfirmModal, setTradeConfirmModal] = useState(null); // {poolPlayer, releasedPlayer}
   const [resetConfirm, setResetConfirm] = useState(false);
 
   const phase = transfers?.phase || "closed";
-  // Derive myTeamId — use myTeam prop, or fall back to teamIdentity lookup by email
-  const derivedMyTeam = myTeam || (user?.email && teamIdentity
-    ? teams.find(t => Object.values(teamIdentity).some(ti => ti.claimedBy === user.email && ti.teamRef === t.id))
-    : null);
-  const myTeamId = derivedMyTeam?.id;
+  const myTeamId = myTeam?.id;
   const sortedTeams = leaderboard.map(t => teams.find(x => x.id === t.id)).filter(Boolean);
 
   // ── AUTO WINDOW CHECK ──────────────────────────────────────────────────────
