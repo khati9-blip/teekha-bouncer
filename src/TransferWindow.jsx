@@ -164,7 +164,7 @@ export default function TransferWindow({
     }
     // Open new period for incoming player
     if (!newLog[poolPlayer.id]) newLog[poolPlayer.id] = [];
-    newLog[poolPlayer.id] = [...newLog[poolPlayer.id], { teamId: tradeModal?.actingTeamId || ((isClone && unlocked) ? currentPickTeamId : myTeamId), from: now, to: null }];
+    newLog[poolPlayer.id] = [...newLog[poolPlayer.id], { teamId: tradeModal?.actingTeamId || ((isClone && unlocked) ? currentPickTeamId : myTeamId), from: now, to: null, tradeIn: true }];
 
     // Record trade pair
     const tradedPairs = [...(transfers.tradedPairs || []), {

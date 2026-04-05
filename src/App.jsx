@@ -2666,17 +2666,23 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
       }
 
       // Normal ownership
+      // tradeIn=true: match >= trade date counts for new team
+      // tradeIn=false/undefined: match < trade date counts for old team (released)
       for(const[mid,d] of Object.entries(points[pid]||{})){
         const m = matches.find(x=>x.id===mid);
         if(!m) continue;
-        const matchDate = new Date(m.date);
-        const owned = periods.length === 0
-          ? assignments[pid]===teamId
-          : periods.some(o=>{
-              const from = new Date(o.from);
-              const to = o.to ? new Date(o.to) : new Date('2099-01-01');
-              return matchDate >= from && matchDate <= to;
-            });
+        const matchDate = m.date;
+        let owned = false;
+        if(periods.length === 0){
+          owned = assignments[pid]===teamId;
+        } else {
+          owned = periods.some(o=>{
+            const from = o.from||"2000-01-01";
+            const to = o.to||"2099-01-01";
+            if(o.tradeIn) return matchDate >= from && matchDate <= to;
+            else return matchDate >= from && matchDate < to;
+          });
+        }
         if(!owned) continue;
         const cap=captains[mid+"_"+teamId]||{};
         let pts=d.base;
@@ -2696,15 +2702,21 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
       for(const[mid,d] of Object.entries(points[pid]||{})){
         const m = matches.find(x=>x.id===mid);
         if(!m) continue;
-        const matchDate = new Date(m.date);
-        // Check if match falls within any ownership period for this team
-        const owned = periods.length === 0
-          ? true // no log = original owner, count all
-          : periods.some(o => {
-              const from = new Date(o.from);
-              const to = o.to ? new Date(o.to) : new Date('2099-01-01');
+        const matchDate = m.date; // YYYY-MM-DD string
+        let owned = false;
+        if(periods.length === 0){
+          owned = assignments[pid]===tid;
+        } else {
+          owned = periods.some(o => {
+            const from = o.from || "2000-01-01";
+            const to = o.to || "2099-01-01";
+            if(o.tradeIn){
               return matchDate >= from && matchDate <= to;
-            });
+            } else {
+              return matchDate >= from && matchDate < to;
+            }
+          });
+        }
         if(!owned) continue;
         const cap=captains[`${mid}_${tid}`]||{};
         let pts=d.base;
