@@ -2824,9 +2824,6 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
       return {...p, total:tot, status:"traded-out", tradedFor: tradedOutMeta[pid]||"?"};
     }).filter(Boolean);
 
-    // Dedupe pids already accounted for (for legacy historical use)
-    const tradedAwayPids = netTradedOutPids;
-    const tradedInPids   = netTradedInPids;
     const historical = [];
 
     // Snatched player this team borrowed
