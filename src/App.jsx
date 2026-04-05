@@ -3546,6 +3546,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                 onUpdateUnsoldPool={(val)=>{setUnsoldPool(val);storeSet("unsoldPool",val);}}
                 onUpdateOwnershipLog={(val)=>{setOwnershipLog(val);storeSet("ownershipLog",val);}}
                 onUpdatePoints={updPoints}
+              safePlayers={safePlayers}
               />
               <SnatchSection
                 teams={teams}

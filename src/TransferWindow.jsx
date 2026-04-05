@@ -70,7 +70,7 @@ export default function TransferWindow({
   leaderboard, isAdmin, myTeam, unlocked, withPassword,
   onUpdateTransfers, onUpdateAssignments, onUpdateUnsoldPool,
   onUpdateOwnershipLog, ownershipLog, points, onUpdatePoints,
-  user
+  user, safePlayers
 }) {
   const [tradeModal, setTradeModal] = useState(null); // {poolPlayer, validReleased}
   const [matchModal, setMatchModal] = useState(null); // {poolPlayer, selectedMatch}
@@ -89,6 +89,9 @@ export default function TransferWindow({
   // Get already traded pids for a team
   const getTradedPids = (teamId) =>
     (transfers.tradedPairs || []).filter(t => t.teamId === teamId).map(t => t.releasedPid);
+
+  // Check if player is safe (cannot be released or traded)
+  const isPlayerSafe = (teamId, pid) => (safePlayers?.[teamId] || []).includes(pid);
 
   // Pool players (with player details)
   const poolPlayers = unsoldPool.map(pid => players.find(p => p.id === pid)).filter(Boolean);
@@ -112,6 +115,7 @@ export default function TransferWindow({
       onUpdateTransfers(updated);
     } else {
       if (current.length >= 3) { alert("You can only release 3 players."); return; }
+      if (isPlayerSafe(teamId, pid)) { alert("🛡️ Safe players cannot be released!"); return; }
       const updated = { ...transfers, releases: { ...transfers.releases, [teamId]: [...current, pid] } };
       // Add to unsold pool
       if (!unsoldPool.includes(pid)) onUpdateUnsoldPool([...unsoldPool, pid]);
@@ -365,10 +369,14 @@ export default function TransferWindow({
                           <div style={{fontSize:11,color:"#4A5E78"}}>{p.iplTeam} • {p.role}</div>
                         </div>
                         {canEdit && (
+                          isPlayerSafe(team.id, p.id) ? (
+                            <span style={{fontSize:10,color:"#2ECC71",fontWeight:700}}>🛡️ SAFE</span>
+                          ) : (
                           <button onClick={()=>handleRelease(team.id, p.id)}
                             style={{background:isReleased?"#FF3D5A22":"transparent",border:"1px solid "+(isReleased?"#FF3D5A":"#1E2D45"),borderRadius:6,padding:"4px 10px",color:isReleased?"#FF3D5A":"#4A5E78",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif"}}>
                             {isReleased?"UNDO":"RELEASE"}
                           </button>
+                          )
                         )}
                       </div>
                     );
