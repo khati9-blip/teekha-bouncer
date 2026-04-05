@@ -147,7 +147,8 @@ export default function TransferWindow({
   const confirmTrade = async (poolPlayer, releasedPlayer) => {
     const actingId = tradeModal?.actingTeamId || ((isClone && unlocked) ? currentPickTeamId : myTeamId);
     const newAssignments = { ...assignments, [poolPlayer.id]: actingId };
-    delete newAssignments[releasedPlayer.id]; // remove from team
+    // Only remove released player if still assigned to this team (not already picked by someone else)
+    if (newAssignments[releasedPlayer.id] === actingId) delete newAssignments[releasedPlayer.id];
 
     // Update ownership log
     const now = new Date().toISOString().split("T")[0];
