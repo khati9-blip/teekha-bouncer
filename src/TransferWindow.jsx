@@ -125,8 +125,9 @@ export default function TransferWindow({
 
   // Handle picking a player from pool
   const handlePickPlayer = (poolPlayer) => {
-    const myReleased = getReleasedPlayers(myTeamId);
-    const tradedPids = getTradedPids(myTeamId);
+    const actingTeamId = (isClone && unlocked) ? currentPickTeamId : myTeamId;
+    const myReleased = getReleasedPlayers(actingTeamId);
+    const tradedPids = getTradedPids(actingTeamId);
     const validMatches = getValidMatches(poolPlayer, myReleased, tradedPids);
     if (validMatches.length === 0) {
       alert("This player does not match any of your remaining released players (like-for-like + same/lower tier).");
@@ -137,7 +138,8 @@ export default function TransferWindow({
 
   // Confirm trade after selecting which released player to match
   const confirmTrade = async (poolPlayer, releasedPlayer) => {
-    const newAssignments = { ...assignments, [poolPlayer.id]: myTeamId };
+    const actingId = (isClone && unlocked) ? currentPickTeamId : myTeamId;
+    const newAssignments = { ...assignments, [poolPlayer.id]: actingId };
     delete newAssignments[releasedPlayer.id]; // remove from team
 
     // Update ownership log
@@ -150,11 +152,11 @@ export default function TransferWindow({
     );
     // Open new period for incoming player
     if (!newLog[poolPlayer.id]) newLog[poolPlayer.id] = [];
-    newLog[poolPlayer.id] = [...newLog[poolPlayer.id], { teamId: myTeamId, from: now, to: null }];
+    newLog[poolPlayer.id] = [...newLog[poolPlayer.id], { teamId: (isClone && unlocked) ? currentPickTeamId : myTeamId, from: now, to: null }];
 
     // Record trade pair
     const tradedPairs = [...(transfers.tradedPairs || []), {
-      teamId: myTeamId,
+      teamId: (isClone && unlocked) ? currentPickTeamId : myTeamId,
       releasedPid: releasedPlayer.id,
       pickedPid: poolPlayer.id,
       week: transfers.weekNum,
@@ -189,8 +191,9 @@ export default function TransferWindow({
 
   // Handle pass
   const handlePass = async () => {
-    const myReleased = getReleasedPlayers(myTeamId);
-    const tradedPids = getTradedPids(myTeamId);
+    const actingTeamId2 = (isClone && unlocked) ? currentPickTeamId : myTeamId;
+    const myReleased = getReleasedPlayers(actingTeamId2);
+    const tradedPids = getTradedPids(actingTeamId2);
     const remaining = myReleased.filter(p => !tradedPids.includes(p.id));
 
     if (!canPass(remaining, sortedPool, [])) {
@@ -484,13 +487,17 @@ export default function TransferWindow({
           {/* My turn actions */}
           {isMyTurn && phase==="trade" && (
             <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #F5A62344",padding:16,marginBottom:16}}>
-              <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:16,fontWeight:700,color:"#F5A623",marginBottom:8}}>YOUR TURN</div>
+              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
+                <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:16,fontWeight:700,color:"#F5A623"}}>YOUR TURN</div>
+                {isClone && unlocked && currentPickTeam && <div style={{background:currentPickTeam.color+"22",border:"1px solid "+currentPickTeam.color+"44",borderRadius:6,padding:"2px 8px",fontSize:11,color:currentPickTeam.color,fontWeight:700}}>Acting as: {currentPickTeam.name}</div>}
+              </div>
               <div style={{fontSize:12,color:"#4A5E78",marginBottom:12}}>
                 Pick a player from the pool (highlighted in green). Must be like-for-like role and same or lower tier.
               </div>
               {(() => {
-                const myReleased = getReleasedPlayers(myTeamId);
-                const tradedPids = getTradedPids(myTeamId);
+                const actTeamId3 = (isClone && unlocked) ? currentPickTeamId : myTeamId;
+                const myReleased = getReleasedPlayers(actTeamId3);
+                const tradedPids = getTradedPids(actTeamId3);
                 const passAllowed = canPass(
                   myReleased.filter(p => !tradedPids.includes(p.id)),
                   sortedPool, []

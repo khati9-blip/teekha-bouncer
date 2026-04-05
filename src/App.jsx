@@ -3554,6 +3554,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                 onUpdateOwnershipLog={(val)=>{setOwnershipLog(val);storeSet("ownershipLog",val);}}
                 onUpdatePoints={updPoints}
               safePlayers={safePlayers}
+              pitch={pitch}
               />
               <SnatchSection
                 teams={teams}
