@@ -110,9 +110,14 @@ export default function TransferWindow({
   const handleRelease = async (teamId, pid) => {
     const current = transfers.releases?.[teamId] || [];
     if (current.includes(pid)) {
-      // Un-release
+      // Un-release — also remove from unsold pool
       const updated = { ...transfers, releases: { ...transfers.releases, [teamId]: current.filter(x => x !== pid) } };
       onUpdateTransfers(updated);
+      // Only remove from pool if not released by another team too
+      const otherTeamsReleased = Object.entries(transfers.releases||{})
+        .filter(([tid]) => tid !== teamId)
+        .some(([,pids]) => pids.includes(pid));
+      if (!otherTeamsReleased) onUpdateUnsoldPool(unsoldPool.filter(id => id !== pid));
     } else {
       if (current.length >= 3) { alert("You can only release 3 players."); return; }
       if (isPlayerSafe(teamId, pid)) { alert("🛡️ Safe players cannot be released!"); return; }
@@ -325,7 +330,7 @@ export default function TransferWindow({
             {phase==="done" && (
               <button onClick={()=>withPassword(()=>{
                 onUpdateTransfers({weekNum:transfers.weekNum+1,phase:"closed",releases:{},picks:[],tradedPairs:[],ineligible:[],currentPickTeam:null,pickDeadline:null,history:[...(transfers.history||[]),{week:transfers.weekNum,releases:transfers.releases,tradedPairs:transfers.tradedPairs,date:new Date().toISOString()}]});
-                onUpdateUnsoldPool([]);
+                // DO NOT clear unsold pool — players remain until manually removed
               })} style={{background:"#F5A62322",border:"1px solid #F5A62344",borderRadius:8,padding:"8px 16px",color:"#F5A623",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>
                 🔄 START NEW WEEK
               </button>
@@ -421,6 +426,14 @@ export default function TransferWindow({
             {/* Unsold pool */}
             <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #1E2D45",padding:14}}>
               <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginBottom:10}}>UNSOLD POOL ({sortedPool.length})</div>
+              {phase==="release" && unsoldPool.length > 0 && sortedPool.filter(p=>{
+                const allReleased = Object.values(transfers.releases||{}).flat();
+                return !allReleased.includes(p.id);
+              }).length > 0 && (
+                <div style={{fontSize:10,color:"#F5A623",marginBottom:8,background:"#F5A62311",borderRadius:6,padding:"4px 8px"}}>
+                  Includes {sortedPool.filter(p=>{const r=Object.values(transfers.releases||{}).flat();return !r.includes(p.id);}).length} pre-existing players
+                </div>
+              )}
               {sortedPool.length === 0 ? (
                 <div style={{fontSize:12,color:"#4A5E78",textAlign:"center",padding:16}}>Pool is empty</div>
               ) : sortedPool.map(p => {
