@@ -4571,3 +4571,89 @@ function Root() {
 
 
 export default Root;
+function EditPointsForm({ config, onSave, onCancel }) {
+  const [cfg, setCfg] = useState({...config});
+  const field = (label, key, step) => (
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid #1E2D4533"}}>
+      <div style={{fontSize:12,color:"#4A5E78",flex:1}}>{label}</div>
+      <input type="number" value={cfg[key]} step={step||1} min={0}
+        onChange={e=>setCfg(prev=>({...prev,[key]:parseFloat(e.target.value)||0}))}
+        style={{width:64,background:"#080C14",border:"1px solid #1E2D45",borderRadius:6,padding:"4px 8px",color:"#F5A623",fontSize:14,fontFamily:"Rajdhani,sans-serif",fontWeight:700,textAlign:"center",outline:"none"}} />
+    </div>
+  );
+  return (
+    <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #F5A62344",padding:20,marginBottom:16}}>
+      <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:18,fontWeight:700,color:"#F5A623",letterSpacing:2,marginBottom:16}}>EDIT POINTS SYSTEM</div>
+      <div style={{fontSize:11,color:"#4A5E78",letterSpacing:1,marginBottom:8}}>BATTING</div>
+      <div style={{fontSize:11,color:"#F5A623",letterSpacing:1,marginBottom:8}}>🏏 BATTING</div>
+      {field("Per run","run",0.5)}{field("Per four","four")}{field("Per six","six")}
+      {field("Half-century","fifty")}{field("Century","century")}
+      {field("SR Bonus pts","srBonus")}{field("SR Bonus threshold","srBonusThreshold")}
+      <div style={{fontSize:11,color:"#FF3D5A",letterSpacing:1,marginBottom:8,marginTop:12}}>PENALTIES</div>
+      {field("Duck penalty","duckPenalty")}{field("SR penalty pts","srPenalty")}{field("SR penalty threshold","srPenaltyThreshold")}
+      <div style={{fontSize:11,color:"#4F8EF7",letterSpacing:1,marginBottom:8,marginTop:12}}>🎳 BOWLING</div>
+      {field("Per wicket","wicket")}{field("4-wkt haul","fourWkt")}{field("5-wkt haul","fiveWkt")}
+      {field("Maiden over","maiden")}{field("Economy bonus","ecoBonus")}{field("Economy < threshold","ecoThreshold",0.5)}
+      {field("Min overs (eco)","ecoMinOvers",0.5)}{field("Economy penalty","ecoPenalty")}{field("Eco penalty > threshold","ecoPenaltyThreshold",0.5)}
+      <div style={{fontSize:11,color:"#2ECC71",letterSpacing:1,marginBottom:8,marginTop:12}}>🧤 FIELDING</div>
+      {field("Per catch","catch")}{field("Per stumping","stumping")}{field("Per run-out","runout")}
+      <div style={{fontSize:11,color:"#A855F7",letterSpacing:1,marginBottom:8,marginTop:12}}>⭐ BONUSES</div>
+      {field("All-round bonus","allRoundBonus")}{field("All-round min runs","allRoundMinRuns")}{field("All-round min wkts","allRoundMinWkts")}
+      {field("Longest six","longestSix")}{field("MOM bonus","momBonus")}{field("Playing XI bonus","playingXIBonus")}
+      {field("Captain mult","captainMult",0.5)}{field("VC mult","vcMult",0.5)}
+      <div style={{display:"flex",gap:8,marginTop:16}}>
+        <button onClick={onCancel} style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:10,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
+        <button onClick={()=>onSave(cfg)} style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:10,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:14,cursor:"pointer"}}>SAVE POINTS</button>
+      </div>
+    </div>
+  );
+}
+
+
+// ── PROPOSE RULES FORM ───────────────────────────────────────────────────────
+
+function ProposeRulesForm({ teams, eligibleVoters, onPropose, withPassword, tournamentStarted }) {
+  const [open, setOpen] = useState(false);
+  const [transferDay, setTransferDay] = useState("Sunday");
+  const [transferTime, setTransferTime] = useState("11:00 AM");
+  const [snatchStart, setSnatchStart] = useState("Saturday 12:00 AM");
+  const [snatchEnd, setSnatchEnd] = useState("Saturday 12:00 PM");
+  const [snatchReturn, setSnatchReturn] = useState("Friday 11:58 PM");
+
+  const days = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+  const times = ["12:00 AM","1:00 AM","2:00 AM","3:00 AM","6:00 AM","9:00 AM","10:00 AM","11:00 AM","12:00 PM","1:00 PM","3:00 PM","6:00 PM","9:00 PM","10:00 PM","11:00 PM","11:58 PM"];
+
+  if (!open) return (
+    <button onClick={()=>withPassword(()=>setOpen(true))} style={{width:"100%",background:"#F5A62322",border:"1px solid #F5A62344",borderRadius:12,padding:14,color:"#F5A623",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:15,cursor:"pointer"}}>
+      ✏️ PROPOSE TIMING CHANGE (Admin)
+    </button>
+  );
+
+  const sel = (label, val, setVal, opts) => (
+    <div style={{marginBottom:12}}>
+      <div style={{fontSize:11,color:"#4A5E78",marginBottom:4,letterSpacing:1}}>{label}</div>
+      <select value={val} onChange={e=>setVal(e.target.value)} style={{width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"8px 12px",color:"#E2EAF4",fontSize:14,fontFamily:"Barlow Condensed,sans-serif",cursor:"pointer",outline:"none"}}>
+        {opts.map(o=><option key={o} value={o}>{o}</option>)}
+      </select>
+    </div>
+  );
+
+  return (
+    <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #F5A62344",padding:20}}>
+      <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:18,fontWeight:700,color:"#F5A623",letterSpacing:2,marginBottom:4}}>PROPOSE RULE CHANGE</div>
+      <div style={{fontSize:11,color:"#4A5E78",marginBottom:16}}>All {eligibleVoters.length} claimed teams must approve for changes to take effect.</div>
+      {sel("Transfer Window Start Day", transferDay, setTransferDay, days)}
+      {sel("Transfer Window End Time", transferTime, setTransferTime, times)}
+      {sel("Snatch Window Start", snatchStart, setSnatchStart, days.map(d=>{const s="12:00 AM";return d+" "+s;}).concat(days.map(d=>{const s="12:00 PM";return d+" "+s;})))}
+      {sel("Snatch Window End", snatchEnd, setSnatchEnd, days.map(d=>{const s="12:00 PM";return d+" "+s;}).concat(days.map(d=>{const s="6:00 PM";return d+" "+s;})))}
+      {sel("Snatch Return Time", snatchReturn, setSnatchReturn, days.map(d=>{const s="11:58 PM";return d+" "+s;}).concat(days.map(d=>{const s="11:00 PM";return d+" "+s;})))}
+      <div style={{display:"flex",gap:8,marginTop:4}}>
+        <button onClick={()=>setOpen(false)} style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:10,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
+        <button onClick={()=>{onPropose({"Transfer Start":transferDay,"Transfer End":transferTime,"Snatch Window":snatchStart+" to "+snatchEnd,"Snatch Return":snatchReturn});setOpen(false);}} style={{flex:2,background:"#F5A623",border:"none",borderRadius:8,padding:10,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:14,cursor:"pointer"}}>SUBMIT FOR VOTE</button>
+      </div>
+    </div>
+  );
+}
+
+
+
