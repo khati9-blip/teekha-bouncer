@@ -4620,6 +4620,31 @@ function Root() {
   const sbSet = async (key, value) => { try { await fetch("https://rmcxhorijitrhqyrvvkn.supabase.co/rest/v1/league_data", {method:"POST",headers:{"apikey":"sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm","Authorization":"Bearer sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm","Content-Type":"application/json","Prefer":"resolution=merge-duplicates"},body:JSON.stringify({key,value,updated_at:new Date().toISOString()})}); } catch {} };
   const hashPw = async (pw) => { const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(pw)); return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join(""); };
 
+  // Auto-resolve myTeam for admin users who also claimed a team
+  React.useEffect(() => {
+    if (!isAdmin || myTeam || !currentPitch) return;
+    (async () => {
+      try {
+        const identity = await sbGet(currentPitch.id + '_teamIdentity') || {};
+        // Find by current user email first
+        const userEmail = currentUser?.email;
+        let entry = userEmail ? Object.values(identity).find(ti => ti.claimedBy === userEmail) : null;
+        // Fallback: check adminEmail stored in Supabase
+        if (!entry) {
+          const adminEmail = await sbGet(currentPitch.id + '_adminEmail');
+          if (adminEmail) entry = Object.values(identity).find(ti => ti.claimedBy === adminEmail);
+        }
+        if (!entry) return;
+        const allTeams = await sbGet(currentPitch.id + '_teams') || [];
+        const team = allTeams.find(t => t.id === entry.teamRef);
+        if (!team) return;
+        const teamData = {...team, teamId: entry.teamId};
+        try { localStorage.setItem('tb_myteam_' + currentPitch.id, JSON.stringify(teamData)); } catch {}
+        setMyTeam(teamData);
+      } catch {}
+    })();
+  }, [isAdmin, currentPitch?.id]);
+
   const handleLogin = (user) => {
     setCurrentUser(user);
     try { localStorage.setItem('tb_user', JSON.stringify(user)); } catch {}
