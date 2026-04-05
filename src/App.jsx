@@ -2775,7 +2775,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
     }).filter(Boolean);
 
     const allActive = [...active, ...(snatchedOut?[snatchedOut]:[])];
-    return [...allActive, ...historical, ...(snatchedIn?[snatchedIn]:[]), ...snatchHistoryForTeam].sort((a,b)=>b.total-a.total);
+    return [...allActive, ...currentTradedOutPlayers, ...historical, ...(snatchedIn?[snatchedIn]:[]), ...snatchHistoryForTeam].sort((a,b)=>b.total-a.total);
   };
 
   const shareLeaderboard = () => {
@@ -3609,17 +3609,27 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
 
                     // Build per-team breakdown for this match
                     const teamBreakdowns = teams.map(team=>{
-                      const teamPts = players
-                        .filter(p=>assignments[p.id]===team.id&&points[p.id]?.[match.id])
-                        .map(p=>{
-                          const d = points[p.id][match.id];
+                      // Include traded-out players who scored in this match (points still belong to team)
+                      const tOut = (transfers.tradedPairs||[]).filter(t=>t.teamId===team.id).map(t=>t.releasedPid);
+                      const tIn = (transfers.tradedPairs||[]).filter(t=>t.teamId===team.id).map(t=>t.pickedPid);
+                      const relevantPids = [...new Set([
+                        ...players.filter(p=>assignments[p.id]===team.id).map(p=>p.id),
+                        ...tOut
+                      ])];
+                      const teamPts = relevantPids
+                        .filter(pid=>points[pid]?.[match.id])
+                        .map(pid=>{
+                          const p = players.find(x=>x.id===pid);
+                          if(!p) return null;
+                          const d = points[pid][match.id];
                           const cap = captains[`${match.id}_${team.id}`]||{};
                           let pts = d.base;
                           let mult = 1;
-                          if(cap.captain===p.id){pts*=2;mult=2;}
-                          else if(cap.vc===p.id){pts*=1.5;mult=1.5;}
-                          return {...p, base:d.base, pts:Math.round(pts), mult, stats:d.stats, breakdown:calcBreakdown(d.stats)};
-                        }).sort((a,b)=>b.pts-a.pts);
+                          if(cap.captain===pid){pts*=2;mult=2;}
+                          else if(cap.vc===pid){pts*=1.5;mult=1.5;}
+                          const tradeStatus = tOut.includes(pid)?"traded-out":tIn.includes(pid)?"traded-in":null;
+                          return {...p, base:d.base, pts:Math.round(pts), mult, stats:d.stats, breakdown:calcBreakdown(d.stats), tradeStatus};
+                        }).filter(Boolean).sort((a,b)=>b.pts-a.pts);
                       const total = teamPts.reduce((s,p)=>s+p.pts,0);
                       return {team, players:teamPts, total};
                     }).sort((a,b)=>b.total-a.total);
@@ -3762,7 +3772,9 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                                    {p.status==="snatched-out"&&<span style={{fontSize:9,color:"#A855F7",marginLeft:6,fontWeight:700}}>SNATCHED</span>}
                                    {p.status==="snatched-in"&&<span style={{fontSize:9,color:"#2ECC71",marginLeft:6,fontWeight:700}}>ON LOAN</span>}
                                    {p.status==="snatch-returned-in"&&<span style={{fontSize:9,color:"#4A5E78",marginLeft:6}}>RETURNED</span>}
-                                   {p.status==="released"&&<span style={{fontSize:11,marginRight:4}}>&#x2B07;</span>}
+                                   {p.status==="released"&&<span style={{fontSize:9,color:"#4A5E78",marginLeft:6}}>⬇️</span>}
+                                   {p.status==="traded-out"&&<span style={{fontSize:9,color:"#FF3D5A",marginLeft:6,fontWeight:700}}>OUT{p.exchangedWith?" → "+p.exchangedWith:""}</span>}
+                                   {p.status==="traded-in"&&<span style={{fontSize:9,color:"#2ECC71",marginLeft:6,fontWeight:700}}>IN</span>}
                                    {p.status==="traded-out"&&<span style={{fontSize:9,color:"#FF3D5A",marginLeft:6,fontWeight:700}}>OUT{p.exchangedWith?" for "+p.exchangedWith:""}</span>}
                                    {p.status==="traded-in"&&<span style={{fontSize:9,color:"#2ECC71",marginLeft:6,fontWeight:700}}>TRADED IN</span>}
                                  </div>
