@@ -104,6 +104,9 @@ export default function TransferWindow({
   // Current pick team
   const currentPickTeamId = transfers.currentPickTeam;
   const currentPickTeam = teams.find(t => t.id === currentPickTeamId);
+  const isClone = !!(pitch?.name?.includes("(Testing)"));
+  const myTeamIdRef = myTeam?.id;
+  const isMyTurn = (currentPickTeamId === myTeamIdRef) || (isClone && unlocked && !!currentPickTeamId);
 
   // Handle releasing a player
   const handleRelease = async (teamId, pid) => {
