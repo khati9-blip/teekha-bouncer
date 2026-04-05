@@ -213,7 +213,10 @@ function calcPoints(s, cfg) {
   p += wkts * c.wicket;
   if      (wkts >= 5) p += c.fiveWkt;
   else if (wkts >= 4) p += c.fourWkt;
-  if (ovs >= c.ecoMinOvers && eco !== null && eco < c.ecoThreshold) p += c.ecoBonus;
+  // Convert cricket overs notation to real overs for min overs check
+  const ovsInt = Math.floor(ovs); const ovsBalls = Math.round((ovs - ovsInt) * 10);
+  const realOvs = ovsInt + (ovsBalls / 6);
+  if (realOvs >= c.ecoMinOvers && eco !== null && eco !== "" && +eco < c.ecoThreshold) p += c.ecoBonus;
 
   p += catches * c.catch;
   p += (stump) * c.stumping;
@@ -663,7 +666,10 @@ function SmartStatsModal({ match, players, assignments, existingStats, onSave, o
           const p = findPlayer(bw.name || bw.bowler?.name);
           if (!p) return;
           matched++;
-          const overs = parseFloat(bw.o || bw.overs || 0);
+          const oversRaw = parseFloat(bw.o || bw.overs || 0);
+          const oversInt = Math.floor(oversRaw);
+          const oversBalls = Math.round((oversRaw - oversInt) * 10);
+          const overs = oversInt + (oversBalls / 6); // convert cricket overs to real overs
           const runs = parseInt(bw.r || bw.runs || 0);
           const eco = overs > 0 ? Math.round((runs/overs)*100)/100 : 0;
           newStats[p.id] = {
