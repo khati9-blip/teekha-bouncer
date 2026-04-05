@@ -4632,13 +4632,24 @@ function Root() {
   // Restore full session from localStorage on refresh
   const [screen, setScreen] = useState(() => {
     try {
-      const pitch = JSON.parse(localStorage.getItem('tb_pitch') || 'null');
-      if (!pitch) return 'pitches';
-      if (localStorage.getItem('tb_admin_' + pitch.id)) return 'app';
-      if (localStorage.getItem('tb_myteam_' + pitch.id)) return 'app';
+      const saved = localStorage.getItem('tb_screen') || 'pitches';
+      // Only restore 'pitches' or 'app' — transitional screens reset to pitches
+      if (saved === 'pitches') return 'pitches';
+      if (saved === 'app') {
+        const pitch = JSON.parse(localStorage.getItem('tb_pitch') || 'null');
+        if (!pitch) return 'pitches';
+        // Only restore app if we have credentials
+        if (localStorage.getItem('tb_admin_' + pitch.id) || localStorage.getItem('tb_myteam_' + pitch.id)) return 'app';
+      }
       return 'pitches';
     } catch { return 'pitches'; }
   });
+
+  // Save screen to localStorage whenever it changes
+  const setScreenAndSave = (s) => {
+    setScreen(s);
+    try { localStorage.setItem('tb_screen', s); } catch {}
+  };
   const [myTeam, setMyTeam] = useState(() => {
     try {
       const pitch = JSON.parse(localStorage.getItem('tb_pitch') || 'null');
@@ -4674,7 +4685,7 @@ function Root() {
 
   const handleLogout = () => {
     setCurrentUser(null); setCurrentPitch(null); setMyTeam(null); setMyPinHash(null);
-    setIsGuest(false); setIsAdmin(false); setScreen('pitches');
+    setIsGuest(false); setIsAdmin(false); setScreenAndSave('pitches');
     try { localStorage.removeItem('tb_user'); } catch {}
   };
 
@@ -4691,10 +4702,10 @@ function Root() {
     // Check localStorage first (fastest)
     try {
       const savedAdmin = localStorage.getItem('tb_admin_' + pitch.id);
-      if (savedAdmin) { setIsAdmin(true); setIsGuest(false); setMyTeam(null); setScreen('app'); return; }
+      if (savedAdmin) { setIsAdmin(true); setIsGuest(false); setMyTeam(null); setScreenAndSave('app'); return; }
       const savedTeam = localStorage.getItem('tb_myteam_' + pitch.id);
       const savedPin = localStorage.getItem('tb_pinHash_' + pitch.id);
-      if (savedTeam) { setMyTeam(JSON.parse(savedTeam)); setMyPinHash(savedPin||null); setIsGuest(false); setIsAdmin(false); setScreen('app'); return; }
+      if (savedTeam) { setMyTeam(JSON.parse(savedTeam)); setMyPinHash(savedPin||null); setIsGuest(false); setIsAdmin(false); setScreenAndSave('app'); return; }
     } catch {}
 
     // Check Supabase by email (works across devices)
@@ -4705,7 +4716,7 @@ function Root() {
         const adminEmail = await sbGet(pitch.id + "_adminEmail");
         if (adminEmail === userEmail) {
           try { localStorage.setItem('tb_admin_' + pitch.id, '1'); } catch {}
-          setIsAdmin(true); setIsGuest(false); setMyTeam(null); setScreen('app'); return;
+          setIsAdmin(true); setIsGuest(false); setMyTeam(null); setScreenAndSave('app'); return;
         }
         // Check teamIdentity for claimed team
         const identity = await sbGet(pitch.id + "_teamIdentity") || {};
@@ -4717,48 +4728,48 @@ function Root() {
           if (team) {
             const teamData = {...team, teamId: entry.teamId};
             try { localStorage.setItem('tb_myteam_' + pitch.id, JSON.stringify(teamData)); if(entry.pinHash) localStorage.setItem('tb_pinHash_' + pitch.id, entry.pinHash); } catch {}
-            setMyTeam(teamData); setMyPinHash(entry.pinHash||null); setIsGuest(false); setIsAdmin(false); setScreen('app'); return;
+            setMyTeam(teamData); setMyPinHash(entry.pinHash||null); setIsGuest(false); setIsAdmin(false); setScreenAndSave('app'); return;
           }
         }
       }
     } catch(e) { console.error("Email check error:", e); }
 
     // First time - show join screen
-    setScreen('join');
+    setScreenAndSave('join');
   };
 
   const handleSetupAdmin = (pitch, existingPitches) => {
     _pitchId = pitch.id;
     setCurrentPitch(pitch);
     if (existingPitches) setPendingPitches(existingPitches);
-    setScreen('adminSetup');
+    setScreenAndSave('adminSetup');
   };
 
   const handleClaimed = (team, pinHash) => {
     setMyTeam(team); setMyPinHash(pinHash); setIsGuest(false); setIsAdmin(false);
-    setScreen('app');
+    setScreenAndSave('app');
   };
 
   const handleGuestEnter = () => {
     try { localStorage.setItem('tb_guest_' + currentPitch.id, '1'); } catch {}
     setIsGuest(true); setIsAdmin(false); setMyTeam(null);
-    setScreen('app');
+    setScreenAndSave('app');
   };
 
   const handleAdminEnter = () => {
     setIsAdmin(true); setIsGuest(false); setMyTeam(null);
-    setScreen('app');
+    setScreenAndSave('app');
   };
 
   const handleLeave = () => {
     setCurrentPitch(null); setMyTeam(null); setMyPinHash(null);
-    setIsGuest(false); setIsAdmin(false); setScreen('pitches');
+    setIsGuest(false); setIsAdmin(false); setScreenAndSave('pitches');
   };
   const handleLeaveGuest = () => {
     // Clear guest key so they see the 3-option screen next time
     try { if (currentPitch) localStorage.removeItem('tb_guest_' + currentPitch.id); } catch {}
     setCurrentPitch(null); setMyTeam(null); setMyPinHash(null);
-    setIsGuest(false); setIsAdmin(false); setScreen('pitches');
+    setIsGuest(false); setIsAdmin(false); setScreenAndSave('pitches');
   };
 
   try {
@@ -4785,7 +4796,7 @@ function Root() {
         }
         setCurrentPitch(pitch); setIsAdmin(true);
         try { localStorage.setItem('tb_admin_' + pitch.id, '1'); } catch {}
-        setScreen('app');
+        setScreenAndSave('app');
       }} onBack={()=>{ setPendingPitches(null); handleLeave(); }} sbGet={sbGet} sbSet={sbSet} hashPw={hashPw} />
     );
 
