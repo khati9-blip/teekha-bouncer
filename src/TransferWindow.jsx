@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 
 const SB_URL = "https://rmcxhorijitrhqyrvvkn.supabase.co/rest/v1/league_data";
 const SB_KEY = "sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm";
@@ -21,7 +21,8 @@ function TierBadge({ tier }) {
   );
 }
 
-function Timer({ deadline }) {
+// ── COUNTDOWN TIMER ──────────────────────────────────────────────────────────
+function Timer({ deadline, label = "REMAINING" }) {
   const [left, setLeft] = useState(0);
   useEffect(() => {
     const tick = () => setLeft(Math.max(0, Math.floor((new Date(deadline) - Date.now()) / 1000)));
@@ -29,42 +30,59 @@ function Timer({ deadline }) {
     const t = setInterval(tick, 1000);
     return () => clearInterval(t);
   }, [deadline]);
-  const m = Math.floor(left / 60);
+  const h = Math.floor(left / 3600);
+  const m = Math.floor((left % 3600) / 60);
   const s = left % 60;
   const urgent = left < 300;
   return (
-    <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:28,fontWeight:700,
-      color:urgent?"#FF3D5A":"#F5A623",textAlign:"center",letterSpacing:2}}>
-      {left === 0 ? "TIME UP" : `${m}:${String(s).padStart(2,"0")}`}
-      <div style={{fontSize:10,color:"#4A5E78",letterSpacing:2,marginTop:2}}>
-        {left===0?"TIMER EXPIRED":"REMAINING"}
-      </div>
+    <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:32,fontWeight:700,
+      color:left===0?"#4A5E78":urgent?"#FF3D5A":"#F5A623",textAlign:"center",letterSpacing:2}}>
+      {left === 0 ? "TIME UP" : h > 0 ? `${h}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}` : `${m}:${String(s).padStart(2,"0")}`}
+      <div style={{fontSize:10,color:"#4A5E78",letterSpacing:2,marginTop:2}}>{left===0?"EXPIRED":label}</div>
     </div>
   );
 }
 
-// Check if a player from pool can be traded for any of team's remaining released players
-function getValidMatches(poolPlayer, releasedPlayers, alreadyTraded) {
-  const remaining = releasedPlayers.filter(p => !alreadyTraded.includes(p.id));
-  return remaining.filter(rp =>
-    rp.role === poolPlayer.role &&
-    TIER_ORDER[poolPlayer.tier||""] <= TIER_ORDER[rp.tier||""]
-  );
+// ── AUTO WINDOW TIMING ───────────────────────────────────────────────────────
+function getNextSundayIST() {
+  // Returns ISO string for next Sunday 23:59:00 IST (UTC+5:30)
+  const now = new Date();
+  const istOffset = 5.5 * 60 * 60 * 1000;
+  const istNow = new Date(now.getTime() + istOffset);
+  const day = istNow.getUTCDay(); // 0=Sun
+  const daysUntilSunday = day === 0 ? 7 : 7 - day;
+  const nextSunday = new Date(istNow);
+  nextSunday.setUTCDate(istNow.getUTCDate() + daysUntilSunday);
+  nextSunday.setUTCHours(18, 29, 0, 0); // 23:59 IST = 18:29 UTC
+  return nextSunday.toISOString();
 }
 
-// Check if team can pass (no pool player matches any remaining released player)
-function canPass(releasedPlayers, poolPlayers, alreadyTraded) {
-  const remaining = releasedPlayers.filter(p => !alreadyTraded.includes(p.id));
-  for (const rp of remaining) {
-    for (const pp of poolPlayers) {
-      if (pp.role === rp.role && TIER_ORDER[pp.tier||""] <= TIER_ORDER[rp.tier||""]) {
-        return false; // found a valid match — cannot pass
-      }
-    }
-  }
-  return true; // no valid matches — can pass
+function getNextMondayIST() {
+  // Returns ISO string for next Monday 05:30:00 UTC = 11:00 AM IST
+  const now = new Date();
+  const istOffset = 5.5 * 60 * 60 * 1000;
+  const istNow = new Date(now.getTime() + istOffset);
+  const day = istNow.getUTCDay();
+  const daysUntilMonday = day === 1 ? 7 : (8 - day) % 7;
+  const nextMonday = new Date(istNow);
+  nextMonday.setUTCDate(istNow.getUTCDate() + daysUntilMonday);
+  nextMonday.setUTCHours(5, 30, 0, 0); // 11:00 IST = 05:30 UTC
+  return nextMonday.toISOString();
 }
 
+function isWithinReleaseWindow() {
+  // Sunday 11:59 PM → Monday 11:00 AM IST
+  const now = new Date();
+  const istOffset = 5.5 * 60 * 60 * 1000;
+  const ist = new Date(now.getTime() + istOffset);
+  const day = ist.getUTCDay(); // 0=Sun,1=Mon
+  const h = ist.getUTCHours(), m = ist.getUTCMinutes();
+  if (day === 0 && (h > 23 || (h === 23 && m >= 59))) return true; // Sun 11:59 PM+
+  if (day === 1 && (h < 5 || (h === 5 && m < 30))) return true; // Mon before 11 AM IST
+  return false;
+}
+
+// ── TRANSFER WINDOW COMPONENT ────────────────────────────────────────────────
 export default function TransferWindow({
   pitch, teams, players, assignments, transfers, unsoldPool,
   leaderboard, isAdmin, myTeam, unlocked, withPassword,
@@ -72,100 +90,154 @@ export default function TransferWindow({
   onUpdateOwnershipLog, ownershipLog, points, onUpdatePoints,
   user
 }) {
-  const [tradeModal, setTradeModal] = useState(null); // {poolPlayer, validReleased}
-  const [matchModal, setMatchModal] = useState(null); // {poolPlayer, selectedMatch}
-  const [releaseConfirm, setReleaseConfirm] = useState(null);
-  const [forceReleaseTeam, setForceReleaseTeam] = useState(null);
-  const [forceReleasePid, setForceReleasePid] = useState(null);
+  const [pickModal, setPickModal] = useState(null); // {poolPlayer}
+  const [tradeConfirmModal, setTradeConfirmModal] = useState(null); // {poolPlayer, releasedPlayer}
+  const [resetConfirm, setResetConfirm] = useState(false);
 
-  const phase = transfers.phase;
+  const phase = transfers?.phase || "closed";
   const myTeamId = myTeam?.id;
   const sortedTeams = leaderboard.map(t => teams.find(x => x.id === t.id)).filter(Boolean);
 
-  // Get released players for a team
+  // ── AUTO WINDOW CHECK ──────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!unlocked) return; // only admin triggers auto
+    const check = () => {
+      if (phase === "closed" && isWithinReleaseWindow()) {
+        // Auto-open release window
+        onUpdateTransfers({
+          ...transfers,
+          phase: "release",
+          autoOpened: true,
+          autoOpenedAt: new Date().toISOString(),
+          releaseDeadline: getNextMondayIST(),
+        });
+      }
+    };
+    check();
+    const interval = setInterval(check, 60 * 1000); // check every minute
+    return () => clearInterval(interval);
+  }, [phase, unlocked]);
+
+  // ── HELPERS ────────────────────────────────────────────────────────────────
   const getReleasedPlayers = (teamId) =>
-    (transfers.releases?.[teamId] || []).map(pid => players.find(p => p.id === pid)).filter(Boolean);
+    (transfers?.releases?.[teamId] || []).map(pid => players.find(p => p.id === pid)).filter(Boolean);
 
-  // Get already traded pids for a team
-  const getTradedPids = (teamId) =>
-    (transfers.tradedPairs || []).filter(t => t.teamId === teamId).map(t => t.releasedPid);
+  const getTradedPairs = (teamId) =>
+    (transfers?.tradedPairs || []).filter(t => t.teamId === teamId);
 
-  // Pool players (with player details)
+  const getTradedInPid = (releasedPid) => {
+    const pair = (transfers?.tradedPairs || []).find(t => t.releasedPid === releasedPid);
+    return pair ? players.find(p => p.id === pair.pickedPid) : null;
+  };
+
   const poolPlayers = unsoldPool.map(pid => players.find(p => p.id === pid)).filter(Boolean);
-
-  // Sort pool by tier desc
   const sortedPool = [...poolPlayers].sort((a,b) =>
     (TIER_ORDER[b.tier||""] - TIER_ORDER[a.tier||""]) || a.name.localeCompare(b.name)
   );
 
-  // Current pick team
-  const currentPickTeamId = transfers.currentPickTeam;
-  const isMyTurn = currentPickTeamId === myTeamId;
+  const getValidMatches = (poolPlayer, teamId) => {
+    const released = getReleasedPlayers(teamId);
+    const tradedPids = getTradedPairs(teamId).map(t => t.releasedPid);
+    const remaining = released.filter(p => !tradedPids.includes(p.id));
+    return remaining.filter(rp =>
+      rp.role === poolPlayer.role &&
+      TIER_ORDER[poolPlayer.tier||""] <= TIER_ORDER[rp.tier||""]
+    );
+  };
+
+  const canPass = (teamId) => {
+    const released = getReleasedPlayers(teamId);
+    const tradedPids = getTradedPairs(teamId).map(t => t.releasedPid);
+    const remaining = released.filter(p => !tradedPids.includes(p.id));
+    if (remaining.length === 0) return false;
+    for (const rp of remaining) {
+      for (const pp of sortedPool) {
+        if (pp.role === rp.role && TIER_ORDER[pp.tier||""] <= TIER_ORDER[rp.tier||""]) return false;
+      }
+    }
+    return true;
+  };
+
+  const currentPickTeamId = transfers?.currentPickTeam;
   const currentPickTeam = teams.find(t => t.id === currentPickTeamId);
+  const isMyTurn = currentPickTeamId === myTeamId;
 
-  // Handle releasing a player
-  const handleRelease = async (teamId, pid) => {
-    const current = transfers.releases?.[teamId] || [];
-    if (current.includes(pid)) {
-      // Un-release
-      const updated = { ...transfers, releases: { ...transfers.releases, [teamId]: current.filter(x => x !== pid) } };
-      onUpdateTransfers(updated);
-    } else {
-      if (current.length >= 3) { alert("You can only release 3 players."); return; }
-      const updated = { ...transfers, releases: { ...transfers.releases, [teamId]: [...current, pid] } };
-      // Add to unsold pool
-      if (!unsoldPool.includes(pid)) onUpdateUnsoldPool([...unsoldPool, pid]);
-      onUpdateTransfers(updated);
-    }
+  // ── RELEASE ────────────────────────────────────────────────────────────────
+  const handleRelease = (teamId, pid) => {
+    if (phase !== "release") return;
+    const current = transfers?.releases?.[teamId] || [];
+    const isReleased = current.includes(pid);
+    if (!isReleased && current.length >= 3) { alert("Max 3 releases per team"); return; }
+    const updated = {
+      ...transfers,
+      releases: {
+        ...transfers.releases,
+        [teamId]: isReleased ? current.filter(x => x !== pid) : [...current, pid]
+      }
+    };
+    if (!isReleased && !unsoldPool.includes(pid)) onUpdateUnsoldPool([...unsoldPool, pid]);
+    onUpdateTransfers(updated);
   };
 
-  // Handle picking a player from pool
-  const handlePickPlayer = (poolPlayer) => {
-    const myReleased = getReleasedPlayers(myTeamId);
-    const tradedPids = getTradedPids(myTeamId);
-    const validMatches = getValidMatches(poolPlayer, myReleased, tradedPids);
-    if (validMatches.length === 0) {
-      alert("This player does not match any of your remaining released players (like-for-like + same/lower tier).");
-      return;
-    }
-    setTradeModal({ poolPlayer, validMatches });
+  // ── PICK ───────────────────────────────────────────────────────────────────
+  const handlePickClick = (poolPlayer) => {
+    const valid = getValidMatches(poolPlayer, myTeamId);
+    if (valid.length === 0) { alert("No valid match — must be same role and same/lower tier."); return; }
+    setPickModal({ poolPlayer, validMatches: valid });
   };
 
-  // Confirm trade after selecting which released player to match
-  const confirmTrade = async (poolPlayer, releasedPlayer) => {
+  const confirmTrade = (poolPlayer, releasedPlayer) => {
+    setPickModal(null);
+    setTradeConfirmModal({ poolPlayer, releasedPlayer });
+  };
+
+  const executeTrade = () => {
+    const { poolPlayer, releasedPlayer } = tradeConfirmModal;
+    const now = new Date().toISOString();
+    const today = now.split("T")[0];
+
+    // Update assignments
     const newAssignments = { ...assignments, [poolPlayer.id]: myTeamId };
-    delete newAssignments[releasedPlayer.id]; // remove from team
+    delete newAssignments[releasedPlayer.id];
 
-    // Update ownership log
-    const now = new Date().toISOString().split("T")[0];
-    const newLog = { ...ownershipLog };
-    // Close old owner period for released player
+    // Update ownership log — freeze released player, reset incoming
+    let newLog = { ...(ownershipLog || {}) };
+
+    // Close released player's period for this team
     if (!newLog[releasedPlayer.id]) newLog[releasedPlayer.id] = [];
     newLog[releasedPlayer.id] = newLog[releasedPlayer.id].map(o =>
       o.teamId === myTeamId && !o.to ? { ...o, to: now } : o
     );
-    // Open new period for incoming player
+    if (!newLog[releasedPlayer.id].some(o => o.teamId === myTeamId)) {
+      newLog[releasedPlayer.id].push({ teamId: myTeamId, from: "2025-01-01T00:00:00.000Z", to: now });
+    }
+
+    // Open new period for incoming player (points reset from now)
     if (!newLog[poolPlayer.id]) newLog[poolPlayer.id] = [];
-    newLog[poolPlayer.id] = [...newLog[poolPlayer.id], { teamId: myTeamId, from: now, to: null }];
+    // Close any existing open period for this player
+    newLog[poolPlayer.id] = newLog[poolPlayer.id].map(o => !o.to ? { ...o, to: now } : o);
+    newLog[poolPlayer.id].push({ teamId: myTeamId, from: now, to: null });
 
     // Record trade pair
-    const tradedPairs = [...(transfers.tradedPairs || []), {
-      teamId: myTeamId,
-      releasedPid: releasedPlayer.id,
-      pickedPid: poolPlayer.id,
-      week: transfers.weekNum,
-      timestamp: new Date().toISOString(),
-    }];
+    const tradedPairs = [
+      ...(transfers.tradedPairs || []),
+      {
+        teamId: myTeamId,
+        releasedPid: releasedPlayer.id,
+        pickedPid: poolPlayer.id,
+        week: transfers.weekNum,
+        timestamp: now,
+      }
+    ];
 
-    // Move pool player out of unsold pool
+    // Update pool
     const newPool = unsoldPool.filter(id => id !== poolPlayer.id);
-    // Put released player in pool for others to pick
     if (!newPool.includes(releasedPlayer.id)) newPool.push(releasedPlayer.id);
 
-    // Next team
+    // Advance to next team
     const nextTeam = getNextPickTeam(myTeamId, tradedPairs);
-    const deadline = new Date(Date.now() + 45 * 60 * 1000).toISOString();
-    const allDone = checkAllDone(tradedPairs, newPool);
+    const deadline = nextTeam ? new Date(Date.now() + 45 * 60 * 1000).toISOString() : null;
+    const allDone = !nextTeam;
 
     const updated = {
       ...transfers,
@@ -179,51 +251,36 @@ export default function TransferWindow({
     onUpdateUnsoldPool(newPool);
     onUpdateOwnershipLog(newLog);
     onUpdateTransfers(updated);
-    setTradeModal(null);
-    setMatchModal(null);
+    setTradeConfirmModal(null);
   };
 
-  // Handle pass
-  const handlePass = async () => {
+  const handlePass = () => {
+    if (!canPass(myTeamId)) { alert("You cannot pass — valid picks exist in the pool."); return; }
     const myReleased = getReleasedPlayers(myTeamId);
-    const tradedPids = getTradedPids(myTeamId);
+    const tradedPids = getTradedPairs(myTeamId).map(t => t.releasedPid);
     const remaining = myReleased.filter(p => !tradedPids.includes(p.id));
 
-    if (!canPass(remaining, sortedPool, [])) {
-      alert("You cannot pass — there are still valid players in the pool matching your criteria.");
-      return;
-    }
-
-    // Return all remaining released players to team
+    // Return remaining released players to team
     const newAssignments = { ...assignments };
     remaining.forEach(p => { newAssignments[p.id] = myTeamId; });
 
-    // Mark them as ineligible this window
     const ineligible = [...(transfers.ineligible || []), ...remaining.map(p => p.id)];
-
-    const tradedPairs = [...(transfers.tradedPairs || [])];
-    const nextTeam = getNextPickTeam(myTeamId, tradedPairs);
-    const deadline = new Date(Date.now() + 45 * 60 * 1000).toISOString();
-    const allDone = checkAllDone(tradedPairs, sortedPool.filter(p => !ineligible.includes(p.id)));
-
-    const updated = {
-      ...transfers,
-      tradedPairs,
-      ineligible,
-      currentPickTeam: allDone ? null : nextTeam,
-      pickDeadline: allDone ? null : deadline,
-      phase: allDone ? "done" : "trade",
-    };
+    const nextTeam = getNextPickTeam(myTeamId, transfers.tradedPairs || []);
+    const deadline = nextTeam ? new Date(Date.now() + 45 * 60 * 1000).toISOString() : null;
 
     onUpdateAssignments(newAssignments);
-    onUpdateTransfers(updated);
+    onUpdateTransfers({
+      ...transfers,
+      ineligible,
+      currentPickTeam: nextTeam || null,
+      pickDeadline: deadline,
+      phase: nextTeam ? "trade" : "done",
+    });
   };
 
-  // Get next team in leaderboard order who still has untraded released players
   const getNextPickTeam = (currentTeamId, tradedPairs) => {
     const order = sortedTeams.map(t => t.id);
     const idx = order.indexOf(currentTeamId);
-    // Try all teams after current, then wrap
     for (let i = 1; i <= order.length; i++) {
       const tid = order[(idx + i) % order.length];
       const released = getReleasedPlayers(tid);
@@ -235,139 +292,259 @@ export default function TransferWindow({
     return null;
   };
 
-  // Check if all trading is done
-  const checkAllDone = (tradedPairs, pool) => {
-    for (const team of sortedTeams) {
-      const released = getReleasedPlayers(team.id);
-      const traded = (tradedPairs || []).filter(t => t.teamId === team.id).map(t => t.releasedPid);
-      const ineligible = transfers.ineligible || [];
-      const remaining = released.filter(p => !traded.includes(p.id) && !ineligible.includes(p.id));
-      if (remaining.length === 0) continue;
-      if (canPass(remaining, pool, [])) continue; // they can pass, so not blocking
-      // They have remaining and can trade — not done
-      for (const rp of remaining) {
-        for (const pp of pool) {
-          if (pp.role === rp.role && TIER_ORDER[pp.tier||""] <= TIER_ORDER[rp.tier||""]) return false;
-        }
+  // ── ADMIN ACTIONS ─────────────────────────────────────────────────────────
+  const startTradePhase = () => withPassword(() => {
+    const firstTeam = sortedTeams[0]?.id;
+    const deadline = new Date(Date.now() + 45 * 60 * 1000).toISOString();
+    onUpdateTransfers({
+      ...transfers,
+      phase: "trade",
+      currentPickTeam: firstTeam,
+      pickDeadline: deadline,
+      tradedPairs: [],
+      ineligible: [],
+    });
+  });
+
+  const resetTradePhase = () => withPassword(() => {
+    if (!confirm("⚠️ Reset trade phase? All picks this window will be erased and it will restart from the top team. Are you sure?")) return;
+
+    // Restore released players to pool (undo all trades)
+    const currentPairs = transfers.tradedPairs || [];
+    let newAssignments = { ...assignments };
+    let newPool = [...unsoldPool];
+    let newLog = { ...(ownershipLog || {}) };
+
+    for (const pair of currentPairs) {
+      // Return picked player to pool
+      delete newAssignments[pair.pickedPid];
+      if (!newPool.includes(pair.pickedPid)) newPool.push(pair.pickedPid);
+      // Return released player to team
+      newAssignments[pair.releasedPid] = pair.teamId;
+      newPool = newPool.filter(id => id !== pair.releasedPid);
+      // Undo ownership log entries
+      if (newLog[pair.pickedPid]) {
+        newLog[pair.pickedPid] = newLog[pair.pickedPid].filter(o =>
+          !(o.teamId === pair.teamId && o.from > (transfers.tradeStartedAt || ""))
+        );
+      }
+      if (newLog[pair.releasedPid]) {
+        newLog[pair.releasedPid] = newLog[pair.releasedPid].map(o =>
+          o.teamId === pair.teamId && o.to ? { ...o, to: null } : o
+        );
       }
     }
-    return true;
-  };
 
-  const inp = {width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"8px 12px",color:"#E2EAF4",fontSize:13,fontFamily:"Barlow Condensed,sans-serif",outline:"none",marginBottom:8,boxSizing:"border-box"};
+    const firstTeam = sortedTeams[0]?.id;
+    const deadline = new Date(Date.now() + 45 * 60 * 1000).toISOString();
+
+    onUpdateAssignments(newAssignments);
+    onUpdateUnsoldPool(newPool);
+    onUpdateOwnershipLog(newLog);
+    onUpdateTransfers({
+      ...transfers,
+      phase: "trade",
+      currentPickTeam: firstTeam,
+      pickDeadline: deadline,
+      tradedPairs: [],
+      ineligible: [],
+      tradeStartedAt: new Date().toISOString(),
+    });
+  });
+
+  const closeWindow = () => withPassword(() => {
+    if (!confirm("Close transfer window?")) return;
+    onUpdateTransfers({ ...transfers, phase: "closed" });
+  });
+
+  const startNewWeek = () => withPassword(() => {
+    if (!confirm("Start new week? This archives this window's history.")) return;
+    onUpdateTransfers({
+      weekNum: (transfers.weekNum || 1) + 1,
+      phase: "closed",
+      releases: {},
+      tradedPairs: [],
+      ineligible: [],
+      currentPickTeam: null,
+      pickDeadline: null,
+      history: [
+        ...(transfers.history || []),
+        {
+          week: transfers.weekNum,
+          releases: transfers.releases,
+          tradedPairs: transfers.tradedPairs,
+          date: new Date().toISOString(),
+        }
+      ],
+    });
+    onUpdateUnsoldPool([]);
+  });
+
+  const openReleaseManually = () => withPassword(() => {
+    onUpdateTransfers({
+      ...transfers,
+      phase: "release",
+      releaseDeadline: getNextMondayIST(),
+      releases: {},
+      tradedPairs: [],
+      ineligible: [],
+    });
+  });
+
+  // ── NEXT AUTO OPEN INFO ──────────────────────────────────────────────────
+  const nextAutoOpen = getNextSundayIST();
+  const releaseDeadline = transfers?.releaseDeadline || getNextMondayIST();
+
+  // ── RENDER ────────────────────────────────────────────────────────────────
+  const phaseBadge = { closed:"#4A5E78", release:"#F5A623", trade:"#2ECC71", done:"#4F8EF7" };
 
   return (
     <div style={{fontFamily:"Barlow Condensed,sans-serif",paddingBottom:40}}>
-      <h2 style={{fontFamily:"Rajdhani,sans-serif",fontSize:28,color:"#F5A623",letterSpacing:2,marginBottom:4}}>TRANSFER WINDOW</h2>
-      <div style={{fontSize:12,color:"#4A5E78",marginBottom:20}}>
-        Week {transfers.weekNum} • Status: <span style={{color:phase==="closed"?"#FF3D5A":phase==="release"?"#F5A623":phase==="trade"?"#2ECC71":"#4A5E78",fontWeight:700,textTransform:"uppercase"}}>{phase}</span>
-        <span style={{marginLeft:8,color:"#4A5E78"}}>• Window: Sunday 11:59 PM → Monday 11:00 AM IST</span>
+
+      {/* HEADER */}
+      <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",flexWrap:"wrap",gap:12,marginBottom:20}}>
+        <div>
+          <h2 style={{fontFamily:"Rajdhani,sans-serif",fontSize:28,color:"#F5A623",letterSpacing:2,marginBottom:4}}>TRANSFER WINDOW</h2>
+          <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
+            <span style={{fontSize:11,color:"#4A5E78"}}>Week {transfers?.weekNum || 1}</span>
+            <span style={{background:phaseBadge[phase]+"22",color:phaseBadge[phase],border:"1px solid "+phaseBadge[phase]+"44",padding:"2px 10px",borderRadius:20,fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>
+              {phase}
+            </span>
+            {phase === "closed" && (
+              <span style={{fontSize:11,color:"#4A5E78"}}>Auto-opens Sun 11:59 PM IST</span>
+            )}
+          </div>
+        </div>
+
+        {/* Auto countdown to next window */}
+        {phase === "closed" && (
+          <div style={{background:"#0E1521",borderRadius:10,padding:"10px 16px",textAlign:"center",border:"1px solid #1E2D45"}}>
+            <div style={{fontSize:10,color:"#4A5E78",letterSpacing:2,marginBottom:4}}>NEXT WINDOW OPENS</div>
+            <Timer deadline={nextAutoOpen} label="UNTIL SUNDAY 11:59 PM IST" />
+          </div>
+        )}
+        {phase === "release" && (
+          <div style={{background:"#F5A62311",borderRadius:10,padding:"10px 16px",textAlign:"center",border:"1px solid #F5A62333"}}>
+            <div style={{fontSize:10,color:"#F5A623",letterSpacing:2,marginBottom:4}}>RELEASE WINDOW CLOSES</div>
+            <Timer deadline={releaseDeadline} label="MONDAY 11:00 AM IST" />
+          </div>
+        )}
       </div>
 
       {/* ADMIN CONTROLS */}
       {unlocked && (
-        <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #1E2D45",padding:16,marginBottom:20}}>
-          <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginBottom:12}}>ADMIN CONTROLS</div>
+        <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #F5A62333",padding:16,marginBottom:20}}>
+          <div style={{fontSize:11,color:"#F5A623",letterSpacing:2,fontWeight:700,marginBottom:12}}>🔑 ADMIN CONTROLS</div>
           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-            {phase==="closed" && (
-              <button onClick={()=>withPassword(()=>{
-                onUpdateTransfers({...transfers,phase:"release",releases:{},tradedPairs:[],ineligible:[]});
-              })} style={{background:"#F5A62322",border:"1px solid #F5A62344",borderRadius:8,padding:"8px 16px",color:"#F5A623",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>
-                📤 OPEN RELEASE WINDOW
+
+            {phase === "closed" && (
+              <button onClick={openReleaseManually} style={adminBtn("#F5A623")}>
+                📤 OPEN RELEASE WINDOW NOW
               </button>
             )}
-            {phase==="release" && (
+
+            {phase === "release" && (
               <>
-                <button onClick={()=>withPassword(()=>{
-                  // Force all teams who haven't released 3 players — keep what they have
-                  const firstTeam = sortedTeams[0]?.id;
-                  const deadline = new Date(Date.now() + 45 * 60 * 1000).toISOString();
-                  onUpdateTransfers({...transfers, phase:"trade", currentPickTeam:firstTeam, pickDeadline:deadline, tradedPairs:[], ineligible:[]});
-                })} style={{background:"#2ECC7122",border:"1px solid #2ECC7133",borderRadius:8,padding:"8px 16px",color:"#2ECC71",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+                <button onClick={startTradePhase} style={adminBtn("#2ECC71")}>
                   🏁 START TRADE PHASE
                 </button>
-                <button onClick={()=>withPassword(()=>{
-                  onUpdateTransfers({...transfers,phase:"closed"});
-                })} style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",borderRadius:8,padding:"8px 16px",color:"#FF3D5A",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+                <button onClick={closeWindow} style={adminBtn("#FF3D5A")}>
                   ✕ CANCEL WINDOW
                 </button>
-                {/* Force release for non-compliant teams */}
-                {sortedTeams.filter(t => (transfers.releases?.[t.id]||[]).length < 3).map(t => (
-                  <div key={t.id} style={{background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:8,padding:"8px 12px",fontSize:12,color:"#FF3D5A"}}>
-                    {t.name} released only {(transfers.releases?.[t.id]||[]).length}/3 players
-                  </div>
-                ))}
               </>
             )}
-            {phase==="trade" && (
+
+            {phase === "trade" && (
               <>
-                <button onClick={()=>withPassword(()=>{
+                <button onClick={() => withPassword(() => {
                   const nextTeam = getNextPickTeam(currentPickTeamId, transfers.tradedPairs);
                   const deadline = new Date(Date.now() + 45 * 60 * 1000).toISOString();
-                  onUpdateTransfers({...transfers, currentPickTeam:nextTeam, pickDeadline:deadline});
-                })} style={{background:"#4F8EF722",border:"1px solid #4F8EF744",borderRadius:8,padding:"8px 16px",color:"#4F8EF7",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+                  onUpdateTransfers({ ...transfers, currentPickTeam: nextTeam, pickDeadline: deadline });
+                })} style={adminBtn("#4F8EF7")}>
                   ⏭ SKIP CURRENT TEAM
                 </button>
-                <button onClick={()=>withPassword(()=>{
-                  onUpdateTransfers({...transfers,phase:"done"});
-                })} style={{background:"#2ECC7122",border:"1px solid #2ECC7133",borderRadius:8,padding:"8px 16px",color:"#2ECC71",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+                <button onClick={resetTradePhase} style={adminBtn("#A855F7")}>
+                  🔄 RESET TRADE PHASE
+                </button>
+                <button onClick={() => withPassword(() => {
+                  onUpdateTransfers({ ...transfers, phase: "done" });
+                })} style={adminBtn("#2ECC71")}>
                   ✅ END TRADE PHASE
                 </button>
               </>
             )}
-            {phase==="done" && (
-              <button onClick={()=>withPassword(()=>{
-                onUpdateTransfers({weekNum:transfers.weekNum+1,phase:"closed",releases:{},picks:[],tradedPairs:[],ineligible:[],currentPickTeam:null,pickDeadline:null,history:[...(transfers.history||[]),{week:transfers.weekNum,releases:transfers.releases,tradedPairs:transfers.tradedPairs,date:new Date().toISOString()}]});
-                onUpdateUnsoldPool([]);
-              })} style={{background:"#F5A62322",border:"1px solid #F5A62344",borderRadius:8,padding:"8px 16px",color:"#F5A623",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+
+            {phase === "done" && (
+              <button onClick={startNewWeek} style={adminBtn("#F5A623")}>
                 🔄 START NEW WEEK
               </button>
             )}
           </div>
+
+          {/* Teams not compliant warning */}
+          {phase === "release" && (
+            <div style={{marginTop:12,display:"flex",flexWrap:"wrap",gap:6}}>
+              {sortedTeams.filter(t => (transfers?.releases?.[t.id]||[]).length < 3).map(t => (
+                <div key={t.id} style={{background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:8,padding:"5px 10px",fontSize:11,color:"#FF3D5A"}}>
+                  ⚠️ {t.name}: {(transfers?.releases?.[t.id]||[]).length}/3 released
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* CLOSED STATE */}
+      {phase === "closed" && (
+        <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #1E2D45",padding:40,textAlign:"center"}}>
+          <div style={{fontSize:48,marginBottom:12}}>🔒</div>
+          <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,fontWeight:700,color:"#4A5E78",letterSpacing:2,marginBottom:8}}>TRANSFER WINDOW CLOSED</div>
+          <div style={{fontSize:13,color:"#4A5E78"}}>Opens automatically every Sunday at 11:59 PM IST</div>
         </div>
       )}
 
       {/* RELEASE PHASE */}
-      {phase==="release" && (
+      {phase === "release" && (
         <div style={{marginBottom:20}}>
-          <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:18,fontWeight:700,color:"#F5A623",letterSpacing:2,marginBottom:12}}>
-            📤 RELEASE PHASE — Select 3 players to release
+          <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:18,fontWeight:700,color:"#F5A623",letterSpacing:2,marginBottom:6}}>
+            📤 RELEASE PHASE
           </div>
           <div style={{fontSize:12,color:"#4A5E78",marginBottom:16}}>
-            Window closes Monday 11:00 AM IST. You can change selections until then.
+            Select up to 3 players to release. Window closes Monday 11:00 AM IST. You can change selections until then.
           </div>
 
           {sortedTeams.map(team => {
             const isMe = team.id === myTeamId;
             const canEdit = isMe || unlocked;
-            if (!canEdit) return null;
             const teamPlayers = players.filter(p => assignments[p.id] === team.id);
-            const released = transfers.releases?.[team.id] || [];
+            const released = transfers?.releases?.[team.id] || [];
 
             return (
-              <div key={team.id} style={{background:"#0E1521",borderRadius:12,border:"1px solid "+team.color+"33",padding:16,marginBottom:12}}>
+              <div key={team.id} style={{background:"#0E1521",borderRadius:12,border:"1px solid "+team.color+"33",padding:16,marginBottom:12,opacity:canEdit?1:0.5}}>
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
                   <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:16,color:team.color}}>{team.name}</div>
-                  <div style={{fontSize:12,color:released.length===3?"#2ECC71":"#F5A623",fontWeight:700}}>
+                  <div style={{fontSize:12,color:released.length===3?"#2ECC71":"#F5A623",fontWeight:700,background:released.length===3?"#2ECC7111":"#F5A62311",padding:"3px 10px",borderRadius:20,border:"1px solid "+(released.length===3?"#2ECC7133":"#F5A62333")}}>
                     {released.length}/3 released
                   </div>
                 </div>
-                <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                {!canEdit && <div style={{fontSize:11,color:"#4A5E78",marginBottom:8}}>Only your own team's releases are editable</div>}
+                <div style={{display:"flex",flexDirection:"column",gap:5}}>
                   {teamPlayers.map(p => {
                     const isReleased = released.includes(p.id);
                     return (
                       <div key={p.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:isReleased?"#FF3D5A11":"#080C14",borderRadius:8,border:"1px solid "+(isReleased?"#FF3D5A44":"#1E2D45")}}>
                         <div style={{flex:1}}>
                           <div style={{display:"flex",alignItems:"center",gap:6}}>
-                            <span style={{fontWeight:700,fontSize:13,color:isReleased?"#FF3D5A":"#E2EAF4"}}>{p.name}</span>
+                            {isReleased && <span style={{fontSize:13}}>📤</span>}
+                            <span style={{fontWeight:700,fontSize:13,color:isReleased?"#FF3D5A":"#E2EAF4",textDecoration:isReleased?"line-through":"none"}}>{p.name}</span>
                             <TierBadge tier={p.tier} />
                           </div>
                           <div style={{fontSize:11,color:"#4A5E78"}}>{p.iplTeam} • {p.role}</div>
                         </div>
                         {canEdit && (
-                          <button onClick={()=>handleRelease(team.id, p.id)}
+                          <button onClick={() => handleRelease(team.id, p.id)}
                             style={{background:isReleased?"#FF3D5A22":"transparent",border:"1px solid "+(isReleased?"#FF3D5A":"#1E2D45"),borderRadius:6,padding:"4px 10px",color:isReleased?"#FF3D5A":"#4A5E78",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif"}}>
-                            {isReleased?"UNDO":"RELEASE"}
+                            {isReleased ? "UNDO" : "RELEASE"}
                           </button>
                         )}
                       </div>
@@ -381,36 +558,102 @@ export default function TransferWindow({
       )}
 
       {/* TRADE PHASE */}
-      {(phase==="trade" || phase==="done") && (
+      {(phase === "trade" || phase === "done") && (
         <div>
-          {/* Current team timer */}
-          {phase==="trade" && currentPickTeam && (
-            <div style={{background:"#0E1521",borderRadius:12,border:"1px solid "+currentPickTeam.color+"44",padding:16,marginBottom:16,textAlign:"center"}}>
+
+          {/* Current pick timer */}
+          {phase === "trade" && currentPickTeam && (
+            <div style={{background:"#0E1521",borderRadius:12,border:"2px solid "+currentPickTeam.color+"66",padding:20,marginBottom:16,textAlign:"center"}}>
               <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,marginBottom:4}}>NOW PICKING</div>
-              <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,fontWeight:700,color:currentPickTeam.color,marginBottom:8}}>
-                {currentPickTeam.name}
+              <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:24,fontWeight:700,color:currentPickTeam.color,marginBottom:12,letterSpacing:1}}>
+                {currentPickTeam.name} {isMyTurn ? "— YOUR TURN 🎯" : ""}
               </div>
-              {transfers.pickDeadline && <Timer deadline={transfers.pickDeadline} />}
+              {transfers.pickDeadline && <Timer deadline={transfers.pickDeadline} label="TO MAKE A PICK" />}
             </div>
           )}
 
-          {phase==="done" && (
+          {phase === "done" && (
             <div style={{background:"#2ECC7111",border:"1px solid #2ECC7133",borderRadius:12,padding:16,marginBottom:16,textAlign:"center"}}>
-              <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:"#2ECC71"}}>TRADE PHASE COMPLETE ✅</div>
+              <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:"#2ECC71"}}>✅ TRADE PHASE COMPLETE</div>
+              <div style={{fontSize:12,color:"#4A5E78",marginTop:4}}>All trades finalised for Week {transfers.weekNum}</div>
             </div>
           )}
 
+          {/* ── LIVE TRACK ──────────────────────────────────────────────── */}
+          <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #1E2D45",padding:16,marginBottom:16}}>
+            <div style={{fontSize:11,color:"#F5A623",letterSpacing:2,fontWeight:700,marginBottom:14}}>📡 LIVE TRADE TRACK</div>
+            {sortedTeams.map(team => {
+              const released = getReleasedPlayers(team.id);
+              if (released.length === 0) return null;
+              const pairs = getTradedPairs(team.id);
+              return (
+                <div key={team.id} style={{marginBottom:14,paddingBottom:14,borderBottom:"1px solid #1E2D45"}}>
+                  <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:14,fontWeight:700,color:team.color,letterSpacing:1,marginBottom:8}}>
+                    {team.name}
+                  </div>
+                  <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                    {released.map(p => {
+                      const pair = pairs.find(pr => pr.releasedPid === p.id);
+                      const incoming = pair ? players.find(x => x.id === pair.pickedPid) : null;
+                      const isIneligible = (transfers.ineligible||[]).includes(p.id);
+                      return (
+                        <div key={p.id} style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                          {/* Released player */}
+                          <div style={{display:"flex",alignItems:"center",gap:5,background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:8,padding:"5px 10px"}}>
+                            <span style={{fontSize:12}}>⬇️</span>
+                            <span style={{fontSize:12,color:"#FF3D5A",textDecoration:"line-through",fontWeight:700}}>{p.name}</span>
+                            <TierBadge tier={p.tier} />
+                            <span style={{fontSize:10,color:"#4A5E78"}}>{p.role}</span>
+                          </div>
+
+                          {/* Arrow + incoming or waiting */}
+                          {incoming ? (
+                            <>
+                              <span style={{color:"#4A5E78",fontSize:14}}>→</span>
+                              <div style={{display:"flex",alignItems:"center",gap:5,background:"#2ECC7111",border:"1px solid #2ECC7133",borderRadius:8,padding:"5px 10px"}}>
+                                <span style={{fontSize:12}}>⬆️</span>
+                                <span style={{fontSize:12,color:"#2ECC71",fontWeight:700}}>{incoming.name}</span>
+                                <TierBadge tier={incoming.tier} />
+                                <span style={{fontSize:10,color:"#4A5E78"}}>{incoming.role}</span>
+                              </div>
+                            </>
+                          ) : isIneligible ? (
+                            <>
+                              <span style={{color:"#4A5E78",fontSize:14}}>→</span>
+                              <div style={{background:"#4A5E7822",border:"1px solid #4A5E7844",borderRadius:8,padding:"5px 10px"}}>
+                                <span style={{fontSize:11,color:"#4A5E78"}}>↩️ returned (passed)</span>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <span style={{color:"#4A5E78",fontSize:14}}>→</span>
+                              <div style={{background:"#F5A62311",border:"1px solid #F5A62333",borderRadius:8,padding:"5px 10px"}}>
+                                <span style={{fontSize:11,color:"#F5A623",animation:"pulse 1.5s ease infinite"}}>⏳ waiting…</span>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* ── POOL + MY RELEASES ───────────────────────────────────────── */}
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
+
             {/* Unsold pool */}
             <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #1E2D45",padding:14}}>
-              <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginBottom:10}}>UNSOLD POOL ({sortedPool.length})</div>
+              <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginBottom:10}}>
+                POOL ({sortedPool.length})
+              </div>
               {sortedPool.length === 0 ? (
-                <div style={{fontSize:12,color:"#4A5E78",textAlign:"center",padding:16}}>Pool is empty</div>
+                <div style={{fontSize:12,color:"#4A5E78",textAlign:"center",padding:16}}>Pool empty</div>
               ) : sortedPool.map(p => {
-                const myReleased = getReleasedPlayers(myTeamId);
-                const tradedPids = getTradedPids(myTeamId);
-                const validMatches = isMyTurn ? getValidMatches(p, myReleased, tradedPids) : [];
-                const canPick = isMyTurn && validMatches.length > 0 && phase==="trade";
+                const valid = isMyTurn && phase==="trade" ? getValidMatches(p, myTeamId) : [];
+                const canPick = valid.length > 0;
                 return (
                   <div key={p.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",background:canPick?"#2ECC7111":"#080C14",borderRadius:8,border:"1px solid "+(canPick?"#2ECC7144":"#1E2D4544"),marginBottom:6}}>
                     <div style={{flex:1,minWidth:0}}>
@@ -421,8 +664,8 @@ export default function TransferWindow({
                       <div style={{fontSize:10,color:"#4A5E78"}}>{p.iplTeam} • {p.role}</div>
                     </div>
                     {canPick && (
-                      <button onClick={()=>handlePickPlayer(p)}
-                        style={{background:"#2ECC71",border:"none",borderRadius:6,padding:"4px 10px",color:"#080C14",fontSize:11,fontWeight:800,cursor:"pointer",flexShrink:0,fontFamily:"Barlow Condensed,sans-serif"}}>
+                      <button onClick={() => handlePickClick(p)}
+                        style={{background:"#2ECC71",border:"none",borderRadius:6,padding:"5px 10px",color:"#080C14",fontSize:11,fontWeight:800,cursor:"pointer",flexShrink:0,fontFamily:"Barlow Condensed,sans-serif",letterSpacing:0.5}}>
                         PICK
                       </button>
                     )}
@@ -434,23 +677,23 @@ export default function TransferWindow({
             {/* My released players */}
             <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #1E2D45",padding:14}}>
               <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginBottom:10}}>
-                {myTeamId ? "MY RELEASED PLAYERS" : "ALL RELEASES"}
+                {myTeamId ? "MY RELEASED" : "ALL RELEASES"}
               </div>
               {sortedTeams.map(team => {
                 const show = myTeamId ? team.id === myTeamId : true;
                 if (!show && !unlocked) return null;
                 const released = getReleasedPlayers(team.id);
-                const tradedPids = getTradedPids(team.id);
+                const pairs = getTradedPairs(team.id);
                 if (released.length === 0) return null;
                 return (
                   <div key={team.id} style={{marginBottom:10}}>
                     {(!myTeamId || unlocked) && <div style={{fontSize:11,color:team.color,fontWeight:700,marginBottom:4}}>{team.name}</div>}
                     {released.map(p => {
-                      const traded = tradedPids.includes(p.id);
+                      const traded = pairs.find(pr => pr.releasedPid === p.id);
                       const ineligible = (transfers.ineligible||[]).includes(p.id);
                       return (
                         <div key={p.id} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 10px",background:traded?"#2ECC7111":ineligible?"#4A5E7822":"#080C14",borderRadius:8,border:"1px solid "+(traded?"#2ECC7144":ineligible?"#4A5E7844":"#1E2D44"),marginBottom:4}}>
-                          <span style={{fontSize:11,marginRight:2}}>{traded?"✅":ineligible?"↩️":"📤"}</span>
+                          <span style={{fontSize:11}}>{traded?"✅":ineligible?"↩️":"📤"}</span>
                           <div style={{flex:1}}>
                             <div style={{display:"flex",alignItems:"center",gap:4}}>
                               <span style={{fontWeight:700,fontSize:12,color:traded?"#2ECC71":ineligible?"#4A5E78":"#E2EAF4",textDecoration:traded?"line-through":"none"}}>{p.name}</span>
@@ -470,51 +713,36 @@ export default function TransferWindow({
           </div>
 
           {/* My turn actions */}
-          {isMyTurn && phase==="trade" && (
-            <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #F5A62344",padding:16,marginBottom:16}}>
-              <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:16,fontWeight:700,color:"#F5A623",marginBottom:8}}>YOUR TURN</div>
+          {isMyTurn && phase === "trade" && (
+            <div style={{background:"#0E1521",borderRadius:12,border:"2px solid #F5A62344",padding:16,marginBottom:16}}>
+              <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:18,fontWeight:700,color:"#F5A623",marginBottom:6}}>🎯 YOUR TURN</div>
               <div style={{fontSize:12,color:"#4A5E78",marginBottom:12}}>
-                Pick a player from the pool (highlighted in green). Must be like-for-like role and same or lower tier.
+                Pick a player from the pool (highlighted green). Must be same role and same/lower tier as a player you released.
               </div>
-              {(() => {
-                const myReleased = getReleasedPlayers(myTeamId);
-                const tradedPids = getTradedPids(myTeamId);
-                const passAllowed = canPass(
-                  myReleased.filter(p => !tradedPids.includes(p.id)),
-                  sortedPool, []
-                );
-                return passAllowed ? (
-                  <button onClick={handlePass}
-                    style={{width:"100%",background:"#4A5E7822",border:"1px solid #4A5E78",borderRadius:10,padding:12,color:"#E2EAF4",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:14,cursor:"pointer"}}>
-                    PASS — No valid players available (your unreleased players will return)
-                  </button>
-                ) : (
-                  <div style={{fontSize:11,color:"#4A5E78",textAlign:"center",padding:8}}>
-                    Valid picks are highlighted in green in the pool above
-                  </div>
-                );
-              })()}
+              {canPass(myTeamId) && (
+                <button onClick={handlePass}
+                  style={{width:"100%",background:"#4A5E7822",border:"1px solid #4A5E78",borderRadius:10,padding:12,color:"#E2EAF4",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:14,cursor:"pointer",letterSpacing:0.5}}>
+                  PASS — No valid players in pool (your released players will return)
+                </button>
+              )}
             </div>
           )}
 
-          {/* All teams summary */}
+          {/* Trade summary */}
           <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #1E2D45",padding:14}}>
-            <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginBottom:10}}>TRADE SUMMARY</div>
+            <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginBottom:10}}>TRADE ORDER</div>
             {sortedTeams.map((team, idx) => {
               const released = getReleasedPlayers(team.id);
-              const tradedPids = getTradedPids(team.id);
-              const traded = (transfers.tradedPairs||[]).filter(t=>t.teamId===team.id);
+              const pairs = getTradedPairs(team.id);
               const isCurrent = team.id === currentPickTeamId;
               return (
                 <div key={team.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",background:isCurrent?team.color+"11":"transparent",borderRadius:8,marginBottom:4,border:isCurrent?"1px solid "+team.color+"33":"1px solid transparent"}}>
-                  <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:13,color:"#4A5E78",minWidth:16}}>{idx+1}</div>
+                  <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:13,color:"#4A5E78",minWidth:20}}>{idx+1}</div>
                   <div style={{flex:1}}>
                     <span style={{fontWeight:700,fontSize:13,color:isCurrent?team.color:"#E2EAF4"}}>{team.name}</span>
-                    {isCurrent && <span style={{fontSize:10,color:team.color,marginLeft:6,fontWeight:700}}>← PICKING</span>}
+                    {isCurrent && <span style={{fontSize:10,color:team.color,marginLeft:6,fontWeight:700}}>← PICKING NOW</span>}
                   </div>
-                  <div style={{fontSize:11,color:"#4A5E78"}}>
-                    {traded.length}/{released.length} traded
-                  </div>
+                  <div style={{fontSize:11,color:"#4A5E78"}}>{pairs.length}/{released.length} traded</div>
                 </div>
               );
             })}
@@ -522,29 +750,39 @@ export default function TransferWindow({
         </div>
       )}
 
-      {/* TRADE MODAL — pick which released player to match */}
-      {tradeModal && (
-        <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:500,padding:16,fontFamily:"Barlow Condensed,sans-serif"}}>
-          <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #1E2D45",padding:24,width:"100%",maxWidth:420}}>
-            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:"#2ECC71",letterSpacing:2,marginBottom:4}}>CONFIRM TRADE</div>
-            <div style={{fontSize:12,color:"#4A5E78",marginBottom:16}}>
-              You are picking <strong style={{color:"#E2EAF4"}}>{tradeModal.poolPlayer.name}</strong> ({tradeModal.poolPlayer.role} / {tradeModal.poolPlayer.tier||"No tier"}).
-              Select which of your released players is being traded for this player:
+      {/* PICK MODAL — choose which released player to swap */}
+      {pickModal && (
+        <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:500,padding:16}}>
+          <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #1E2D45",padding:24,width:"100%",maxWidth:440}}>
+            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:"#2ECC71",letterSpacing:2,marginBottom:4}}>PICK PLAYER</div>
+            <div style={{fontSize:12,color:"#4A5E78",marginBottom:6}}>
+              Incoming: <strong style={{color:"#E2EAF4"}}>{pickModal.poolPlayer.name}</strong>
             </div>
-            {tradeModal.validMatches.map(rp => (
-              <button key={rp.id} onClick={()=>setMatchModal({poolPlayer:tradeModal.poolPlayer,releasedPlayer:rp})}
-                style={{width:"100%",background:"#FF3D5A11",border:"1px solid #FF3D5A44",borderRadius:10,padding:12,marginBottom:8,cursor:"pointer",display:"flex",alignItems:"center",gap:10,textAlign:"left"}}>
-                <span style={{fontSize:16}}>📤</span>
+            <div style={{display:"flex",alignItems:"center",gap:6,background:"#2ECC7111",border:"1px solid #2ECC7133",borderRadius:10,padding:"10px 14px",marginBottom:20}}>
+              <span style={{fontSize:18}}>⬆️</span>
+              <div>
+                <div style={{display:"flex",alignItems:"center",gap:6}}>
+                  <span style={{fontWeight:700,color:"#2ECC71",fontSize:14}}>{pickModal.poolPlayer.name}</span>
+                  <TierBadge tier={pickModal.poolPlayer.tier} />
+                </div>
+                <div style={{fontSize:11,color:"#4A5E78"}}>{pickModal.poolPlayer.role} • points reset to 0 • earns from next match</div>
+              </div>
+            </div>
+            <div style={{fontSize:12,color:"#4A5E78",marginBottom:10}}>Select which of your released players goes out for them:</div>
+            {pickModal.validMatches.map(rp => (
+              <button key={rp.id} onClick={() => confirmTrade(pickModal.poolPlayer, rp)}
+                style={{width:"100%",background:"#FF3D5A11",border:"1px solid #FF3D5A44",borderRadius:10,padding:12,marginBottom:8,cursor:"pointer",display:"flex",alignItems:"center",gap:10,textAlign:"left",fontFamily:"Barlow Condensed,sans-serif"}}>
+                <span style={{fontSize:16}}>⬇️</span>
                 <div>
                   <div style={{display:"flex",alignItems:"center",gap:6}}>
                     <span style={{fontWeight:700,fontSize:14,color:"#FF3D5A"}}>{rp.name}</span>
                     <TierBadge tier={rp.tier} />
                   </div>
-                  <div style={{fontSize:11,color:"#4A5E78"}}>{rp.role} — will leave your squad</div>
+                  <div style={{fontSize:11,color:"#4A5E78"}}>{rp.role} • points frozen at current total</div>
                 </div>
               </button>
             ))}
-            <button onClick={()=>setTradeModal(null)}
+            <button onClick={() => setPickModal(null)}
               style={{width:"100%",background:"transparent",border:"1px solid #1E2D45",borderRadius:10,padding:10,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer",marginTop:4}}>
               CANCEL
             </button>
@@ -552,45 +790,66 @@ export default function TransferWindow({
         </div>
       )}
 
-      {/* CONFIRM MATCH MODAL */}
-      {matchModal && (
-        <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:600,padding:16,fontFamily:"Barlow Condensed,sans-serif"}}>
+      {/* FINAL CONFIRM MODAL */}
+      {tradeConfirmModal && (
+        <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:600,padding:16}}>
           <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #1E2D45",padding:24,width:"100%",maxWidth:400}}>
-            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:"#F5A623",letterSpacing:2,marginBottom:16}}>FINAL CONFIRMATION</div>
-            <div style={{background:"#2ECC7111",border:"1px solid #2ECC7133",borderRadius:10,padding:12,marginBottom:10,display:"flex",alignItems:"center",gap:10}}>
-              <span style={{fontSize:16}}>⬆️</span>
+            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:"#F5A623",letterSpacing:2,marginBottom:16}}>CONFIRM TRADE</div>
+
+            <div style={{background:"#2ECC7111",border:"1px solid #2ECC7133",borderRadius:10,padding:14,marginBottom:10,display:"flex",alignItems:"center",gap:10}}>
+              <span style={{fontSize:20}}>⬆️</span>
               <div>
-                <div style={{fontSize:11,color:"#4A5E78",marginBottom:2}}>INCOMING</div>
+                <div style={{fontSize:10,color:"#2ECC71",letterSpacing:1,marginBottom:2}}>JOINING YOUR SQUAD</div>
                 <div style={{display:"flex",alignItems:"center",gap:6}}>
-                  <span style={{fontWeight:700,color:"#2ECC71"}}>{matchModal.poolPlayer.name}</span>
-                  <TierBadge tier={matchModal.poolPlayer.tier} />
+                  <span style={{fontWeight:700,color:"#2ECC71",fontSize:15}}>{tradeConfirmModal.poolPlayer.name}</span>
+                  <TierBadge tier={tradeConfirmModal.poolPlayer.tier} />
                 </div>
-                <div style={{fontSize:11,color:"#4A5E78"}}>{matchModal.poolPlayer.role} — points reset, counts from next match</div>
+                <div style={{fontSize:11,color:"#4A5E78"}}>{tradeConfirmModal.poolPlayer.role} • Points reset to 0 • earns from next match only</div>
               </div>
             </div>
-            <div style={{background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:10,padding:12,marginBottom:16,display:"flex",alignItems:"center",gap:10}}>
-              <span style={{fontSize:16}}>⬇️</span>
+
+            <div style={{background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:10,padding:14,marginBottom:16,display:"flex",alignItems:"center",gap:10}}>
+              <span style={{fontSize:20}}>⬇️</span>
               <div>
-                <div style={{fontSize:11,color:"#4A5E78",marginBottom:2}}>LEAVING</div>
+                <div style={{fontSize:10,color:"#FF3D5A",letterSpacing:1,marginBottom:2}}>LEAVING YOUR SQUAD</div>
                 <div style={{display:"flex",alignItems:"center",gap:6}}>
-                  <span style={{fontWeight:700,color:"#FF3D5A"}}>{matchModal.releasedPlayer.name}</span>
-                  <TierBadge tier={matchModal.releasedPlayer.tier} />
+                  <span style={{fontWeight:700,color:"#FF3D5A",fontSize:15}}>{tradeConfirmModal.releasedPlayer.name}</span>
+                  <TierBadge tier={tradeConfirmModal.releasedPlayer.tier} />
                 </div>
-                <div style={{fontSize:11,color:"#4A5E78"}}>{matchModal.releasedPlayer.role} — points frozen at current total</div>
+                <div style={{fontSize:11,color:"#4A5E78"}}>{tradeConfirmModal.releasedPlayer.role} • Points frozen at current total • stays visible with ⬇️</div>
               </div>
             </div>
-            <div style={{fontSize:12,color:"#FF3D5A",marginBottom:16,textAlign:"center",fontWeight:700}}>
-              This trade is permanent and cannot be undone this window.
+
+            <div style={{background:"#F5A62311",border:"1px solid #F5A62333",borderRadius:8,padding:"10px 14px",marginBottom:16,fontSize:12,color:"#F5A623",textAlign:"center",fontWeight:700}}>
+              ⚠️ This trade is permanent and cannot be undone this window
             </div>
+
             <div style={{display:"flex",gap:8}}>
-              <button onClick={()=>setMatchModal(null)}
-                style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:10,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
-              <button onClick={()=>confirmTrade(matchModal.poolPlayer, matchModal.releasedPlayer)}
-                style={{flex:2,background:"#F5A623",border:"none",borderRadius:8,padding:10,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:15,cursor:"pointer"}}>CONFIRM TRADE</button>
+              <button onClick={() => setTradeConfirmModal(null)}
+                style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:11,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
+              <button onClick={executeTrade}
+                style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:11,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:15,cursor:"pointer",letterSpacing:0.5}}>
+                ✅ CONFIRM TRADE
+              </button>
             </div>
           </div>
         </div>
       )}
     </div>
   );
+}
+
+function adminBtn(color) {
+  return {
+    background: color + "22",
+    border: "1px solid " + color + "44",
+    borderRadius: 8,
+    padding: "8px 16px",
+    color,
+    fontFamily: "Barlow Condensed,sans-serif",
+    fontWeight: 700,
+    fontSize: 13,
+    cursor: "pointer",
+    letterSpacing: 0.5,
+  };
 }

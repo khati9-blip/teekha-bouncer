@@ -2772,17 +2772,38 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
       return{...p,total:tot,status:isSnatched?"snatched":"active"};
     });
 
-    // Historical players — released via transfer but points still count
+    // Historical players — released in past windows
     const releasedPids = transfers.history?.flatMap(w=>
       (w.releases[teamId]||[]).filter(pid=> !(w.picks||[]).some(pk=>pk.teamId===teamId&&pk.pid===pid))
     ) || [];
     const historical = releasedPids.map(pid=>{
       const p = players.find(x=>x.id===pid);
       if(!p||assignments[p.id]===teamId) return null;
-      // Only count points during THIS team's ownership period
       const tot = getPtsForTeam(pid, teamId);
       return p?{...p,total:tot,status:"released"}:null;
     }).filter(Boolean);
+
+    // Current window: players traded AWAY from this team (⬇️ frozen)
+    const currentTradedAway = (transfers.tradedPairs||[])
+      .filter(pr => pr.teamId === teamId)
+      .map(pr => {
+        const p = players.find(x => x.id === pr.releasedPid);
+        if (!p) return null;
+        const tot = getPtsForTeam(pr.releasedPid, teamId);
+        const incoming = players.find(x => x.id === pr.pickedPid);
+        return { ...p, total: tot, status: "traded-out", tradedFor: incoming?.name || "?" };
+      }).filter(Boolean);
+
+    // Current window: players traded INTO this team (⬆️ reset)
+    const currentTradedIn = (transfers.tradedPairs||[])
+      .filter(pr => pr.teamId === teamId)
+      .map(pr => {
+        const p = players.find(x => x.id === pr.pickedPid);
+        if (!p) return null;
+        const tot = getPtsForTeam(pr.pickedPid, teamId);
+        const outgoing = players.find(x => x.id === pr.releasedPid);
+        return { ...p, total: tot, status: "traded-in", tradedFor: outgoing?.name || "?" };
+      }).filter(Boolean);
 
     // Snatched player this team borrowed
     const snatchedIn = snatch.active?.byTeamId===teamId ? (() => {
@@ -2814,7 +2835,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
     }).filter(Boolean);
 
     const allActive = [...active, ...(snatchedOut?[snatchedOut]:[])];
-    return [...allActive, ...historical, ...(snatchedIn?[snatchedIn]:[]), ...snatchHistoryForTeam].sort((a,b)=>b.total-a.total);
+    return [...allActive, ...currentTradedIn, ...currentTradedAway, ...historical, ...(snatchedIn?[snatchedIn]:[]), ...snatchHistoryForTeam].sort((a,b)=>b.total-a.total);
   };
 
   const shareLeaderboard = () => {
@@ -3791,16 +3812,28 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                           <div style={{borderTop:"1px solid #1E2D45",padding:"12px 18px"}}>
                             <div style={{display:"flex",fontSize:11,color:"#4A5E78",marginBottom:10,padding:"0 4px"}}><span style={{flex:1}}>PLAYER</span><span style={{width:90}}>ROLE</span><span style={{width:70,textAlign:"right"}}>POINTS</span></div>
                             {breakdown.map((p,idx)=>(
-                              <div key={p.id} style={{display:"flex",alignItems:"center",padding:"9px 4px",borderBottom:"1px solid #1E2D45",opacity:p.status==="snatched-out"||p.status==="snatch-returned-in"?0.6:1}}>
-                                <div style={{flex:1,fontWeight:idx<3?700:400,fontSize:14,color:idx===0&&p.status==="active"?"#F5A623":"#E2EAF4",textDecoration:p.status==="snatched-out"||p.status==="snatch-returned-in"?"line-through":"none"}}>
+                              <div key={p.id} style={{display:"flex",alignItems:"center",padding:"9px 4px",borderBottom:"1px solid #1E2D45",opacity:p.status==="snatched-out"||p.status==="snatch-returned-in"||p.status==="traded-out"?0.65:1}}>
+                                <div style={{flex:1,fontWeight:idx<3?700:400,fontSize:14,
+                                  color:p.status==="traded-in"?"#2ECC71":p.status==="traded-out"?"#FF3D5A":idx===0&&p.status==="active"?"#F5A623":"#E2EAF4",
+                                  textDecoration:p.status==="snatched-out"||p.status==="snatch-returned-in"||p.status==="traded-out"?"line-through":"none"}}>
+                                  {p.status==="traded-out"&&<span style={{marginRight:4}}>⬇️</span>}
+                                  {p.status==="traded-in"&&<span style={{marginRight:4}}>⬆️</span>}
                                   {p.name}
+                                  {p.status==="traded-out"&&<span style={{fontSize:9,color:"#FF3D5A",marginLeft:6,textDecoration:"none",fontWeight:700}}>→ {p.tradedFor}</span>}
+                                  {p.status==="traded-in"&&<span style={{fontSize:9,color:"#2ECC71",marginLeft:6,textDecoration:"none",fontWeight:700}}>FROM POOL</span>}
                                   {p.status==="snatched-out"&&<span style={{fontSize:9,color:"#A855F7",marginLeft:6,textDecoration:"none",fontWeight:700}}> SNATCHED</span>}
                                   {p.status==="snatched-in"&&<span style={{fontSize:9,color:"#2ECC71",marginLeft:6,textDecoration:"none",fontWeight:700}}> ON LOAN</span>}
                                   {p.status==="snatch-returned-in"&&<span style={{fontSize:9,color:"#4A5E78",marginLeft:6,textDecoration:"none"}}> RETURNED</span>}
                                   {p.status==="released"&&<span style={{fontSize:9,color:"#4A5E78",marginLeft:6,textDecoration:"none"}}> RELEASED</span>}
                                 </div>
                                 <div style={{width:90}}><Badge label={p.role||"—"} color={ROLE_COLORS[p.role]||"#4A5E78"} /></div>
-                                <div style={{width:70,textAlign:"right",fontWeight:700,color:p.status==="snatched-out"||p.status==="snatch-returned-in"?"#4A5E78":p.total>0?"#E2EAF4":"#4A5E78",fontFamily:"Rajdhani",fontSize:17}}>{p.total}</div>
+                                <div style={{width:70,textAlign:"right",fontWeight:700,
+                                  color:p.status==="traded-in"?"#2ECC71":p.status==="traded-out"||p.status==="snatched-out"||p.status==="snatch-returned-in"?"#4A5E78":p.total>0?"#E2EAF4":"#4A5E78",
+                                  fontFamily:"Rajdhani",fontSize:17}}>
+                                  {p.total}
+                                  {p.status==="traded-in"&&<span style={{fontSize:9,display:"block",color:"#2ECC71",letterSpacing:0.5}}>RESET</span>}
+                                  {p.status==="traded-out"&&<span style={{fontSize:9,display:"block",color:"#FF3D5A",letterSpacing:0.5}}>FROZEN</span>}
+                                </div>
                               </div>
                             ))}
                           </div>
