@@ -2765,23 +2765,42 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
       return Math.round(tot);
     };
 
-    // Active players in squad
-    const active = players.filter(p=>assignments[p.id]===teamId).map(p=>{
+    // Track pids already accounted for in trades/snatch to avoid duplicates
+    const tradedAwayPids = new Set((transfers.tradedPairs||[]).filter(pr=>pr.teamId===teamId).map(pr=>pr.releasedPid));
+    const tradedInPids   = new Set((transfers.tradedPairs||[]).filter(pr=>pr.teamId===teamId).map(pr=>pr.pickedPid));
+
+    // Active players in squad — exclude those already shown as traded-in/out
+    const active = players.filter(p=>assignments[p.id]===teamId && !tradedInPids.has(p.id) && !tradedAwayPids.has(p.id)).map(p=>{
       const tot = getPtsForTeam(p.id, teamId);
       const isSnatched = snatch.active?.pid===p.id && snatch.active?.fromTeamId===teamId;
       return{...p,total:tot,status:isSnatched?"snatched":"active"};
     });
 
-    // Historical players — released in past windows
-    const releasedPids = transfers.history?.flatMap(w=>
-      (w.releases[teamId]||[]).filter(pid=> !(w.picks||[]).some(pk=>pk.teamId===teamId&&pk.pid===pid))
-    ) || [];
-    const historical = releasedPids.map(pid=>{
-      const p = players.find(x=>x.id===pid);
-      if(!p||assignments[p.id]===teamId) return null;
-      const tot = getPtsForTeam(pid, teamId);
-      return p?{...p,total:tot,status:"released"}:null;
-    }).filter(Boolean);
+    // Historical players from past windows
+    const historical = [];
+    for (const w of (transfers.history || [])) {
+      const wTradedInPids  = new Set((w.tradedPairs||[]).filter(pr=>pr.teamId===teamId).map(pr=>pr.pickedPid));
+      const wTradedOutPids = new Set((w.tradedPairs||[]).filter(pr=>pr.teamId===teamId).map(pr=>pr.releasedPid));
+
+      // Players traded IN during past window — show as active if still on team
+      for (const pr of (w.tradedPairs||[]).filter(pr=>pr.teamId===teamId)) {
+        const p = players.find(x=>x.id===pr.pickedPid);
+        if (!p) continue;
+        // Only show if not already in active, currentTradedIn, currentTradedAway
+        if (tradedInPids.has(p.id) || tradedAwayPids.has(p.id) || assignments[p.id]===teamId) continue;
+        const tot = getPtsForTeam(p.id, teamId);
+        historical.push({...p, total:tot, status:"released"});
+      }
+
+      // Players released and NOT traded back — show as released
+      for (const pid of (w.releases[teamId]||[])) {
+        if (wTradedInPids.has(pid)) continue; // they were traded out to pool — skip
+        const p = players.find(x=>x.id===pid);
+        if (!p || assignments[p.id]===teamId) continue;
+        const tot = getPtsForTeam(pid, teamId);
+        historical.push({...p, total:tot, status:"released"});
+      }
+    }
 
     // Current window: players traded AWAY from this team (⬇️ frozen)
     const currentTradedAway = (transfers.tradedPairs||[])

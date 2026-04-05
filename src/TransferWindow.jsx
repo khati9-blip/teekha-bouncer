@@ -438,13 +438,29 @@ export default function TransferWindow({
   });
 
   const openReleaseManually = () => withPassword(() => {
+    // Archive current window trades to history before opening new window
+    const hasHistory = transfers.tradedPairs?.length > 0 || Object.values(transfers.releases||{}).some(a=>a.length>0);
+    const history = hasHistory ? [
+      ...(transfers.history || []),
+      {
+        week: transfers.weekNum || 1,
+        releases: transfers.releases || {},
+        tradedPairs: transfers.tradedPairs || [],
+        date: new Date().toISOString(),
+      }
+    ] : (transfers.history || []);
+
     onUpdateTransfers({
       ...transfers,
       phase: "release",
+      weekNum: hasHistory ? (transfers.weekNum || 1) + 1 : (transfers.weekNum || 1),
       releaseDeadline: getNextMondayIST(),
       releases: {},
       tradedPairs: [],
       ineligible: [],
+      currentPickTeam: null,
+      pickDeadline: null,
+      history,
     });
   });
 
