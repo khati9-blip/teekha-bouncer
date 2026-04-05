@@ -53,8 +53,9 @@ function getValidMatches(poolPlayer, releasedPlayers, alreadyTraded) {
 }
 
 // Check if team can pass (no pool player matches any remaining released player)
-function canPass(releasedPlayers, poolPlayers, alreadyTraded) {
-  const remaining = releasedPlayers.filter(p => !alreadyTraded.includes(p.id));
+function canPass(releasedPlayers, poolPlayers, alreadyTraded, allTradedPairs) {
+  const alreadyMatchedPids = (allTradedPairs||[]).map(t => t.releasedPid);
+  const remaining = releasedPlayers.filter(p => !alreadyTraded.includes(p.id) && !alreadyMatchedPids.includes(p.id));
   for (const rp of remaining) {
     for (const pp of poolPlayers) {
       if (pp.role === rp.role && TIER_ORDER[pp.tier||""] <= TIER_ORDER[rp.tier||""]) {
@@ -135,7 +136,7 @@ export default function TransferWindow({
     const actingTeamId = (isClone && unlocked) ? currentPickTeamId : myTeamId;
     const myReleased = getReleasedPlayers(actingTeamId);
     const tradedPids = getTradedPids(actingTeamId);
-    const validMatches = getValidMatches(poolPlayer, myReleased, tradedPids);
+    const validMatches = getValidMatches(poolPlayer, myReleased, tradedPids, transfers.tradedPairs);
     if (validMatches.length === 0) {
       alert("This player does not match any of your remaining released players (like-for-like + same/lower tier).");
       return;
@@ -210,7 +211,7 @@ export default function TransferWindow({
     const tradedPids = getTradedPids(actingTeamId2);
     const remaining = myReleased.filter(p => !tradedPids.includes(p.id));
 
-    if (!canPass(remaining, sortedPool, [])) {
+    if (!canPass(remaining, sortedPool, [], transfers.tradedPairs)) {
       alert("You cannot pass — there are still valid players in the pool matching your criteria.");
       return;
     }
@@ -486,7 +487,7 @@ export default function TransferWindow({
                 const actTeamId = (isClone && unlocked) ? currentPickTeamId : myTeamId;
                 const myReleased = getReleasedPlayers(actTeamId);
                 const tradedPids = getTradedPids(actTeamId);
-                const validMatches = isMyTurn ? getValidMatches(p, myReleased, tradedPids) : [];
+                const validMatches = isMyTurn ? getValidMatches(p, myReleased, tradedPids, transfers.tradedPairs) : [];
                 const myReleasedIds = (transfers.releases?.[actTeamId] || []);
                 const isMyOwnRelease = myReleasedIds.includes(p.id);
                 const canPick = isMyTurn && validMatches.length > 0 && phase==="trade" && !isMyOwnRelease;
@@ -571,7 +572,7 @@ export default function TransferWindow({
                 const tradedPidsPass = getTradedPids(actTeamId3);
                 const passAllowed = canPass(
                   (myReleasedPass||[]).filter(p => !(tradedPidsPass||[]).includes(p.id)),
-                  sortedPool, []
+                  sortedPool, [], transfers.tradedPairs
                 );
                 return passAllowed ? (
                   <button onClick={handlePass}
