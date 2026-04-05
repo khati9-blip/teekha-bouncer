@@ -2050,6 +2050,24 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
 
   const nav=(pg)=>{setPage(pg);storeSet("page",pg);try{localStorage.setItem("tb_page_"+pitch?.id,pg);}catch{}};
 
+  // Auto-refresh live data every 30 seconds so all devices stay in sync
+  useEffect(() => {
+    const syncLive = async () => {
+      try {
+        const [c, p, m] = await Promise.all([
+          storeGet("captains"),
+          storeGet("points"),
+          storeGet("matches"),
+        ]);
+        if(c && typeof c === "object") setCaptains(c);
+        if(p && typeof p === "object") setPoints(p);
+        if(m && Array.isArray(m)) setMatches(m);
+      } catch(e) {}
+    };
+    const t = setInterval(syncLive, 30000);
+    return () => clearInterval(t);
+  }, []);
+
   // Global transfer timer — auto-skip when deadline expires regardless of tab
   useEffect(() => {
     const interval = setInterval(() => {
