@@ -176,7 +176,7 @@ export default function TransferWindow({
     if (!newPool.includes(releasedPlayer.id)) newPool.push(releasedPlayer.id);
 
     // Next team
-    const nextTeam = getNextPickTeam(myTeamId, tradedPairs);
+    const nextTeam = getNextPickTeam(currentPickTeamId, tradedPairs);
     const deadline = new Date(Date.now() + 45 * 60 * 1000).toISOString();
     const allDone = checkAllDone(tradedPairs, newPool);
 
@@ -216,7 +216,7 @@ export default function TransferWindow({
     const ineligible = [...(transfers.ineligible || []), ...remaining.map(p => p.id)];
 
     const tradedPairs = [...(transfers.tradedPairs || [])];
-    const nextTeam = getNextPickTeam(myTeamId, tradedPairs);
+    const nextTeam = getNextPickTeam(currentPickTeamId, tradedPairs);
     const deadline = new Date(Date.now() + 45 * 60 * 1000).toISOString();
     const allDone = checkAllDone(tradedPairs, sortedPool.filter(p => !ineligible.includes(p.id)));
 
@@ -470,10 +470,11 @@ export default function TransferWindow({
               {sortedPool.length === 0 ? (
                 <div style={{fontSize:12,color:"#4A5E78",textAlign:"center",padding:16}}>Pool is empty</div>
               ) : sortedPool.map(p => {
-                const myReleased = getReleasedPlayers(myTeamId);
-                const tradedPids = getTradedPids(myTeamId);
+                const actTeamId = (isClone && unlocked) ? currentPickTeamId : myTeamId;
+                const myReleased = getReleasedPlayers(actTeamId);
+                const tradedPids = getTradedPids(actTeamId);
                 const validMatches = isMyTurn ? getValidMatches(p, myReleased, tradedPids) : [];
-                const myReleasedIds = (transfers.releases?.[myTeamId] || []);
+                const myReleasedIds = (transfers.releases?.[actTeamId] || []);
                 const isMyOwnRelease = myReleasedIds.includes(p.id);
                 const canPick = isMyTurn && validMatches.length > 0 && phase==="trade" && !isMyOwnRelease;
                 return (
