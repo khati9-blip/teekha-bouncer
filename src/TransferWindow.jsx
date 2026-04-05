@@ -271,9 +271,12 @@ export default function TransferWindow({
     const tradedPids = getTradedPairs(myTeamId).map(t => t.releasedPid);
     const remaining = myReleased.filter(p => !tradedPids.includes(p.id));
 
-    // Return remaining released players to team
+    // Return remaining released players to team + remove from unsold pool
     const newAssignments = { ...assignments };
     remaining.forEach(p => { newAssignments[p.id] = myTeamId; });
+    const returnedPids = new Set(remaining.map(p => p.id));
+    const newPool = unsoldPool.filter(id => !returnedPids.has(id));
+    onUpdateUnsoldPool(newPool);
 
     const ineligible = [...(transfers.ineligible || []), ...remaining.map(p => p.id)];
     const nextTeam = getNextPickTeam(myTeamId, transfers.tradedPairs || []);

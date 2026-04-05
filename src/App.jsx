@@ -2776,53 +2776,58 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
       return{...p,total:tot,status:isSnatched?"snatched":"active"};
     });
 
-    // Historical players from past windows
-    const historical = [];
-    for (const w of (transfers.history || [])) {
-      const wTradedInPids  = new Set((w.tradedPairs||[]).filter(pr=>pr.teamId===teamId).map(pr=>pr.pickedPid));
-      const wTradedOutPids = new Set((w.tradedPairs||[]).filter(pr=>pr.teamId===teamId).map(pr=>pr.releasedPid));
+    // Collect ALL traded-out/in pids across ALL history + current window
+    const allTradedOutPids = new Set(); // all players ever traded OUT of this team
+    const allTradedInPids  = new Set(); // all players ever traded INTO this team
+    const tradedOutMeta = {}; // pid -> {tradedFor name}
+    const tradedInMeta  = {}; // pid -> {tradedFor name}
 
-      // Players traded IN during past window — show as active if still on team
+    for (const w of [...(transfers.history||[]), { tradedPairs: transfers.tradedPairs||[], releases: transfers.releases||{} }]) {
       for (const pr of (w.tradedPairs||[]).filter(pr=>pr.teamId===teamId)) {
-        const p = players.find(x=>x.id===pr.pickedPid);
-        if (!p) continue;
-        // Only show if not already in active, currentTradedIn, currentTradedAway
-        if (tradedInPids.has(p.id) || tradedAwayPids.has(p.id) || assignments[p.id]===teamId) continue;
-        const tot = getPtsForTeam(p.id, teamId);
-        historical.push({...p, total:tot, status:"released"});
-      }
-
-      // Players released and NOT traded back — show as released
-      for (const pid of (w.releases[teamId]||[])) {
-        if (wTradedInPids.has(pid)) continue; // they were traded out to pool — skip
-        const p = players.find(x=>x.id===pid);
-        if (!p || assignments[p.id]===teamId) continue;
-        const tot = getPtsForTeam(pid, teamId);
-        historical.push({...p, total:tot, status:"released"});
+        allTradedOutPids.add(pr.releasedPid);
+        allTradedInPids.add(pr.pickedPid);
+        const incoming = players.find(x=>x.id===pr.pickedPid);
+        const outgoing = players.find(x=>x.id===pr.releasedPid);
+        tradedOutMeta[pr.releasedPid] = incoming?.name || "?";
+        tradedInMeta[pr.pickedPid]    = outgoing?.name || "?";
       }
     }
 
-    // Current window: players traded AWAY from this team (⬇️ frozen)
-    const currentTradedAway = (transfers.tradedPairs||[])
-      .filter(pr => pr.teamId === teamId)
-      .map(pr => {
-        const p = players.find(x => x.id === pr.releasedPid);
-        if (!p) return null;
-        const tot = getPtsForTeam(pr.releasedPid, teamId);
-        const incoming = players.find(x => x.id === pr.pickedPid);
-        return { ...p, total: tot, status: "traded-out", tradedFor: incoming?.name || "?" };
-      }).filter(Boolean);
+    // A player traded IN and then later traded OUT → shows as traded-out only
+    const netTradedInPids  = new Set([...allTradedInPids].filter(id => !allTradedOutPids.has(id)));
+    const netTradedOutPids = allTradedOutPids; // all traded-outs always shown
 
-    // Current window: players traded INTO this team (⬆️ reset)
-    const currentTradedIn = (transfers.tradedPairs||[])
-      .filter(pr => pr.teamId === teamId)
-      .map(pr => {
-        const p = players.find(x => x.id === pr.pickedPid);
-        if (!p) return null;
-        const tot = getPtsForTeam(pr.pickedPid, teamId);
-        const outgoing = players.find(x => x.id === pr.releasedPid);
-        return { ...p, total: tot, status: "traded-in", tradedFor: outgoing?.name || "?" };
-      }).filter(Boolean);
+    // Active players — exclude anyone in traded-in or traded-out lists
+    const active = players.filter(p=>
+      assignments[p.id]===teamId &&
+      !netTradedInPids.has(p.id) &&
+      !netTradedOutPids.has(p.id)
+    ).map(p=>{
+      const tot = getPtsForTeam(p.id, teamId);
+      const isSnatched = snatch.active?.pid===p.id && snatch.active?.fromTeamId===teamId;
+      return{...p,total:tot,status:isSnatched?"snatched":"active"};
+    });
+
+    // Traded-in players (permanent green ⬆️ — from any week, still on team)
+    const currentTradedIn = [...netTradedInPids].map(pid=>{
+      const p = players.find(x=>x.id===pid);
+      if(!p) return null;
+      const tot = getPtsForTeam(pid, teamId);
+      return {...p, total:tot, status:"traded-in", tradedFor: tradedInMeta[pid]||"?"};
+    }).filter(Boolean);
+
+    // Traded-out players (permanent strikethrough ⬇️ — from any week)
+    const currentTradedAway = [...netTradedOutPids].map(pid=>{
+      const p = players.find(x=>x.id===pid);
+      if(!p) return null;
+      const tot = getPtsForTeam(pid, teamId);
+      return {...p, total:tot, status:"traded-out", tradedFor: tradedOutMeta[pid]||"?"};
+    }).filter(Boolean);
+
+    // Dedupe pids already accounted for (for legacy historical use)
+    const tradedAwayPids = netTradedOutPids;
+    const tradedInPids   = netTradedInPids;
+    const historical = [];
 
     // Snatched player this team borrowed
     const snatchedIn = snatch.active?.byTeamId===teamId ? (() => {
@@ -3834,11 +3839,12 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                   <div style={{fontWeight:700,color:"#4A5E78",letterSpacing:2,fontSize:12,marginBottom:16}}>TEAM PLAYER BREAKDOWN</div>
                   {leaderboard.map(team=>{
                     const breakdown=getPlayerBreakdown(team.id),isOpen=expandedTeam===team.id;
+                    const activeCount=breakdown.filter(p=>p.status!=="traded-out"&&p.status!=="snatched-out"&&p.status!=="snatch-returned-in").length;
                     const safeCount=(safePlayers[team.id]||[]).length;
                     return(
                       <Card key={team.id} accent={team.color} sx={{marginBottom:12,overflow:"hidden"}}>
                         <div style={{display:"flex",alignItems:"center",padding:"14px 18px",cursor:"pointer"}} onClick={()=>setExpandedTeam(isOpen?null:team.id)}>
-                          <div style={{flex:1}}><span style={{fontWeight:700,color:team.color,fontFamily:"Rajdhani",fontSize:17,letterSpacing:1}}>{team.name}</span><span style={{color:"#4A5E78",marginLeft:10,fontSize:13}}>{breakdown.length} players</span></div>
+                          <div style={{flex:1}}><span style={{fontWeight:700,color:team.color,fontFamily:"Rajdhani",fontSize:17,letterSpacing:1}}>{team.name}</span><span style={{color:"#4A5E78",marginLeft:10,fontSize:13}}>{activeCount} players</span></div>
                           <span style={{color:"#F5A623",fontWeight:800,fontFamily:"Rajdhani",fontSize:22,marginRight:16}}>{team.total} pts</span>
                           <span style={{color:team.color,fontSize:12,opacity:0.7}}>{isOpen?"▲":"▼"}</span>
                         </div>
