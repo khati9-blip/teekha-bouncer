@@ -433,14 +433,18 @@ export default function TransferWindow({
         }
       ],
     });
-    // Keep pool intact — only remove players who were picked (now assigned to teams)
-    // Pre-existing unsold players stay in pool until manually removed
-    const pickedPids = (transfers.tradedPairs || []).map(p => p.pickedPid);
-    const newPool = unsoldPool.filter(pid => !pickedPids.includes(pid));
-    onUpdateUnsoldPool(newPool);
+    // Return un-traded released players to their teams + clean pool
+    const { newAssignments: cleanAssign, newPool: cleanPool } = returnUntradedPlayers(transfers, assignments, unsoldPool);
+    onUpdateAssignments(cleanAssign);
+    onUpdateUnsoldPool(cleanPool);
   });
 
   const openReleaseManually = () => withPassword(() => {
+    // First: return any un-traded released players from previous window
+    const { newAssignments: cleanAssign, newPool: cleanPool } = returnUntradedPlayers(transfers, assignments, unsoldPool);
+    onUpdateAssignments(cleanAssign);
+    onUpdateUnsoldPool(cleanPool);
+
     // Archive current window trades to history before opening new window
     const hasHistory = transfers.tradedPairs?.length > 0 || Object.values(transfers.releases||{}).some(a=>a.length>0);
     const history = hasHistory ? [
@@ -466,6 +470,26 @@ export default function TransferWindow({
       history,
     });
   });
+
+  // ── CLEANUP: return un-traded released players to their teams ───────────────
+  const returnUntradedPlayers = (currentTransfers, currentAssignments, currentPool) => {
+    const tradedReleasedPids = new Set((currentTransfers.tradedPairs||[]).map(tp => tp.releasedPid));
+    const newAssignments = { ...currentAssignments };
+    const untradedPids = new Set();
+
+    Object.entries(currentTransfers.releases || {}).forEach(([teamId, pids]) => {
+      pids.forEach(pid => {
+        if (!tradedReleasedPids.has(pid)) {
+          newAssignments[pid] = teamId; // return to team
+          untradedPids.add(pid);
+        }
+      });
+    });
+
+    const pickedPids = new Set((currentTransfers.tradedPairs||[]).map(tp => tp.pickedPid));
+    const newPool = currentPool.filter(pid => !untradedPids.has(pid) && !pickedPids.has(pid));
+    return { newAssignments, newPool };
+  };
 
   // ── NEXT AUTO OPEN INFO ──────────────────────────────────────────────────
   const nextAutoOpen = getNextSundayIST();
@@ -545,6 +569,9 @@ export default function TransferWindow({
                   🔄 RESET TRADE PHASE
                 </button>
                 <button onClick={() => withPassword(() => {
+                  const { newAssignments: cleanAssign, newPool: cleanPool } = returnUntradedPlayers(transfers, assignments, unsoldPool);
+                  onUpdateAssignments(cleanAssign);
+                  onUpdateUnsoldPool(cleanPool);
                   onUpdateTransfers({ ...transfers, phase: "done" });
                 })} style={adminBtn("#2ECC71")}>
                   ✅ END TRADE PHASE
