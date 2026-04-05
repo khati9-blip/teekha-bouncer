@@ -56,11 +56,14 @@ export default function MVPStats({ players, teams, assignments, points, captains
   const week = useMemo(() => getWeekBounds(weekOffset), [weekOffset]);
 
   // Get matches in this week
-  const weekMatches = useMemo(() => matches.filter(m => {
-    if (m.status !== "completed") return false;
-    const d = new Date(m.date);
-    return d >= week.start && d <= week.end;
-  }), [matches, week]);
+  const weekMatches = useMemo(() => {
+    const withStats = matches.filter(m => players.some(p => points[p.id]?.[m.id]));
+    const inWeek = withStats.filter(m => {
+      const d = new Date(m.date);
+      return d >= week.start && d <= week.end;
+    });
+    return inWeek;
+  }, [matches, week, players, points]);
 
   // For each player, compute weekly total and best match
   const playerStats = useMemo(() => {
