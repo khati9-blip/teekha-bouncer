@@ -1257,11 +1257,16 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
     if (!cloneAdminPw.trim()) { setCloneErr("Enter admin password"); return; }
     setCloning(true);
     try {
-      // Verify admin password
+      // Verify admin password — same multi-source check as TeamClaimScreen
       const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(cloneAdminPw));
       const h = Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
-      const storedHash = await sbGet(cloneModal.id + "_adminHash");
-      if (h !== storedHash) { setCloneErr("❌ Wrong admin password"); setCloneAdminPw(""); setCloning(false); return; }
+      const pwhash    = await sbGet(cloneModal.id + "_pwhash");
+      const adminHash = await sbGet(cloneModal.id + "_adminHash");
+      const legacyHash = cloneModal.id === "p1" ? await sbGet("p1_pwhash") : null;
+      const oldPitchHash = cloneModal.hash && cloneModal.hash.length > 10 ? cloneModal.hash : null;
+      if (h !== pwhash && h !== adminHash && h !== legacyHash && h !== oldPitchHash) {
+        setCloneErr("❌ Wrong admin password"); setCloneAdminPw(""); setCloning(false); return;
+      }
 
       // Create clone pitch
       const cloneId = "p" + (pitches.length + 1) + "_clone_" + Date.now();
