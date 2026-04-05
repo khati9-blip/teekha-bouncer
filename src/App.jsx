@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import FormChart from "./FormChart";
 import H2HStats from "./H2HStats";
+import MVPStats from "./MVPStats";
 import TransferWindowComponent from "./TransferWindow";
 
 async function callAI(userPrompt, system = "Return only valid JSON.") {
@@ -1696,6 +1697,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   const [editPlayer, setEditPlayer] = useState(null); // player being edited
   const [smartStatsMatch, setSmartStatsMatch] = useState(null);
   const [squadView, setSquadView] = useState(false);
+  const [showMVP, setShowMVP] = useState(false);
   const [selectedBulk, setSelectedBulk] = useState([]); // toggle squad view
   const [teamFilter, setTeamFilter] = useState(null); // filter by fantasy team
   const [sortOrder, setSortOrder] = useState('default'); // default | az | za
@@ -4048,6 +4050,18 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
           );
         })()}
 
+        {showMVP && (
+          <MVPStats
+            players={players}
+            teams={teams}
+            assignments={assignments}
+            points={points}
+            captains={captains}
+            matches={matches}
+            onClose={()=>setShowMVP(false)}
+          />
+        )}
+
         {/* ADMIN CLAIM TEAM MODAL */}
         {adminClaimModal && adminClaimTeam && (
           <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:400,padding:20,fontFamily:"Barlow Condensed,sans-serif"}}>
@@ -4147,6 +4161,13 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
 
                 {/* Notifications */}
                 <div style={{marginTop:4}}>
+                <button onClick={()=>{setShowMVP(true);setDrawerOpen(false);}} style={{width:"100%",background:"transparent",border:"none",padding:"10px 14px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12}}>
+                  <span style={{fontSize:20}}>🏅</span>
+                  <div style={{flex:1}}>
+                    <div style={{fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,color:"#E2EAF4"}}>MVP Stats</div>
+                    <div style={{fontSize:11,color:"#4A5E78"}}>Weekly player performance</div>
+                  </div>
+                </button>
                   <button onClick={()=>{setNotifOpen(o=>!o);if(!notifOpen)markNotifsRead();}} style={{width:"100%",background:"transparent",border:"none",padding:"10px 14px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12}}>
                     <span style={{fontSize:20,position:"relative"}}>
                       🔔
