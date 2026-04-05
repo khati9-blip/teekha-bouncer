@@ -2040,9 +2040,8 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
     const interval = setInterval(() => {
       if (transfers.phase !== "trade" || !transfers.pickDeadline || !transfers.currentPickTeam) return;
       if (Date.now() < new Date(transfers.pickDeadline).getTime()) return;
-      // Timer expired — skip current team
-      const sortedByBoard = leaderboard.map(t => teams.find(x => x.id === t.id)).filter(Boolean);
-      const order = sortedByBoard.map(t => t.id);
+      // Timer expired — skip current team (use teams order directly, not leaderboard)
+      const order = teams.map(t => t.id);
       const idx = order.indexOf(transfers.currentPickTeam);
       // Find next team with untraded released players
       let nextTeam = null;
