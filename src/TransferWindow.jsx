@@ -524,8 +524,8 @@ export default function TransferWindow({
 
       {/* TRADE MODAL — pick which released player to match */}
       {tradeModal && (
-        <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:500,padding:16,fontFamily:"Barlow Condensed,sans-serif"}}>
-          <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #1E2D45",padding:24,width:"100%",maxWidth:420}}>
+        <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:500,padding:16,fontFamily:"Barlow Condensed,sans-serif"}} onClick={()=>setTradeModal(null)}>
+          <div onClick={e=>e.stopPropagation()} style={{background:"#141E2E",borderRadius:16,border:"1px solid #1E2D45",padding:24,width:"100%",maxWidth:420}}>
             <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:"#2ECC71",letterSpacing:2,marginBottom:4}}>CONFIRM TRADE</div>
             <div style={{fontSize:12,color:"#4A5E78",marginBottom:16}}>
               You are picking <strong style={{color:"#E2EAF4"}}>{tradeModal.poolPlayer.name}</strong> ({tradeModal.poolPlayer.role} / {tradeModal.poolPlayer.tier||"No tier"}).
@@ -554,8 +554,8 @@ export default function TransferWindow({
 
       {/* CONFIRM MATCH MODAL */}
       {matchModal && (
-        <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:600,padding:16,fontFamily:"Barlow Condensed,sans-serif"}}>
-          <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #1E2D45",padding:24,width:"100%",maxWidth:400}}>
+        <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:600,padding:16,fontFamily:"Barlow Condensed,sans-serif"}} onClick={()=>setMatchModal(null)}>
+          <div onClick={e=>e.stopPropagation()} style={{background:"#141E2E",borderRadius:16,border:"1px solid #1E2D45",padding:24,width:"100%",maxWidth:400}}>
             <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:"#F5A623",letterSpacing:2,marginBottom:16}}>FINAL CONFIRMATION</div>
             <div style={{background:"#2ECC7111",border:"1px solid #2ECC7133",borderRadius:10,padding:12,marginBottom:10,display:"flex",alignItems:"center",gap:10}}>
               <span style={{fontSize:16}}>⬆️</span>

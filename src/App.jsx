@@ -445,8 +445,8 @@ function PasswordModal({ onSuccess, onClose, storedHash }) {
   const reset = () => { setPw(""); setErr(""); };
 
   return (
-    <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.95)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,backdropFilter:"blur(6px)"}}>
-      <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #1E2D45",padding:32,width:"100%",maxWidth:360,margin:"0 16px"}}>
+    <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.95)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,backdropFilter:"blur(6px)"}} onClick={onClose}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"#141E2E",borderRadius:16,border:"1px solid #1E2D45",padding:32,width:"100%",maxWidth:360,margin:"0 16px"}}>
 
         {mode==="login" && <>
           <div style={{fontSize:36,textAlign:"center",marginBottom:8}}>🔐</div>
@@ -4023,8 +4023,8 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
         {captainMatch && (()=>{
           const isLocked = !!captains[captainMatch.id+"_locked"];
           return (
-          <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.96)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,padding:16,fontFamily:"Barlow Condensed,sans-serif"}}>
-            <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #1E2D45",padding:24,width:"100%",maxWidth:480,maxHeight:"85vh",overflowY:"auto"}}>
+          <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.96)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,padding:16,fontFamily:"Barlow Condensed,sans-serif"}} onClick={()=>setCaptainMatch(null)}>
+            <div onClick={e=>e.stopPropagation()} style={{background:"#141E2E",borderRadius:16,border:"1px solid #1E2D45",padding:24,width:"100%",maxWidth:480,maxHeight:"85vh",overflowY:"auto"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
                 <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:isLocked?"#FF3D5A":"#F5A623",letterSpacing:2}}>{isLocked?"🔒 C/VC LOCKED":"👑 SET C / VC"}</div>
                 <button onClick={()=>setCaptainMatch(null)} style={{background:"transparent",border:"none",color:"#4A5E78",fontSize:18,cursor:"pointer"}}>✕</button>
@@ -4086,8 +4086,8 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
 
         {/* ADMIN CLAIM TEAM MODAL */}
         {adminClaimModal && adminClaimTeam && (
-          <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:400,padding:20,fontFamily:"Barlow Condensed,sans-serif"}}>
-            <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #1E2D45",padding:24,width:"100%",maxWidth:360}}>
+          <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:400,padding:20,fontFamily:"Barlow Condensed,sans-serif"}} onClick={()=>{setAdminClaimModal(false);setAdminClaimTeam(null);}}>
+            <div onClick={e=>e.stopPropagation()} style={{background:"#141E2E",borderRadius:16,border:"1px solid #1E2D45",padding:24,width:"100%",maxWidth:360}}>
               <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:"#2ECC71",marginBottom:4}}>CLAIM YOUR TEAM</div>
               <div style={{background:"#2ECC7111",border:"1px solid #2ECC7133",borderRadius:8,padding:"10px 14px",marginBottom:16,textAlign:"center"}}>
                 <div style={{fontSize:11,color:"#4A5E78",marginBottom:2}}>Claiming as admin</div>
