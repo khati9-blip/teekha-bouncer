@@ -3668,10 +3668,21 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                     const open = expandedMatch===match.id;
                     const displayNum = idx + 1;
 
-                    // Build per-team breakdown for this match
+                    // Build per-team breakdown — include traded-out players with strikethrough
+                    const matchDateStr = match.date || "9999-12-31";
                     const teamBreakdowns = teams.map(team=>{
+                      // Find all players who were with this team during this match (via ownershipLog or current assignment)
                       const teamPts = players
-                        .filter(p=>assignments[p.id]===team.id&&points[p.id]?.[match.id])
+                        .filter(p => {
+                          if (!points[p.id]?.[match.id]) return false;
+                          // Check ownershipLog for this team during match date
+                          const periods = (ownershipLog[p.id]||[]).filter(o=>o.teamId===team.id);
+                          if (periods.length > 0) {
+                            return periods.some(o => (!o.from || o.from <= matchDateStr+"Z") && (!o.to || o.to >= matchDateStr));
+                          }
+                          // Fallback: current assignment
+                          return assignments[p.id] === team.id;
+                        })
                         .map(p=>{
                           const d = points[p.id][match.id];
                           const cap = captains[`${match.id}_${team.id}`]||{};
@@ -3679,7 +3690,9 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                           let mult = 1;
                           if(cap.captain===p.id){pts*=2;mult=2;}
                           else if(cap.vc===p.id){pts*=1.5;mult=1.5;}
-                          return {...p, base:d.base, pts:Math.round(pts), mult, stats:d.stats, breakdown:calcBreakdown(d.stats)};
+                          // Is this player still on the team?
+                          const tradedOut = assignments[p.id] !== team.id;
+                          return {...p, base:d.base, pts:Math.round(pts), mult, stats:d.stats, breakdown:calcBreakdown(d.stats), tradedOut};
                         }).sort((a,b)=>b.pts-a.pts);
                       const total = teamPts.reduce((s,p)=>s+p.pts,0);
                       return {team, players:teamPts, total};
@@ -3719,10 +3732,11 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                                   <div style={{padding:"12px 16px",color:"#4A5E78",fontSize:13}}>No players scored in this match</div>
                                 ) : (
                                   tb.players.map(p=>(
-                                    <div key={p.id} style={{padding:"10px 16px",borderBottom:"1px solid #1E2D4522",display:"flex",alignItems:"flex-start",gap:12}}>
+                                    <div key={p.id} style={{padding:"10px 16px",borderBottom:"1px solid #1E2D4522",display:"flex",alignItems:"flex-start",gap:12,opacity:p.tradedOut?0.6:1}}>
                                       <div style={{flex:1,minWidth:0}}>
                                         <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-                                          <span style={{fontWeight:700,fontSize:14,color:"#E2EAF4"}}>{p.name}</span>
+                                          <span style={{fontWeight:700,fontSize:14,color:p.tradedOut?"#4A5E78":"#E2EAF4",textDecoration:p.tradedOut?"line-through":"none"}}>{p.name}</span>
+                                          {p.tradedOut && <span style={{fontSize:9,color:"#FF3D5A",background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:4,padding:"1px 5px",fontWeight:700,letterSpacing:0.5}}>TRADED OUT</span>}
                                           {p.mult>1 && <span style={{background:p.mult===2?"#F5A62322":"#94A3B822",color:p.mult===2?"#F5A623":"#94A3B8",border:"1px solid "+(p.mult===2?"#F5A62344":"#94A3B844"),fontSize:10,padding:"1px 7px",borderRadius:10,fontWeight:700}}>
                                             {p.mult===2?"⭐ CAPTAIN 2×":"🥈 VC 1.5×"}
                                           </span>}

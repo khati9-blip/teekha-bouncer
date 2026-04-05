@@ -126,7 +126,11 @@ export default function TransferWindow({
     return pair ? players.find(p => p.id === pair.pickedPid) : null;
   };
 
-  const poolPlayers = unsoldPool.map(pid => players.find(p => p.id === pid)).filter(Boolean);
+  // Build pool: from unsoldPool but also exclude players already traded this window
+  const tradedPickedPids = new Set((transfers?.tradedPairs || []).map(tp => tp.pickedPid));
+  const poolPlayers = unsoldPool
+    .filter(pid => !tradedPickedPids.has(pid))
+    .map(pid => players.find(p => p.id === pid)).filter(Boolean);
   const sortedPool = [...poolPlayers].sort((a,b) =>
     (TIER_ORDER[b.tier||""] - TIER_ORDER[a.tier||""]) || a.name.localeCompare(b.name)
   );
@@ -235,8 +239,10 @@ export default function TransferWindow({
       }
     ];
 
-    // Update pool
-    const newPool = unsoldPool.filter(id => id !== poolPlayer.id);
+    // Update pool — remove picked player, add released player
+    // Also remove any previously traded picks to keep pool clean
+    const allPickedSoFar = new Set(tradedPairs.map(tp => tp.pickedPid));
+    const newPool = unsoldPool.filter(id => !allPickedSoFar.has(id) && id !== poolPlayer.id);
     if (!newPool.includes(releasedPlayer.id)) newPool.push(releasedPlayer.id);
 
     // Advance to next team
@@ -748,7 +754,9 @@ export default function TransferWindow({
               ) : sortedPool.map(p => {
                 const canPickNow = (isMyTurn || unlocked) && phase==="trade" && !isPlayerSafe(p.id);
                 const pickAsTeam = isMyTurn ? myTeamId : currentPickTeamId;
-                const valid = canPickNow ? getValidMatches(p, pickAsTeam) : [];
+                // Team cannot pick their own released player
+                const releasedByPickingTeam = (transfers?.releases?.[pickAsTeam]||[]).includes(p.id);
+                const valid = canPickNow && !releasedByPickingTeam ? getValidMatches(p, pickAsTeam) : [];
                 const canPick = valid.length > 0;
                 // Check if newly released this window vs pre-existing unsold
                 const isNewlyReleased = Object.values(transfers?.releases || {}).some(arr => arr.includes(p.id));
