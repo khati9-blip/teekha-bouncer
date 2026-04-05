@@ -392,8 +392,14 @@ export default function TransferWindow({
       )}
 
       {/* TRADE PHASE */}
-      {(phase==="trade" || phase==="done") && (
+      {(phase==="trade" || phase==="done" || phase==="release") && (
         <div>
+          {/* Current team timer */}
+          {phase==="release" && sortedPool.length > 0 && (
+            <div style={{background:"#F5A62311",border:"1px solid #F5A62333",borderRadius:10,padding:"10px 14px",marginBottom:12,fontSize:12,color:"#F5A623"}}>
+              📋 {sortedPool.length} player{sortedPool.length!==1?"s":""} already in unsold pool (from before + released this window)
+            </div>
+          )}
           {/* Current team timer */}
           {phase==="trade" && currentPickTeam && (
             <div style={{background:"#0E1521",borderRadius:12,border:"1px solid "+currentPickTeam.color+"44",padding:16,marginBottom:16,textAlign:"center"}}>
