@@ -93,6 +93,7 @@ export default function TransferWindow({
   const [pickModal, setPickModal] = useState(null); // {poolPlayer}
   const [sessionTeamId, setSessionTeamId] = useState(null);
   const [confirmModal, setConfirmModal] = useState(null); // {message, onConfirm}
+  const [showAutoOpenPrompt, setShowAutoOpenPrompt] = useState(false);
   const [tradeConfirmModal, setTradeConfirmModal] = useState(null); // {poolPlayer, releasedPlayer}
   const [resetConfirm, setResetConfirm] = useState(false);
 
@@ -101,25 +102,13 @@ export default function TransferWindow({
   const isPlayerSafe = (pid) => Object.values(safePlayers || {}).some(arr => arr.includes(pid));
   const sortedTeams = leaderboard.map(t => teams.find(x => x.id === t.id)).filter(Boolean);
 
-  // ── AUTO WINDOW CHECK ──────────────────────────────────────────────────────
+  // ── AUTO WINDOW CHECK — prompt admin instead of auto-opening ──────────────
   useEffect(() => {
-    if (!unlocked) return; // only admin triggers auto
-    const check = () => {
-      if (phase === "closed" && isWithinReleaseWindow()) {
-        // Auto-open release window
-        onUpdateTransfers({
-          ...transfers,
-          phase: "release",
-          autoOpened: true,
-          autoOpenedAt: new Date().toISOString(),
-          releaseDeadline: getNextMondayIST(),
-        });
-      }
-    };
-    check();
-    const interval = setInterval(check, 60 * 1000); // check every minute
-    return () => clearInterval(interval);
-  }, [phase, unlocked]);
+    if (!unlocked) return;
+    if (phase === "closed" && isWithinReleaseWindow()) {
+      setShowAutoOpenPrompt(true);
+    }
+  }, [unlocked]);
 
   // ── HELPERS ────────────────────────────────────────────────────────────────
   const getReleasedPlayers = (teamId) =>
@@ -860,6 +849,27 @@ export default function TransferWindow({
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* AUTO-OPEN PROMPT */}
+      {showAutoOpenPrompt && (
+        <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.95)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:800,padding:16}}>
+          <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #F5A62344",padding:24,width:"100%",maxWidth:380}}>
+            <div style={{fontSize:28,marginBottom:8}}>⏰</div>
+            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:"#F5A623",marginBottom:8}}>TIME TO OPEN THE WINDOW</div>
+            <div style={{fontSize:13,color:"#4A5E78",marginBottom:20}}>It's within the transfer window period (Sun 11:59 PM – Mon 11:00 AM IST). Do you want to open the release window now?</div>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>setShowAutoOpenPrompt(false)}
+                style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:11,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>
+                NOT YET
+              </button>
+              <button onClick={()=>{openReleaseManually();setShowAutoOpenPrompt(false);}}
+                style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:11,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:15,cursor:"pointer"}}>
+                📤 OPEN NOW
+              </button>
+            </div>
           </div>
         </div>
       )}
