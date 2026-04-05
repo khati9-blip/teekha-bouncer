@@ -97,6 +97,7 @@ export default function TransferWindow({
   const [pickModal, setPickModal] = useState(null); // {poolPlayer}
   const [sessionTeamId, setSessionTeamId] = useState(null);
   const [confirmModal, setConfirmModal] = useState(null); // {message, onConfirm}
+  const [twTab, setTwTab] = useState("window"); // "window" | "history"
   const [showAutoOpenPrompt, setShowAutoOpenPrompt] = useState(false);
   const [tradeConfirmModal, setTradeConfirmModal] = useState(null); // {poolPlayer, releasedPlayer}
   const [resetConfirm, setResetConfirm] = useState(false);
@@ -530,6 +531,24 @@ export default function TransferWindow({
           </div>
         )}
       </div>
+
+      {/* TAB SWITCHER */}
+      <div style={{display:"flex",gap:6,marginBottom:20,background:"#080C14",borderRadius:10,padding:4,border:"1px solid #1E2D45"}}>
+        {[{id:"window",label:"🔄 Transfer Window"},{id:"history",label:"📜 History"}].map(tab=>(
+          <button key={tab.id} onClick={()=>setTwTab(tab.id)}
+            style={{flex:1,padding:"9px 0",borderRadius:8,border:"none",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,letterSpacing:0.5,transition:"all 0.2s",
+              background:twTab===tab.id?"#1E2D45":"transparent",
+              color:twTab===tab.id?"#F5A623":"#4A5E78"}}>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {twTab==="history" && (
+        <TransferHistory transfers={transfers} players={players} teams={teams} />
+      )}
+
+      {twTab==="window" && <>
 
       {/* ADMIN CONTROLS */}
       {unlocked && (
@@ -1038,8 +1057,141 @@ export default function TransferWindow({
         </div>
       )}
     </div>
+  </>}
   );
 }
+
+function TransferHistory({ transfers, players, teams }) {
+  const history = [...(transfers.history || [])].reverse(); // newest first
+  const currentWeek = transfers.weekNum || 1;
+
+  const getPlayer = (pid) => players.find(p => p.id === pid);
+  const getTeam   = (tid) => teams.find(t => t.id === tid);
+
+  if (history.length === 0) {
+    return (
+      <div style={{textAlign:"center",padding:"60px 20px",background:"#0E1521",borderRadius:12,border:"1px solid #1E2D45"}}>
+        <div style={{fontSize:48,marginBottom:12}}>📜</div>
+        <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:"#4A5E78",letterSpacing:2}}>NO HISTORY YET</div>
+        <div style={{fontSize:13,color:"#4A5E78",marginTop:6}}>Completed transfer windows will appear here.</div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{display:"flex",flexDirection:"column",gap:14}}>
+      {history.map((week, wi) => {
+        const weekNum = week.week || (currentWeek - history.length + wi + (history.length - wi - 1));
+        const date = week.date ? new Date(week.date).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"}) : "";
+        const pairs = week.tradedPairs || [];
+        const releases = week.releases || {};
+
+        // Group by team
+        const teamIds = [...new Set([
+          ...pairs.map(p => p.teamId),
+          ...Object.keys(releases)
+        ])];
+
+        const hadActivity = teamIds.some(tid => {
+          const teamPairs = pairs.filter(p=>p.teamId===tid);
+          const teamReleases = releases[tid]||[];
+          return teamPairs.length > 0 || teamReleases.length > 0;
+        });
+
+        return (
+          <div key={wi} style={{background:"#0E1521",borderRadius:12,border:"1px solid #1E2D45",overflow:"hidden"}}>
+            {/* Week header */}
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 18px",borderBottom:"1px solid #1E2D45",background:"#080C14"}}>
+              <div style={{display:"flex",alignItems:"center",gap:12}}>
+                <div style={{background:"#F5A62322",border:"1px solid #F5A62344",borderRadius:8,padding:"4px 12px",fontFamily:"Rajdhani,sans-serif",fontWeight:800,fontSize:18,color:"#F5A623"}}>
+                  W{weekNum}
+                </div>
+                <div>
+                  <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:15,color:"#E2EAF4",letterSpacing:1}}>
+                    WEEK {weekNum} TRANSFERS
+                  </div>
+                  {date && <div style={{fontSize:11,color:"#4A5E78"}}>{date}</div>}
+                </div>
+              </div>
+              <div style={{fontSize:12,color:"#4A5E78",fontWeight:700}}>
+                {pairs.length} trade{pairs.length!==1?"s":""}
+              </div>
+            </div>
+
+            {!hadActivity && (
+              <div style={{padding:"16px 18px",fontSize:13,color:"#4A5E78"}}>No trades this window.</div>
+            )}
+
+            {/* Per-team breakdown */}
+            {hadActivity && teamIds.map(tid => {
+              const team = getTeam(tid);
+              if (!team) return null;
+              const teamPairs = pairs.filter(p=>p.teamId===tid);
+              const teamReleases = releases[tid]||[];
+              const tradedReleasedPids = new Set(teamPairs.map(p=>p.releasedPid));
+              const returnedPids = teamReleases.filter(pid => !tradedReleasedPids.has(pid));
+
+              if (teamPairs.length === 0 && returnedPids.length === 0) return null;
+
+              return (
+                <div key={tid} style={{padding:"14px 18px",borderBottom:"1px solid #1E2D4533"}}>
+                  {/* Team name */}
+                  <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:13,color:team.color,letterSpacing:1,marginBottom:10}}>
+                    {team.name}
+                  </div>
+
+                  {/* Traded pairs */}
+                  {teamPairs.map((pr, i) => {
+                    const out = getPlayer(pr.releasedPid);
+                    const inn = getPlayer(pr.pickedPid);
+                    return (
+                      <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,flexWrap:"wrap"}}>
+                        {/* Player out */}
+                        <div style={{display:"flex",alignItems:"center",gap:6,background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:8,padding:"6px 12px",minWidth:0}}>
+                          <span style={{fontSize:14}}>⬇️</span>
+                          <div>
+                            <div style={{fontWeight:700,fontSize:13,color:"#FF3D5A",textDecoration:"line-through"}}>{out?.name||pr.releasedPid}</div>
+                            <div style={{fontSize:10,color:"#4A5E78"}}>{out?.role} • {out?.iplTeam}</div>
+                          </div>
+                        </div>
+                        <span style={{color:"#4A5E78",fontSize:18,fontWeight:300}}>→</span>
+                        {/* Player in */}
+                        <div style={{display:"flex",alignItems:"center",gap:6,background:"#2ECC7111",border:"1px solid #2ECC7133",borderRadius:8,padding:"6px 12px",minWidth:0}}>
+                          <span style={{fontSize:14}}>⬆️</span>
+                          <div>
+                            <div style={{fontWeight:700,fontSize:13,color:"#2ECC71"}}>{inn?.name||pr.pickedPid}</div>
+                            <div style={{fontSize:10,color:"#4A5E78"}}>{inn?.role} • {inn?.iplTeam}</div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Players who were released but returned (no trade) */}
+                  {returnedPids.length > 0 && (
+                    <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:4}}>
+                      {returnedPids.map(pid => {
+                        const p = getPlayer(pid);
+                        return (
+                          <div key={pid} style={{display:"flex",alignItems:"center",gap:5,background:"#F5A62311",border:"1px solid #F5A62333",borderRadius:8,padding:"4px 10px"}}>
+                            <span style={{fontSize:11}}>↩️</span>
+                            <span style={{fontSize:12,color:"#F5A623",fontWeight:700}}>{p?.name||pid}</span>
+                            <span style={{fontSize:10,color:"#4A5E78"}}>returned</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 
 function adminBtn(color) {
   return {
