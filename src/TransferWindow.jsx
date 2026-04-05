@@ -535,6 +535,8 @@ export default function TransferWindow({
                 📅 START NEW WEEK
               </button>
             )}
+          </div>
+
           {/* Teams not compliant warning */}
           {phase === "release" && (
             <div style={{marginTop:12,display:"flex",flexWrap:"wrap",gap:6}}>
