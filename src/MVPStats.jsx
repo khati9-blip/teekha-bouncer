@@ -19,27 +19,27 @@ function TierBadge({ tier }) {
 
 // Get current week boundaries: Saturday 11:00 AM → Friday 11:59 PM IST
 function getWeekBounds(weekOffset = 0) {
-  const now = new Date();
   const IST_OFFSET = 5.5 * 60 * 60 * 1000;
-  const nowIST = new Date(now.getTime() + IST_OFFSET);
-  const day = nowIST.getUTCDay(); // 0=Sun,1=Mon,...,6=Sat
-  // Days since last Saturday
-  const daysSinceSat = (day + 1) % 7;
+  const nowUTC = Date.now();
+  const nowIST = new Date(nowUTC + IST_OFFSET);
+  const day = nowIST.getUTCDay(); // 0=Sun,6=Sat
+  // Days since last Saturday (Sat=6 -> 0, Sun=0 -> 1, Mon=1 -> 2, ...)
+  const daysSinceSat = day === 6 ? 0 : day + 1;
   const satIST = new Date(nowIST);
   satIST.setUTCDate(nowIST.getUTCDate() - daysSinceSat);
-  satIST.setUTCHours(11, 0, 0, 0);
-  // If current time is before Saturday 11am, go back one more week
+  satIST.setUTCHours(11, 0, 0, 0); // 11:00 AM IST = 05:30 UTC
+  // If before Saturday 11am IST, go to previous week
   if (nowIST < satIST) satIST.setUTCDate(satIST.getUTCDate() - 7);
-  // Apply offset
+  // Apply week offset (go back)
   satIST.setUTCDate(satIST.getUTCDate() - weekOffset * 7);
   const friIST = new Date(satIST);
   friIST.setUTCDate(satIST.getUTCDate() + 6);
-  friIST.setUTCHours(23, 59, 59, 999);
-  return {
-    start: new Date(satIST.getTime() - IST_OFFSET),
-    end: new Date(friIST.getTime() - IST_OFFSET),
-    label: satIST.toLocaleDateString("en-IN", {day:"numeric",month:"short"}) + " — " + friIST.toLocaleDateString("en-IN", {day:"numeric",month:"short"}),
-  };
+  friIST.setUTCHours(23, 59, 59, 999); // 11:59 PM IST
+  // Convert back to UTC for comparison
+  const start = new Date(satIST.getTime() - IST_OFFSET);
+  const end = new Date(friIST.getTime() - IST_OFFSET);
+  const label = satIST.toLocaleDateString("en-IN",{day:"numeric",month:"short"}) + " — " + friIST.toLocaleDateString("en-IN",{day:"numeric",month:"short"});
+  return { start, end, label };
 }
 
 function medalColor(rank) {
@@ -51,19 +51,22 @@ function medalColor(rank) {
 
 export default function MVPStats({ players, teams, assignments, points, captains, matches, onClose }) {
   const [view, setView] = useState("weekly"); // weekly | bestmatch | team
-  const [weekOffset, setWeekOffset] = useState(0);
+  const [weekOffset, setWeekOffset] = useState(-1); // -1 = all time
 
   const week = useMemo(() => getWeekBounds(weekOffset), [weekOffset]);
 
   // Get matches in this week
+  const allStatsMatches = useMemo(() =>
+    matches.filter(m => players.some(p => points[p.id]?.[m.id]))
+  , [matches, players, points]);
+
   const weekMatches = useMemo(() => {
-    const withStats = matches.filter(m => players.some(p => points[p.id]?.[m.id]));
-    const inWeek = withStats.filter(m => {
+    if (weekOffset === -1) return allStatsMatches; // all time
+    return allStatsMatches.filter(m => {
       const d = new Date(m.date);
       return d >= week.start && d <= week.end;
     });
-    return inWeek;
-  }, [matches, week, players, points]);
+  }, [allStatsMatches, week, weekOffset]);
 
   // For each player, compute weekly total and best match
   const playerStats = useMemo(() => {
@@ -143,15 +146,15 @@ export default function MVPStats({ players, teams, assignments, points, captains
         <div>
           <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:"#F5A623",letterSpacing:2}}>MVP STATS</div>
           <div style={{fontSize:10,color:"#4A5E78",marginTop:2}}>
-            {week.label} &nbsp;•&nbsp; {weekMatches.length} match{weekMatches.length!==1?"es":""} this week
+            {weekOffset===-1?"All matches":week.label} &nbsp;•&nbsp; {weekMatches.length} match{weekMatches.length!==1?"es":""}
           </div>
         </div>
         <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <button onClick={()=>setWeekOffset(w=>w+1)} style={{background:"transparent",border:"1px solid #1E2D45",borderRadius:6,padding:"4px 10px",color:"#4A5E78",cursor:"pointer",fontSize:13}}>‹</button>
-          <span style={{fontSize:11,color:"#4A5E78",minWidth:60,textAlign:"center"}}>
-            {weekOffset===0?"This week":weekOffset===1?"Last week":weekOffset+" wks ago"}
+          <button onClick={()=>setWeekOffset(w=>w===-1?0:w+1)} style={{background:"transparent",border:"1px solid #1E2D45",borderRadius:6,padding:"4px 10px",color:"#4A5E78",cursor:"pointer",fontSize:13}}>‹</button>
+          <span style={{fontSize:11,color:"#4A5E78",minWidth:72,textAlign:"center"}}>
+            {weekOffset===-1?"All time":weekOffset===0?"This week":weekOffset===1?"Last week":weekOffset+" wks ago"}
           </span>
-          <button onClick={()=>setWeekOffset(w=>Math.max(0,w-1))} disabled={weekOffset===0} style={{background:"transparent",border:"1px solid #1E2D45",borderRadius:6,padding:"4px 10px",color:weekOffset===0?"#2D3E52":"#4A5E78",cursor:weekOffset===0?"default":"pointer",fontSize:13}}>›</button>
+          <button onClick={()=>setWeekOffset(w=>w===0?-1:Math.max(-1,w-1))} style={{background:"transparent",border:"1px solid #1E2D45",borderRadius:6,padding:"4px 10px",color:"#4A5E78",cursor:"pointer",fontSize:13}}>›</button>
           <button onClick={onClose} style={{background:"transparent",border:"none",color:"#4A5E78",fontSize:22,cursor:"pointer",marginLeft:4}}>✕</button>
         </div>
       </div>
