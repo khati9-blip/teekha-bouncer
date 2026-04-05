@@ -29,7 +29,7 @@ function calcPoints(s) {
 }
 
 function storeGet(key) { try{const r=(() => { const v = localStorage.getItem(`tbl_${key}`); return v ? { value: v } : null; })();return r?JSON.parse(r.value):null;}catch{return null;} }
-function storeSet(key,val) { try{await window.storage.set(`ipl_${key}`,JSON.stringify(val));}catch{} }
+function storeSet(key,val) { try{localStorage.setItem(`tbl_${key}`,JSON.stringify(val));}catch{} }
 
 async function hashPw(str) {
   const buf=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(str));
@@ -160,7 +160,7 @@ export default function App() {
   useEffect(()=>{
     (async()=>{
       const keys=["teams","players","assignments","matches","captains","points","page","tnames","numteams","pwhash"];
-      const[t,p,a,m,c,pts,pg,tn,nt,ph]=await Promise.all(keys.map(k=>storeGet(k)));
+      const[t,p,a,m,c,pts,pg,tn,nt,ph]=keys.map(k=>storeGet(k));
       if(t)setTeams(t);if(p)setPlayers(p);if(a)setAssignments(a);if(m)setMatches(m);
       if(c)setCaptains(c);if(pts)setPoints(pts);if(pg)setPage(pg);if(tn)setTNames(tn);
       if(nt)setNumTeams(nt);if(ph)setPwHash(ph);
