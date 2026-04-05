@@ -325,6 +325,37 @@ export default function TransferWindow({
                 })} style={{background:"#2ECC7122",border:"1px solid #2ECC7133",borderRadius:8,padding:"8px 16px",color:"#2ECC71",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>
                   ✅ END TRADE PHASE
                 </button>
+                <button onClick={()=>withPassword(()=>{
+                  if(!confirm("Reset all trading? Released players stay in pool but all trades will be undone.")) return;
+                  // Undo all trades - restore original assignments
+                  const newAssignments = {...assignments};
+                  const newLog = {...ownershipLog};
+                  const now = new Date().toISOString().split("T")[0];
+                  for(const trade of (transfers.tradedPairs||[])) {
+                    const {releasedPid, pickedPid, teamId} = trade;
+                    // Return picked player to pool
+                    newAssignments[pickedPid] = undefined;
+                    // Restore released player to original team
+                    newAssignments[releasedPid] = teamId;
+                    // Fix ownership log
+                    if(newLog[pickedPid]) newLog[pickedPid] = newLog[pickedPid].filter(o=>o.teamId!==teamId);
+                    if(newLog[releasedPid]) newLog[releasedPid] = newLog[releasedPid].map(o=>o.teamId===teamId&&o.to===now?{...o,to:null}:o);
+                  }
+                  // Restore released players to pool
+                  const allReleased = Object.values(transfers.releases||{}).flat();
+                  const newPool = [...new Set([...unsoldPool, ...allReleased])];
+                  // Remove traded-in players from pool (they went back above)
+                  const tradedInPids = (transfers.tradedPairs||[]).map(t=>t.pickedPid);
+                  const cleanPool = newPool.filter(pid=>!Object.values(newAssignments).includes(pid)||tradedInPids.includes(pid));
+                  const firstTeam = sortedTeams[0]?.id;
+                  const deadline = new Date(Date.now() + 45 * 60 * 1000).toISOString();
+                  onUpdateTransfers({...transfers, tradedPairs:[], ineligible:[], currentPickTeam:firstTeam, pickDeadline:deadline, phase:"trade"});
+                  onUpdateAssignments(newAssignments);
+                  onUpdateOwnershipLog(newLog);
+                  onUpdateUnsoldPool(cleanPool);
+                })} style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",borderRadius:8,padding:"8px 16px",color:"#FF3D5A",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+                  🔄 RESET TRADING
+                </button>
               </>
             )}
             {phase==="done" && (
