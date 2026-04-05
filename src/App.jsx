@@ -3619,6 +3619,8 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                 onUpdateSnatch={(val)=>{setSnatch(val);storeSet("snatch",val);}}
                 onUpdateAssignments={updAssign}
                 onUpdateOwnershipLog={(val)=>{setOwnershipLog(val);storeSet("ownershipLog",val);}}
+                safePlayers={safePlayers}
+                onUpdateSafePlayers={(val)=>{setSafePlayers(val);storeSet("safePlayers",val);}}
               />
             </div>
           )}

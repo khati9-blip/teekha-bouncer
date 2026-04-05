@@ -59,6 +59,7 @@ export default function SnatchSection({
   leaderboard, myTeam, isAdmin, unlocked, withPassword,
   teamIdentity, user, pitch,
   onUpdateSnatch, onUpdateAssignments, onUpdateOwnershipLog, ownershipLog,
+  safePlayers, onUpdateSafePlayers,
   pushNotif
 }) {
   const [windowStatus, setWindowStatus] = useState(getSnatchWindowStatus());
@@ -121,13 +122,27 @@ export default function SnatchSection({
     );
     newLog[pid] = [...newLog[pid], { teamId: fromTeamId, from: now, to: null }];
 
+    // Auto-mark returned player as safe — can never be snatched again
+    const newSafe = { ...safePlayers };
+    if (!newSafe[fromTeamId]) newSafe[fromTeamId] = [];
+    if (!newSafe[fromTeamId].includes(pid)) {
+      newSafe[fromTeamId] = [...newSafe[fromTeamId], pid];
+      onUpdateSafePlayers(newSafe);
+    }
+
     onUpdateSnatch({ ...snatch, active: null, history: newHistory, weekNum: snatch.weekNum + 1 });
     onUpdateAssignments(newAssignments);
     onUpdateOwnershipLog(newLog);
-    pushNotif("snatch", "Snatched player returned to original team", "↩️");
+    pushNotif("snatch", "Snatched player returned — now permanently safe 🛡️", "↩️");
   };
 
   const confirmSnatch = async (pid) => {
+    // Block safe players
+    const victimTeamId = assignments[pid];
+    if ((safePlayers?.[victimTeamId]||[]).includes(pid)) {
+      setPinErr("🛡️ This player is safe and cannot be snatched!");
+      return;
+    }
     // Verify PIN
     const myIdentity = Object.values(teamIdentity || {}).find(t => t.claimedBy === user?.email);
     if (!myIdentity?.pinHash) { setPinErr("No PIN set for your team"); return; }
