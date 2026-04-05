@@ -3228,14 +3228,25 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                       {unsoldPool.map(pid=>{
                         const p = players.find(x=>x.id===pid);
                         if(!p) return null;
+                        // Check if released this window by a team
+                        const releasedByTeam = teams.find(t=>(transfers?.releases?.[t.id]||[]).includes(pid));
+                        const cardBg = releasedByTeam ? releasedByTeam.color+"0D" : myHighlights[pid] ? "#F5A62311" : "#0E1521";
+                        const cardBorder = releasedByTeam ? releasedByTeam.color+"44" : myHighlights[pid] ? "#F5A62344" : "#1E2D4566";
+                        const cardBorderLeft = releasedByTeam ? "3px solid "+releasedByTeam.color+"99" : "1px solid "+cardBorder;
                         return (
-                          <div key={pid} style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",background:myHighlights[pid]?"#F5A62311":"#0E1521",borderRadius:8,border:"1px solid "+(myHighlights[pid]?"#F5A62344":"#1E2D4566"),flexWrap:"wrap"}}>
+                          <div key={pid} style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",background:cardBg,borderRadius:8,border:"1px solid "+cardBorder,borderLeft:cardBorderLeft,flexWrap:"wrap"}}>
                             <div style={{flex:1,minWidth:0}}>
                               <div style={{display:"flex",alignItems:"center",gap:5,flexWrap:"wrap"}}>
                                 <span style={{fontWeight:700,fontSize:14,color:myHighlights[pid]?"#F5A623":"#E2EAF4"}}>{p.name}</span>
                                 {p.tier&&<span style={{fontSize:9,fontWeight:800,letterSpacing:1,padding:"1px 5px",borderRadius:4,fontFamily:"Barlow Condensed,sans-serif",textTransform:"uppercase",background:p.tier==="platinum"?"#4A5E7833":p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":"#CD7F3222",border:"1px solid "+(p.tier==="platinum"?"#4A5E7866":p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":"#CD7F3255"),color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32"}}>{p.tier==="platinum"?"PLAT":p.tier==="gold"?"GOLD":p.tier==="silver"?"SILV":"BRNZ"}</span>}
+                                {releasedByTeam && (
+                                  <span style={{display:"flex",alignItems:"center",gap:3,fontSize:9,fontWeight:800,letterSpacing:0.5,color:releasedByTeam.color,background:releasedByTeam.color+"15",border:"1px solid "+releasedByTeam.color+"44",borderRadius:4,padding:"1px 6px"}}>
+                                    <span style={{width:5,height:5,borderRadius:"50%",background:releasedByTeam.color,display:"inline-block",flexShrink:0}}/>
+                                    {releasedByTeam.name.toUpperCase()}
+                                  </span>
+                                )}
                               </div>
-                              <div style={{fontSize:11,color:"#4A5E78"}}>{p.iplTeam} • {p.role}</div>
+                              <div style={{fontSize:11,color:"#4A5E78"}}>{p.iplTeam} • {p.role}{!releasedByTeam&&<span style={{marginLeft:6,fontSize:9,color:"#4A5E78",background:"#1E2D4555",border:"1px solid #1E2D4599",borderRadius:3,padding:"0px 4px",fontWeight:700}}>UNSOLD</span>}</div>
                               {myNotes[pid]&&editingNote!==pid&&<div style={{fontSize:11,color:"#F5A623",marginTop:4,fontStyle:"italic",background:"#F5A62311",borderRadius:4,padding:"3px 8px",display:"inline-block"}}>"{myNotes[pid]}"</div>}
                               {editingNote===pid&&(
                                 <div style={{display:"flex",gap:6,marginTop:6}}>
