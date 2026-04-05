@@ -2765,17 +2765,6 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
       return Math.round(tot);
     };
 
-    // Track pids already accounted for in trades/snatch to avoid duplicates
-    const tradedAwayPids = new Set((transfers.tradedPairs||[]).filter(pr=>pr.teamId===teamId).map(pr=>pr.releasedPid));
-    const tradedInPids   = new Set((transfers.tradedPairs||[]).filter(pr=>pr.teamId===teamId).map(pr=>pr.pickedPid));
-
-    // Active players in squad — exclude those already shown as traded-in/out
-    const active = players.filter(p=>assignments[p.id]===teamId && !tradedInPids.has(p.id) && !tradedAwayPids.has(p.id)).map(p=>{
-      const tot = getPtsForTeam(p.id, teamId);
-      const isSnatched = snatch.active?.pid===p.id && snatch.active?.fromTeamId===teamId;
-      return{...p,total:tot,status:isSnatched?"snatched":"active"};
-    });
-
     // Collect ALL traded-out/in pids across ALL history + current window
     const allTradedOutPids = new Set(); // all players ever traded OUT of this team
     const allTradedInPids  = new Set(); // all players ever traded INTO this team
