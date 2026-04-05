@@ -92,6 +92,7 @@ export default function TransferWindow({
 }) {
   const [pickModal, setPickModal] = useState(null); // {poolPlayer}
   const [sessionTeamId, setSessionTeamId] = useState(null);
+  const [confirmModal, setConfirmModal] = useState(null); // {message, onConfirm}
   const [tradeConfirmModal, setTradeConfirmModal] = useState(null); // {poolPlayer, releasedPlayer}
   const [resetConfirm, setResetConfirm] = useState(false);
 
@@ -316,7 +317,7 @@ export default function TransferWindow({
   });
 
   const resetTradePhase = () => withPassword(() => {
-    if (!confirm("⚠️ Reset trade phase? All picks this window will be erased and it will restart from the top team. Are you sure?")) return;
+    setConfirmModal({ message: "⚠️ Reset trade phase? All picks will be erased and it restarts from the top team.", onConfirm: () => {
 
     // Restore released players to pool (undo all trades)
     const currentPairs = transfers.tradedPairs || [];
@@ -359,11 +360,11 @@ export default function TransferWindow({
       ineligible: [],
       tradeStartedAt: new Date().toISOString(),
     });
+    }});
   });
 
   const closeWindow = () => withPassword(() => {
-    if (!confirm("Cancel transfer window? All releases will be undone and players returned to their teams.")) return;
-
+    setConfirmModal({ message: "Close the transfer window? All releases will be undone and players returned to their teams.", onConfirm: () => {
     // Collect all released player IDs across all teams
     const allReleasedPids = Object.values(transfers?.releases || {}).flat();
 
@@ -405,6 +406,7 @@ export default function TransferWindow({
       currentPickTeam: null,
       pickDeadline: null,
     });
+    }});
   });
 
   const startNewWeek = () => withPassword(() => {
@@ -854,6 +856,26 @@ export default function TransferWindow({
                 </div>
               );
             })}
+          </div>
+        </div>
+      )}
+
+      {/* CONFIRM MODAL */}
+      {confirmModal && (
+        <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.95)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:800,padding:16}}>
+          <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #FF3D5A44",padding:24,width:"100%",maxWidth:380}}>
+            <div style={{fontSize:22,marginBottom:12}}>⚠️</div>
+            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:18,fontWeight:700,color:"#FF3D5A",marginBottom:12}}>{confirmModal.message}</div>
+            <div style={{display:"flex",gap:8}}>
+              <button onClick={()=>setConfirmModal(null)}
+                style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:11,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>
+                CANCEL
+              </button>
+              <button onClick={()=>{confirmModal.onConfirm();setConfirmModal(null);}}
+                style={{flex:1,background:"#FF3D5A22",border:"1px solid #FF3D5A",borderRadius:8,padding:11,color:"#FF3D5A",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:14,cursor:"pointer"}}>
+                CONFIRM
+              </button>
+            </div>
           </div>
         </div>
       )}
