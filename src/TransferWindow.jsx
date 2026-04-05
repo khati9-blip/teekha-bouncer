@@ -515,24 +515,40 @@ export default function TransferWindow({
 
           {sortedTeams.map(team => {
             const isMe = team.id === myTeamId;
-            const canEdit = isMe || unlocked;
+            // Each team can edit their own releases freely — no lock needed
+            // Admin (unlocked) sees all teams; non-admin only sees their own
+            const canEdit = isMe; // no lock required
+            const canSee = isMe || unlocked; // admins see all
+            if (!canSee) return null;
+
             const teamPlayers = players.filter(p => assignments[p.id] === team.id);
             const released = transfers?.releases?.[team.id] || [];
+            const allReleased = released.length;
 
             return (
-              <div key={team.id} style={{background:"#0E1521",borderRadius:12,border:"1px solid "+team.color+"33",padding:16,marginBottom:12,opacity:canEdit?1:0.5}}>
+              <div key={team.id} style={{background:"#0E1521",borderRadius:12,border:"2px solid "+(isMe?team.color+"66":team.color+"22"),padding:16,marginBottom:12}}>
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-                  <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:16,color:team.color}}>{team.name}</div>
-                  <div style={{fontSize:12,color:released.length===3?"#2ECC71":"#F5A623",fontWeight:700,background:released.length===3?"#2ECC7111":"#F5A62311",padding:"3px 10px",borderRadius:20,border:"1px solid "+(released.length===3?"#2ECC7133":"#F5A62333")}}>
-                    {released.length}/3 released
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:16,color:team.color}}>{team.name}</div>
+                    {isMe && <span style={{fontSize:10,background:team.color+"22",color:team.color,border:"1px solid "+team.color+"44",borderRadius:20,padding:"2px 8px",fontWeight:700,letterSpacing:1}}>YOUR TEAM</span>}
+                  </div>
+                  <div style={{fontSize:12,color:allReleased===3?"#2ECC71":"#F5A623",fontWeight:700,background:allReleased===3?"#2ECC7111":"#F5A62311",padding:"3px 10px",borderRadius:20,border:"1px solid "+(allReleased===3?"#2ECC7133":"#F5A62333")}}>
+                    {allReleased}/3 released
                   </div>
                 </div>
-                {!canEdit && <div style={{fontSize:11,color:"#4A5E78",marginBottom:8}}>Only your own team's releases are editable</div>}
+
+                {/* Instruction for own team */}
+                {isMe && (
+                  <div style={{fontSize:12,color:"#4A5E78",marginBottom:10,background:"#F5A62308",border:"1px solid #F5A62322",borderRadius:8,padding:"7px 12px"}}>
+                    Tap <strong style={{color:"#F5A623"}}>RELEASE</strong> to add a player to the pool. Tap <strong style={{color:"#FF3D5A"}}>UNDO</strong> to take them back. You can change until the window closes.
+                  </div>
+                )}
+
                 <div style={{display:"flex",flexDirection:"column",gap:5}}>
                   {teamPlayers.map(p => {
                     const isReleased = released.includes(p.id);
                     return (
-                      <div key={p.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:isReleased?"#FF3D5A11":"#080C14",borderRadius:8,border:"1px solid "+(isReleased?"#FF3D5A44":"#1E2D45")}}>
+                      <div key={p.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:isReleased?"#FF3D5A11":"#080C14",borderRadius:8,border:"1px solid "+(isReleased?"#FF3D5A44":"#1E2D45")}}>
                         <div style={{flex:1}}>
                           <div style={{display:"flex",alignItems:"center",gap:6}}>
                             {isReleased && <span style={{fontSize:13}}>📤</span>}
@@ -541,19 +557,45 @@ export default function TransferWindow({
                           </div>
                           <div style={{fontSize:11,color:"#4A5E78"}}>{p.iplTeam} • {p.role}</div>
                         </div>
+                        {/* Release/Undo button — only for own team, no lock needed */}
                         {canEdit && (
                           <button onClick={() => handleRelease(team.id, p.id)}
-                            style={{background:isReleased?"#FF3D5A22":"transparent",border:"1px solid "+(isReleased?"#FF3D5A":"#1E2D45"),borderRadius:6,padding:"4px 10px",color:isReleased?"#FF3D5A":"#4A5E78",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif"}}>
-                            {isReleased ? "UNDO" : "RELEASE"}
+                            style={{background:isReleased?"#FF3D5A22":"#1E2D4533",border:"1px solid "+(isReleased?"#FF3D5A":"#1E2D45"),borderRadius:6,padding:"6px 14px",color:isReleased?"#FF3D5A":"#4A5E78",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",letterSpacing:0.5}}>
+                            {isReleased ? "UNDO ✕" : "RELEASE"}
                           </button>
+                        )}
+                        {/* Read-only view for admin */}
+                        {!canEdit && isReleased && (
+                          <span style={{fontSize:10,color:"#FF3D5A",fontWeight:700,background:"#FF3D5A11",border:"1px solid #FF3D5A33",padding:"3px 8px",borderRadius:6}}>RELEASED</span>
                         )}
                       </div>
                     );
                   })}
+                  {teamPlayers.length === 0 && (
+                    <div style={{fontSize:12,color:"#4A5E78",textAlign:"center",padding:16}}>No players in squad</div>
+                  )}
                 </div>
               </div>
             );
           })}
+
+          {/* Show all teams' release status summary for everyone */}
+          {!myTeamId && !unlocked && (
+            <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #1E2D45",padding:16,marginBottom:12}}>
+              <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginBottom:10}}>RELEASE STATUS</div>
+              {sortedTeams.map(team => {
+                const released = transfers?.releases?.[team.id] || [];
+                return (
+                  <div key={team.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid #1E2D4533"}}>
+                    <div style={{width:8,height:8,borderRadius:"50%",background:team.color,flexShrink:0}} />
+                    <span style={{flex:1,fontSize:13,color:"#E2EAF4",fontWeight:600}}>{team.name}</span>
+                    <span style={{fontSize:12,color:released.length===3?"#2ECC71":"#F5A623",fontWeight:700}}>{released.length}/3</span>
+                    <span style={{fontSize:11,color:released.length===3?"#2ECC71":"#4A5E78"}}>{released.length===3?"✓ Done":"Pending"}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
@@ -654,12 +696,23 @@ export default function TransferWindow({
               ) : sortedPool.map(p => {
                 const valid = isMyTurn && phase==="trade" ? getValidMatches(p, myTeamId) : [];
                 const canPick = valid.length > 0;
+                // Check if newly released this window vs pre-existing unsold
+                const isNewlyReleased = Object.values(transfers?.releases || {}).some(arr => arr.includes(p.id));
+                // Find which team released them
+                const releasedByTeam = isNewlyReleased
+                  ? teams.find(t => (transfers?.releases?.[t.id] || []).includes(p.id))
+                  : null;
                 return (
                   <div key={p.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",background:canPick?"#2ECC7111":"#080C14",borderRadius:8,border:"1px solid "+(canPick?"#2ECC7144":"#1E2D4544"),marginBottom:6}}>
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{display:"flex",alignItems:"center",gap:5,flexWrap:"wrap"}}>
                         <span style={{fontWeight:700,fontSize:12,color:"#E2EAF4"}}>{p.name}</span>
                         <TierBadge tier={p.tier} />
+                        {isNewlyReleased && (
+                          <span style={{fontSize:9,background:"#FF3D5A22",color:"#FF3D5A",border:"1px solid #FF3D5A44",borderRadius:4,padding:"1px 5px",fontWeight:700,letterSpacing:0.5}}>
+                            RELEASED{releasedByTeam ? " · " + releasedByTeam.name : ""}
+                          </span>
+                        )}
                       </div>
                       <div style={{fontSize:10,color:"#4A5E78"}}>{p.iplTeam} • {p.role}</div>
                     </div>
