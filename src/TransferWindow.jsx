@@ -154,9 +154,14 @@ export default function TransferWindow({
     const newLog = { ...ownershipLog };
     // Close old owner period for released player
     if (!newLog[releasedPlayer.id]) newLog[releasedPlayer.id] = [];
-    newLog[releasedPlayer.id] = newLog[releasedPlayer.id].map(o =>
-      o.teamId === myTeamId && !o.to ? { ...o, to: now } : o
-    );
+    // If no open period exists, create one that ends now (covers pre-tracking history)
+    if (!newLog[releasedPlayer.id].some(o => o.teamId === actingId && !o.to)) {
+      newLog[releasedPlayer.id] = [...newLog[releasedPlayer.id], { teamId: actingId, from: "2026-01-01", to: now }];
+    } else {
+      newLog[releasedPlayer.id] = newLog[releasedPlayer.id].map(o =>
+        o.teamId === actingId && !o.to ? { ...o, to: now } : o
+      );
+    }
     // Open new period for incoming player
     if (!newLog[poolPlayer.id]) newLog[poolPlayer.id] = [];
     newLog[poolPlayer.id] = [...newLog[poolPlayer.id], { teamId: tradeModal?.actingTeamId || ((isClone && unlocked) ? currentPickTeamId : myTeamId), from: now, to: null }];
@@ -525,15 +530,20 @@ export default function TransferWindow({
                       const ineligible = (transfers.ineligible||[]).includes(p.id);
                       return (
                         <div key={p.id} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 10px",background:traded?"#2ECC7111":ineligible?"#4A5E7822":"#080C14",borderRadius:8,border:"1px solid "+(traded?"#2ECC7144":ineligible?"#4A5E7844":"#1E2D44"),marginBottom:4}}>
-                          <span style={{fontSize:11,marginRight:2}}>{traded?"✅":ineligible?"↩️":"📤"}</span>
+                          <span style={{fontSize:11,marginRight:2}}>{traded?"⬇️":ineligible?"↩️":"📤"}</span>
                           <div style={{flex:1}}>
-                            <div style={{display:"flex",alignItems:"center",gap:4}}>
-                              <span style={{fontWeight:700,fontSize:12,color:traded?"#2ECC71":ineligible?"#4A5E78":"#E2EAF4",textDecoration:traded?"line-through":"none"}}>{p.name}</span>
+                            <div style={{display:"flex",alignItems:"center",gap:4,flexWrap:"wrap"}}>
+                              <span style={{fontWeight:700,fontSize:12,color:traded?"#FF3D5A":ineligible?"#4A5E78":"#E2EAF4",textDecoration:traded?"line-through":"none"}}>{p.name}</span>
                               <TierBadge tier={p.tier} />
                             </div>
-                            <div style={{fontSize:10,color:"#4A5E78"}}>{p.role}</div>
+                            {traded && (()=>{
+                              const pair = (transfers.tradedPairs||[]).find(t=>t.teamId===team.id&&t.releasedPid===p.id);
+                              const inPlayer = pair ? players.find(x=>x.id===pair.pickedPid) : null;
+                              return inPlayer ? <div style={{fontSize:10,color:"#2ECC71",marginTop:2}}>⬆️ {inPlayer.name} came in</div> : null;
+                            })()}
+                            {!traded && <div style={{fontSize:10,color:"#4A5E78"}}>{p.role}</div>}
                           </div>
-                          {traded && <span style={{fontSize:10,color:"#2ECC71",fontWeight:700}}>TRADED</span>}
+                          {traded && <span style={{fontSize:10,color:"#FF3D5A",fontWeight:700}}>OUT</span>}
                           {ineligible && !traded && <span style={{fontSize:10,color:"#4A5E78",fontWeight:700}}>RETURNED</span>}
                         </div>
                       );
