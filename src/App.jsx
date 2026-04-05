@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import FormChart from "./FormChart";
 import H2HStats from "./H2HStats";
+import TransferWindowComponent from "./TransferWindow";
 
 async function callAI(userPrompt, system = "Return only valid JSON.") {
   const body = {
