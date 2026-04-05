@@ -88,7 +88,7 @@ export default function TransferWindow({
   leaderboard, isAdmin, myTeam, unlocked, withPassword,
   onUpdateTransfers, onUpdateAssignments, onUpdateUnsoldPool,
   onUpdateOwnershipLog, ownershipLog, points, onUpdatePoints,
-  user
+  user, safePlayers
 }) {
   const [pickModal, setPickModal] = useState(null); // {poolPlayer}
   const [sessionTeamId, setSessionTeamId] = useState(null);
@@ -97,6 +97,7 @@ export default function TransferWindow({
 
   const phase = transfers?.phase || "closed";
   const myTeamId = myTeam?.id || sessionTeamId;
+  const isPlayerSafe = (pid) => Object.values(safePlayers || {}).some(arr => arr.includes(pid));
   const sortedTeams = leaderboard.map(t => teams.find(x => x.id === t.id)).filter(Boolean);
 
   // ── AUTO WINDOW CHECK ──────────────────────────────────────────────────────
@@ -166,6 +167,7 @@ export default function TransferWindow({
   // ── RELEASE ────────────────────────────────────────────────────────────────
   const handleRelease = (teamId, pid) => {
     if (phase !== "release") return;
+    if (isPlayerSafe(pid)) { alert("This player is marked SAFE and cannot be released."); return; }
     const current = transfers?.releases?.[teamId] || [];
     const isReleased = current.includes(pid);
     if (!isReleased && current.length >= 3) { alert("Max 3 releases per team"); return; }
@@ -607,10 +609,14 @@ export default function TransferWindow({
                         </div>
                         {/* Release/Undo button — only for own team, no lock needed */}
                         {canEdit && (
-                          <button onClick={() => handleRelease(team.id, p.id)}
-                            style={{background:isReleased?"#FF3D5A22":"#1E2D4533",border:"1px solid "+(isReleased?"#FF3D5A":"#1E2D45"),borderRadius:6,padding:"6px 14px",color:isReleased?"#FF3D5A":"#4A5E78",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",letterSpacing:0.5}}>
-                            {isReleased ? "UNDO ✕" : "RELEASE"}
-                          </button>
+                          isPlayerSafe(p.id) ? (
+                            <span style={{fontSize:10,color:"#2ECC71",fontWeight:700,background:"#2ECC7111",border:"1px solid #2ECC7133",padding:"3px 8px",borderRadius:6,letterSpacing:0.5}}>🛡 SAFE</span>
+                          ) : (
+                            <button onClick={() => handleRelease(team.id, p.id)}
+                              style={{background:isReleased?"#FF3D5A22":"#1E2D4533",border:"1px solid "+(isReleased?"#FF3D5A":"#1E2D45"),borderRadius:6,padding:"6px 14px",color:isReleased?"#FF3D5A":"#4A5E78",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",letterSpacing:0.5}}>
+                              {isReleased ? "UNDO ✕" : "RELEASE"}
+                            </button>
+                          )
                         )}
                         {/* Read-only view for admin */}
                         {!canEdit && isReleased && (
@@ -737,7 +743,7 @@ export default function TransferWindow({
               {sortedPool.length === 0 ? (
                 <div style={{fontSize:12,color:"#4A5E78",textAlign:"center",padding:16}}>Pool empty</div>
               ) : sortedPool.map(p => {
-                const valid = isMyTurn && phase==="trade" ? getValidMatches(p, myTeamId) : [];
+                const valid = isMyTurn && phase==="trade" && !isPlayerSafe(p.id) ? getValidMatches(p, myTeamId) : [];
                 const canPick = valid.length > 0;
                 // Check if newly released this window vs pre-existing unsold
                 const isNewlyReleased = Object.values(transfers?.releases || {}).some(arr => arr.includes(p.id));

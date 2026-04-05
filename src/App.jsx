@@ -2739,10 +2739,6 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   };
 
   const leaderboard=[...teams].map(t=>({...t,total:getTeamTotal(t.id)})).sort((a,b)=>b.total-a.total);
-  // Derive effective myTeam: use prop, or find by email in teamIdentity
-  const effectiveMyTeam = myTeam || (user?.email && Object.keys(teamIdentity).length > 0
-    ? teams.find(t => Object.values(teamIdentity).some(ti => ti.claimedBy === user.email && ti.teamRef === t.id))
-    : null);
   const getPlayerBreakdown=(teamId)=>{
     // Helper: get points for player during team's ownership period(s)
     const getPtsForTeam = (pid, tid) => {
@@ -3620,7 +3616,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                 unsoldPool={unsoldPool}
                 leaderboard={leaderboard}
                 isAdmin={isAdmin}
-                myTeam={effectiveMyTeam}
+                myTeam={myTeam}
                 unlocked={unlocked}
                 withPassword={withPassword}
                 ownershipLog={ownershipLog}
@@ -3631,7 +3627,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                 onUpdateUnsoldPool={(val)=>{setUnsoldPool(val);storeSet("unsoldPool",val);}}
                 onUpdateOwnershipLog={(val)=>{setOwnershipLog(val);storeSet("ownershipLog",val);}}
                 onUpdatePoints={updPoints}
-                teamIdentity={teamIdentity}
+                safePlayers={safePlayers}
               />
               <SnatchSection
                 teams={teams}
@@ -4619,31 +4615,6 @@ function Root() {
   const sbGet = async (key) => { try { const res = await fetch("https://rmcxhorijitrhqyrvvkn.supabase.co/rest/v1/league_data?key=eq."+encodeURIComponent(key), {headers:{"apikey":"sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm","Authorization":"Bearer sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm"}}); const d=await res.json(); return d[0]?.value; } catch { return null; } };
   const sbSet = async (key, value) => { try { await fetch("https://rmcxhorijitrhqyrvvkn.supabase.co/rest/v1/league_data", {method:"POST",headers:{"apikey":"sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm","Authorization":"Bearer sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm","Content-Type":"application/json","Prefer":"resolution=merge-duplicates"},body:JSON.stringify({key,value,updated_at:new Date().toISOString()})}); } catch {} };
   const hashPw = async (pw) => { const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(pw)); return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join(""); };
-
-  // Auto-resolve myTeam for admin users who also claimed a team
-  React.useEffect(() => {
-    if (!isAdmin || myTeam || !currentPitch) return;
-    (async () => {
-      try {
-        const identity = await sbGet(currentPitch.id + '_teamIdentity') || {};
-        // Find by current user email first
-        const userEmail = currentUser?.email;
-        let entry = userEmail ? Object.values(identity).find(ti => ti.claimedBy === userEmail) : null;
-        // Fallback: check adminEmail stored in Supabase
-        if (!entry) {
-          const adminEmail = await sbGet(currentPitch.id + '_adminEmail');
-          if (adminEmail) entry = Object.values(identity).find(ti => ti.claimedBy === adminEmail);
-        }
-        if (!entry) return;
-        const allTeams = await sbGet(currentPitch.id + '_teams') || [];
-        const team = allTeams.find(t => t.id === entry.teamRef);
-        if (!team) return;
-        const teamData = {...team, teamId: entry.teamId};
-        try { localStorage.setItem('tb_myteam_' + currentPitch.id, JSON.stringify(teamData)); } catch {}
-        setMyTeam(teamData);
-      } catch {}
-    })();
-  }, [isAdmin, currentPitch?.id]);
 
   const handleLogin = (user) => {
     setCurrentUser(user);
