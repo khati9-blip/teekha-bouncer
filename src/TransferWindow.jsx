@@ -103,7 +103,6 @@ export default function TransferWindow({
 
   // Current pick team
   const currentPickTeamId = transfers.currentPickTeam;
-  const isMyTurn = currentPickTeamId === myTeamId;
   const currentPickTeam = teams.find(t => t.id === currentPickTeamId);
 
   // Handle releasing a player
@@ -138,12 +137,12 @@ export default function TransferWindow({
       alert("This player does not match any of your remaining released players (like-for-like + same/lower tier).");
       return;
     }
-    setTradeModal({ poolPlayer, validMatches });
+    setTradeModal({ poolPlayer, validMatches, actingTeamId: (isClone && unlocked) ? currentPickTeamId : myTeamId });
   };
 
   // Confirm trade after selecting which released player to match
   const confirmTrade = async (poolPlayer, releasedPlayer) => {
-    const actingId = (isClone && unlocked) ? currentPickTeamId : myTeamId;
+    const actingId = tradeModal?.actingTeamId || ((isClone && unlocked) ? currentPickTeamId : myTeamId);
     const newAssignments = { ...assignments, [poolPlayer.id]: actingId };
     delete newAssignments[releasedPlayer.id]; // remove from team
 
@@ -157,11 +156,11 @@ export default function TransferWindow({
     );
     // Open new period for incoming player
     if (!newLog[poolPlayer.id]) newLog[poolPlayer.id] = [];
-    newLog[poolPlayer.id] = [...newLog[poolPlayer.id], { teamId: (isClone && unlocked) ? currentPickTeamId : myTeamId, from: now, to: null }];
+    newLog[poolPlayer.id] = [...newLog[poolPlayer.id], { teamId: tradeModal?.actingTeamId || ((isClone && unlocked) ? currentPickTeamId : myTeamId), from: now, to: null }];
 
     // Record trade pair
     const tradedPairs = [...(transfers.tradedPairs || []), {
-      teamId: (isClone && unlocked) ? currentPickTeamId : myTeamId,
+      teamId: tradeModal?.actingTeamId || ((isClone && unlocked) ? currentPickTeamId : myTeamId),
       releasedPid: releasedPlayer.id,
       pickedPid: poolPlayer.id,
       week: transfers.weekNum,
@@ -535,7 +534,7 @@ export default function TransferWindow({
           </div>
 
           {/* My turn actions */}
-          {isMyTurn && phase==="trade" && (
+          {(isMyTurn || (isClone && unlocked && !!currentPickTeamId)) && phase==="trade" && (
             <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #F5A62344",padding:16,marginBottom:16}}>
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
                 <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:16,fontWeight:700,color:"#F5A623"}}>YOUR TURN</div>
@@ -546,10 +545,10 @@ export default function TransferWindow({
               </div>
               {(() => {
                 const actTeamId3 = (isClone && unlocked) ? currentPickTeamId : myTeamId;
-                const myReleased = getReleasedPlayers(actTeamId3);
-                const tradedPids = getTradedPids(actTeamId3);
+                const myReleasedPass = getReleasedPlayers(actTeamId3);
+                const tradedPidsPass = getTradedPids(actTeamId3);
                 const passAllowed = canPass(
-                  myReleased.filter(p => !tradedPids.includes(p.id)),
+                  (myReleasedPass||[]).filter(p => !(tradedPidsPass||[]).includes(p.id)),
                   sortedPool, []
                 );
                 return passAllowed ? (
