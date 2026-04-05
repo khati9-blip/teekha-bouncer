@@ -191,23 +191,25 @@ export default function TransferWindow({
 
   // ── PICK ───────────────────────────────────────────────────────────────────
   const handlePickClick = (poolPlayer) => {
-    const valid = getValidMatches(poolPlayer, myTeamId);
+    const actingTeamId = isMyTurn ? myTeamId : currentPickTeamId; // admin picks for current team
+    const valid = getValidMatches(poolPlayer, actingTeamId);
     if (valid.length === 0) { alert("No valid match — must be same role and same/lower tier."); return; }
-    setPickModal({ poolPlayer, validMatches: valid });
+    setPickModal({ poolPlayer, validMatches: valid, actingTeamId });
   };
 
   const confirmTrade = (poolPlayer, releasedPlayer) => {
     setPickModal(null);
-    setTradeConfirmModal({ poolPlayer, releasedPlayer });
+    setTradeConfirmModal({ poolPlayer, releasedPlayer, actingTeamId: pickModal?.actingTeamId });
   };
 
   const executeTrade = () => {
-    const { poolPlayer, releasedPlayer } = tradeConfirmModal;
+    const { poolPlayer, releasedPlayer, actingTeamId: tradeTeamId } = tradeConfirmModal;
+    const tradeAsTeamId = tradeTeamId || myTeamId;
     const now = new Date().toISOString();
     const today = now.split("T")[0];
 
     // Update assignments
-    const newAssignments = { ...assignments, [poolPlayer.id]: myTeamId };
+    const newAssignments = { ...assignments, [poolPlayer.id]: tradeAsTeamId };
     delete newAssignments[releasedPlayer.id];
 
     // Update ownership log — freeze released player, reset incoming
@@ -216,23 +218,23 @@ export default function TransferWindow({
     // Close released player's period for this team
     if (!newLog[releasedPlayer.id]) newLog[releasedPlayer.id] = [];
     newLog[releasedPlayer.id] = newLog[releasedPlayer.id].map(o =>
-      o.teamId === myTeamId && !o.to ? { ...o, to: now } : o
+      o.teamId === tradeAsTeamId && !o.to ? { ...o, to: now } : o
     );
-    if (!newLog[releasedPlayer.id].some(o => o.teamId === myTeamId)) {
-      newLog[releasedPlayer.id].push({ teamId: myTeamId, from: "2025-01-01T00:00:00.000Z", to: now });
+    if (!newLog[releasedPlayer.id].some(o => o.teamId === tradeAsTeamId)) {
+      newLog[releasedPlayer.id].push({ teamId: tradeAsTeamId, from: "2025-01-01T00:00:00.000Z", to: now });
     }
 
     // Open new period for incoming player (points reset from now)
     if (!newLog[poolPlayer.id]) newLog[poolPlayer.id] = [];
     // Close any existing open period for this player
     newLog[poolPlayer.id] = newLog[poolPlayer.id].map(o => !o.to ? { ...o, to: now } : o);
-    newLog[poolPlayer.id].push({ teamId: myTeamId, from: now, to: null });
+    newLog[poolPlayer.id].push({ teamId: tradeAsTeamId, from: now, to: null });
 
     // Record trade pair
     const tradedPairs = [
       ...(transfers.tradedPairs || []),
       {
-        teamId: myTeamId,
+        teamId: tradeAsTeamId,
         releasedPid: releasedPlayer.id,
         pickedPid: poolPlayer.id,
         week: transfers.weekNum,
@@ -245,7 +247,7 @@ export default function TransferWindow({
     if (!newPool.includes(releasedPlayer.id)) newPool.push(releasedPlayer.id);
 
     // Advance to next team
-    const nextTeam = getNextPickTeam(myTeamId, tradedPairs);
+    const nextTeam = getNextPickTeam(tradeAsTeamId, tradedPairs);
     const deadline = nextTeam ? new Date(Date.now() + 45 * 60 * 1000).toISOString() : null;
     const allDone = !nextTeam;
 
@@ -751,7 +753,9 @@ export default function TransferWindow({
               {sortedPool.length === 0 ? (
                 <div style={{fontSize:12,color:"#4A5E78",textAlign:"center",padding:16}}>Pool empty</div>
               ) : sortedPool.map(p => {
-                const valid = isMyTurn && phase==="trade" && !isPlayerSafe(p.id) ? getValidMatches(p, myTeamId) : [];
+                const canPickNow = (isMyTurn || unlocked) && phase==="trade" && !isPlayerSafe(p.id);
+                const pickAsTeam = isMyTurn ? myTeamId : currentPickTeamId;
+                const valid = canPickNow ? getValidMatches(p, pickAsTeam) : [];
                 const canPick = valid.length > 0;
                 // Check if newly released this window vs pre-existing unsold
                 const isNewlyReleased = Object.values(transfers?.releases || {}).some(arr => arr.includes(p.id));
@@ -823,7 +827,7 @@ export default function TransferWindow({
           </div>
 
           {/* My turn actions */}
-          {isMyTurn && phase === "trade" && (
+          {(isMyTurn || unlocked) && phase === "trade" && currentPickTeam && (
             <div style={{background:"#0E1521",borderRadius:12,border:"2px solid #F5A62344",padding:16,marginBottom:16}}>
               <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:18,fontWeight:700,color:"#F5A623",marginBottom:6}}>🎯 YOUR TURN</div>
               <div style={{fontSize:12,color:"#4A5E78",marginBottom:12}}>
