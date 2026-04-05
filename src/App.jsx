@@ -3627,6 +3627,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                 onUpdateUnsoldPool={(val)=>{setUnsoldPool(val);storeSet("unsoldPool",val);}}
                 onUpdateOwnershipLog={(val)=>{setOwnershipLog(val);storeSet("ownershipLog",val);}}
                 onUpdatePoints={updPoints}
+                teamIdentity={teamIdentity}
               />
               <SnatchSection
                 teams={teams}
@@ -4639,7 +4640,7 @@ function Root() {
     // Check localStorage first (fastest)
     try {
       const savedAdmin = localStorage.getItem('tb_admin_' + pitch.id);
-      if (savedAdmin) { const st = localStorage.getItem('tb_myteam_' + pitch.id); const sp = localStorage.getItem('tb_pinHash_' + pitch.id); setIsAdmin(true); setIsGuest(false); setMyTeam(st ? JSON.parse(st) : null); setMyPinHash(sp||null); setScreen('app'); return; }
+      if (savedAdmin) { setIsAdmin(true); setIsGuest(false); setMyTeam(null); setScreen('app'); return; }
       const savedTeam = localStorage.getItem('tb_myteam_' + pitch.id);
       const savedPin = localStorage.getItem('tb_pinHash_' + pitch.id);
       if (savedTeam) { setMyTeam(JSON.parse(savedTeam)); setMyPinHash(savedPin||null); setIsGuest(false); setIsAdmin(false); setScreen('app'); return; }
@@ -4653,7 +4654,7 @@ function Root() {
         const adminEmail = await sbGet(pitch.id + "_adminEmail");
         if (adminEmail === userEmail) {
           try { localStorage.setItem('tb_admin_' + pitch.id, '1'); } catch {}
-          const identity2 = await sbGet(pitch.id + "_teamIdentity") || {}; const entry2 = Object.values(identity2).find(t => t.claimedBy === userEmail); let adminTeam = null; if (entry2) { const allTeams = await sbGet(pitch.id + "_teams") || []; adminTeam = allTeams.find(t => t.id === entry2.teamRef); if (adminTeam) { const td = {...adminTeam, teamId: entry2.teamId}; try { localStorage.setItem('tb_myteam_' + pitch.id, JSON.stringify(td)); } catch {} adminTeam = td; } } setIsAdmin(true); setIsGuest(false); setMyTeam(adminTeam); setScreen('app'); return;
+          setIsAdmin(true); setIsGuest(false); setMyTeam(null); setScreen('app'); return;
         }
         // Check teamIdentity for claimed team
         const identity = await sbGet(pitch.id + "_teamIdentity") || {};
