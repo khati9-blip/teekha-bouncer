@@ -911,7 +911,7 @@ function SmartStatsModal({ match, players, assignments, existingStats, onSave, o
                   <tbody>
                     {playingPlayers.map(p=>(
                       <tr key={p.id} style={{borderBottom:"1px solid #1E2D4533"}}>
-                        <td style={{padding:"7px 6px",fontSize:13,color:"#E2EAF4",fontWeight:600}}>{p.name}<br/><span style={{fontSize:10,color:"#4A5E78"}}>{p.iplTeam} • {p.role}</span></td>
+                        <td style={{padding:"7px 6px",fontSize:13,color:"#E2EAF4",fontWeight:600}}><div style={{display:"flex",alignItems:"center",gap:4}}>{p.name} {p.tier&&<span style={{fontSize:9,fontWeight:800,letterSpacing:1,padding:"1px 5px",borderRadius:4,fontFamily:"Barlow Condensed,sans-serif",textTransform:"uppercase",background:p.tier==="platinum"?"#4A5E7833":p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":"#CD7F3222",border:"1px solid "+(p.tier==="platinum"?"#4A5E7866":p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":"#CD7F3255"),color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32"}}>{p.tier==="platinum"?"PLAT":p.tier==="gold"?"GOLD":p.tier==="silver"?"SILV":"BRNZ"}</span>}</div><span style={{fontSize:10,color:"#4A5E78"}}>{p.iplTeam} • {p.role}</span></td>
                         <td style={{padding:"4px"}}><input type="number" min="0" value={stats[p.id]?.runs||0} onChange={e=>upd(p.id,"runs",e.target.value)} style={inp} /></td>
                         <td style={{padding:"4px"}}><input type="number" min="0" value={stats[p.id]?.balls||0} onChange={e=>upd(p.id,"balls",e.target.value)} style={inp} /></td>
                         <td style={{padding:"4px"}}><input type="number" min="0" value={stats[p.id]?.fours||0} onChange={e=>upd(p.id,"fours",e.target.value)} style={inp} /></td>
@@ -938,7 +938,7 @@ function SmartStatsModal({ match, players, assignments, existingStats, onSave, o
                   <tbody>
                     {playingPlayers.map(p=>(
                       <tr key={p.id} style={{borderBottom:"1px solid #1E2D4533"}}>
-                        <td style={{padding:"7px 6px",fontSize:13,color:"#E2EAF4",fontWeight:600}}>{p.name}<br/><span style={{fontSize:10,color:"#4A5E78"}}>{p.iplTeam} • {p.role}</span></td>
+                        <td style={{padding:"7px 6px",fontSize:13,color:"#E2EAF4",fontWeight:600}}><div style={{display:"flex",alignItems:"center",gap:4}}>{p.name} {p.tier&&<span style={{fontSize:9,fontWeight:800,letterSpacing:1,padding:"1px 5px",borderRadius:4,fontFamily:"Barlow Condensed,sans-serif",textTransform:"uppercase",background:p.tier==="platinum"?"#4A5E7833":p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":"#CD7F3222",border:"1px solid "+(p.tier==="platinum"?"#4A5E7866":p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":"#CD7F3255"),color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32"}}>{p.tier==="platinum"?"PLAT":p.tier==="gold"?"GOLD":p.tier==="silver"?"SILV":"BRNZ"}</span>}</div><span style={{fontSize:10,color:"#4A5E78"}}>{p.iplTeam} • {p.role}</span></td>
                         <td style={{padding:"4px"}}><input type="number" min="0" value={stats[p.id]?.wickets||0} onChange={e=>upd(p.id,"wickets",e.target.value)} style={inp} /></td>
                         <td style={{padding:"4px"}}><input type="number" min="0" step="0.1" value={stats[p.id]?.overs||0} onChange={e=>upd(p.id,"overs",e.target.value)} style={inp} /></td>
                         <td style={{padding:"4px"}}><input type="number" min="0" step="0.01" placeholder="—" value={stats[p.id]?.economy||""} onChange={e=>upd(p.id,"economy",e.target.value)} style={inp} /></td>
@@ -961,7 +961,7 @@ function SmartStatsModal({ match, players, assignments, existingStats, onSave, o
                   <tbody>
                     {playingPlayers.map(p=>(
                       <tr key={p.id} style={{borderBottom:"1px solid #1E2D4533"}}>
-                        <td style={{padding:"7px 6px",fontSize:13,color:"#E2EAF4",fontWeight:600}}>{p.name}<br/><span style={{fontSize:10,color:"#4A5E78"}}>{p.iplTeam} • {p.role}</span></td>
+                        <td style={{padding:"7px 6px",fontSize:13,color:"#E2EAF4",fontWeight:600}}><div style={{display:"flex",alignItems:"center",gap:4}}>{p.name} {p.tier&&<span style={{fontSize:9,fontWeight:800,letterSpacing:1,padding:"1px 5px",borderRadius:4,fontFamily:"Barlow Condensed,sans-serif",textTransform:"uppercase",background:p.tier==="platinum"?"#4A5E7833":p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":"#CD7F3222",border:"1px solid "+(p.tier==="platinum"?"#4A5E7866":p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":"#CD7F3255"),color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32"}}>{p.tier==="platinum"?"PLAT":p.tier==="gold"?"GOLD":p.tier==="silver"?"SILV":"BRNZ"}</span>}</div><span style={{fontSize:10,color:"#4A5E78"}}>{p.iplTeam} • {p.role}</span></td>
                         <td style={{padding:"4px"}}><input type="number" min="0" value={stats[p.id]?.catches||0} onChange={e=>upd(p.id,"catches",e.target.value)} style={inp} /></td>
                         <td style={{padding:"4px"}}><input type="number" min="0" value={stats[p.id]?.stumpings||0} onChange={e=>upd(p.id,"stumpings",e.target.value)} style={inp} /></td>
                         <td style={{padding:"4px"}}><input type="number" min="0" value={stats[p.id]?.runouts||0} onChange={e=>upd(p.id,"runouts",e.target.value)} style={inp} /></td>
@@ -1695,12 +1695,17 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   const [pendingAction, setPendingAction] = useState(null);
   const [editPlayer, setEditPlayer] = useState(null); // player being edited
   const [smartStatsMatch, setSmartStatsMatch] = useState(null);
-  const [squadView, setSquadView] = useState(false); // toggle squad view
+  const [squadView, setSquadView] = useState(false);
+  const [selectedBulk, setSelectedBulk] = useState([]); // toggle squad view
   const [teamFilter, setTeamFilter] = useState(null); // filter by fantasy team
   const [sortOrder, setSortOrder] = useState('default'); // default | az | za
   const [teamLogos, setTeamLogos] = useState({});
   const [safePlayers, setSafePlayers] = useState({}); // {teamId: [pid,pid,pid]}
-  const [unsoldPool, setUnsoldPool] = useState([]); // manually managed unsold list
+  const [unsoldPool, setUnsoldPool] = useState([]);
+  const [myHighlights, setMyHighlights] = useState({});
+  const [myNotes, setMyNotes] = useState({});
+  const [editingNote, setEditingNote] = useState(null);
+  const [noteInput, setNoteInput] = useState(''); // manually managed unsold list
   const [draftTab, setDraftTab] = useState('players'); // players | unsold
   // ownershipLog: {pid: [{teamId, from: isoDate, to: isoDate|null}]}
   const [ownershipLog, setOwnershipLog] = useState({});
@@ -2030,6 +2035,9 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   const updTeams=upd(setTeams,"teams"),updAssign=upd(setAssignments,"assignments"),
         updMatches=upd(setMatches,"matches"),updCaptains=upd(setCaptains,"captains"),
         updPoints=upd(setPoints,"points");
+
+  const saveHighlights = async (updated) => { setMyHighlights(updated); await storeSet("hl_"+(user?.email||"").replace(/[@.]/g,"_"), updated); };
+  const saveNotes = async (updated) => { setMyNotes(updated); await storeSet("notes_"+(user?.email||"").replace(/[@.]/g,"_"), updated); };
 
   const toggleSafePlayer = (teamId, pid) => {
     withPassword(() => {
@@ -3069,15 +3077,29 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                         const p = players.find(x=>x.id===pid);
                         if(!p) return null;
                         return (
-                          <div key={pid} style={{display:"flex",alignItems:"center",gap:12,padding:"10px 14px",background:"#0E1521",borderRadius:8,border:"1px solid #1E2D4566"}}>
-                            <div style={{flex:1}}>
-                              <div style={{fontWeight:700,fontSize:14,color:"#E2EAF4"}}>{p.name}</div>
-                              <div style={{fontSize:12,color:"#4A5E78"}}>{p.iplTeam} • {p.role}</div>
+                          <div key={pid} style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",background:myHighlights[pid]?"#F5A62311":"#0E1521",borderRadius:8,border:"1px solid "+(myHighlights[pid]?"#F5A62344":"#1E2D4566"),flexWrap:"wrap"}}>
+                            <div style={{flex:1,minWidth:0}}>
+                              <div style={{display:"flex",alignItems:"center",gap:5,flexWrap:"wrap"}}>
+                                <span style={{fontWeight:700,fontSize:14,color:myHighlights[pid]?"#F5A623":"#E2EAF4"}}>{p.name}</span>
+                                {p.tier&&<span style={{fontSize:9,fontWeight:800,letterSpacing:1,padding:"1px 5px",borderRadius:4,fontFamily:"Barlow Condensed,sans-serif",textTransform:"uppercase",background:p.tier==="platinum"?"#4A5E7833":p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":"#CD7F3222",border:"1px solid "+(p.tier==="platinum"?"#4A5E7866":p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":"#CD7F3255"),color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32"}}>{p.tier==="platinum"?"PLAT":p.tier==="gold"?"GOLD":p.tier==="silver"?"SILV":"BRNZ"}</span>}
+                              </div>
+                              <div style={{fontSize:11,color:"#4A5E78"}}>{p.iplTeam} • {p.role}</div>
+                              {myNotes[pid]&&editingNote!==pid&&<div style={{fontSize:11,color:"#F5A623",marginTop:4,fontStyle:"italic",background:"#F5A62311",borderRadius:4,padding:"3px 8px",display:"inline-block"}}>"{myNotes[pid]}"</div>}
+                              {editingNote===pid&&(
+                                <div style={{display:"flex",gap:6,marginTop:6}}>
+                                  <input autoFocus value={noteInput} onChange={e=>setNoteInput(e.target.value)} onKeyDown={async e=>{if(e.key==="Enter"){const u={...myNotes,[pid]:noteInput.trim()};if(!noteInput.trim())delete u[pid];await saveNotes(u);setEditingNote(null);}if(e.key==="Escape")setEditingNote(null);}} placeholder="Private note..." maxLength={100} style={{flex:1,background:"#080C14",border:"1px solid #F5A62344",borderRadius:6,padding:"4px 8px",color:"#E2EAF4",fontSize:12,fontFamily:"Barlow Condensed,sans-serif",outline:"none"}} />
+                                  <button onClick={async()=>{const u={...myNotes,[pid]:noteInput.trim()};if(!noteInput.trim())delete u[pid];await saveNotes(u);setEditingNote(null);}} style={{background:"#F5A623",border:"none",borderRadius:6,padding:"4px 10px",color:"#080C14",fontWeight:800,fontSize:12,cursor:"pointer"}}>SAVE</button>
+                                  <button onClick={()=>setEditingNote(null)} style={{background:"transparent",border:"1px solid #1E2D45",borderRadius:6,padding:"4px 8px",color:"#4A5E78",fontSize:12,cursor:"pointer"}}>✕</button>
+                                </div>
+                              )}
                             </div>
-                            <button onClick={()=>removeFromUnsoldPool(pid)}
-                              style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:"#FF3D5A",borderRadius:6,padding:"5px 10px",cursor:"pointer",fontSize:12,fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>
-                              REMOVE
-                            </button>
+                            <div style={{display:"flex",gap:6,alignItems:"center",flexShrink:0}}>
+                              <button onClick={async()=>{const u={...myHighlights};u[pid]?delete u[pid]:u[pid]=true;await saveHighlights(u);}} style={{background:myHighlights[pid]?"#F5A62333":"transparent",border:"1px solid "+(myHighlights[pid]?"#F5A62366":"#1E2D45"),borderRadius:6,padding:"5px 8px",cursor:"pointer",fontSize:14}}>
+                                {myHighlights[pid]?"⭐":"☆"}
+                              </button>
+                              <button onClick={()=>{setNoteInput(myNotes[pid]||"");setEditingNote(pid);}} style={{background:myNotes[pid]?"#4F8EF722":"transparent",border:"1px solid "+(myNotes[pid]?"#4F8EF744":"#1E2D45"),borderRadius:6,padding:"5px 8px",cursor:"pointer",fontSize:13}}>📝</button>
+                              {unlocked&&<button onClick={()=>removeFromUnsoldPool(pid)} style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:"#FF3D5A",borderRadius:6,padding:"5px 8px",cursor:"pointer",fontSize:11,fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>✕</button>}
+                            </div>
                           </div>
                         );
                       })}
@@ -3194,6 +3216,16 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                     {teamFilter&&teamFilter!=="unassigned"&&teamLogos[teamFilter]&&(
                       <img src={teamLogos[teamFilter]} style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:280,opacity:0.06,pointerEvents:"none",zIndex:0,objectFit:"contain"}} />
                     )}
+                    {unlocked && selectedBulk.length > 0 && (
+                      <div style={{background:"#0E1521",border:"1px solid #F5A62344",borderRadius:10,padding:"10px 14px",marginBottom:10,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                        <div style={{fontSize:12,color:"#F5A623",fontWeight:700,minWidth:60}}>{selectedBulk.length} selected</div>
+                        {[["platinum","PLATINUM","#B0BEC5","#4A5E7833","#4A5E7866"],["gold","GOLD","#F5A623","#F5A62322","#F5A62366"],["silver","SILVER","#94A3B8","#94A3B822","#94A3B855"],["bronze","BRONZE","#CD7F32","#CD7F3222","#CD7F3255"]].map(([t,label,col,bg,br])=>(
+                          <button key={t} onClick={()=>{const updated=players.map(p=>selectedBulk.includes(p.id)?{...p,tier:t}:p);setPlayers(updated);storeSet("players",updated);setSelectedBulk([]);}} style={{background:bg,border:"1px solid "+br,borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:11,fontWeight:800,fontFamily:"Barlow Condensed,sans-serif",color:col,letterSpacing:1}}>{label}</button>
+                        ))}
+                        <button onClick={()=>{const updated=players.map(p=>selectedBulk.includes(p.id)?{...p,tier:""}:p);setPlayers(updated);storeSet("players",updated);setSelectedBulk([]);}} style={{background:"transparent",border:"1px solid #1E2D45",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:11,fontFamily:"Barlow Condensed,sans-serif",color:"#4A5E78"}}>CLEAR</button>
+                        <button onClick={()=>setSelectedBulk([])} style={{background:"transparent",border:"none",color:"#4A5E78",cursor:"pointer",fontSize:11,marginLeft:"auto"}}>deselect all</button>
+                      </div>
+                    )}
                     {filteredPlayers.map(p=>{
                       const aTeam=teams.find(t=>t.id===assignments[p.id]);
                       const isAssigned=!!assignments[p.id];
@@ -3202,7 +3234,9 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
                             <div style={{minWidth:0,flex:1}}>
                               <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                                {unlocked&&<input type="checkbox" checked={selectedBulk.includes(p.id)} onChange={e=>setSelectedBulk(prev=>e.target.checked?[...prev,p.id]:prev.filter(x=>x!==p.id))} style={{width:14,height:14,cursor:"pointer",accentColor:"#F5A623",flexShrink:0}} />}
                                 <span style={{fontWeight:700,fontSize:14,color:"#E2EAF4"}}>{p.name}</span>
+                                {p.tier&&<span style={{fontSize:9,fontWeight:800,letterSpacing:1,padding:"1px 5px",borderRadius:4,fontFamily:"Barlow Condensed,sans-serif",textTransform:"uppercase",background:p.tier==="platinum"?"#4A5E7833":p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":"#CD7F3222",border:"1px solid "+(p.tier==="platinum"?"#4A5E7866":p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":"#CD7F3255"),color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32"}}>{p.tier==="platinum"?"PLAT":p.tier==="gold"?"GOLD":p.tier==="silver"?"SILV":"BRNZ"}</span>}
                                 {isAssigned&&isPlayerSafeForTeam(assignments[p.id],p.id)&&<span style={{background:"#2ECC7122",color:"#2ECC71",border:"1px solid #2ECC7144",borderRadius:10,fontSize:9,padding:"1px 5px",fontWeight:700}}>🛡️</span>}
                               </div>
                               <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>{p.iplTeam} • <span style={{color:ROLE_COLORS[p.role]||"#94A3B8"}}>{p.role}</span>{isAssigned&&<span style={{marginLeft:6,color:aTeam?.color,fontWeight:700}}>{aTeam?.name}</span>}</div>
@@ -3391,7 +3425,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                                       <div style={{borderTop:"1px solid #1E2D45",padding:"10px 14px",display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
                                         {!isGuest && <button onClick={()=>setCaptainMatch(match)}
                                           style={{background:"#4F8EF722",border:"1px solid #4F8EF744",color:"#4F8EF7",borderRadius:7,padding:"6px 12px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:12}}>
-                                          👑 SET C/VC
+                                          {captains[match.id+"_locked"]?"🔒 C/VC":"👑 SET C/VC"}
                                         </button>}
                                         {completed && unlocked && (
                                           <button onClick={()=>withPassword(()=>setSmartStatsMatch(match))}
@@ -3423,7 +3457,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                                         </button>
                                         {!isGuest && <button onClick={()=>setCaptainMatch(match)}
                                           style={{background:"#4F8EF722",border:"1px solid #4F8EF744",color:"#4F8EF7",borderRadius:7,padding:"6px 12px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:12}}>
-                                          👑 SET C/VC
+                                          {captains[match.id+"_locked"]?"🔒 C/VC":"👑 SET C/VC"}
                                         </button>}
                                       </div>
                                     )}
@@ -3962,45 +3996,57 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
         )}
 
         {/* CAPTAIN PICKER MODAL */}
-        {captainMatch && (
+        {captainMatch && (()=>{
+          const isLocked = !!captains[captainMatch.id+"_locked"];
+          return (
           <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.96)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,padding:16,fontFamily:"Barlow Condensed,sans-serif"}}>
             <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #1E2D45",padding:24,width:"100%",maxWidth:480,maxHeight:"85vh",overflowY:"auto"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-                <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:"#F5A623",letterSpacing:2}}>👑 SET C / VC</div>
+                <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:isLocked?"#FF3D5A":"#F5A623",letterSpacing:2}}>{isLocked?"🔒 C/VC LOCKED":"👑 SET C / VC"}</div>
                 <button onClick={()=>setCaptainMatch(null)} style={{background:"transparent",border:"none",color:"#4A5E78",fontSize:18,cursor:"pointer"}}>✕</button>
               </div>
-              <div style={{fontSize:12,color:"#4A5E78",marginBottom:16}}>M{captainMatch.matchNum} — {captainMatch.team1} vs {captainMatch.team2}</div>
+              <div style={{fontSize:12,color:"#4A5E78",marginBottom:isLocked?8:16}}>M{captainMatch.matchNum} — {captainMatch.team1} vs {captainMatch.team2}</div>
+              {isLocked && <div style={{background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:8,padding:"8px 12px",marginBottom:14,fontSize:12,color:"#FF3D5A"}}>🔒 Captain/VC selections are locked — no further changes.</div>}
               {teams.map(team => {
                 const cap = captains[captainMatch.id+"_"+team.id] || {};
                 const teamPlayers = players.filter(p => assignments[p.id] === team.id);
                 return (
                   <div key={team.id} style={{background:"#0E1521",borderRadius:10,border:"1px solid "+team.color+"33",padding:14,marginBottom:10}}>
                     <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:14,color:team.color,marginBottom:10}}>{team.name}</div>
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-                      {["captain","vc"].map(role => (
-                        <div key={role}>
-                          <div style={{fontSize:10,color:"#4A5E78",letterSpacing:1,marginBottom:6}}>{role==="captain"?"⭐ CAPTAIN (2×)":"🥈 VICE CAPTAIN (1.5×)"}</div>
-                          <select value={cap[role]||""} onChange={e=>{
-                            const newCap = {...cap,[role]:e.target.value};
-                            const key = captainMatch.id+"_"+team.id;
-                            const updated = {...captains,[key]:newCap};
-                            updCaptains(updated);
-                          }} style={{width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"7px 10px",color:"#E2EAF4",fontSize:13,fontFamily:"Barlow Condensed,sans-serif",cursor:"pointer",outline:"none"}}>
-                            <option value="">— None —</option>
-                            {teamPlayers.map(p => (
-                              <option key={p.id} value={p.id} disabled={role==="vc"&&cap.captain===p.id||role==="captain"&&cap.vc===p.id}>{p.name}</option>
-                            ))}
-                          </select>
-                        </div>
-                      ))}
-                    </div>
+                    {isLocked ? (
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                        {["captain","vc"].map(role=>(
+                          <div key={role} style={{background:"#080C14",borderRadius:8,padding:"8px 12px"}}>
+                            <div style={{fontSize:10,color:"#4A5E78",letterSpacing:1,marginBottom:4}}>{role==="captain"?"CAPTAIN (2x)":"VICE CAPTAIN (1.5x)"}</div>
+                            <div style={{fontWeight:700,color:role==="captain"?"#F5A623":"#94A3B8",fontSize:14}}>{teamPlayers.find(p=>p.id===cap[role])?.name||"—"}</div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                        {["captain","vc"].map(role => (
+                          <div key={role}>
+                            <div style={{fontSize:10,color:"#4A5E78",letterSpacing:1,marginBottom:6}}>{role==="captain"?"⭐ CAPTAIN (2×)":"🥈 VICE CAPTAIN (1.5×)"}</div>
+                            <select value={cap[role]||""} onChange={e=>{const newCap={...cap,[role]:e.target.value};updCaptains({...captains,[captainMatch.id+"_"+team.id]:newCap});}} style={{width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"7px 10px",color:"#E2EAF4",fontSize:13,fontFamily:"Barlow Condensed,sans-serif",cursor:"pointer",outline:"none"}}>
+                              <option value="">— None —</option>
+                              {teamPlayers.map(p=>(<option key={p.id} value={p.id} disabled={role==="vc"&&cap.captain===p.id||role==="captain"&&cap.vc===p.id}>{p.name}</option>))}
+                            </select>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 );
               })}
-              <button onClick={()=>setCaptainMatch(null)} style={{width:"100%",background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:10,padding:12,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:15,cursor:"pointer",marginTop:4}}>SAVE & CLOSE</button>
+              <div style={{display:"flex",gap:8,marginTop:4}}>
+                {!isLocked && unlocked && <button onClick={()=>withPassword(()=>updCaptains({...captains,[captainMatch.id+"_locked"]:true}))} style={{flex:1,background:"#FF3D5A22",border:"1px solid #FF3D5A44",borderRadius:10,padding:12,color:"#FF3D5A",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:14,cursor:"pointer"}}>🔒 LOCK</button>}
+                {isLocked && unlocked && <button onClick={()=>withPassword(()=>{const u={...captains};delete u[captainMatch.id+"_locked"];updCaptains(u);})} style={{flex:1,background:"#2ECC7122",border:"1px solid #2ECC7133",borderRadius:10,padding:12,color:"#2ECC71",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:14,cursor:"pointer"}}>🔓 UNLOCK</button>}
+                <button onClick={()=>setCaptainMatch(null)} style={{flex:2,background:"#F5A623",border:"none",borderRadius:10,padding:12,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:15,cursor:"pointer"}}>{isLocked?"CLOSE":"SAVE & CLOSE"}</button>
+              </div>
             </div>
           </div>
-        )}
+          );
+        })()}
 
         {/* ADMIN CLAIM TEAM MODAL */}
         {adminClaimModal && adminClaimTeam && (
