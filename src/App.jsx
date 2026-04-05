@@ -3812,7 +3812,8 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
               <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #1E2D45",padding:20,marginBottom:16}}>
                 <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginBottom:12}}>⏰ TIMING RULES</div>
                 {[
-                  ["Transfer Window", "Sunday → Monday 11:00 AM IST"],
+                  ["Transfer Window (Release)", "Sunday 11:59 PM → Monday 11:00 AM IST"],
+                  ["Transfer Window (Trade)", "Monday 11:00 AM onwards (Admin triggered)"],
                   ["Snatch Window", "Saturday 12:00 AM → 12:00 PM IST"],
                   ["Snatch Return", "Friday 11:58 PM IST"],
                 ].map(([label, val]) => (
