@@ -2034,6 +2034,39 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   const unreadNotifCount = notifications.filter(n => n.ts > notifLastRead).length;
 
   const nav=(pg)=>{setPage(pg);storeSet("page",pg);try{localStorage.setItem("tb_page_"+pitch?.id,pg);}catch{}};
+
+  // Global transfer timer — auto-skip when deadline expires regardless of tab
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (transfers.phase !== "trade" || !transfers.pickDeadline || !transfers.currentPickTeam) return;
+      if (Date.now() < new Date(transfers.pickDeadline).getTime()) return;
+      // Timer expired — skip current team
+      const sortedByBoard = leaderboard.map(t => teams.find(x => x.id === t.id)).filter(Boolean);
+      const order = sortedByBoard.map(t => t.id);
+      const idx = order.indexOf(transfers.currentPickTeam);
+      // Find next team with untraded released players
+      let nextTeam = null;
+      for (let i = 1; i <= order.length; i++) {
+        const tid = order[(idx + i) % order.length];
+        const released = (transfers.releases?.[tid] || []);
+        const traded = (transfers.tradedPairs || []).filter(t => t.teamId === tid).map(t => t.releasedPid);
+        const ineligible = transfers.ineligible || [];
+        const remaining = released.filter(p => !traded.includes(p) && !ineligible.includes(p));
+        if (remaining.length > 0) { nextTeam = tid; break; }
+      }
+      const deadline = new Date(Date.now() + 45 * 60 * 1000).toISOString();
+      const updated = {
+        ...transfers,
+        currentPickTeam: nextTeam,
+        pickDeadline: nextTeam ? deadline : null,
+        phase: nextTeam ? "trade" : "done",
+      };
+      setTransfers(updated);
+      storeSet("transfers", updated);
+      pushNotif("transfer", "Timer expired — " + (teams.find(t=>t.id===transfers.currentPickTeam)?.name||"Team") + " skipped", "⏭");
+    }, 10000); // check every 10 seconds
+    return () => clearInterval(interval);
+  }, [transfers, leaderboard, teams]);
   const upd=(setter,key)=>(val)=>{setter(val);storeSet(key,val);};
   const updTeams=upd(setTeams,"teams"),updAssign=upd(setAssignments,"assignments"),
         updMatches=upd(setMatches,"matches"),updCaptains=upd(setCaptains,"captains"),
