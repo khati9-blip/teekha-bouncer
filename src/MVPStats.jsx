@@ -83,6 +83,19 @@ export default function MVPStats({ players, teams, assignments, points, captains
     return rows.sort((a, b) => b.pts - a.pts);
   }, [weekMatches, players, points, teams, assignments]);
 
+  // All time total per player (base points only)
+  const allTimeRows = useMemo(() => {
+    const rows = [];
+    for (const player of players) {
+      const team = teams.find(t => t.id === assignments[player.id]);
+      if (!team) continue;
+      const playerPts = points[player.id] || {};
+      const total = Object.values(playerPts).reduce((sum, d) => sum + (d?.base || 0), 0);
+      if (total > 0) rows.push({ player, team, total });
+    }
+    return rows.sort((a, b) => b.total - a.total);
+  }, [players, teams, assignments, points]);
+
   // Team weekly totals (base points only)
   const teamPerformance = useMemo(() => {
     return teams.map(team => {
@@ -138,6 +151,7 @@ export default function MVPStats({ players, teams, assignments, points, captains
 
       <div style={{display:"flex",gap:8,padding:"12px 16px",borderBottom:"1px solid #1E2D45",background:"#080C14"}}>
         <button style={styles.tab(view==="weekly")} onClick={()=>setView("weekly")}>MATCH STATS</button>
+        <button style={styles.tab(view==="alltime")} onClick={()=>setView("alltime")}>ALL TIME</button>
         <button style={styles.tab(view==="team")} onClick={()=>setView("team")}>BY TEAM</button>
       </div>
 
@@ -165,6 +179,34 @@ export default function MVPStats({ players, teams, assignments, points, captains
                 </div>
                 <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:24,fontWeight:800,color:medalColor(idx+1),minWidth:48,textAlign:"right"}}>
                   {row.pts}<span style={{fontSize:10,color:"#4A5E78",fontWeight:400,marginLeft:2}}>pts</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ALL TIME */}
+        {view==="alltime" && (
+          <div>
+            <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,marginBottom:12}}>ALL TIME BASE POINTS</div>
+            {allTimeRows.length === 0 ? emptyMsg : allTimeRows.map((row, idx) => (
+              <div key={row.player.id} style={{background:"#0E1521",borderRadius:10,border:"1px solid "+row.team.color+"33",padding:"10px 14px",marginBottom:6,display:"flex",alignItems:"center",gap:10}}>
+                <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:18,fontWeight:700,color:medalColor(idx+1),minWidth:24,textAlign:"center"}}>{idx+1}</div>
+                <div style={{width:8,height:8,borderRadius:"50%",background:row.team.color,flexShrink:0}} />
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
+                    <span style={{fontWeight:700,fontSize:14,color:"#E2EAF4"}}>{row.player.name}</span>
+                    <TierBadge tier={row.player.tier} />
+                    <span style={{fontSize:10,color:row.team.color,fontWeight:700}}>{row.team.name}</span>
+                  </div>
+                  <div style={{fontSize:11,color:"#4A5E78",marginTop:1}}>
+                    <span style={{color:ROLE_COLORS[row.player.role]||"#4A5E78"}}>{row.player.role}</span>
+                    <span style={{marginLeft:6}}>{row.player.iplTeam}</span>
+                    <span style={{marginLeft:6,color:"#4A5E78"}}>{Object.keys(points[row.player.id]||{}).length} matches</span>
+                  </div>
+                </div>
+                <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:24,fontWeight:800,color:medalColor(idx+1),minWidth:48,textAlign:"right"}}>
+                  {row.total}<span style={{fontSize:10,color:"#4A5E78",fontWeight:400,marginLeft:2}}>pts</span>
                 </div>
               </div>
             ))}
