@@ -1242,6 +1242,62 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
     })();
   }, []);
 
+  const [cloneModal, setCloneModal] = useState(null); // pitch being cloned
+  const [cloneAdminPw, setCloneAdminPw] = useState("");
+  const [cloneErr, setCloneErr] = useState("");
+  const [cloning, setCloning] = useState(false);
+
+  const handleClone = (pitch) => {
+    setCloneModal(pitch);
+    setCloneAdminPw("");
+    setCloneErr("");
+  };
+
+  const confirmClone = async () => {
+    if (!cloneAdminPw.trim()) { setCloneErr("Enter admin password"); return; }
+    setCloning(true);
+    try {
+      // Verify admin password
+      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(cloneAdminPw));
+      const h = Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
+      const storedHash = await sbGet(cloneModal.id + "_adminHash");
+      if (h !== storedHash) { setCloneErr("❌ Wrong admin password"); setCloneAdminPw(""); setCloning(false); return; }
+
+      // Create clone pitch
+      const cloneId = "p" + (pitches.length + 1) + "_clone_" + Date.now();
+      const clonePitch = {
+        id: cloneId,
+        name: cloneModal.name + " (Clone)",
+        hash: cloneModal.hash,
+        createdAt: new Date().toISOString(),
+        isClone: true,
+        clonedFrom: cloneModal.id,
+        clonedFromName: cloneModal.name,
+      };
+
+      // Copy all data keys from original to clone
+      const dataKeys = ["teams","players","assignments","matches","captains","points","page","tnames","numteams","pwhash","pointsConfig","adminHash","adminEmail","teamIdentity","guestAllowed","tournaments"];
+      for (const key of dataKeys) {
+        try {
+          const val = await sbGet(cloneModal.id + "_" + key);
+          if (val !== null && val !== undefined) await sbSet(cloneId + "_" + key, val);
+        } catch {}
+      }
+
+      // Save clone pitch to pitch list
+      const updated = [...pitches, clonePitch];
+      await sbSet("pitches", updated);
+      setPitches(updated);
+
+      // Auto-grant admin access to clone
+      try { localStorage.setItem("tb_admin_" + cloneId, "1"); } catch {}
+
+      setCloneModal(null); setCloneAdminPw(""); setCloneErr("");
+      alert("✅ Clone created! Enter '" + clonePitch.name + "' to test.");
+    } catch(e) { setCloneErr("Error: " + e.message); }
+    setCloning(false);
+  };
+
   const createPitch = async () => {
     if (!newName.trim()) { setErr("Enter a pitch name"); return; }
     if (pitches.length >= 1000) { setErr("Max 1000 pitches"); return; }
@@ -1299,9 +1355,17 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
                       {returning ? (savedAdmin?"🔑 Admin":(savedTeam?"🏏 "+savedTeam.name:"👁 Guest")) + " · tap to enter" : "Created "+new Date(pitch.createdAt).toLocaleDateString("en-IN")}
                     </div>
                   </div>
-                  <button onClick={()=>onEnter(pitch)} style={{background:"linear-gradient(135deg,"+color+","+color+"99)",border:"none",borderRadius:8,padding:"8px 16px",color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:13,cursor:"pointer",letterSpacing:1}}>
-                    {returning ? "ENTER →" : "JOIN →"}
-                  </button>
+                  <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                    {savedAdmin && !pitch.isClone && (
+                      <button onClick={(e)=>{e.stopPropagation();handleClone(pitch);}} title="Clone this pitch for testing"
+                        style={{background:"#A855F722",border:"1px solid #A855F744",borderRadius:8,padding:"8px 12px",color:"#A855F7",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",letterSpacing:1}}>
+                        🧬 CLONE
+                      </button>
+                    )}
+                    <button onClick={()=>onEnter(pitch)} style={{background:"linear-gradient(135deg,"+color+","+color+"99)",border:"none",borderRadius:8,padding:"8px 16px",color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:13,cursor:"pointer",letterSpacing:1}}>
+                      {returning ? "ENTER →" : "JOIN →"}
+                    </button>
+                  </div>
                 </div>
               </div>
             );
@@ -1326,6 +1390,33 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
           </div>
         )}
       </div>
+
+      {/* Clone Modal */}
+      {cloneModal && (
+        <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,backdropFilter:"blur(8px)"}}>
+          <div style={{background:"linear-gradient(145deg,#141E2E,#0E1521)",borderRadius:20,border:"1px solid #A855F744",padding:36,width:"100%",maxWidth:380,margin:"0 16px",boxShadow:"0 32px 80px rgba(0,0,0,0.8)",position:"relative",overflow:"hidden"}}>
+            <div style={{position:"absolute",top:0,left:"50%",transform:"translateX(-50%)",width:120,height:2,background:"linear-gradient(90deg,transparent,#A855F7,transparent)"}} />
+            <div style={{fontSize:36,textAlign:"center",marginBottom:10}}>🧬</div>
+            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,fontWeight:700,color:"#A855F7",textAlign:"center",letterSpacing:3,marginBottom:6}}>CLONE PITCH</div>
+            <div style={{fontSize:13,color:"#4A5E78",textAlign:"center",marginBottom:8}}>
+              Creating a clone of <span style={{color:"#E2EAF4",fontWeight:700}}>{cloneModal.name}</span>
+            </div>
+            <div style={{fontSize:12,color:"#4A5E78",textAlign:"center",marginBottom:24,background:"#A855F711",border:"1px solid #A855F733",borderRadius:8,padding:"8px 12px"}}>
+              All data will be copied. Changes in the clone won't affect the original pitch.
+            </div>
+            <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,marginBottom:8,textTransform:"uppercase"}}>Admin Password</div>
+            <input type="password" value={cloneAdminPw} onChange={e=>{setCloneAdminPw(e.target.value);setCloneErr("");}} onKeyDown={e=>e.key==="Enter"&&confirmClone()} placeholder="Enter admin password to confirm…" autoFocus
+              style={{width:"100%",background:"#080C14",border:`1px solid ${cloneErr?"#FF3D5A":"#2A3D55"}`,borderRadius:10,padding:"14px 16px",color:"#E2EAF4",fontSize:15,fontFamily:"Barlow Condensed,sans-serif",outline:"none",marginBottom:cloneErr?8:24,boxSizing:"border-box"}} />
+            {cloneErr && <div style={{background:"#FF3D5A15",border:"1px solid #FF3D5A33",borderRadius:8,padding:"8px 14px",color:"#FF3D5A",fontSize:13,marginBottom:20,textAlign:"center"}}>{cloneErr}</div>}
+            <div style={{display:"flex",gap:10}}>
+              <button onClick={()=>{setCloneModal(null);setCloneAdminPw("");setCloneErr("");}} style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:10,padding:13,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
+              <button onClick={confirmClone} disabled={cloning} style={{flex:2,background:"linear-gradient(135deg,#A855F7,#7C3AED)",border:"none",borderRadius:10,padding:13,color:"#fff",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:15,cursor:cloning?"not-allowed":"pointer",opacity:cloning?0.7:1}}>
+                {cloning ? "CLONING…" : "🧬 CREATE CLONE →"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1626,6 +1717,7 @@ function ChatWindow({ myTeam, teams, unlocked, withPassword, storeGet, storeSet,
 
 
 function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, isGuest, isAdmin }) {
+  // Clone banner shown at very top if this is a clone pitch
   const [page, setPage] = useState(() => { try { return localStorage.getItem("tb_page_" + pitch?.id) || "leaderboard"; } catch { return "leaderboard"; } });
   const [teams, setTeams] = useState([]);
   const [players, setPlayers] = useState([]);
@@ -2898,6 +2990,15 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   return (
     <>
       {isGuest && <div style={{background:"#4A5E7822",borderBottom:"1px solid #1E2D45",padding:"6px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:11,fontFamily:"Barlow Condensed,sans-serif"}}><span style={{color:"#4A5E78"}}>👁 Guest — read only</span><button onClick={onLeaveGuest||onLeave} style={{background:"transparent",border:"none",color:"#F5A623",fontSize:11,cursor:"pointer",fontWeight:700,fontFamily:"Barlow Condensed,sans-serif"}}>CLAIM TEAM →</button></div>}
+      {pitch?.isClone && (
+        <div style={{background:"linear-gradient(90deg,#A855F718,#7C3AED18)",borderBottom:"2px solid #A855F766",padding:"10px 20px",display:"flex",alignItems:"center",justifyContent:"center",gap:12}}>
+          <span style={{fontSize:20}}>🧬</span>
+          <div>
+            <span style={{fontFamily:"Rajdhani,sans-serif",fontWeight:800,fontSize:15,color:"#A855F7",letterSpacing:2}}>CLONE PITCH</span>
+            <span style={{color:"#4A5E78",fontSize:12,marginLeft:10}}>Cloned from <span style={{color:"#E2EAF4",fontWeight:600}}>{pitch.clonedFromName}</span> · Changes here won't affect the original</span>
+          </div>
+        </div>
+      )}
       {guestToast && <div style={{position:"fixed",top:60,left:"50%",transform:"translateX(-50%)",background:"#1E2D45",border:"1px solid #4A5E78",borderRadius:10,padding:"10px 20px",zIndex:9999,fontFamily:"Barlow Condensed,sans-serif",fontSize:14,color:"#E2EAF4",display:"flex",alignItems:"center",gap:8,boxShadow:"0 4px 20px rgba(0,0,0,0.5)"}}>
         <span style={{fontSize:18}}>👁</span>
         <span>View only — <strong style={{color:"#F5A623"}}>guests cannot make changes</strong></span>
