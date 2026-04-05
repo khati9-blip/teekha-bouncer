@@ -1281,7 +1281,7 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
       };
 
       // Copy all data keys from original to clone
-      const dataKeys = ["teams","players","assignments","matches","captains","points","page","tnames","numteams","pwhash","pointsConfig","adminHash","adminEmail","teamIdentity","guestAllowed","tournaments"];
+      const dataKeys = ["teams","players","assignments","matches","captains","points","page","tnames","numteams","pwhash","pointsConfig","adminHash","adminEmail","teamIdentity","guestAllowed","tournaments","safePlayers","unsoldPool","transfers","ownershipLog","snatch"];
       for (const key of dataKeys) {
         try {
           const val = await sbGet(cloneModal.id + "_" + key);
