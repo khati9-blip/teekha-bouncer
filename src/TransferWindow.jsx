@@ -360,8 +360,49 @@ export default function TransferWindow({
   });
 
   const closeWindow = () => withPassword(() => {
-    if (!confirm("Close transfer window?")) return;
-    onUpdateTransfers({ ...transfers, phase: "closed" });
+    if (!confirm("Cancel transfer window? All releases will be undone and players returned to their teams.")) return;
+
+    // Collect all released player IDs across all teams
+    const allReleasedPids = Object.values(transfers?.releases || {}).flat();
+
+    // If in trade phase, also undo any completed trades
+    const tradedPairs = transfers?.tradedPairs || [];
+    let newAssignments = { ...assignments };
+    let newLog = { ...(ownershipLog || {}) };
+
+    for (const pair of tradedPairs) {
+      // Return picked player to pool / undo assignment
+      delete newAssignments[pair.pickedPid];
+      // Return released player to their original team
+      newAssignments[pair.releasedPid] = pair.teamId;
+      // Undo ownership log
+      if (newLog[pair.pickedPid]) {
+        newLog[pair.pickedPid] = newLog[pair.pickedPid].filter(o =>
+          !(o.teamId === pair.teamId && o.from > (transfers.tradeStartedAt || ""))
+        );
+      }
+      if (newLog[pair.releasedPid]) {
+        newLog[pair.releasedPid] = newLog[pair.releasedPid].map(o =>
+          o.teamId === pair.teamId && o.to ? { ...o, to: null } : o
+        );
+      }
+    }
+
+    // Remove ALL released players from unsold pool (they go back to their teams)
+    const newPool = unsoldPool.filter(pid => !allReleasedPids.includes(pid));
+
+    onUpdateAssignments(newAssignments);
+    onUpdateUnsoldPool(newPool);
+    if (tradedPairs.length > 0) onUpdateOwnershipLog(newLog);
+    onUpdateTransfers({
+      ...transfers,
+      phase: "closed",
+      releases: {},
+      tradedPairs: [],
+      ineligible: [],
+      currentPickTeam: null,
+      pickDeadline: null,
+    });
   });
 
   const startNewWeek = () => withPassword(() => {
