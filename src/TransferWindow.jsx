@@ -1056,8 +1056,8 @@ export default function TransferWindow({
           </div>
         </div>
       )}
-    </div>
   </>}
+    </div>
   );
 }
 
