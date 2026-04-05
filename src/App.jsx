@@ -3830,10 +3830,9 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                                    {p.status==="snatched-in"&&<span style={{fontSize:9,color:"#2ECC71",marginLeft:6,fontWeight:700}}>ON LOAN</span>}
                                    {p.status==="snatch-returned-in"&&<span style={{fontSize:9,color:"#4A5E78",marginLeft:6}}>RETURNED</span>}
                                    {p.status==="released"&&<span style={{fontSize:9,color:"#4A5E78",marginLeft:6}}>⬇️</span>}
-                                   {p.status==="traded-out"&&<span style={{fontSize:9,color:"#FF3D5A",marginLeft:6,fontWeight:700}}>OUT{p.exchangedWith?" → "+p.exchangedWith:""}</span>}
+                                   {p.status==="traded-out"&&p.exchangedWith&&<span style={{fontSize:9,color:"#FF3D5A",marginLeft:6,fontWeight:700}}>{"→ "+p.exchangedWith}</span>}
                                    {p.status==="traded-in"&&<span style={{fontSize:9,color:"#2ECC71",marginLeft:6,fontWeight:700}}>IN</span>}
                                    {p.status==="returned"&&<span style={{fontSize:9,color:"#F5A623",marginLeft:6,fontWeight:700}}>RETURNED</span>}
-                                   {p.status==="traded-out"&&<span style={{fontSize:9,color:"#FF3D5A",marginLeft:6,fontWeight:700}}>OUT{p.exchangedWith?" for "+p.exchangedWith:""}</span>}
                                    {p.status==="traded-in"&&<span style={{fontSize:9,color:"#2ECC71",marginLeft:6,fontWeight:700}}>TRADED IN</span>}
                                  </div>
                                 <div style={{width:90}}><Badge label={p.role||"—"} color={ROLE_COLORS[p.role]||"#4A5E78"} /></div>
