@@ -91,11 +91,12 @@ export default function TransferWindow({
   user
 }) {
   const [pickModal, setPickModal] = useState(null); // {poolPlayer}
+  const [sessionTeamId, setSessionTeamId] = useState(null);
   const [tradeConfirmModal, setTradeConfirmModal] = useState(null); // {poolPlayer, releasedPlayer}
   const [resetConfirm, setResetConfirm] = useState(false);
 
   const phase = transfers?.phase || "closed";
-  const myTeamId = myTeam?.id;
+  const myTeamId = myTeam?.id || sessionTeamId;
   const sortedTeams = leaderboard.map(t => teams.find(x => x.id === t.id)).filter(Boolean);
 
   // ── AUTO WINDOW CHECK ──────────────────────────────────────────────────────
@@ -517,7 +518,7 @@ export default function TransferWindow({
             const isMe = team.id === myTeamId;
             // Each team can edit their own releases freely — no lock needed
             // Admin (unlocked) sees all teams; non-admin only sees their own
-            const canEdit = isMe || unlocked; // own team OR admin can release
+            const canEdit = isMe; // no lock required
             const canSee = isMe || unlocked; // admins see all
             if (!canSee) return null;
 
@@ -579,21 +580,16 @@ export default function TransferWindow({
             );
           })}
 
-          {/* Show all teams' release status summary for everyone */}
-          {!myTeamId && !unlocked && (
-            <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #1E2D45",padding:16,marginBottom:12}}>
-              <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginBottom:10}}>RELEASE STATUS</div>
-              {sortedTeams.map(team => {
-                const released = transfers?.releases?.[team.id] || [];
-                return (
-                  <div key={team.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderBottom:"1px solid #1E2D4533"}}>
-                    <div style={{width:8,height:8,borderRadius:"50%",background:team.color,flexShrink:0}} />
-                    <span style={{flex:1,fontSize:13,color:"#E2EAF4",fontWeight:600}}>{team.name}</span>
-                    <span style={{fontSize:12,color:released.length===3?"#2ECC71":"#F5A623",fontWeight:700}}>{released.length}/3</span>
-                    <span style={{fontSize:11,color:released.length===3?"#2ECC71":"#4A5E78"}}>{released.length===3?"✓ Done":"Pending"}</span>
-                  </div>
-                );
-              })}
+          {/* Admin without myTeam: show team picker */}
+          {!myTeamId && isAdmin && (
+            <div style={{background:"#F5A62311",borderRadius:12,border:"1px solid #F5A62333",padding:16,marginBottom:12}}>
+              <div style={{fontSize:11,color:"#F5A623",letterSpacing:2,fontWeight:700,marginBottom:8}}>🔑 WHICH TEAM ARE YOU MANAGING?</div>
+              <div style={{fontSize:12,color:"#4A5E78",marginBottom:10}}>You're logged in as admin. Select your team to manage releases.</div>
+              <select onChange={e=>setSessionTeamId(e.target.value)} defaultValue=""
+                style={{width:"100%",background:"#0E1521",border:"1px solid #F5A62344",borderRadius:8,padding:"10px 14px",color:"#E2EAF4",fontSize:14,fontFamily:"Barlow Condensed,sans-serif"}}>
+                <option value="">-- Select your team --</option>
+                {sortedTeams.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
             </div>
           )}
         </div>
