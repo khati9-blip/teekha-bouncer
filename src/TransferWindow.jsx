@@ -427,7 +427,11 @@ export default function TransferWindow({
         }
       ],
     });
-    onUpdateUnsoldPool([]);
+    // Keep pool intact — only remove players who were picked (now assigned to teams)
+    // Pre-existing unsold players stay in pool until manually removed
+    const pickedPids = (transfers.tradedPairs || []).map(p => p.pickedPid);
+    const newPool = unsoldPool.filter(pid => !pickedPids.includes(pid));
+    onUpdateUnsoldPool(newPool);
   });
 
   const openReleaseManually = () => withPassword(() => {
@@ -608,16 +612,16 @@ export default function TransferWindow({
                           <div style={{fontSize:11,color:"#4A5E78"}}>{p.iplTeam} • {p.role}</div>
                         </div>
                         {/* Release/Undo button — only for own team, no lock needed */}
-                        {canEdit && (
-                          isPlayerSafe(p.id) ? (
+                        {isPlayerSafe(p.id) ? (
                             <span style={{fontSize:10,color:"#2ECC71",fontWeight:700,background:"#2ECC7111",border:"1px solid #2ECC7133",padding:"3px 8px",borderRadius:6,letterSpacing:0.5}}>🛡 SAFE</span>
-                          ) : (
+                          ) : canEdit ? (
                             <button onClick={() => handleRelease(team.id, p.id)}
                               style={{background:isReleased?"#FF3D5A22":"#1E2D4533",border:"1px solid "+(isReleased?"#FF3D5A":"#1E2D45"),borderRadius:6,padding:"6px 14px",color:isReleased?"#FF3D5A":"#4A5E78",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",letterSpacing:0.5}}>
                               {isReleased ? "UNDO ✕" : "RELEASE"}
                             </button>
-                          )
-                        )}
+                          ) : isReleased ? (
+                            <span style={{fontSize:10,color:"#FF3D5A",fontWeight:700,background:"#FF3D5A11",border:"1px solid #FF3D5A33",padding:"3px 8px",borderRadius:6}}>RELEASED</span>
+                          ) : null}
                         {/* Read-only view for admin */}
                         {!canEdit && isReleased && (
                           <span style={{fontSize:10,color:"#FF3D5A",fontWeight:700,background:"#FF3D5A11",border:"1px solid #FF3D5A33",padding:"3px 8px",borderRadius:6}}>RELEASED</span>
