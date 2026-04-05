@@ -3028,6 +3028,13 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
           </div>
         )}
 
+        {pitch && pitch.name && pitch.name.includes("(Testing)") && (
+          <div style={{background:"#F5A62322",borderBottom:"2px dashed #F5A62366",padding:"6px 20px",display:"flex",alignItems:"center",gap:8,fontSize:11,fontFamily:"Barlow Condensed,sans-serif"}}>
+            <span>&#x1F9EA;</span>
+            <span style={{color:"#F5A623",fontWeight:800,letterSpacing:1}}>TESTING CLONE</span>
+            <span style={{color:"#4A5E78"}}>Changes here won't affect your original pitch</span>
+          </div>
+        )}
         <div style={{maxWidth:860,margin:"0 auto",padding:"20px 16px 90px"}}>
 
           {page==="setup"&&(
