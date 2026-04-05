@@ -216,7 +216,8 @@ function calcPoints(s, cfg) {
   // Convert cricket overs notation to real overs for min overs check
   const ovsInt = Math.floor(ovs); const ovsBalls = Math.round((ovs - ovsInt) * 10);
   const realOvs = ovsInt + (ovsBalls / 6);
-  if (realOvs >= c.ecoMinOvers && eco !== null && eco !== "" && +eco < c.ecoThreshold) p += c.ecoBonus;
+  const minOvs = c.ecoMinOvers != null ? c.ecoMinOvers : 2;
+  if (realOvs >= minOvs && eco !== null && eco !== "" && +eco < c.ecoThreshold) p += c.ecoBonus;
 
   p += catches * c.catch;
   p += (stump) * c.stumping;
@@ -248,7 +249,7 @@ function calcPoints(s, cfg) {
   if (c.duckPenalty && runs === 0 && s.dismissed) p -= c.duckPenalty;
 
   // Economy penalty
-  if (c.ecoPenalty && ovs >= c.ecoMinOvers && eco !== null && eco > (c.ecoPenaltyThreshold||10)) p -= c.ecoPenalty;
+  if (c.ecoPenalty && realOvs >= minOvs && eco !== null && eco > (c.ecoPenaltyThreshold||10)) p -= c.ecoPenalty;
 
   return Math.round(p);
 }
