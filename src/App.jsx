@@ -2062,10 +2062,9 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
       };
       setTransfers(updated);
       storeSet("transfers", updated);
-      pushNotif("transfer", "Timer expired — " + (teams.find(t=>t.id===transfers.currentPickTeam)?.name||"Team") + " skipped", "⏭");
     }, 10000); // check every 10 seconds
     return () => clearInterval(interval);
-  }, [transfers, leaderboard, teams]);
+  }, [transfers, teams]);
   const upd=(setter,key)=>(val)=>{setter(val);storeSet(key,val);};
   const updTeams=upd(setTeams,"teams"),updAssign=upd(setAssignments,"assignments"),
         updMatches=upd(setMatches,"matches"),updCaptains=upd(setCaptains,"captains"),
