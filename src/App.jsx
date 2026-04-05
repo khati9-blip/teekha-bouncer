@@ -3646,10 +3646,12 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                                   <div style={{padding:"12px 16px",color:"#4A5E78",fontSize:13}}>No players scored in this match</div>
                                 ) : (
                                   tb.players.map(p=>(
-                                    <div key={p.id} style={{padding:"10px 16px",borderBottom:"1px solid #1E2D4522",display:"flex",alignItems:"flex-start",gap:12}}>
+                                    <div key={p.id} style={{padding:"10px 16px",borderBottom:"1px solid #1E2D4522",display:"flex",alignItems:"flex-start",gap:12,background:p.tradeStatus==="traded-in"?"#2ECC7108":p.tradeStatus==="traded-out"?"#FF3D5A05":"transparent",opacity:p.tradeStatus==="traded-out"?0.7:1}}>
                                       <div style={{flex:1,minWidth:0}}>
                                         <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-                                          <span style={{fontWeight:700,fontSize:14,color:"#E2EAF4"}}>{p.name}</span>
+                                          {p.tradeStatus==="traded-out"&&<span style={{fontSize:13}}>⬇️</span>}
+                                          {p.tradeStatus==="traded-in"&&<span style={{fontSize:13}}>⬆️</span>}
+                                          <span style={{fontWeight:700,fontSize:14,color:p.tradeStatus==="traded-in"?"#2ECC71":p.tradeStatus==="traded-out"?"#FF3D5A":"#E2EAF4",textDecoration:p.tradeStatus==="traded-out"?"line-through":"none"}}>{p.name}</span>
                                           {p.mult>1 && <span style={{background:p.mult===2?"#F5A62322":"#94A3B822",color:p.mult===2?"#F5A623":"#94A3B8",border:"1px solid "+(p.mult===2?"#F5A62344":"#94A3B844"),fontSize:10,padding:"1px 7px",borderRadius:10,fontWeight:700}}>
                                             {p.mult===2?"⭐ CAPTAIN 2×":"🥈 VC 1.5×"}
                                           </span>}
@@ -3748,7 +3750,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                                    {p.status==="snatched-out"&&<span style={{fontSize:9,color:"#A855F7",marginLeft:6,fontWeight:700}}>SNATCHED</span>}
                                    {p.status==="snatched-in"&&<span style={{fontSize:9,color:"#2ECC71",marginLeft:6,fontWeight:700}}>ON LOAN</span>}
                                    {p.status==="snatch-returned-in"&&<span style={{fontSize:9,color:"#4A5E78",marginLeft:6}}>RETURNED</span>}
-                                   {p.status==="released"&&<span style={{fontSize:9,color:"#4A5E78",marginLeft:6}}>RELEASED</span>}
+                                   {p.status==="released"&&<span style={{fontSize:11,marginRight:4}}>&#x2B07;</span>}
                                    {p.status==="traded-out"&&<span style={{fontSize:9,color:"#FF3D5A",marginLeft:6,fontWeight:700}}>OUT{p.exchangedWith?" for "+p.exchangedWith:""}</span>}
                                    {p.status==="traded-in"&&<span style={{fontSize:9,color:"#2ECC71",marginLeft:6,fontWeight:700}}>TRADED IN</span>}
                                  </div>
