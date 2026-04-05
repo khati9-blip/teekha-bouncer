@@ -1,39 +1,57 @@
 import { useState, useEffect } from "react";
 
-
-
 async function callAI(userPrompt, system = "Return only valid JSON.") {
-  const body = { model: "claude-sonnet-4-6", max_tokens: 1000, system, messages: [{ role: "user", content: userPrompt }] };
-  const res = await fetch("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const body = {
+    model: "claude-sonnet-4-6",
+    max_tokens: 1000,
+    system,
+    messages: [{ role: "user", content: userPrompt }],
+  };
+  const res = await fetch("/api/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
   const data = await res.json();
-  if (data.error) throw new Error(data.error.message);
-  return (data.content || []).filter(b => b.type === "text").map(b => b.text).join("");
+  if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+  return (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("");
 }
 
 function parseJSON(text) {
-  return JSON.parse(text.replace(/^```json\s*/m,"").replace(/^```\s*/m,"").replace(/```\s*$/m,"").trim());
+  const clean = text.replace(/^```json\s*/m, "").replace(/^```\s*/m, "").replace(/```\s*$/m, "").trim();
+  return JSON.parse(clean);
 }
 
 function calcPoints(s) {
   let p = 0;
-  const runs=s.runs||0,fours=s.fours||0,sixes=s.sixes||0,wkts=s.wickets||0,eco=s.economy,ovs=s.overs||0,catches=s.catches||0,stump=s.stumpings||0,ro=s.runouts||0;
-  p+=runs; p+=fours*8; p+=sixes*12;
-  if(runs>=100)p+=20; else if(runs>=50)p+=10;
-  p+=wkts*25;
-  if(wkts>=5)p+=15; else if(wkts>=4)p+=8;
-  if(ovs>=2&&eco!=null&&eco<6)p+=10;
-  p+=catches*8; p+=(stump+ro)*12;
-  if(runs>=30&&wkts>=2)p+=15;
-  if(s.longestSix)p+=50;
+  const runs = s.runs || 0, fours = s.fours || 0, sixes = s.sixes || 0;
+  const wkts = s.wickets || 0, eco = s.economy, ovs = s.overs || 0;
+  const catches = s.catches || 0, stump = s.stumpings || 0, ro = s.runouts || 0;
+  p += runs; p += fours * 8; p += sixes * 12;
+  if (runs >= 100) p += 20; else if (runs >= 50) p += 10;
+  p += wkts * 25;
+  if (wkts >= 5) p += 15; else if (wkts >= 4) p += 8;
+  if (ovs >= 2 && eco != null && eco < 6) p += 10;
+  p += catches * 8; p += (stump + ro) * 12;
+  if (runs >= 30 && wkts >= 2) p += 15;
+  if (s.longestSix) p += 50;
   return Math.round(p);
 }
 
-function storeGet(key) { try{const r=(() => { const v = localStorage.getItem(`tbl_${key}`); return v ? { value: v } : null; })();return r?JSON.parse(r.value):null;}catch{return null;} }
-function storeSet(key,val) { try{localStorage.setItem(`tbl_${key}`,JSON.stringify(val));}catch{} }
+function storeGet(key) {
+  try { const v = localStorage.getItem(`tbl_${key}`); return v ? JSON.parse(v) : null; }
+  catch { return null; }
+}
+function storeSet(key, val) {
+  try { localStorage.setItem(`tbl_${key}`, JSON.stringify(val)); } catch {}
+}
+function storeDel(key) {
+  try { localStorage.removeItem(`tbl_${key}`); } catch {}
+}
 
 async function hashPw(str) {
-  const buf=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
 function PasswordModal({ onSuccess, onClose, storedHash }) {
@@ -43,44 +61,44 @@ function PasswordModal({ onSuccess, onClose, storedHash }) {
   const [newPw, setNewPw] = useState("");
   const [newPwConfirm, setNewPwConfirm] = useState("");
 
-  const titles = { set:"SET LEAGUE PASSWORD", unlock:"SQUAD LOCKED", change:"CHANGE PASSWORD" };
-  const subtitles = { set:"Choose a password to protect all squad changes", unlock:"Enter your league password to modify squads", change:"Enter a new password for the league" };
-  const icons = { set:"🔐", unlock:"🔒", change:"🔑" };
+  const titles = { set: "SET LEAGUE PASSWORD", unlock: "SQUAD LOCKED", change: "CHANGE PASSWORD" };
+  const subtitles = { set: "Choose a password to protect all squad changes", unlock: "Enter your league password to modify squads", change: "Enter a new password for the league" };
+  const icons = { set: "🔐", unlock: "🔒", change: "🔑" };
 
   const submit = async () => {
-    if (mode==="set") {
-      if (!pw.trim()){setErr("Enter a password");return;}
-      if (pw.length<4){setErr("Min. 4 characters required");return;}
+    if (mode === "set") {
+      if (!pw.trim()) { setErr("Enter a password"); return; }
+      if (pw.length < 4) { setErr("Min. 4 characters required"); return; }
       onSuccess(await hashPw(pw), true);
-    } else if (mode==="unlock") {
-      if (!pw.trim()){setErr("Enter your password");return;}
-      const h=await hashPw(pw);
-      if(h===storedHash)onSuccess(null,false);
-      else{setErr("❌ Wrong password");setPw("");}
-    } else if (mode==="change") {
-      if (!newPw.trim()){setErr("Enter a new password");return;}
-      if (newPw.length<4){setErr("Min. 4 characters required");return;}
-      if (newPw!==newPwConfirm){setErr("Passwords don't match");return;}
-      onSuccess(await hashPw(newPw),true);
+    } else if (mode === "unlock") {
+      if (!pw.trim()) { setErr("Enter your password"); return; }
+      const h = await hashPw(pw);
+      if (h === storedHash) onSuccess(null, false);
+      else { setErr("❌ Wrong password"); setPw(""); }
+    } else if (mode === "change") {
+      if (!newPw.trim()) { setErr("Enter a new password"); return; }
+      if (newPw.length < 4) { setErr("Min. 4 characters required"); return; }
+      if (newPw !== newPwConfirm) { setErr("Passwords don't match"); return; }
+      onSuccess(await hashPw(newPw), true);
     }
   };
 
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,backdropFilter:"blur(8px)"}}>
-      <div style={{background:"linear-gradient(145deg,#141E2E,#0E1521)",borderRadius:20,border:"1px solid #1E2D45",padding:36,width:"100%",maxWidth:380,margin:"0 16px",boxShadow:"0 32px 80px rgba(0,0,0,0.8),0 0 0 1px rgba(245,166,35,0.1)",position:"relative",overflow:"hidden"}}>
+      <div style={{background:"linear-gradient(145deg,#141E2E,#0E1521)",borderRadius:20,border:"1px solid #1E2D45",padding:36,width:"100%",maxWidth:380,margin:"0 16px",boxShadow:"0 32px 80px rgba(0,0,0,0.8)",position:"relative",overflow:"hidden"}}>
         <div style={{position:"absolute",top:0,left:"50%",transform:"translateX(-50%)",width:120,height:2,background:"linear-gradient(90deg,transparent,#F5A623,transparent)"}} />
-        <div style={{fontSize:40,textAlign:"center",marginBottom:10,filter:"drop-shadow(0 0 12px rgba(245,166,35,0.4))"}}>{icons[mode]}</div>
+        <div style={{fontSize:40,textAlign:"center",marginBottom:10}}>{icons[mode]}</div>
         <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,fontWeight:700,color:"#F5A623",textAlign:"center",letterSpacing:3,marginBottom:6}}>{titles[mode]}</div>
         <div style={{fontSize:13,color:"#4A5E78",textAlign:"center",marginBottom:28,lineHeight:1.5}}>{subtitles[mode]}</div>
 
-        {mode!=="change" && (
+        {mode !== "change" && (
           <>
-            <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,marginBottom:8,textTransform:"uppercase"}}>{mode==="set"?"Choose Password":"Password"}</div>
+            <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,marginBottom:8,textTransform:"uppercase"}}>{mode === "set" ? "Choose Password" : "Password"}</div>
             <input type="password" value={pw} onChange={e=>{setPw(e.target.value);setErr("");}} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder={mode==="set"?"Min. 4 characters…":"Enter password…"} autoFocus
               style={{width:"100%",background:"#080C14",border:`1px solid ${err?"#FF3D5A":"#2A3D55"}`,borderRadius:10,padding:"14px 16px",color:"#E2EAF4",fontSize:15,fontFamily:"Barlow Condensed,sans-serif",outline:"none",marginBottom:err?8:24,boxSizing:"border-box"}} />
           </>
         )}
-        {mode==="change" && (
+        {mode === "change" && (
           <>
             <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,marginBottom:8,textTransform:"uppercase"}}>New Password</div>
             <input type="password" value={newPw} onChange={e=>{setNewPw(e.target.value);setErr("");}} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder="Min. 4 characters…" autoFocus
@@ -95,13 +113,13 @@ function PasswordModal({ onSuccess, onClose, storedHash }) {
 
         <div style={{display:"flex",gap:10}}>
           <button onClick={onClose} style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:10,padding:13,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,letterSpacing:1,cursor:"pointer"}}>CANCEL</button>
-          <button onClick={submit} style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:10,padding:13,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:15,letterSpacing:1,cursor:"pointer",boxShadow:"0 4px 20px rgba(245,166,35,0.3)"}}>
+          <button onClick={submit} style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:10,padding:13,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:15,letterSpacing:1,cursor:"pointer"}}>
             {mode==="set"?"SET PASSWORD →":mode==="unlock"?"UNLOCK 🔓":"CHANGE PASSWORD →"}
           </button>
         </div>
-        {mode==="unlock" && (
+        {mode === "unlock" && (
           <div style={{marginTop:20,paddingTop:16,borderTop:"1px solid #1E2D45",textAlign:"center"}}>
-            <button onClick={()=>{setMode("change");setPw("");setErr("");}} style={{background:"none",border:"none",color:"#4A5E78",fontSize:12,cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",letterSpacing:1}}>
+            <button onClick={()=>{setMode("change");setPw("");setErr("");}} style={{background:"none",border:"none",color:"#4A5E78",fontSize:12,cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif"}}>
               🔑 Change league password
             </button>
           </div>
@@ -111,11 +129,11 @@ function PasswordModal({ onSuccess, onClose, storedHash }) {
   );
 }
 
-const PALETTE=["#FF3D5A","#4F8EF7","#2ECC71","#F5A623","#A855F7","#06B6D4","#FF6B35","#EC4899","#84CC16","#64748B"];
-const ROLE_COLORS={Batsman:"#4F8EF7",Bowler:"#FF3D5A","All-Rounder":"#2ECC71","Wicket-Keeper":"#F5A623"};
-const ROLES=["All","Batsman","Bowler","All-Rounder","Wicket-Keeper"];
+const PALETTE = ["#FF3D5A","#4F8EF7","#2ECC71","#F5A623","#A855F7","#06B6D4","#FF6B35","#EC4899","#84CC16","#64748B"];
+const ROLE_COLORS = { Batsman:"#4F8EF7", Bowler:"#FF3D5A", "All-Rounder":"#2ECC71", "Wicket-Keeper":"#F5A623" };
+const ROLES = ["All","Batsman","Bowler","All-Rounder","Wicket-Keeper"];
 
-const css=`
+const css = `
   @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Barlow+Condensed:wght@400;600;700;800&display=swap');
   *{box-sizing:border-box;margin:0;padding:0;}
   :root{--bg:#080C14;--surface:#0E1521;--card:#141E2E;--border:#1E2D45;--gold:#F5A623;--text:#E2EAF4;--muted:#4A5E78;--accent:#4F8EF7;}
@@ -126,7 +144,7 @@ const css=`
   @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
   @keyframes spin{to{transform:rotate(360deg)}}
   @keyframes loadBar{0%{left:-40%;width:40%}50%{left:30%;width:50%}100%{left:100%;width:40%}}
-  @keyframes ballSpin{0%{transform:rotate(0deg) scale(1)}50%{transform:rotate(180deg) scale(1.05)}100%{transform:rotate(360deg) scale(1)}}
+  @keyframes ballSpin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
 `;
 
 function Badge({label,color="#4F8EF7"}){return<span style={{background:color+"22",color,border:`1px solid ${color}44`,padding:"2px 8px",borderRadius:4,fontSize:11,fontWeight:600}}>{label}</span>;}
@@ -158,13 +176,12 @@ export default function App() {
   const [pendingAction,setPendingAction]=useState(null);
 
   useEffect(()=>{
-    (async()=>{
-      const keys=["teams","players","assignments","matches","captains","points","page","tnames","numteams","pwhash"];
-      const[t,p,a,m,c,pts,pg,tn,nt,ph]=keys.map(k=>storeGet(k));
-      if(t)setTeams(t);if(p)setPlayers(p);if(a)setAssignments(a);if(m)setMatches(m);
-      if(c)setCaptains(c);if(pts)setPoints(pts);if(pg)setPage(pg);if(tn)setTNames(tn);
-      if(nt)setNumTeams(nt);if(ph)setPwHash(ph);
-    })();
+    const t=storeGet("teams"),p=storeGet("players"),a=storeGet("assignments"),m=storeGet("matches"),
+          c=storeGet("captains"),pts=storeGet("points"),pg=storeGet("page"),tn=storeGet("tnames"),
+          nt=storeGet("numteams"),ph=storeGet("pwhash");
+    if(t)setTeams(t);if(p)setPlayers(p);if(a)setAssignments(a);if(m)setMatches(m);
+    if(c)setCaptains(c);if(pts)setPoints(pts);if(pg)setPage(pg);if(tn)setTNames(tn);
+    if(nt)setNumTeams(nt);if(ph)setPwHash(ph);
   },[]);
 
   const nav=(pg)=>{setPage(pg);storeSet("page",pg);};
@@ -210,7 +227,7 @@ export default function App() {
     setLoading("Loading IPL 2025 schedule…");
     try{
       const text=await callAI(
-        `List all 74 matches of IPL 2025. Return ONLY a raw JSON array: [{"id":"m1","matchNum":1,"date":"2025-03-22","team1":"CSK","team2":"MI","venue":"Chepauk","status":"upcoming|completed","result":"winner or null"}].`,
+        `List all 74 matches of IPL 2025 with dates, venues and results where known. Return ONLY a raw JSON array: [{"id":"m1","matchNum":1,"date":"2025-03-22","team1":"CSK","team2":"MI","venue":"Chepauk","status":"upcoming|completed","result":"winner or null"}].`,
         "Cricket expert. Return ONLY raw JSON array. No markdown."
       );
       updMatches(parseJSON(text));
@@ -262,8 +279,10 @@ export default function App() {
   const getPlayerBreakdown=(teamId)=>players.filter(p=>assignments[p.id]===teamId).map(p=>{
     let tot=0;
     for(const[mid,d]of Object.entries(points[p.id]||{})){
-      const cap=captains[`${mid}_${teamId}`]||{};let pts=d.base;
-      if(cap.captain===p.id)pts*=2;else if(cap.vc===p.id)pts*=1.5;tot+=pts;
+      const cap=captains[`${mid}_${teamId}`]||{};
+      let pts=d.base;
+      if(cap.captain===p.id)pts*=2;else if(cap.vc===p.id)pts*=1.5;
+      tot+=pts;
     }
     return{...p,total:Math.round(tot)};
   }).sort((a,b)=>b.total-a.total);
@@ -281,7 +300,6 @@ export default function App() {
       <div style={{minHeight:"100vh",background:"var(--bg)"}}>
         {showPwModal&&<PasswordModal storedHash={pwHash} onSuccess={handlePwSuccess} onClose={()=>{setShowPwModal(false);setPendingAction(null);}} />}
 
-        {/* Header */}
         <div style={{background:"linear-gradient(180deg,#0E1521 0%,#080C14 100%)",borderBottom:"1px solid #1E2D45",padding:"0 20px",display:"flex",alignItems:"stretch",position:"sticky",top:0,zIndex:50}}>
           <div style={{padding:"16px 24px 0 0",borderRight:"1px solid #1E2D45",marginRight:8}}>
             <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:18,color:"#F5A623",letterSpacing:2,lineHeight:1}}>🏏 TEEKHA</div>
@@ -298,15 +316,14 @@ export default function App() {
             <button onClick={()=>{if(unlocked)setUnlocked(false);else{setPendingAction(null);setShowPwModal(true);}}} style={{background:unlocked?"#2ECC7122":"transparent",border:`1px solid ${unlocked?"#2ECC71":"#1E2D45"}`,color:unlocked?"#2ECC71":"#4A5E78",fontSize:11,borderRadius:6,padding:"4px 10px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif"}}>
               {unlocked?"🔓 UNLOCKED":"🔒 LOCKED"}
             </button>
-            <button onClick={async()=>{if(!confirm("Reset ALL data?"))return;const keys=["teams","players","assignments","matches","captains","points","page","pwhash"];for(const k of keys)try{localStorage.removeItem(`tbl_${k}`);}catch{}window.location.reload();}} style={{background:"transparent",border:"1px solid #1E2D45",color:"#4A5E78",fontSize:11,borderRadius:6,padding:"4px 10px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif"}}>RESET</button>
+            <button onClick={()=>{if(!confirm("Reset ALL data?"))return;["teams","players","assignments","matches","captains","points","page","pwhash"].forEach(k=>storeDel(k));window.location.reload();}} style={{background:"transparent",border:"1px solid #1E2D45",color:"#4A5E78",fontSize:11,borderRadius:6,padding:"4px 10px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif"}}>RESET</button>
           </div>
         </div>
 
-        {/* Cool Loading Overlay */}
         {loading&&(
           <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.96)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",zIndex:200,backdropFilter:"blur(6px)"}}>
             <div style={{position:"relative",width:80,height:80,marginBottom:24}}>
-              <div style={{position:"absolute",inset:0,borderRadius:"50%",background:"linear-gradient(135deg,#F5A623,#FF3D5A)",animation:"ballSpin 1.4s linear infinite",boxShadow:"0 0 30px rgba(245,166,35,0.5)"}} />
+              <div style={{position:"absolute",inset:0,borderRadius:"50%",background:"linear-gradient(135deg,#F5A623,#FF3D5A)",animation:"ballSpin 1.2s linear infinite",boxShadow:"0 0 30px rgba(245,166,35,0.5)"}} />
               <div style={{position:"absolute",inset:4,borderRadius:"50%",background:"#080C14",display:"flex",alignItems:"center",justifyContent:"center",fontSize:30}}>🏏</div>
             </div>
             <div style={{color:"#F5A623",fontWeight:800,fontSize:18,letterSpacing:2,fontFamily:"Rajdhani,sans-serif",marginBottom:8,textAlign:"center",padding:"0 24px"}}>{loading}</div>
