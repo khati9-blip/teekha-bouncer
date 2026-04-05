@@ -1299,9 +1299,24 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
                       {returning ? (savedAdmin?"🔑 Admin":(savedTeam?"🏏 "+savedTeam.name:"👁 Guest")) + " · tap to enter" : "Created "+new Date(pitch.createdAt).toLocaleDateString("en-IN")}
                     </div>
                   </div>
-                  <button onClick={()=>onEnter(pitch)} style={{background:"linear-gradient(135deg,"+color+","+color+"99)",border:"none",borderRadius:8,padding:"8px 16px",color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:13,cursor:"pointer",letterSpacing:1}}>
-                    {returning ? "ENTER →" : "JOIN →"}
-                  </button>
+                  <div style={{display:"flex",gap:6,flexShrink:0}}>
+                    {savedAdmin && <button onClick={async()=>{
+                      if(!confirm("Clone this pitch as a Testing pitch? All data will be copied.")) return;
+                      const newId = "p"+(pitches.length+1)+"_"+Date.now();
+                      const newPitch = {...pitch,id:newId,name:pitch.name+" (Testing)",hash:"",createdAt:new Date().toISOString()};
+                      const keysToClone = ["teams","players","assignments","matches","captains","points","tnames","numteams","teamLogos","safePlayers","unsoldPool","transfers","snatch","ownershipLog","teamIdentity","pointsConfig","tournaments"];
+                      for(const k of keysToClone){const val=await sbGet(pitch.id+"_"+k);if(val!=null)await sbSet(newId+"_"+k,val);}
+                      const updated=[...pitches,newPitch];
+                      await sbSet("pitches",updated);
+                      setPitches(updated);
+                      alert("Testing pitch created! Enter it and set admin password.");
+                    }} style={{background:"#4F8EF722",border:"1px solid #4F8EF744",borderRadius:8,padding:"6px 10px",color:"#4F8EF7",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:11,cursor:"pointer"}}>
+                      CLONE
+                    </button>}
+                    <button onClick={()=>onEnter(pitch)} style={{background:color,border:"none",borderRadius:8,padding:"8px 16px",color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:13,cursor:"pointer",letterSpacing:1}}>
+                      {returning ? "ENTER →" : "JOIN →"}
+                    </button>
+                  </div>
                 </div>
               </div>
             );
