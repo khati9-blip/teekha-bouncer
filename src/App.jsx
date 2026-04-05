@@ -2751,15 +2751,21 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
     ]);
 
     const getPlayerTradeStatus = (pid) => {
-      const periods = (ownershipLog[pid]||[]).filter(o=>o.teamId===teamId);
+      const allPeriods = ownershipLog[pid]||[];
+      const periods = allPeriods.filter(o=>o.teamId===teamId);
       const isHere = assignments[pid]===teamId;
+      // No periods for THIS team — just use current assignment
+      if(periods.length === 0) return isHere ? "active" : "traded-out";
       const hasClosed = periods.some(o=>o.to);
       const hasOpen = periods.some(o=>!o.to);
       const hasTradeIn = periods.some(o=>o.tradeIn);
-      // Returned: has been traded in AND has a closed period (was here, left, came back)
+      // Returned: traded in, has a closed period AND currently here
       if(hasTradeIn && hasClosed && hasOpen && isHere) return "returned";
+      // Traded out: has closed period, no open period, not here anymore
       if(!isHere && hasClosed && !hasOpen) return "traded-out";
-      if(isHere && hasTradeIn && !hasClosed) return "traded-in";
+      // Traded in: came via trade, currently here
+      if(isHere && hasTradeIn) return "traded-in";
+      // Normal active
       if(isHere) return "active";
       return "traded-out";
     };
