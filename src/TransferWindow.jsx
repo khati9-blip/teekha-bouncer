@@ -643,8 +643,8 @@ export default function TransferWindow({
             );
           })}
 
-          {/* Admin without myTeam: show team picker */}
-          {!myTeamId && isAdmin && (
+          {/* Admin without myTeam: show team picker — only during release phase */}
+          {!myTeamId && isAdmin && phase === "release" && (
             <div style={{background:"#F5A62311",borderRadius:12,border:"1px solid #F5A62333",padding:16,marginBottom:12}}>
               <div style={{fontSize:11,color:"#F5A623",letterSpacing:2,fontWeight:700,marginBottom:8}}>🔑 WHICH TEAM ARE YOU MANAGING?</div>
               <div style={{fontSize:12,color:"#4A5E78",marginBottom:10}}>You're logged in as admin. Select your team to manage releases.</div>
