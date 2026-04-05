@@ -2726,12 +2726,27 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
       return Math.round(tot);
     };
 
+    // Current week traded pairs for this team
+    const currentTradedOut = (transfers.tradedPairs||[]).filter(t=>t.teamId===teamId);
+    const currentTradedInPids = currentTradedOut.map(t=>t.pickedPid);
+
     // Active players in squad
     const active = players.filter(p=>assignments[p.id]===teamId).map(p=>{
       const tot = getPtsForTeam(p.id, teamId);
       const isSnatched = snatch.active?.pid===p.id && snatch.active?.fromTeamId===teamId;
-      return{...p,total:tot,status:isSnatched?"snatched":"active"};
+      const isTradedIn = currentTradedInPids.includes(p.id);
+      return{...p,total:tot,status:isSnatched?"snatched":isTradedIn?"traded-in":"active"};
     });
+
+    // Current week traded-OUT players — show with frozen points and arrow
+    const currentTradedOutPlayers = currentTradedOut.map(t=>{
+      const p = players.find(x=>x.id===t.releasedPid);
+      if(!p) return null;
+      const tot = getPtsForTeam(t.releasedPid, teamId);
+      const inPlayer = players.find(x=>x.id===t.pickedPid);
+      return {...p, total:tot, status:"traded-out", exchangedWith:inPlayer?.name||""};
+    }).filter(Boolean);
+
 
     // Historical players — released via transfer but points still count
     const releasedPids = transfers.history?.flatMap(w=>
