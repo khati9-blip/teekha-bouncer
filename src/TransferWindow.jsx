@@ -178,14 +178,15 @@ export default function TransferWindow({
     // Next team
     const nextTeam = getNextPickTeam(currentPickTeamId, tradedPairs);
     const deadline = new Date(Date.now() + 45 * 60 * 1000).toISOString();
-    const allDone = checkAllDone(tradedPairs, newPool);
+    // Done only when no team has any remaining valid picks
+    const isDone = nextTeam === null;
 
     const updated = {
       ...transfers,
       tradedPairs,
-      currentPickTeam: allDone ? null : nextTeam,
-      pickDeadline: allDone ? null : deadline,
-      phase: allDone ? "done" : "trade",
+      currentPickTeam: isDone ? null : nextTeam,
+      pickDeadline: isDone ? null : deadline,
+      phase: isDone ? "done" : "trade",
     };
 
     onUpdateAssignments(newAssignments);
@@ -218,15 +219,15 @@ export default function TransferWindow({
     const tradedPairs = [...(transfers.tradedPairs || [])];
     const nextTeam = getNextPickTeam(currentPickTeamId, tradedPairs);
     const deadline = new Date(Date.now() + 45 * 60 * 1000).toISOString();
-    const allDone = checkAllDone(tradedPairs, sortedPool.filter(p => !ineligible.includes(p.id)));
+    const isDone = nextTeam === null;
 
     const updated = {
       ...transfers,
       tradedPairs,
       ineligible,
-      currentPickTeam: allDone ? null : nextTeam,
-      pickDeadline: allDone ? null : deadline,
-      phase: allDone ? "done" : "trade",
+      currentPickTeam: isDone ? null : nextTeam,
+      pickDeadline: isDone ? null : deadline,
+      phase: isDone ? "done" : "trade",
     };
 
     onUpdateAssignments(newAssignments);
@@ -237,16 +238,16 @@ export default function TransferWindow({
   const getNextPickTeam = (currentTeamId, tradedPairs) => {
     const order = sortedTeams.map(t => t.id);
     const idx = order.indexOf(currentTeamId);
-    // Try all teams after current, then wrap
+    const ineligible = transfers.ineligible || [];
+    // Go through ALL teams after current (full circle)
     for (let i = 1; i <= order.length; i++) {
       const tid = order[(idx + i) % order.length];
       const released = getReleasedPlayers(tid);
       const traded = (tradedPairs || []).filter(t => t.teamId === tid).map(t => t.releasedPid);
-      const ineligible = transfers.ineligible || [];
       const remaining = released.filter(p => !traded.includes(p.id) && !ineligible.includes(p.id));
-      if (remaining.length > 0) return tid;
+      if (remaining.length > 0) return tid; // this team still has players to trade
     }
-    return null;
+    return null; // everyone done
   };
 
   // Check if all trading is done
@@ -256,16 +257,22 @@ export default function TransferWindow({
       const traded = (tradedPairs || []).filter(t => t.teamId === team.id).map(t => t.releasedPid);
       const ineligible = transfers.ineligible || [];
       const remaining = released.filter(p => !traded.includes(p.id) && !ineligible.includes(p.id));
-      if (remaining.length === 0) continue;
-      if (canPass(remaining, pool, [])) continue; // they can pass, so not blocking
-      // They have remaining and can trade — not done
+      if (remaining.length === 0) continue; // this team is done
+      // Check if any valid pick exists for this team
+      let hasValidPick = false;
       for (const rp of remaining) {
         for (const pp of pool) {
-          if (pp.role === rp.role && TIER_ORDER[pp.tier||""] <= TIER_ORDER[rp.tier||""]) return false;
+          if (pp.role === rp.role && TIER_ORDER[pp.tier||""] <= TIER_ORDER[rp.tier||""]) {
+            hasValidPick = true;
+            break;
+          }
         }
+        if (hasValidPick) break;
       }
+      if (hasValidPick) return false; // this team still has valid picks — not done
+      // No valid picks — they must pass, continue to next team
     }
-    return true;
+    return true; // all teams either done or must pass
   };
 
   const inp = {width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"8px 12px",color:"#E2EAF4",fontSize:13,fontFamily:"Barlow Condensed,sans-serif",outline:"none",marginBottom:8,boxSizing:"border-box"};
