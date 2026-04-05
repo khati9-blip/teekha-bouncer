@@ -63,7 +63,11 @@ function getNextMondayIST() {
   const istOffset = 5.5 * 60 * 60 * 1000;
   const istNow = new Date(now.getTime() + istOffset);
   const day = istNow.getUTCDay();
-  const daysUntilMonday = day === 1 ? 7 : (8 - day) % 7;
+  const h = istNow.getUTCHours();
+  const m = istNow.getUTCMinutes();
+  // If today IS Monday and we haven't hit 11 AM IST (05:30 UTC) yet — use TODAY
+  const isMondayBeforeDeadline = day === 1 && (h < 5 || (h === 5 && m < 30));
+  const daysUntilMonday = isMondayBeforeDeadline ? 0 : (day === 1 ? 7 : (8 - day) % 7);
   const nextMonday = new Date(istNow);
   nextMonday.setUTCDate(istNow.getUTCDate() + daysUntilMonday);
   nextMonday.setUTCHours(5, 30, 0, 0); // 11:00 IST = 05:30 UTC
