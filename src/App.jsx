@@ -3,6 +3,7 @@ import FormChart from "./FormChart";
 import H2HStats from "./H2HStats";
 import MVPStats from "./MVPStats";
 import TransferWindowComponent from "./TransferWindow";
+import SnatchSection from "./SnatchSection";
 
 async function callAI(userPrompt, system = "Return only valid JSON.") {
   const body = {
@@ -3499,6 +3500,27 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                 onUpdateUnsoldPool={(val)=>{setUnsoldPool(val);storeSet("unsoldPool",val);}}
                 onUpdateOwnershipLog={(val)=>{setOwnershipLog(val);storeSet("ownershipLog",val);}}
                 onUpdatePoints={updPoints}
+              />
+              <SnatchSection
+                teams={teams}
+                players={players}
+                assignments={assignments}
+                snatch={snatch}
+                points={points}
+                matches={matches}
+                leaderboard={leaderboard}
+                myTeam={myTeam}
+                isAdmin={isAdmin}
+                unlocked={unlocked}
+                withPassword={withPassword}
+                teamIdentity={teamIdentity}
+                user={user}
+                pitch={pitch}
+                ownershipLog={ownershipLog}
+                pushNotif={pushNotif}
+                onUpdateSnatch={(val)=>{setSnatch(val);storeSet("snatch",val);}}
+                onUpdateAssignments={updAssign}
+                onUpdateOwnershipLog={(val)=>{setOwnershipLog(val);storeSet("ownershipLog",val);}}
               />
             </div>
           )}
