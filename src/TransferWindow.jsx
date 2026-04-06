@@ -107,6 +107,7 @@ export default function TransferWindow({
   const myTeamId = myTeam?.id || sessionTeamId;
   const isPlayerSafe = (pid) => Object.values(safePlayers || {}).some(arr => arr.includes(pid));
   const sortedTeams = leaderboard.map(t => teams.find(x => x.id === t.id)).filter(Boolean);
+  const pickOrder = [...sortedTeams].reverse(); // reverse: last place picks first
 
   // ── AUTO WINDOW CHECK — prompt admin instead of auto-opening ──────────────
   useEffect(() => {
@@ -365,7 +366,7 @@ export default function TransferWindow({
   };
 
   const getNextPickTeam = (currentTeamId, tradedPairs) => {
-    const order = sortedTeams.map(t => t.id);
+    const order = pickOrder.map(t => t.id);
     const idx = order.indexOf(currentTeamId);
     for (let i = 1; i <= order.length; i++) {
       const tid = order[(idx + i) % order.length];
@@ -380,7 +381,7 @@ export default function TransferWindow({
 
   // ── ADMIN ACTIONS ─────────────────────────────────────────────────────────
   const startTradePhase = () => withPassword(() => {
-    const firstTeam = sortedTeams[0]?.id;
+    const firstTeam = pickOrder[0]?.id; // last place picks first
     const deadline = new Date(Date.now() + 45 * 60 * 1000).toISOString();
     onUpdateTransfers({
       ...transfers,
@@ -421,7 +422,7 @@ export default function TransferWindow({
       }
     }
 
-    const firstTeam = sortedTeams[0]?.id;
+    const firstTeam = pickOrder[0]?.id; // last place picks first
     const deadline = new Date(Date.now() + 45 * 60 * 1000).toISOString();
 
     onUpdateAssignments(newAssignments);
@@ -1076,7 +1077,7 @@ export default function TransferWindow({
           {/* Trade summary */}
           <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #1E2D45",padding:14}}>
             <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginBottom:10}}>TRADE ORDER</div>
-            {sortedTeams.map((team, idx) => {
+            {pickOrder.map((team, idx) => {
               const released = getReleasedPlayers(team.id);
               const pairs = getTradedPairs(team.id);
               const isCurrent = team.id === currentPickTeamId;
