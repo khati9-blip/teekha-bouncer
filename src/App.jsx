@@ -1909,6 +1909,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   const [smartStatsMatch, setSmartStatsMatch] = useState(null);
   const [squadView, setSquadView] = useState(false);
   const [showMVP, setShowMVP] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null); // {msg, fn}
   const [selectedBulk, setSelectedBulk] = useState([]); // toggle squad view
   const [teamFilter, setTeamFilter] = useState(null); // filter by fantasy team
   const [sortOrder, setSortOrder] = useState('default'); // default | az | za
@@ -2632,10 +2633,17 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
     if(!tid) { delete a[pid]; }
     else {
       a[pid]=tid;
-      // Record initial ownership if not already tracked
-      if(!ownershipLog[pid]||ownershipLog[pid].length===0) {
-        const newLog = recordOwnership(pid, tid, ownershipLog);
-        updOwnership(newLog);
+      // Record ownership — use season start so previous match points count
+      const seasonStart = "2025-01-01T00:00:00.000Z";
+      const existingPeriods = ownershipLog[pid] || [];
+      const alreadyOwned = existingPeriods.some(o => o.teamId === tid && !o.to);
+      if (!alreadyOwned) {
+        // Close any open period for another team
+        const updatedPeriods = existingPeriods.map(o => !o.to ? {...o, to: new Date().toISOString()} : o);
+        // Open period from season start if no prior history, else from now
+        const from = existingPeriods.length === 0 ? seasonStart : new Date().toISOString();
+        updatedPeriods.push({ teamId: tid, from, to: null });
+        updOwnership({ ...ownershipLog, [pid]: updatedPeriods });
       }
     }
     updAssign(a);
@@ -2930,32 +2938,29 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
       return{...p,total:tot,status:isSnatched?"snatched":"active"};
     });
 
-    // Returned players (↩️ yellow — traded out then came back)
+    // Returned players (↩️ yellow — traded out then came back, and currently in squad)
     const returnedPlayers = [...returnedPids].map(pid=>{
       const p = players.find(x=>x.id===pid);
       if(!p) return null;
-      // If manually removed from squad, skip
-      if(assignments[pid] !== teamId) return null;
+      if(!inSquadNow.has(pid)) return null;
       const tot = getPtsForTeam(pid, teamId);
       return {...p, total:tot, status:"returned", tradedFor: tradedInMeta[pid]||"?"};
     }).filter(Boolean);
 
-    // Traded-in players (permanent green ⬆️ — cross-check they're actually in squad)
+    // Traded-in players (green ⬆️ — in trade history AND currently in squad)
     const currentTradedIn = [...netTradedInPids].map(pid=>{
       const p = players.find(x=>x.id===pid);
       if(!p) return null;
-      // If manually removed from squad, treat as active elsewhere — skip
-      if(assignments[pid] !== teamId) return null;
+      if(!inSquadNow.has(pid)) return null;
       const tot = getPtsForTeam(pid, teamId);
       return {...p, total:tot, status:"traded-in", tradedFor: tradedInMeta[pid]||"?"};
     }).filter(Boolean);
 
-    // Traded-out players (strikethrough ⬇️ — cross-check they're NOT back in squad)
+    // Traded-out players (strikethrough ⬇️ — in trade history AND NOT currently in squad)
     const currentTradedAway = [...netTradedOutPids].map(pid=>{
       const p = players.find(x=>x.id===pid);
       if(!p) return null;
-      // If manually re-added to squad, show as active instead
-      if(assignments[pid] === teamId) return null;
+      if(inSquadNow.has(pid)) return null; // manually re-added → show as active instead
       const tot = getPtsForTeam(pid, teamId);
       return {...p, total:tot, status:"traded-out", tradedFor: tradedOutMeta[pid]||"?"};
     }).filter(Boolean);
@@ -3955,11 +3960,10 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:8}}>
                 <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2}}>LEADERBOARD</h2>
                 <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                  {unlocked && (
-                    <button onClick={()=>withPassword(()=>{
-                      if(!window.confirm("Reset all transfer records? This clears trade history and indicators. Squad assignments are unchanged.")) return;
-                      const cleaned = { phase:"closed", weekNum:1, releases:{}, tradedPairs:[], ineligible:[], history:[], currentPickTeam:null, pickDeadline:null, reversalAlert:null };
-                      setTransfers(cleaned); storeSet("transfers", cleaned);
+                  {isAdmin && (
+                    <button onClick={()=>setConfirmAction({
+                      msg:"Reset all transfer records? This clears trade history and ⬆️⬇️ indicators. Squad assignments are unchanged.",
+                      fn:()=>{ const cleaned={phase:"closed",weekNum:1,releases:{},tradedPairs:[],ineligible:[],history:[],currentPickTeam:null,pickDeadline:null,reversalAlert:null}; setTransfers(cleaned); storeSet("transfers",cleaned); }
                     })} style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:"#FF3D5A",borderRadius:8,padding:"8px 14px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13}}>
                       🗑 RESET TRANSFER RECORDS
                     </button>
@@ -4370,6 +4374,20 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
           onSave={(updated) => updCaptains(updated)}
           onClose={() => setCaptainMatch(null)}
         />}
+
+        {/* GENERIC CONFIRM MODAL */}
+        {confirmAction && (
+          <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.95)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:500,padding:16,fontFamily:"Barlow Condensed,sans-serif"}}>
+            <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #FF3D5A44",padding:24,width:"100%",maxWidth:380}}>
+              <div style={{fontSize:22,marginBottom:12,textAlign:"center"}}>⚠️</div>
+              <div style={{fontSize:14,color:"#E2EAF4",marginBottom:20,textAlign:"center",lineHeight:1.5}}>{confirmAction.msg}</div>
+              <div style={{display:"flex",gap:8}}>
+                <button onClick={()=>setConfirmAction(null)} style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:11,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
+                <button onClick={()=>{confirmAction.fn();setConfirmAction(null);}} style={{flex:1,background:"#FF3D5A22",border:"1px solid #FF3D5A",borderRadius:8,padding:11,color:"#FF3D5A",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:14,cursor:"pointer"}}>CONFIRM</button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {showMVP && (
           <MVPStats
