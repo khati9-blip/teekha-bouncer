@@ -220,25 +220,33 @@ function NotifBell({ notifications, t }) {
   const [open, setOpen] = useState(false);
   const unread = notifications.filter(n => !n.read).length;
   return (
-    <div style={{ position: "relative" }}>
+    <>
       <button onClick={() => setOpen(o => !o)} style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 10, padding: "8px 12px", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, position: "relative" }}>
         <span style={{ fontSize: 16 }}>🔔</span>
         {unread > 0 && <div style={{ position: "absolute", top: -4, right: -4, width: 16, height: 16, borderRadius: "50%", background: "#FF3D5A", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800, color: "#fff" }}>{unread}</div>}
       </button>
       {open && (
-        <div style={{ position: "absolute", top: "calc(100% + 8px)", left: "50%", transform: "translateX(-50%)", zIndex: 200, width: "min(280px, 90vw)", background: t.card, borderRadius: 12, border: `1px solid ${t.border}`, boxShadow: "0 8px 32px rgba(0,0,0,0.5)", overflow: "hidden" }}>
-          <div style={{ padding: "10px 14px", borderBottom: `1px solid ${t.border}`, fontFamily: "Rajdhani,sans-serif", fontWeight: 700, fontSize: 13, color: t.text, letterSpacing: 1 }}>NOTIFICATIONS</div>
-          {notifications.length === 0 ? (
-            <div style={{ padding: "16px 14px", fontSize: 12, color: t.muted, textAlign: "center" }}>All caught up 🎉</div>
-          ) : notifications.slice(0, 6).map((n, i) => (
-            <div key={i} style={{ padding: "10px 14px", borderBottom: i < Math.min(notifications.length, 6) - 1 ? `1px solid ${t.border}33` : "none", display: "flex", gap: 10 }}>
-              <span style={{ fontSize: 16 }}>{n.emoji || "📢"}</span>
-              <div><div style={{ fontSize: 12, color: t.text, lineHeight: 1.4 }}>{n.text}</div><div style={{ fontSize: 10, color: t.muted, marginTop: 2 }}>{n.time}</div></div>
+        <>
+          {/* Backdrop */}
+          <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 999, background: "rgba(0,0,0,0.5)" }} />
+          {/* Modal centred on screen */}
+          <div style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)", zIndex: 1000, width: "min(320px, 90vw)", background: t.card, borderRadius: 16, border: `1px solid ${t.border}`, boxShadow: "0 16px 48px rgba(0,0,0,0.6)", overflow: "hidden" }}>
+            <div style={{ padding: "14px 16px", borderBottom: `1px solid ${t.border}`, fontFamily: "Rajdhani,sans-serif", fontWeight: 700, fontSize: 14, color: t.text, letterSpacing: 1, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              NOTIFICATIONS
+              <button onClick={() => setOpen(false)} style={{ background: "none", border: "none", color: t.muted, fontSize: 16, cursor: "pointer" }}>✕</button>
             </div>
-          ))}
-        </div>
+            {notifications.length === 0 ? (
+              <div style={{ padding: "24px 16px", fontSize: 13, color: t.muted, textAlign: "center" }}>All caught up 🎉</div>
+            ) : notifications.slice(0, 6).map((n, i) => (
+              <div key={i} style={{ padding: "12px 16px", borderBottom: i < Math.min(notifications.length, 6) - 1 ? `1px solid ${t.border}33` : "none", display: "flex", gap: 10 }}>
+                <span style={{ fontSize: 16 }}>{n.emoji || "📢"}</span>
+                <div><div style={{ fontSize: 13, color: t.text, lineHeight: 1.4 }}>{n.text}</div><div style={{ fontSize: 10, color: t.muted, marginTop: 2 }}>{n.time}</div></div>
+              </div>
+            ))}
+          </div>
+        </>
       )}
-    </div>
+    </>
   );
 }
 
