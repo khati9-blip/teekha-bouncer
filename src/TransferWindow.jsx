@@ -99,6 +99,7 @@ export default function TransferWindow({
   const [confirmModal, setConfirmModal] = useState(null); // {message, onConfirm}
   const [twTab, setTwTab] = useState("window"); // "window" | "history"
   const [showAutoOpenPrompt, setShowAutoOpenPrompt] = useState(false);
+  const [showReversalAlert, setShowReversalAlert] = useState(false);
   const [tradeConfirmModal, setTradeConfirmModal] = useState(null); // {poolPlayer, releasedPlayer}
   const [resetConfirm, setResetConfirm] = useState(false);
 
