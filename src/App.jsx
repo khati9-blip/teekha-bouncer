@@ -2926,9 +2926,12 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
     // Net traded-out: went out and never came back
     const netTradedOutPids = new Set([...allTradedOutPids].filter(id => !returnedPids.has(id)));
 
-    // Active players — exclude traded-in, traded-out, and returned (handled separately)
+    // Source of truth for who is physically in the squad right now
+    const inSquadNow = new Set(players.filter(p=>assignments[p.id]===teamId).map(p=>p.id));
+
+    // Active players — in squad now, not in any trade-history category
     const active = players.filter(p=>
-      assignments[p.id]===teamId &&
+      inSquadNow.has(p.id) &&
       !netTradedInPids.has(p.id) &&
       !netTradedOutPids.has(p.id) &&
       !returnedPids.has(p.id)
