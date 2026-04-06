@@ -2934,22 +2934,28 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
     const returnedPlayers = [...returnedPids].map(pid=>{
       const p = players.find(x=>x.id===pid);
       if(!p) return null;
+      // If manually removed from squad, skip
+      if(assignments[pid] !== teamId) return null;
       const tot = getPtsForTeam(pid, teamId);
       return {...p, total:tot, status:"returned", tradedFor: tradedInMeta[pid]||"?"};
     }).filter(Boolean);
 
-    // Traded-in players (permanent green ⬆️ — from any week, still on team)
+    // Traded-in players (permanent green ⬆️ — cross-check they're actually in squad)
     const currentTradedIn = [...netTradedInPids].map(pid=>{
       const p = players.find(x=>x.id===pid);
       if(!p) return null;
+      // If manually removed from squad, treat as active elsewhere — skip
+      if(assignments[pid] !== teamId) return null;
       const tot = getPtsForTeam(pid, teamId);
       return {...p, total:tot, status:"traded-in", tradedFor: tradedInMeta[pid]||"?"};
     }).filter(Boolean);
 
-    // Traded-out players (permanent strikethrough ⬇️ — from any week, still gone)
+    // Traded-out players (strikethrough ⬇️ — cross-check they're NOT back in squad)
     const currentTradedAway = [...netTradedOutPids].map(pid=>{
       const p = players.find(x=>x.id===pid);
       if(!p) return null;
+      // If manually re-added to squad, show as active instead
+      if(assignments[pid] === teamId) return null;
       const tot = getPtsForTeam(pid, teamId);
       return {...p, total:tot, status:"traded-out", tradedFor: tradedOutMeta[pid]||"?"};
     }).filter(Boolean);
@@ -3948,9 +3954,20 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
             <div className="fade-in">
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:8}}>
                 <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2}}>LEADERBOARD</h2>
-                <button onClick={shareLeaderboard} style={{background:"#25D36622",border:"1px solid #25D36644",color:"#25D366",borderRadius:8,padding:"8px 14px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13}}>
-                  📲 SHARE WHATSAPP
-                </button>
+                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                  {unlocked && (
+                    <button onClick={()=>withPassword(()=>{
+                      if(!window.confirm("Reset all transfer records? This clears trade history and indicators. Squad assignments are unchanged.")) return;
+                      const cleaned = { phase:"closed", weekNum:1, releases:{}, tradedPairs:[], ineligible:[], history:[], currentPickTeam:null, pickDeadline:null, reversalAlert:null };
+                      setTransfers(cleaned); storeSet("transfers", cleaned);
+                    })} style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:"#FF3D5A",borderRadius:8,padding:"8px 14px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13}}>
+                      🗑 RESET TRANSFER RECORDS
+                    </button>
+                  )}
+                  <button onClick={shareLeaderboard} style={{background:"#25D36622",border:"1px solid #25D36644",color:"#25D366",borderRadius:8,padding:"8px 14px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13}}>
+                    📲 SHARE WHATSAPP
+                  </button>
+                </div>
               </div>
               {leaderboard.length===0?(
                 <Card sx={{padding:60,textAlign:"center"}}><div style={{fontSize:56}}>🏆</div><div style={{color:"#4A5E78",marginTop:16}}>Set up your league first</div></Card>
