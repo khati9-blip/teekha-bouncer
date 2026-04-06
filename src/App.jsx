@@ -4,6 +4,7 @@ import H2HStats from "./H2HStats";
 import MVPStats from "./MVPStats";
 import TransferWindowComponent from "./TransferWindow";
 import SnatchSection from "./SnatchSection";
+import HomeHub from "./HomeHub";
 
 async function callAI(userPrompt, system = "Return only valid JSON.") {
   const body = {
@@ -1242,6 +1243,7 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
     })();
   }, []);
 
+  const [expandedPitch, setExpandedPitch] = useState(null); // pitch showing HomeHub
   const [cloneModal, setCloneModal] = useState(null); // pitch being cloned
   const [cloneAdminPw, setCloneAdminPw] = useState("");
   const [cloneErr, setCloneErr] = useState("");
@@ -1349,8 +1351,8 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
             const savedAdmin = (() => { try { return !!localStorage.getItem(pitchAdminKey); } catch { return false; } })();
             const returning = savedTeam || savedGuest || savedAdmin;
             return (
-              <div key={pitch.id} style={{background:"#0E1521",borderRadius:12,border:"1px solid "+color+"44",overflow:"hidden"}}>
-                <div style={{padding:"16px 20px",display:"flex",alignItems:"center",gap:14}}>
+              <div key={pitch.id} style={{background:"#0E1521",borderRadius:12,border:"1px solid "+(expandedPitch===pitch.id?color+"88":color+"44"),overflow:"hidden",transition:"border-color 0.2s"}}>
+                <div style={{padding:"16px 20px",display:"flex",alignItems:"center",gap:14,cursor:"pointer"}} onClick={()=>setExpandedPitch(expandedPitch===pitch.id?null:pitch.id)}>
                   <div style={{width:44,height:44,borderRadius:10,background:color+"22",border:"1px solid "+color+"44",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"Rajdhani,sans-serif",fontWeight:800,fontSize:16,color:color,flexShrink:0}}>
                     {"P"+(i+1)}
                   </div>
@@ -1367,11 +1369,16 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
                         🧬 CLONE
                       </button>
                     )}
-                    <button onClick={()=>onEnter(pitch)} style={{background:"linear-gradient(135deg,"+color+","+color+"99)",border:"none",borderRadius:8,padding:"8px 16px",color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:13,cursor:"pointer",letterSpacing:1}}>
+                    <button onClick={(e)=>{e.stopPropagation();onEnter(pitch);}} style={{background:"linear-gradient(135deg,"+color+","+color+"99)",border:"none",borderRadius:8,padding:"8px 16px",color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:13,cursor:"pointer",letterSpacing:1}}>
                       {returning ? "ENTER →" : "JOIN →"}
                     </button>
                   </div>
                 </div>
+                {expandedPitch===pitch.id && (
+                  <div style={{borderTop:"1px solid "+color+"22",padding:"0 16px"}}>
+                    <HomeHub pitchId={pitch.id} />
+                  </div>
+                )}
               </div>
             );
           })}
