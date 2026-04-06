@@ -1981,6 +1981,22 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
     })();
   }, []);
 
+  // ── LOAD USER-SPECIFIC NOTES & HIGHLIGHTS ────────────────────────────────
+  useEffect(() => {
+    if (!user?.email) return;
+    (async () => {
+      try {
+        const emailKey = user.email.replace(/[@.]/g, "_");
+        const [hl, notes] = await Promise.all([
+          storeGet("hl_" + emailKey),
+          storeGet("notes_" + emailKey),
+        ]);
+        if (hl && typeof hl === "object") setMyHighlights(hl);
+        if (notes && typeof notes === "object") setMyNotes(notes);
+      } catch {}
+    })();
+  }, [user?.email]);
+
   // ── CRICKETDATA fetch ──────────────────────────────────────────────────────
   const fetchFromCricketData = async (tournamentId, tournamentName) => {
     setLoading("Fetching from CricketData for " + tournamentName + "…");
