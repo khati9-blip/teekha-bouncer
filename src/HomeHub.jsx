@@ -229,8 +229,8 @@ function NotifBell({ notifications, t }) {
         <>
           {/* Backdrop */}
           <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 999, background: "rgba(0,0,0,0.5)" }} />
-          {/* Modal centred on screen */}
-          <div style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)", zIndex: 1000, width: "min(320px, 90vw)", background: t.card, borderRadius: 16, border: `1px solid ${t.border}`, boxShadow: "0 16px 48px rgba(0,0,0,0.6)", overflow: "hidden" }}>
+          {/* Modal just below top bar, right-aligned but clamped */}
+          <div style={{ position: "fixed", top: 80, right: 16, zIndex: 1000, width: "min(300px, calc(100vw - 32px))", background: t.card, borderRadius: 16, border: `1px solid ${t.border}`, boxShadow: "0 16px 48px rgba(0,0,0,0.6)", overflow: "hidden" }}>
             <div style={{ padding: "14px 16px", borderBottom: `1px solid ${t.border}`, fontFamily: "Rajdhani,sans-serif", fontWeight: 700, fontSize: 14, color: t.text, letterSpacing: 1, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               NOTIFICATIONS
               <button onClick={() => setOpen(false)} style={{ background: "none", border: "none", color: t.muted, fontSize: 16, cursor: "pointer" }}>✕</button>
