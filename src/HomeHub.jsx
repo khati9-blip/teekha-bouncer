@@ -127,10 +127,16 @@ function CountdownHero({ matches, t }) {
 function MVPCard({ players, teams, assignments, points, matches, t }) {
   const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
   const recentMatchIds = new Set(matches.filter(m => m.status === "completed" && (m.date || "") >= weekAgo).map(m => m.id));
-  let topPid = null, topPts = 0;
+  // Best SINGLE match performance this week (same as hamburger MVP)
+  let topPid = null, topPts = 0, topMatch = null;
   for (const [pid, matchPts] of Object.entries(points)) {
-    const weekPts = Object.entries(matchPts).filter(([mid]) => recentMatchIds.has(mid)).reduce((s, [, d]) => s + d.base, 0);
-    if (weekPts > topPts) { topPts = weekPts; topPid = pid; }
+    for (const [mid, d] of Object.entries(matchPts)) {
+      if (recentMatchIds.has(mid) && d.base > topPts) {
+        topPts = d.base;
+        topPid = pid;
+        topMatch = matches.find(m => m.id === mid);
+      }
+    }
   }
   if (!topPid || topPts === 0) return null;
   const player = players.find(p => p.id === topPid);
