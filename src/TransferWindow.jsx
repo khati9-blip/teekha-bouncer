@@ -306,14 +306,12 @@ export default function TransferWindow({
     const remaining = myReleased.filter(p => !tradedPids.includes(p.id));
     const currentTradedPairs = transfers.tradedPairs || [];
 
-    // Detect reversals: our released players (from releases list) that were picked by another team
-    // e.g. Team B released H, Team A picked H → when Team B passes, H must return to Team B
-    const allReleasedByUs = (transfers?.releases?.[actingId] || []);
-    const reversals = allReleasedByUs.map(pid => {
-      const otherPick = currentTradedPairs.find(tp => tp.pickedPid === pid && tp.teamId !== actingId);
-      if (!otherPick) return null;
-      const p = players.find(x => x.id === pid);
-      return p ? { ...otherPick, returnedPlayerName: p.name } : null;
+    // Detect reversals: ONLY from the untraded remaining players (Z)
+    // X and Y were already successfully traded — those are permanent, no reversal
+    // Only Z (couldn't find a match) triggers a reversal if another team picked Z
+    const reversals = remaining.map(p => {
+      const otherPick = currentTradedPairs.find(tp => tp.pickedPid === p.id && tp.teamId !== actingId);
+      return otherPick ? { ...otherPick, returnedPlayerName: p.name } : null;
     }).filter(Boolean);
 
     const reversalPids = new Set(reversals.map(r => r.pickedPid));
