@@ -2873,10 +2873,10 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
         const cap=captains[mid+"_"+teamId]||{};
         let pts=d.base;
         if(cap.captain===pid)pts*=2;else if(cap.vc===pid)pts*=1.5;
-        total+=pts;
+        total+=Math.round(pts); // round per player, then sum
       }
     }
-    return Math.round(total);
+    return total; // already summed from rounded values
   };
 
   const leaderboard=[...teams].map(t=>({...t,total:getTeamTotal(t.id)})).sort((a,b)=>b.total-a.total);
@@ -2901,9 +2901,9 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
         const cap=captains[`${mid}_${tid}`]||{};
         let pts=d.base;
         if(cap.captain===pid)pts*=2;else if(cap.vc===pid)pts*=1.5;
-        tot+=pts;
+        tot+=Math.round(pts);
       }
-      return Math.round(tot);
+      return tot;
     };
 
     // Collect ALL traded-out/in pids across ALL history + current window
