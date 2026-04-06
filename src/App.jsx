@@ -1477,8 +1477,9 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
         )}
         </div>
 
-        <RulesSheet />
       </div>
+
+      <RulesSheet />
 
       {/* Clone Modal */}
       {cloneModal && (
