@@ -12,179 +12,197 @@ const sbGet = async (key) => {
   } catch { return null; }
 };
 
-function calcPoints(stats, cfg = {}) {
-  const c = { run:1, four:8, six:12, fifty:10, century:20, wicket:25, catch:8, stumping:12, runout:12, economy:10, allround:15, ...cfg };
-  const runs = +stats.runs || 0, fours = +stats.fours || 0, sixes = +stats.sixes || 0;
-  const wkts = +stats.wickets || 0, catches = +stats.catches || 0;
-  const stumpings = +stats.stumpings || 0, runouts = +stats.runouts || 0;
-  const overs = +stats.overs || 0;
-  let p = runs * c.run + fours * c.four + sixes * c.six;
-  if (runs >= 100) p += c.century;
-  else if (runs >= 50) p += c.fifty;
-  p += wkts * c.wicket;
-  if (wkts >= 5) p += 15; else if (wkts >= 4) p += 8;
-  if (overs > 0) { const eco = runs / overs; if (eco < 6) p += c.economy; }
-  p += catches * c.catch + stumpings * c.stumping + runouts * c.runout;
-  if (runs >= 30 && wkts >= 2) p += c.allround;
-  if (stats.longestSix) p += 50;
-  return Math.round(p);
+const TAGLINES = [
+  "Where cricket gets personal.",
+  "Your squad. Your strategy. Your glory.",
+  "Eleven players. One obsession.",
+  "May the best fantasy win.",
+  "Cricket isn't just a sport here — it's war.",
+  "Pick smart. Score big. Rule the league.",
+];
+
+const DARK = { bg:"#050810", card:"#0A0F1A", border:"#1E2D45", text:"#E2EAF4", sub:"#94A3B8", muted:"#4A5E78", accent:"#F5A623" };
+const LIGHT = { bg:"#F5F0E8", card:"#FFFDF8", border:"#DDD5C0", text:"#1A1410", sub:"#5C4F3A", muted:"#9C8E78", accent:"#C47D00" };
+
+function useTheme() {
+  const [dark, setDark] = useState(() => { try { return localStorage.getItem("tb_theme") !== "light"; } catch { return true; } });
+  const toggle = () => { const next = !dark; setDark(next); try { localStorage.setItem("tb_theme", next ? "dark" : "light"); } catch {} };
+  return { t: dark ? DARK : LIGHT, dark, toggle };
 }
 
-// ── LIVE COUNTDOWN ─────────────────────────────────────────────────────────
-function LiveCountdown({ matches }) {
-  const [now, setNow] = useState(Date.now());
+function RotatingTagline({ t }) {
+  const [idx, setIdx] = useState(0);
+  const [fade, setFade] = useState(true);
   useEffect(() => {
-    const t = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(t);
+    const interval = setInterval(() => {
+      setFade(false);
+      setTimeout(() => { setIdx(i => (i + 1) % TAGLINES.length); setFade(true); }, 400);
+    }, 4000);
+    return () => clearInterval(interval);
   }, []);
-
-  const upcoming = matches
-    .filter(m => m.status !== "completed" && m.date)
-    .sort((a, b) => a.date.localeCompare(b.date));
-  const live = matches.filter(m => m.status === "live");
-  const next = upcoming[0];
-
-  if (live.length > 0) {
-    const m = live[0];
-    return (
-      <div style={cardStyle("#FF3D5A")}>
-        <div style={pulsingDot("#FF3D5A")} />
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 10, color: "#FF3D5A", letterSpacing: 2, fontWeight: 700, marginBottom: 4 }}>🔴 LIVE NOW</div>
-          <div style={{ fontFamily: "Rajdhani,sans-serif", fontSize: 20, fontWeight: 800, color: "#E2EAF4", letterSpacing: 1 }}>
-            {m.team1} <span style={{ color: "#4A5E78" }}>vs</span> {m.team2}
-          </div>
-          {m.venue && <div style={{ fontSize: 11, color: "#4A5E78", marginTop: 2 }}>{m.venue}</div>}
-        </div>
-        <div style={{ textAlign: "right", flexShrink: 0 }}>
-          <div style={{ fontFamily: "Rajdhani,sans-serif", fontSize: 28, fontWeight: 800, color: "#FF3D5A" }}>LIVE</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!next) return (
-    <div style={cardStyle("#4A5E78")}>
-      <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 10, color: "#4A5E78", letterSpacing: 2, fontWeight: 700, marginBottom: 4 }}>NEXT MATCH</div>
-        <div style={{ fontFamily: "Rajdhani,sans-serif", fontSize: 18, fontWeight: 700, color: "#4A5E78" }}>No upcoming matches scheduled</div>
-      </div>
+  return (
+    <div style={{ fontSize: 12, color: t.sub, fontStyle: "italic", letterSpacing: 0.5, opacity: fade ? 1 : 0, transition: "opacity 0.4s ease", textAlign: "center", marginBottom: 16 }}>
+      {TAGLINES[idx]}
     </div>
   );
+}
 
-  // Parse match datetime
-  const matchTime = next.time
-    ? new Date(next.date + "T" + (next.time.length === 5 ? next.time + ":00" : next.time))
-    : new Date(next.date + "T14:00:00"); // default 2PM if no time
+function WelcomeBack({ user, leaderboard, myTeamId, t }) {
+  if (!user?.email) return null;
+  const username = user.email.split("@")[0];
+  const myTeam = leaderboard.find(team => team.id === myTeamId);
+  const rank = myTeam ? leaderboard.indexOf(myTeam) + 1 : null;
+  const medals = ["🥇", "🥈", "🥉"];
+  return (
+    <div style={{ background: t.card, borderRadius: 14, border: `1px solid ${t.border}`, padding: "14px 18px", display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+      <div style={{ width: 40, height: 40, borderRadius: 10, flexShrink: 0, background: myTeam ? myTeam.color + "22" : t.accent + "22", border: `1px solid ${myTeam ? myTeam.color + "44" : t.accent + "44"}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Rajdhani,sans-serif", fontWeight: 800, fontSize: 18, color: myTeam?.color || t.accent }}>
+        {username.charAt(0).toUpperCase()}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 10, color: t.muted, letterSpacing: 1 }}>WELCOME BACK</div>
+        <div style={{ fontFamily: "Rajdhani,sans-serif", fontWeight: 700, fontSize: 17, color: t.text }}>
+          {username}{myTeam && <span style={{ color: myTeam.color, marginLeft: 8, fontSize: 14 }}>· {myTeam.name}</span>}
+        </div>
+      </div>
+      {rank && (
+        <div style={{ textAlign: "center", flexShrink: 0 }}>
+          <div style={{ fontFamily: "Rajdhani,sans-serif", fontWeight: 800, fontSize: 26, color: myTeam?.color || t.accent }}>{medals[rank - 1] || `#${rank}`}</div>
+          <div style={{ fontSize: 9, color: t.muted, letterSpacing: 1 }}>RANK</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CountdownHero({ matches, t }) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => { const timer = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(timer); }, []);
+  const live = matches.find(m => m.status === "live");
+  const next = [...matches].filter(m => m.status !== "completed" && m.date).sort((a, b) => a.date.localeCompare(b.date))[0];
+  if (live) return (
+    <div style={{ background: `linear-gradient(135deg,#FF3D5A18,${t.card})`, borderRadius: 16, border: "1px solid #FF3D5A44", padding: "18px 20px", marginBottom: 12, position: "relative", overflow: "hidden" }}>
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "linear-gradient(90deg,#FF3D5A,transparent)" }} />
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+        <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#FF3D5A", animation: "hbPulse 1.2s ease infinite" }} />
+        <div style={{ fontSize: 10, color: "#FF3D5A", fontWeight: 700, letterSpacing: 2 }}>LIVE NOW</div>
+      </div>
+      <div style={{ fontFamily: "Rajdhani,sans-serif", fontSize: 22, fontWeight: 800, color: t.text }}>{live.team1} <span style={{ color: t.muted }}>vs</span> {live.team2}</div>
+    </div>
+  );
+  if (!next) return null;
+  const matchTime = new Date(next.date + "T" + (next.time || "14:00:00"));
   const diff = matchTime - now;
   const isToday = new Date(next.date).toDateString() === new Date().toDateString();
   const isTomorrow = new Date(next.date).toDateString() === new Date(Date.now() + 86400000).toDateString();
-
-  let timeLabel = "";
-  if (diff < 0) timeLabel = "Starting soon";
-  else if (diff < 3600000) {
-    const m = Math.floor(diff / 60000);
-    const s = Math.floor((diff % 60000) / 1000);
-    timeLabel = `${m}m ${s}s`;
-  } else if (diff < 86400000) {
-    const h = Math.floor(diff / 3600000);
-    const m = Math.floor((diff % 3600000) / 60000);
-    timeLabel = `${h}h ${m}m`;
-  } else {
-    const d = Math.floor(diff / 86400000);
-    const h = Math.floor((diff % 86400000) / 3600000);
-    timeLabel = `${d}d ${h}h`;
-  }
-
-  const dayLabel = diff < 0 ? "STARTING" : isToday ? "TODAY" : isTomorrow ? "TOMORROW" : new Date(next.date).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" }).toUpperCase();
-
+  const urgent = diff > 0 && diff < 3600000;
+  let countdown = "";
+  if (diff <= 0) countdown = "Starting Soon";
+  else if (diff < 3600000) { const m = Math.floor(diff / 60000), s = Math.floor((diff % 60000) / 1000); countdown = `${m}m ${s}s`; }
+  else if (diff < 86400000) { const h = Math.floor(diff / 3600000), m = Math.floor((diff % 3600000) / 60000); countdown = `${h}h ${m}m`; }
+  else { const d = Math.floor(diff / 86400000), h = Math.floor((diff % 86400000) / 3600000); countdown = `${d}d ${h}h`; }
+  const dayTag = isToday ? "TODAY" : isTomorrow ? "TOMORROW" : new Date(next.date).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" }).toUpperCase();
   return (
-    <div style={cardStyle("#F5A623")}>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-          <div style={{ fontSize: 10, color: "#F5A623", letterSpacing: 2, fontWeight: 700 }}>🏏 NEXT MATCH</div>
-          <div style={{ fontSize: 9, background: "#F5A62322", border: "1px solid #F5A62344", borderRadius: 4, padding: "1px 6px", color: "#F5A623", fontWeight: 700 }}>{dayLabel}</div>
+    <div style={{ background: `linear-gradient(135deg,${t.accent}12,${t.card})`, borderRadius: 16, border: `1px solid ${t.accent}33`, padding: "18px 20px", marginBottom: 12, position: "relative", overflow: "hidden" }}>
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: `linear-gradient(90deg,${t.accent},transparent)` }} />
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+            <div style={{ fontSize: 10, color: t.muted, letterSpacing: 2 }}>🏏 NEXT MATCH</div>
+            <div style={{ fontSize: 9, background: t.accent + "22", border: `1px solid ${t.accent}44`, color: t.accent, borderRadius: 4, padding: "1px 6px", fontWeight: 700 }}>{dayTag}</div>
+          </div>
+          <div style={{ fontFamily: "Rajdhani,sans-serif", fontSize: 20, fontWeight: 800, color: t.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            {next.team1} <span style={{ color: t.muted }}>vs</span> {next.team2}
+          </div>
+          {next.venue && <div style={{ fontSize: 11, color: t.muted, marginTop: 3 }}>{next.venue}</div>}
         </div>
-        <div style={{ fontFamily: "Rajdhani,sans-serif", fontSize: 20, fontWeight: 800, color: "#E2EAF4", letterSpacing: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-          {next.team1} <span style={{ color: "#4A5E78" }}>vs</span> {next.team2}
+        <div style={{ textAlign: "right", flexShrink: 0 }}>
+          <div style={{ fontFamily: "Rajdhani,sans-serif", fontSize: urgent ? 20 : 26, fontWeight: 800, color: urgent ? "#FF3D5A" : t.accent }}>{countdown}</div>
+          <div style={{ fontSize: 9, color: t.muted, letterSpacing: 1 }}>UNTIL MATCH</div>
         </div>
-        {next.venue && <div style={{ fontSize: 11, color: "#4A5E78", marginTop: 2 }}>{next.venue}</div>}
-      </div>
-      <div style={{ textAlign: "right", flexShrink: 0, marginLeft: 16 }}>
-        <div style={{ fontFamily: "Rajdhani,sans-serif", fontSize: diff < 3600000 && diff > 0 ? 22 : 28, fontWeight: 800, color: diff < 3600000 && diff > 0 ? "#FF3D5A" : "#F5A623", letterSpacing: 1 }}>{timeLabel}</div>
-        <div style={{ fontSize: 9, color: "#4A5E78", letterSpacing: 1 }}>UNTIL MATCH</div>
       </div>
     </div>
   );
 }
 
-// ── LEADERBOARD SNAPSHOT ────────────────────────────────────────────────────
-function LeaderboardSnapshot({ leaderboard, totalMatches }) {
+function MVPCard({ players, teams, assignments, points, matches, t }) {
+  const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
+  const recentMatchIds = new Set(matches.filter(m => m.status === "completed" && (m.date || "") >= weekAgo).map(m => m.id));
+  let topPid = null, topPts = 0;
+  for (const [pid, matchPts] of Object.entries(points)) {
+    const weekPts = Object.entries(matchPts).filter(([mid]) => recentMatchIds.has(mid)).reduce((s, [, d]) => s + d.base, 0);
+    if (weekPts > topPts) { topPts = weekPts; topPid = pid; }
+  }
+  if (!topPid || topPts === 0) return null;
+  const player = players.find(p => p.id === topPid);
+  if (!player) return null;
+  const team = teams.find(t => t.id === assignments[topPid]);
+  return (
+    <div style={{ background: `linear-gradient(135deg,#F5A62315,${t.card})`, borderRadius: 14, border: "1px solid #F5A62333", padding: "14px 18px", marginBottom: 12, position: "relative", overflow: "hidden" }}>
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2, background: "linear-gradient(90deg,#F5A623,#FF8C00,transparent)" }} />
+      <div style={{ fontSize: 10, color: "#F5A623", letterSpacing: 2, fontWeight: 700, marginBottom: 8 }}>⭐ THIS WEEK'S MVP</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ width: 44, height: 44, borderRadius: 12, flexShrink: 0, background: team ? team.color + "22" : "#F5A62322", border: `1px solid ${team ? team.color + "44" : "#F5A62344"}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "Rajdhani,sans-serif", fontWeight: 800, fontSize: 18, color: team?.color || "#F5A623" }}>
+          {player.name.charAt(0)}
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontFamily: "Rajdhani,sans-serif", fontWeight: 700, fontSize: 17, color: t.text }}>{player.name}</div>
+          <div style={{ fontSize: 11, color: t.muted, marginTop: 2 }}>{player.role}{team && <span style={{ color: team.color }}> · {team.name}</span>}</div>
+        </div>
+        <div style={{ textAlign: "right" }}>
+          <div style={{ fontFamily: "Rajdhani,sans-serif", fontWeight: 800, fontSize: 26, color: "#F5A623" }}>{topPts}</div>
+          <div style={{ fontSize: 9, color: t.muted, letterSpacing: 1 }}>BASE PTS</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LeaderboardSnapshot({ leaderboard, totalMatches, t }) {
   const medals = ["🥇", "🥈", "🥉"];
   const max = leaderboard[0]?.total || 1;
-
   return (
-    <div style={{ background: "#0E1521", borderRadius: 14, border: "1px solid #1E2D45", overflow: "hidden" }}>
-      <div style={{ padding: "14px 18px", borderBottom: "1px solid #1E2D45", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ fontFamily: "Rajdhani,sans-serif", fontWeight: 700, fontSize: 15, color: "#F5A623", letterSpacing: 2 }}>🏆 LEADERBOARD</div>
-        <div style={{ fontSize: 11, color: "#4A5E78" }}>{totalMatches} match{totalMatches !== 1 ? "es" : ""} played</div>
+    <div style={{ background: t.card, borderRadius: 14, border: `1px solid ${t.border}`, overflow: "hidden", marginBottom: 12 }}>
+      <div style={{ padding: "12px 18px", borderBottom: `1px solid ${t.border}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div style={{ fontFamily: "Rajdhani,sans-serif", fontWeight: 700, fontSize: 14, color: t.accent, letterSpacing: 2 }}>🏆 STANDINGS</div>
+        <div style={{ fontSize: 10, color: t.muted }}>{totalMatches} match{totalMatches !== 1 ? "es" : ""} played</div>
       </div>
       {leaderboard.length === 0 ? (
-        <div style={{ padding: "24px", textAlign: "center", color: "#4A5E78", fontSize: 13 }}>No data yet</div>
-      ) : leaderboard.map((team, i) => {
-        const barPct = max > 0 ? (team.total / max) * 100 : 0;
-        const prev = team.prevRank || i + 1;
-        const curr = i + 1;
-        const trend = prev > curr ? "↑" : prev < curr ? "↓" : "—";
-        const trendColor = prev > curr ? "#2ECC71" : prev < curr ? "#FF3D5A" : "#4A5E78";
-        return (
-          <div key={team.id} style={{ padding: "12px 18px", borderBottom: i < leaderboard.length - 1 ? "1px solid #1E2D4533" : "none", position: "relative" }}>
-            {/* Progress bar bg */}
-            <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: barPct + "%", background: team.color + "08", transition: "width 0.8s ease", borderRight: "1px solid " + team.color + "22" }} />
-            <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{ fontFamily: "Rajdhani,sans-serif", fontSize: 22, minWidth: 30 }}>{medals[i] || "#" + (i + 1)}</div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontFamily: "Rajdhani,sans-serif", fontWeight: 700, fontSize: 15, color: team.color, letterSpacing: 0.5 }}>{team.name}</div>
-              </div>
-              <div style={{ fontSize: 11, color: trendColor, fontWeight: 700, minWidth: 16, textAlign: "center" }}>{trend}</div>
-              <div style={{ fontFamily: "Rajdhani,sans-serif", fontWeight: 800, fontSize: 22, color: "#E2EAF4", minWidth: 60, textAlign: "right" }}>
-                {team.total.toLocaleString()}
-                <span style={{ fontSize: 10, color: "#4A5E78", fontWeight: 400, marginLeft: 3 }}>pts</span>
-              </div>
-            </div>
+        <div style={{ padding: 20, textAlign: "center", color: t.muted, fontSize: 13 }}>No data yet</div>
+      ) : leaderboard.map((team, i) => (
+        <div key={team.id} style={{ padding: "10px 18px", borderBottom: i < leaderboard.length - 1 ? `1px solid ${t.border}33` : "none", position: "relative" }}>
+          <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${(team.total / max) * 100}%`, background: team.color + "08", borderRight: `1px solid ${team.color}22` }} />
+          <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 10 }}>
+            <div style={{ fontSize: 18, minWidth: 28 }}>{medals[i] || `#${i + 1}`}</div>
+            <div style={{ flex: 1 }}><div style={{ fontFamily: "Rajdhani,sans-serif", fontWeight: 700, fontSize: 14, color: team.color }}>{team.name}</div></div>
+            <div style={{ fontFamily: "Rajdhani,sans-serif", fontWeight: 800, fontSize: 20, color: t.text }}>{team.total.toLocaleString()}<span style={{ fontSize: 10, color: t.muted, fontWeight: 400, marginLeft: 3 }}>pts</span></div>
           </div>
-        );
-      })}
+        </div>
+      ))}
     </div>
   );
 }
 
-// ── ACTIVITY FEED ───────────────────────────────────────────────────────────
-function ActivityFeed({ activities }) {
-  if (activities.length === 0) return (
-    <div style={{ background: "#0E1521", borderRadius: 14, border: "1px solid #1E2D45", padding: "24px", textAlign: "center", color: "#4A5E78", fontSize: 13 }}>
-      Activity will appear here as the season progresses
-    </div>
-  );
-
+function ActivityStrip({ activities, t }) {
+  const scrollRef = useRef(null);
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || activities.length === 0) return;
+    let x = 0; let raf;
+    const animate = () => { x -= 0.5; if (x < -el.scrollWidth / 2) x = 0; el.style.transform = `translateX(${x}px)`; raf = requestAnimationFrame(animate); };
+    raf = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(raf);
+  }, [activities.length]);
+  if (activities.length === 0) return null;
+  const doubled = [...activities, ...activities];
   return (
-    <div style={{ background: "#0E1521", borderRadius: 14, border: "1px solid #1E2D45", overflow: "hidden" }}>
-      <div style={{ padding: "14px 18px", borderBottom: "1px solid #1E2D45" }}>
-        <div style={{ fontFamily: "Rajdhani,sans-serif", fontWeight: 700, fontSize: 15, color: "#4F8EF7", letterSpacing: 2 }}>⚡ ACTIVITY FEED</div>
-      </div>
-      <div style={{ maxHeight: 320, overflowY: "auto" }}>
-        {activities.map((act, i) => (
-          <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "11px 18px", borderBottom: i < activities.length - 1 ? "1px solid #1E2D4522" : "none", background: i === 0 ? "#4F8EF708" : "transparent" }}>
-            <div style={{ fontSize: 18, flexShrink: 0, marginTop: 1 }}>{act.emoji}</div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 13, color: "#E2EAF4", lineHeight: 1.4 }} dangerouslySetInnerHTML={{ __html: act.text }} />
-              <div style={{ fontSize: 10, color: "#4A5E78", marginTop: 3 }}>{act.time}</div>
-            </div>
-            {act.badge && (
-              <div style={{ fontSize: 9, background: act.badgeColor + "22", border: "1px solid " + act.badgeColor + "44", color: act.badgeColor, borderRadius: 4, padding: "2px 6px", fontWeight: 700, letterSpacing: 0.5, flexShrink: 0 }}>
-                {act.badge}
-              </div>
-            )}
+    <div style={{ marginBottom: 12, overflow: "hidden", position: "relative" }}>
+      <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 24, background: `linear-gradient(90deg,${t.bg},transparent)`, zIndex: 1 }} />
+      <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 24, background: `linear-gradient(270deg,${t.bg},transparent)`, zIndex: 1 }} />
+      <div ref={scrollRef} style={{ display: "flex", gap: 8, width: "max-content", paddingBottom: 4 }}>
+        {doubled.map((act, i) => (
+          <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, background: t.card, border: `1px solid ${t.border}`, borderRadius: 20, padding: "6px 12px", whiteSpace: "nowrap", flexShrink: 0 }}>
+            <span style={{ fontSize: 13 }}>{act.emoji}</span>
+            <span style={{ fontSize: 11, color: t.sub }}>{act.text}</span>
           </div>
         ))}
       </div>
@@ -192,226 +210,140 @@ function ActivityFeed({ activities }) {
   );
 }
 
-// ── MAIN HomeHub ─────────────────────────────────────────────────────────────
-export default function HomeHub({ pitchId }) {
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!pitchId) return;
-    (async () => {
-      try {
-        const [teams, players, assignments, matches, points, captains, transfers, snatch, ownershipLog, pointsConfig] = await Promise.all([
-          sbGet(pitchId + "_teams"),
-          sbGet(pitchId + "_players"),
-          sbGet(pitchId + "_assignments"),
-          sbGet(pitchId + "_matches"),
-          sbGet(pitchId + "_points"),
-          sbGet(pitchId + "_captains"),
-          sbGet(pitchId + "_transfers"),
-          sbGet(pitchId + "_snatch"),
-          sbGet(pitchId + "_ownershipLog"),
-          sbGet(pitchId + "_pointsConfig"),
-        ]);
-        setData({ teams: teams||[], players: players||[], assignments: assignments||{}, matches: matches||[], points: points||{}, captains: captains||{}, transfers: transfers||{}, snatch: snatch||{}, ownershipLog: ownershipLog||{}, pointsConfig: pointsConfig||{} });
-      } catch (e) { console.error(e); }
-      setLoading(false);
-    })();
-  }, [pitchId]);
-
-  if (!pitchId) return null;
-
-  if (loading) return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "40px 20px" }}>
-      <div style={{ fontSize: 13, color: "#4A5E78", letterSpacing: 2 }}>LOADING LEAGUE DATA…</div>
+function NotifBell({ notifications, t }) {
+  const [open, setOpen] = useState(false);
+  const unread = notifications.filter(n => !n.read).length;
+  return (
+    <div style={{ position: "relative" }}>
+      <button onClick={() => setOpen(o => !o)} style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 10, padding: "8px 12px", cursor: "pointer", display: "flex", alignItems: "center", gap: 6, position: "relative" }}>
+        <span style={{ fontSize: 16 }}>🔔</span>
+        {unread > 0 && <div style={{ position: "absolute", top: -4, right: -4, width: 16, height: 16, borderRadius: "50%", background: "#FF3D5A", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800, color: "#fff" }}>{unread}</div>}
+      </button>
+      {open && (
+        <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, zIndex: 100, width: 280, background: t.card, borderRadius: 12, border: `1px solid ${t.border}`, boxShadow: "0 8px 32px rgba(0,0,0,0.4)", overflow: "hidden" }}>
+          <div style={{ padding: "10px 14px", borderBottom: `1px solid ${t.border}`, fontFamily: "Rajdhani,sans-serif", fontWeight: 700, fontSize: 13, color: t.text, letterSpacing: 1 }}>NOTIFICATIONS</div>
+          {notifications.length === 0 ? (
+            <div style={{ padding: "16px 14px", fontSize: 12, color: t.muted, textAlign: "center" }}>All caught up 🎉</div>
+          ) : notifications.slice(0, 6).map((n, i) => (
+            <div key={i} style={{ padding: "10px 14px", borderBottom: i < Math.min(notifications.length, 6) - 1 ? `1px solid ${t.border}33` : "none", display: "flex", gap: 10 }}>
+              <span style={{ fontSize: 16 }}>{n.emoji || "📢"}</span>
+              <div><div style={{ fontSize: 12, color: t.text, lineHeight: 1.4 }}>{n.text}</div><div style={{ fontSize: 10, color: t.muted, marginTop: 2 }}>{n.time}</div></div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
+}
 
+export default function HomeHub({ pitchId, user, savedTeamId }) {
+  const { t, dark, toggle } = useTheme();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [lastUpdated, setLastUpdated] = useState(null);
+
+  const load = async () => {
+    if (!pitchId) return;
+    try {
+      const [teams, players, assignments, matches, points, captains, transfers, snatch, ownershipLog, notifications] = await Promise.all([
+        sbGet(pitchId + "_teams"), sbGet(pitchId + "_players"), sbGet(pitchId + "_assignments"),
+        sbGet(pitchId + "_matches"), sbGet(pitchId + "_points"), sbGet(pitchId + "_captains"),
+        sbGet(pitchId + "_transfers"), sbGet(pitchId + "_snatch"), sbGet(pitchId + "_ownershipLog"),
+        sbGet(pitchId + "_notifications"),
+      ]);
+      setData({ teams:teams||[], players:players||[], assignments:assignments||{}, matches:matches||[], points:points||{}, captains:captains||{}, transfers:transfers||{}, snatch:snatch||{}, ownershipLog:ownershipLog||{}, notifications:Array.isArray(notifications)?notifications:[] });
+      setLastUpdated(new Date());
+    } catch {}
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, [pitchId]);
+
+  if (!pitchId || loading) return <div style={{ padding: "24px 0", textAlign: "center", fontSize: 11, color: "#4A5E78", letterSpacing: 2 }}>LOADING…</div>;
   if (!data || !data.teams?.length) return null;
 
-  const { teams, players, assignments, matches, points, captains, transfers, snatch, ownershipLog, pointsConfig } = data;
+  const { teams, players, assignments, matches, points, captains, transfers, snatch, ownershipLog, notifications } = data;
 
-  // ── Compute leaderboard ──
   const getTeamTotal = (teamId) => {
     let total = 0;
-    const allPids = new Set(players.filter(p => assignments[p.id] === teamId).map(p => p.id));
-    Object.entries(ownershipLog).forEach(([pid, periods]) => {
-      if (periods.some(o => o.teamId === teamId)) allPids.add(pid);
-    });
+    const allPids = new Set([...players.filter(p => assignments[p.id] === teamId).map(p => p.id), ...Object.entries(ownershipLog).filter(([, periods]) => periods.some(o => o.teamId === teamId)).map(([pid]) => pid)]);
     for (const pid of allPids) {
       const periods = (ownershipLog[pid] || []).filter(o => o.teamId === teamId);
       for (const [mid, d] of Object.entries(points[pid] || {})) {
-        const m = matches.find(x => x.id === mid);
-        if (!m) continue;
+        const m = matches.find(x => x.id === mid); if (!m) continue;
         const matchDate = new Date(m.date);
-        const owned = periods.length === 0
-          ? assignments[pid] === teamId
-          : periods.some(o => {
-              const from = new Date(o.from);
-              const to = o.to ? new Date(o.to) : new Date("2099-01-01");
-              return matchDate >= from && matchDate <= to;
-            });
+        const owned = periods.length === 0 ? assignments[pid] === teamId : periods.some(o => matchDate >= new Date(o.from) && matchDate <= (o.to ? new Date(o.to) : new Date("2099-01-01")));
         if (!owned) continue;
         const cap = captains[mid + "_" + teamId] || {};
         let pts = d.base;
-        if (cap.captain === pid) pts *= 2;
-        else if (cap.vc === pid) pts *= 1.5;
+        if (cap.captain === pid) pts *= 2; else if (cap.vc === pid) pts *= 1.5;
         total += Math.round(pts);
       }
     }
     return total;
   };
 
-  const leaderboard = [...teams]
-    .map(t => ({ ...t, total: getTeamTotal(t.id) }))
-    .sort((a, b) => b.total - a.total);
+  const leaderboard = [...teams].map(tm => ({ ...tm, total: getTeamTotal(tm.id) })).sort((a, b) => b.total - a.total);
+  const completed = matches.filter(m => m.status === "completed");
 
-  const completedMatches = matches.filter(m => m.status === "completed");
-  const totalMatches = completedMatches.length;
+  // Activity pills
+  const pills = [];
+  const topTeam = leaderboard[0];
+  if (topTeam) pills.push({ emoji: "🏆", text: `${topTeam.name} leads with ${topTeam.total} pts` });
+  const allPairs = [...(transfers.tradedPairs || []), ...((transfers.history || []).flatMap(w => w.tradedPairs || []))];
+  for (const pr of allPairs.slice(-3).reverse()) {
+    const out = players.find(p => p.id === pr.releasedPid), inn = players.find(p => p.id === pr.pickedPid), team = teams.find(tm => tm.id === pr.teamId);
+    if (out && inn && team) pills.push({ emoji: "🔄", text: `${team.name} traded ${out.name} → ${inn.name}` });
+  }
+  if (snatch.active) {
+    const sp = players.find(p => p.id === snatch.active.pid), bt = teams.find(tm => tm.id === snatch.active.byTeamId), ft = teams.find(tm => tm.id === snatch.active.fromTeamId);
+    if (sp && bt && ft) pills.push({ emoji: "⚡", text: `${bt.name} snatched ${sp.name} from ${ft.name}` });
+  }
 
-  // ── Build activity feed ──
-  const activities = [];
-  const timeAgo = (dateStr) => {
-    if (!dateStr) return "";
-    const diff = Date.now() - new Date(dateStr).getTime();
-    const d = Math.floor(diff / 86400000);
-    const h = Math.floor(diff / 3600000);
-    const m = Math.floor(diff / 60000);
-    if (d > 0) return d + "d ago";
-    if (h > 0) return h + "h ago";
-    if (m > 0) return m + "m ago";
-    return "just now";
+  // Notifications
+  const notifs = [...notifications].reverse();
+  if (transfers.phase === "release") notifs.unshift({ emoji: "📤", text: "Transfer Window is open — release your players!", time: "Now", read: false });
+  if (transfers.phase === "trade") notifs.unshift({ emoji: "🔄", text: "Trade phase is active!", time: "Now", read: false });
+
+  const shareLeaderboard = () => {
+    const medals = ["🥇", "🥈", "🥉"];
+    const lines = leaderboard.map((team, i) => `${medals[i] || `#${i + 1}`} ${team.name}: ${team.total} pts`);
+    const text = `🏏 Teekha Bouncer League\nLeaderboard\n\n${lines.join("\n")}\n\nteekha-bouncer.vercel.app`;
+    window.open("https://wa.me/?text=" + encodeURIComponent(text), "_blank");
   };
 
-  // Completed matches
-  const recentMatches = [...completedMatches]
-    .sort((a, b) => (b.date || "").localeCompare(a.date || ""))
-    .slice(0, 3);
-
-  for (const m of recentMatches) {
-    // Find top scorer across all teams for this match
-    let topPid = null, topPts = 0;
-    for (const [pid, matchPts] of Object.entries(points)) {
-      if (matchPts[m.id] && matchPts[m.id].base > topPts) {
-        topPts = matchPts[m.id].base;
-        topPid = pid;
-      }
-    }
-    const topPlayer = topPid ? players.find(p => p.id === topPid) : null;
-    const topTeam = topPlayer ? teams.find(t => t.id === assignments[topPlayer.id]) : null;
-    const winTeam = leaderboard[0];
-
-    // Per-team scores for this match
-    const teamScores = teams.map(team => {
-      let total = 0;
-      players.filter(p => assignments[p.id] === team.id || (ownershipLog[p.id]||[]).some(o=>o.teamId===team.id)).forEach(p => {
-        if (points[p.id]?.[m.id]) {
-          const cap = captains[m.id + "_" + team.id] || {};
-          let pts = points[p.id][m.id].base;
-          if (cap.captain === p.id) pts *= 2;
-          else if (cap.vc === p.id) pts *= 1.5;
-          total += Math.round(pts);
-        }
-      });
-      return { ...team, matchPts: total };
-    }).sort((a, b) => b.matchPts - a.matchPts);
-
-    const matchWinner = teamScores[0];
-
-    activities.push({
-      emoji: "📊",
-      text: `<strong style="color:#E2EAF4">M${m.matchNum || ""} ${m.team1} vs ${m.team2}</strong> completed${matchWinner ? ` — <span style="color:${matchWinner.color}">${matchWinner.name}</span> topped with <strong>${matchWinner.matchPts} pts</strong>` : ""}${topPlayer ? `. ⭐ ${topPlayer.name} (${topPts} base pts)` : ""}`,
-      time: m.date,
-      emoji: "🏏",
-      badge: "RESULT",
-      badgeColor: "#2ECC71",
-    });
-  }
-
-  // Transfer activity
-  const allTradePairs = [
-    ...(transfers.tradedPairs || []),
-    ...((transfers.history || []).flatMap(w => w.tradedPairs || [])),
-  ];
-  for (const pr of allTradePairs.slice(-3).reverse()) {
-    const outPlayer = players.find(p => p.id === pr.releasedPid);
-    const inPlayer = players.find(p => p.id === pr.pickedPid);
-    const team = teams.find(t => t.id === pr.teamId);
-    if (!outPlayer || !inPlayer || !team) continue;
-    activities.push({
-      emoji: "🔄",
-      text: `<span style="color:${team.color}">${team.name}</span> traded <span style="color:#FF3D5A;text-decoration:line-through">${outPlayer.name}</span> → <span style="color:#2ECC71">${inPlayer.name}</span>`,
-      time: pr.timestamp ? timeAgo(pr.timestamp) : `Week ${pr.week || ""}`,
-      badge: "TRANSFER",
-      badgeColor: "#F5A623",
-    });
-  }
-
-  // Snatch activity
-  if (snatch.active) {
-    const sp = players.find(p => p.id === snatch.active.pid);
-    const bt = teams.find(t => t.id === snatch.active.byTeamId);
-    const ft = teams.find(t => t.id === snatch.active.fromTeamId);
-    if (sp && bt && ft) {
-      activities.push({
-        emoji: "⚡",
-        text: `<span style="color:${bt.color}">${bt.name}</span> snatched <strong style="color:#E2EAF4">${sp.name}</strong> from <span style="color:${ft.color}">${ft.name}</span> — on loan this week`,
-        time: timeAgo(snatch.active.startDate),
-        badge: "ACTIVE",
-        badgeColor: "#A855F7",
-      });
-    }
-  }
-  for (const h of [...(snatch.history || [])].reverse().slice(0, 2)) {
-    const sp = players.find(p => p.id === h.pid);
-    const bt = teams.find(t => t.id === h.byTeamId);
-    const ft = teams.find(t => t.id === h.fromTeamId);
-    if (sp && bt && ft) {
-      activities.push({
-        emoji: "↩️",
-        text: `<strong style="color:#E2EAF4">${sp.name}</strong> returned to <span style="color:${ft.color}">${ft.name}</span> after loan at <span style="color:${bt.color}">${bt.name}</span> — now <span style="color:#2ECC71">🛡 SAFE</span>`,
-        time: timeAgo(h.returnDate),
-        badge: "RETURNED",
-        badgeColor: "#4A5E78",
-      });
-    }
-  }
-
-  // Sort by recency (rough)
-  activities.sort((a, b) => {
-    const timeA = a.time?.includes("ago") || a.time?.includes("just") ? 0 : 999;
-    const timeB = b.time?.includes("ago") || b.time?.includes("just") ? 0 : 999;
-    return timeA - timeB;
-  });
+  const lastUpdatedStr = lastUpdated ? lastUpdated.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : null;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12, padding: "0 0 16px" }}>
-      <LiveCountdown matches={matches} />
-      <LeaderboardSnapshot leaderboard={leaderboard} totalMatches={totalMatches} />
-      <ActivityFeed activities={activities.slice(0, 8)} />
+    <div style={{ padding: "16px 0 8px" }}>
+      <style>{`@keyframes hbPulse{0%,100%{box-shadow:0 0 0 0 #FF3D5A44}50%{box-shadow:0 0 0 6px transparent}}`}</style>
+
+      {/* Top bar */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, gap: 8 }}>
+        <div style={{ fontSize: 10, color: t.muted }}>
+          {lastUpdatedStr && `Updated ${lastUpdatedStr}`}
+          <button onClick={load} style={{ background: "none", border: "none", color: t.muted, fontSize: 12, cursor: "pointer", marginLeft: 4 }}>↻</button>
+        </div>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <NotifBell notifications={notifs} t={t} />
+          <button onClick={toggle} style={{ background: t.card, border: `1px solid ${t.border}`, borderRadius: 10, padding: "7px 11px", cursor: "pointer", display: "flex", alignItems: "center", gap: 5, color: t.sub, fontFamily: "Barlow Condensed,sans-serif", fontWeight: 700, fontSize: 11 }}>
+            {dark ? "☀️ LIGHT" : "🌙 DARK"}
+          </button>
+        </div>
+      </div>
+
+      <RotatingTagline t={t} />
+      <WelcomeBack user={user} leaderboard={leaderboard} myTeamId={savedTeamId} t={t} />
+      {pills.length > 0 && <ActivityStrip activities={pills} t={t} />}
+      <CountdownHero matches={matches} t={t} />
+      <MVPCard players={players} teams={teams} assignments={assignments} points={points} matches={matches} t={t} />
+      <LeaderboardSnapshot leaderboard={leaderboard} totalMatches={completed.length} t={t} />
+
+      {leaderboard.length > 0 && (
+        <button onClick={shareLeaderboard} style={{ width: "100%", background: "#25D36618", border: "1px solid #25D36633", borderRadius: 12, padding: "11px", color: "#25D366", fontFamily: "Barlow Condensed,sans-serif", fontWeight: 700, fontSize: 13, cursor: "pointer", letterSpacing: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          📲 SHARE LEADERBOARD ON WHATSAPP
+        </button>
+      )}
     </div>
   );
-}
-
-// ── Shared styles ────────────────────────────────────────────────────────────
-function cardStyle(color) {
-  return {
-    background: "#0E1521",
-    borderRadius: 14,
-    border: "1px solid " + color + "33",
-    padding: "16px 18px",
-    display: "flex",
-    alignItems: "center",
-    gap: 14,
-    position: "relative",
-    overflow: "hidden",
-  };
-}
-
-function pulsingDot(color) {
-  return {
-    width: 8, height: 8, borderRadius: "50%", background: color, flexShrink: 0,
-    boxShadow: "0 0 0 0 " + color + "66",
-    animation: "pulse 1.5s ease infinite",
-  };
 }

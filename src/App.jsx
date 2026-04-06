@@ -1445,7 +1445,7 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
                 </div>
                 {isExpanded && (
                   <div style={{borderTop:"1px solid "+color+"22",padding:"0 16px 4px"}}>
-                    <HomeHub pitchId={pitch.id} />
+                    <HomeHub pitchId={pitch.id} user={user} savedTeamId={savedTeam?.id} />
                   </div>
                 )}
               </div>
