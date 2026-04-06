@@ -2479,7 +2479,13 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
     updAssign(newAssign);
     const newHistory = [...(snatch.history||[]), {...snatch.active, returnDate: new Date().toISOString()}];
     updSnatch({...snatch, active: null, history: newHistory, weekNum: snatch.weekNum+1});
-    alert(`✅ Snatched player returned to their original team.`);
+    // Mark returned player as SAFE — can never be snatched again
+    const currentSafe = safePlayers[fromTeamId] || [];
+    if (!currentSafe.includes(pid)) {
+      const newSafe = {...safePlayers, [fromTeamId]: [...currentSafe, pid]};
+      setSafePlayers(newSafe); storeSet("safePlayers", newSafe);
+    }
+    alert("✅ Player returned to their original team and marked 🛡 SAFE.");
   });
 
   const uploadTeamLogo=(teamId, file)=>{
@@ -3094,9 +3100,15 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
         const a = {...assignments, [pid]: fromTeamId};
         updAssign(a);
         updSnatch({...snatch, active: null, history: newHistory, weekNum: snatch.weekNum + 1});
+        // Auto-mark returned player as SAFE — can never be snatched again
+        const currentSafe = safePlayers[fromTeamId] || [];
+        if (!currentSafe.includes(pid)) {
+          const newSafe = {...safePlayers, [fromTeamId]: [...currentSafe, pid]};
+          setSafePlayers(newSafe); storeSet("safePlayers", newSafe);
+        }
         const rp = players.find(x=>x.id===pid);
         const rt = teams.find(t=>t.id===fromTeamId);
-        pushNotif('snatch', (rp?.name||'Player') + ' returned to ' + (rt?.name||'original team'), '↩️');
+        pushNotif('snatch', (rp?.name||'Player') + ' returned to ' + (rt?.name||'original team') + ' — now SAFE 🛡', '↩️');
       }
     };
     check();
