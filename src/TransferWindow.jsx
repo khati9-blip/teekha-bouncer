@@ -298,9 +298,10 @@ export default function TransferWindow({
   };
 
   const handlePass = () => {
-    if (!canPass(myTeamId)) { alert("You cannot pass — valid picks exist in the pool."); return; }
-    const myReleased = getReleasedPlayers(myTeamId);
-    const tradedPids = getTradedPairs(myTeamId).map(t => t.releasedPid);
+    const actingId = myTeamId || currentPickTeamId; // admin acts for current team
+    if (!canPass(actingId)) { alert("You cannot pass — valid picks exist in the pool."); return; }
+    const myReleased = getReleasedPlayers(actingId);
+    const tradedPids = getTradedPairs(actingId).map(t => t.releasedPid);
     const remaining = myReleased.filter(p => !tradedPids.includes(p.id));
     const currentTradedPairs = transfers.tradedPairs || [];
 
@@ -335,7 +336,7 @@ export default function TransferWindow({
     const newAlerts = reversals.map(r => ({
       teamId: r.teamId,
       returnedPlayerName: r.returnedPlayerName,
-      returnedToTeam: teams.find(t => t.id === myTeamId)?.name || "another team",
+      returnedToTeam: teams.find(t => t.id === actingId)?.name || "another team",
       releasedPid: r.releasedPid, // Y — still in pool for re-pick
     }));
     const reversalAlert = [...existingAlerts, ...newAlerts];
@@ -344,7 +345,7 @@ export default function TransferWindow({
     const ineligible = [...(transfers.ineligible || []), ...trulySelfReturning.map(p => p.id)];
 
     // Next team: affected teams get priority to re-pick, then normal order
-    const nextTeam = affectedTeamIds[0] || getNextPickTeam(myTeamId, newTradedPairs);
+    const nextTeam = affectedTeamIds[0] || getNextPickTeam(actingId, newTradedPairs);
     const deadline = nextTeam ? new Date(Date.now() + 45 * 60 * 1000).toISOString() : null;
 
     onUpdateAssignments(newAssignments);
@@ -994,10 +995,10 @@ export default function TransferWindow({
               <div style={{fontSize:12,color:"#4A5E78",marginBottom:12}}>
                 Pick a player from the pool (highlighted green). Must be same role and same/lower tier as a player you released.
               </div>
-              {canPass(myTeamId) && (
+              {canPass(myTeamId || currentPickTeamId) && (
                 <button onClick={handlePass}
                   style={{width:"100%",background:"#4A5E7822",border:"1px solid #4A5E78",borderRadius:10,padding:12,color:"#E2EAF4",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:14,cursor:"pointer",letterSpacing:0.5}}>
-                  PASS — No valid players in pool (your released players will return)
+                  PASS — No valid players in pool (released players will return)
                 </button>
               )}
             </div>
