@@ -5,6 +5,7 @@ import MVPStats from "./MVPStats";
 import TransferWindowComponent from "./TransferWindow";
 import SnatchSection from "./SnatchSection";
 import HomeHub from "./HomeHub";
+import RulesSheet from "./RulesSheet";
 
 async function callAI(userPrompt, system = "Return only valid JSON.") {
   const body = {
@@ -1475,6 +1476,8 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
           </div>
         )}
         </div>
+
+        <RulesSheet />
       </div>
 
       {/* Clone Modal */}
