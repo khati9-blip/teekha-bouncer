@@ -1318,29 +1318,83 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
   const COLORS = ["#FF3D5A","#4F8EF7","#2ECC71","#F5A623","#A855F7","#06B6D4"];
 
   if (loading) return (
-    <div style={{minHeight:"100vh",background:"#080C14",display:"flex",alignItems:"center",justifyContent:"center"}}>
-      <div style={{color:"#F5A623",fontFamily:"Rajdhani,sans-serif",fontSize:20,letterSpacing:2}}>Loading…</div>
+    <div style={{minHeight:"100vh",background:"#050810",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16}}>
+      <div style={{fontSize:40,animation:"spin 2s linear infinite"}}>🏏</div>
+      <div style={{color:"#F5A623",fontFamily:"Rajdhani,sans-serif",fontSize:18,letterSpacing:4,fontWeight:700}}>LOADING LEAGUES…</div>
+      <style>{`@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}} @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}} @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}} @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}} @keyframes floatBall{0%,100%{transform:translateY(0px)}50%{transform:translateY(-12px)}}`}</style>
     </div>
   );
 
   return (
-    <div style={{minHeight:"100vh",background:"#080C14",fontFamily:"Barlow Condensed,sans-serif"}}>
-      <div style={{background:"#0A0F1A",borderBottom:"1px solid #1E2D45",padding:"14px 24px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-        <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,fontWeight:700,color:"#F5A623",letterSpacing:2}}>🏏 TEEKHA BOUNCER</div>
-        <div style={{display:"flex",alignItems:"center",gap:16}}>
-          <div style={{textAlign:"right"}}>
-            <div style={{fontSize:13,color:"#E2EAF4",fontWeight:700}}>{user?.email?.split('@')[0]}</div>
-            <div style={{fontSize:10,color:"#4A5E78"}}>{user?.email?.split('@')[1]}</div>
+    <div style={{minHeight:"100vh",background:"#050810",fontFamily:"Barlow Condensed,sans-serif",position:"relative",overflow:"hidden"}}>
+      <style>{`
+        @keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+        @keyframes floatBall{0%,100%{transform:translateY(0px) rotate(0deg)}50%{transform:translateY(-18px) rotate(180deg)}}
+        @keyframes glow{0%,100%{box-shadow:0 0 20px #F5A62322}50%{box-shadow:0 0 40px #F5A62344}}
+        @keyframes scanline{0%{transform:translateY(-100%)}100%{transform:translateY(100vh)}}
+        @keyframes rotate{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+        @keyframes blink{0%,100%{opacity:1}50%{opacity:0.3}}
+        .pitch-card:hover{transform:translateY(-2px);transition:all 0.25s ease;}
+        .pitch-card{transition:all 0.25s ease;}
+        .enter-btn:hover{transform:scale(1.04);filter:brightness(1.15);}
+        .enter-btn{transition:all 0.2s ease;}
+      `}</style>
+
+      {/* Atmospheric background */}
+      <div style={{position:"fixed",inset:0,pointerEvents:"none",zIndex:0}}>
+        {/* Radial glow top-left */}
+        <div style={{position:"absolute",top:-200,left:-200,width:600,height:600,background:"radial-gradient(circle,#F5A62312 0%,transparent 70%)",borderRadius:"50%"}} />
+        {/* Radial glow bottom-right */}
+        <div style={{position:"absolute",bottom:-200,right:-200,width:500,height:500,background:"radial-gradient(circle,#FF3D5A0D 0%,transparent 70%)",borderRadius:"50%"}} />
+        {/* Grid lines */}
+        <div style={{position:"absolute",inset:0,backgroundImage:"linear-gradient(#1E2D4508 1px,transparent 1px),linear-gradient(90deg,#1E2D4508 1px,transparent 1px)",backgroundSize:"60px 60px"}} />
+        {/* Floating cricket ball */}
+        <div style={{position:"absolute",top:"12%",right:"8%",fontSize:56,opacity:0.06,animation:"floatBall 6s ease-in-out infinite",filter:"blur(1px)"}}>🏏</div>
+        <div style={{position:"absolute",bottom:"20%",left:"5%",fontSize:80,opacity:0.04,animation:"floatBall 8s ease-in-out infinite 2s",filter:"blur(2px)"}}>🏆</div>
+      </div>
+
+      {/* Header */}
+      <div style={{position:"relative",zIndex:10,borderBottom:"1px solid #1E2D4566",backdropFilter:"blur(20px)",background:"rgba(5,8,16,0.8)"}}>
+        <div style={{maxWidth:680,margin:"0 auto",padding:"16px 24px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div style={{display:"flex",alignItems:"center",gap:12}}>
+            <div style={{width:36,height:36,borderRadius:10,background:"linear-gradient(135deg,#F5A623,#FF6B00)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,boxShadow:"0 4px 16px #F5A62344"}}>🏏</div>
+            <div>
+              <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:18,fontWeight:800,color:"#F5A623",letterSpacing:3,lineHeight:1}}>TEEKHA BOUNCER</div>
+              <div style={{fontSize:9,color:"#4A5E78",letterSpacing:3,marginTop:1}}>FANTASY CRICKET LEAGUE</div>
+            </div>
           </div>
-          <button onClick={onLogout} style={{background:"transparent",border:"1px solid #1E2D45",borderRadius:6,padding:"5px 12px",color:"#4A5E78",fontSize:12,cursor:"pointer",fontWeight:700}}>LOGOUT</button>
+          <div style={{display:"flex",alignItems:"center",gap:12}}>
+            <div style={{textAlign:"right"}}>
+              <div style={{fontSize:12,color:"#E2EAF4",fontWeight:700,letterSpacing:0.5}}>{user?.email?.split('@')[0]}</div>
+              <div style={{fontSize:9,color:"#4A5E78",letterSpacing:1}}>{user?.email?.split('@')[1]}</div>
+            </div>
+            <button onClick={onLogout} style={{background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:"6px 14px",color:"#4A5E78",fontSize:11,cursor:"pointer",fontWeight:700,letterSpacing:1,transition:"all 0.2s"}}
+              onMouseEnter={e=>e.currentTarget.style.borderColor="#FF3D5A44"}
+              onMouseLeave={e=>e.currentTarget.style.borderColor="#1E2D45"}>
+              LOGOUT
+            </button>
+          </div>
         </div>
       </div>
 
-      <div style={{maxWidth:600,margin:"0 auto",padding:"40px 20px"}}>
-        <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:28,fontWeight:700,color:"#E2EAF4",letterSpacing:2,marginBottom:4}}>SELECT YOUR PITCH</div>
-        <div style={{fontSize:13,color:"#4A5E78",marginBottom:28}}>Each pitch is an independent league. Enter your pitch to manage teams, track points and view the leaderboard.</div>
+      {/* Hero section */}
+      <div style={{position:"relative",zIndex:10,maxWidth:680,margin:"0 auto",padding:"48px 24px 32px"}}>
+        <div style={{animation:"fadeUp 0.6s ease both"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+            <div style={{width:3,height:28,background:"linear-gradient(180deg,#F5A623,#FF3D5A)",borderRadius:2}} />
+            <div style={{fontSize:10,color:"#F5A623",letterSpacing:4,fontWeight:700}}>IPL 2025 SEASON</div>
+          </div>
+          <h1 style={{fontFamily:"Rajdhani,sans-serif",fontSize:42,fontWeight:800,color:"#E2EAF4",letterSpacing:1,margin:0,lineHeight:1.1}}>
+            YOUR <span style={{color:"#F5A623",textShadow:"0 0 40px #F5A62366"}}>LEAGUES</span>
+          </h1>
+          <p style={{fontSize:13,color:"#4A5E78",marginTop:8,marginBottom:0,letterSpacing:0.5}}>
+            Select a pitch to manage your squad, track points and dominate the leaderboard
+          </p>
+        </div>
 
-        <div style={{display:"flex",flexDirection:"column",gap:12,marginBottom:20}}>
+        {/* Pitch cards */}
+        <div style={{display:"flex",flexDirection:"column",gap:10,marginTop:32}}>
           {pitches.map((pitch, i) => {
             const color = COLORS[i % COLORS.length];
             const pitchTeamKey = "tb_myteam_" + pitch.id;
@@ -1350,32 +1404,46 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
             const savedGuest = (() => { try { return !!localStorage.getItem(pitchGuestKey); } catch { return false; } })();
             const savedAdmin = (() => { try { return !!localStorage.getItem(pitchAdminKey); } catch { return false; } })();
             const returning = savedTeam || savedGuest || savedAdmin;
+            const isExpanded = expandedPitch === pitch.id;
+            const roleLabel = savedAdmin ? "🔑 Admin" : savedTeam ? "🏏 " + savedTeam.name : savedGuest ? "👁 Guest" : null;
             return (
-              <div key={pitch.id} style={{background:"#0E1521",borderRadius:12,border:"1px solid "+(expandedPitch===pitch.id?color+"88":color+"44"),overflow:"hidden",transition:"border-color 0.2s"}}>
-                <div style={{padding:"16px 20px",display:"flex",alignItems:"center",gap:14,cursor:"pointer"}} onClick={()=>setExpandedPitch(expandedPitch===pitch.id?null:pitch.id)}>
-                  <div style={{width:44,height:44,borderRadius:10,background:color+"22",border:"1px solid "+color+"44",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"Rajdhani,sans-serif",fontWeight:800,fontSize:16,color:color,flexShrink:0}}>
-                    {"P"+(i+1)}
+              <div key={pitch.id} className="pitch-card"
+                style={{borderRadius:16,border:"1px solid "+(isExpanded?color+"55":"#1E2D45"),background:isExpanded?"linear-gradient(135deg,"+color+"0A,#0E1521 60%)":"#0A0F1A",overflow:"hidden",animation:"fadeUp 0.5s ease "+(i*0.08)+"s both",position:"relative"}}>
+                {/* Color accent bar top */}
+                <div style={{height:2,background:"linear-gradient(90deg,"+color+","+color+"44,transparent)",opacity:isExpanded?1:0.3,transition:"opacity 0.3s"}} />
+                <div style={{padding:"18px 20px",display:"flex",alignItems:"center",gap:16,cursor:"pointer"}} onClick={()=>setExpandedPitch(isExpanded?null:pitch.id)}>
+                  {/* Icon */}
+                  <div style={{width:48,height:48,borderRadius:12,background:"linear-gradient(135deg,"+color+"22,"+color+"0A)",border:"1px solid "+color+"33",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flexShrink:0,position:"relative"}}>
+                    <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:800,fontSize:13,color:color,letterSpacing:1}}>P{i+1}</div>
+                    {returning && <div style={{position:"absolute",top:-3,right:-3,width:8,height:8,borderRadius:"50%",background:color,boxShadow:"0 0 8px "+color}} />}
                   </div>
-                  <div style={{flex:1}}>
-                    <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:18,color:"#E2EAF4",letterSpacing:1}}>{pitch.name}</div>
-                    <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>
-                      {returning ? (savedAdmin?"🔑 Admin":(savedTeam?"🏏 "+savedTeam.name:"👁 Guest")) + " · tap to enter" : "Created "+new Date(pitch.createdAt).toLocaleDateString("en-IN")}
+                  {/* Info */}
+                  <div style={{flex:1,minWidth:0}}>
+                    <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:19,color:"#E2EAF4",letterSpacing:0.5,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{pitch.name}</div>
+                    <div style={{display:"flex",alignItems:"center",gap:8,marginTop:3}}>
+                      {roleLabel && <span style={{fontSize:10,background:color+"15",border:"1px solid "+color+"33",color:color,borderRadius:4,padding:"1px 7px",fontWeight:700,letterSpacing:0.5}}>{roleLabel}</span>}
+                      {pitch.isClone && <span style={{fontSize:9,background:"#A855F715",border:"1px solid #A855F733",color:"#A855F7",borderRadius:4,padding:"1px 6px",fontWeight:700,letterSpacing:1}}>CLONE</span>}
+                      {!returning && <span style={{fontSize:10,color:"#4A5E78"}}>Created {new Date(pitch.createdAt).toLocaleDateString("en-IN",{day:"numeric",month:"short"})}</span>}
                     </div>
                   </div>
-                  <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                  {/* Actions */}
+                  <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
                     {savedAdmin && !pitch.isClone && (
-                      <button onClick={(e)=>{e.stopPropagation();handleClone(pitch);}} title="Clone this pitch for testing"
-                        style={{background:"#A855F722",border:"1px solid #A855F744",borderRadius:8,padding:"8px 12px",color:"#A855F7",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",letterSpacing:1}}>
-                        🧬 CLONE
+                      <button onClick={(e)=>{e.stopPropagation();handleClone(pitch);}}
+                        style={{background:"#A855F715",border:"1px solid #A855F733",borderRadius:8,padding:"7px 11px",color:"#A855F7",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:11,cursor:"pointer",letterSpacing:1}}>
+                        🧬
                       </button>
                     )}
-                    <button onClick={(e)=>{e.stopPropagation();onEnter(pitch);}} style={{background:"linear-gradient(135deg,"+color+","+color+"99)",border:"none",borderRadius:8,padding:"8px 16px",color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:13,cursor:"pointer",letterSpacing:1}}>
+                    <button className="enter-btn" onClick={(e)=>{e.stopPropagation();onEnter(pitch);}}
+                      style={{background:"linear-gradient(135deg,"+color+","+color+"BB)",border:"none",borderRadius:10,padding:"9px 20px",color:"#050810",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:13,cursor:"pointer",letterSpacing:1,boxShadow:"0 4px 16px "+color+"33"}}>
                       {returning ? "ENTER →" : "JOIN →"}
                     </button>
                   </div>
+                  {/* Expand chevron */}
+                  <div style={{color:color,fontSize:12,opacity:0.6,marginLeft:4,transform:isExpanded?"rotate(180deg)":"rotate(0deg)",transition:"transform 0.3s"}}>▼</div>
                 </div>
-                {expandedPitch===pitch.id && (
-                  <div style={{borderTop:"1px solid "+color+"22",padding:"0 16px"}}>
+                {isExpanded && (
+                  <div style={{borderTop:"1px solid "+color+"22",padding:"0 16px 4px"}}>
                     <HomeHub pitchId={pitch.id} />
                   </div>
                 )}
@@ -1384,23 +1452,29 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
           })}
         </div>
 
+        {/* Create pitch */}
+        <div style={{marginTop:16,animation:"fadeUp 0.5s ease 0.3s both"}}>
         {!creating ? (
-          <button onClick={()=>setCreating(true)} style={{width:"100%",background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:12,padding:"15px",color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:16,cursor:"pointer",letterSpacing:2}}>
-            + CREATE NEW PITCH
+          <button onClick={()=>setCreating(true)}
+            style={{width:"100%",background:"transparent",border:"1px dashed #1E2D45",borderRadius:14,padding:"16px",color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer",letterSpacing:2,transition:"all 0.2s",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}
+            onMouseEnter={e=>{e.currentTarget.style.borderColor="#F5A62344";e.currentTarget.style.color="#F5A623";e.currentTarget.style.background="#F5A62308";}}
+            onMouseLeave={e=>{e.currentTarget.style.borderColor="#1E2D45";e.currentTarget.style.color="#4A5E78";e.currentTarget.style.background="transparent";}}>
+            <span style={{fontSize:18}}>＋</span> CREATE NEW PITCH
           </button>
         ) : (
-          <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #1E2D45",padding:20}}>
-            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:16,fontWeight:700,color:"#F5A623",marginBottom:12}}>NEW PITCH</div>
-            <input value={newName} onChange={e=>{setNewName(e.target.value);setErr("");}} placeholder="Pitch name (e.g. Office IPL League)" autoFocus
+          <div style={{background:"#0A0F1A",borderRadius:14,border:"1px solid #F5A62333",padding:22,animation:"fadeUp 0.3s ease both"}}>
+            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:17,fontWeight:700,color:"#F5A623",letterSpacing:2,marginBottom:14}}>NEW PITCH</div>
+            <input value={newName} onChange={e=>{setNewName(e.target.value);setErr("");}} placeholder="e.g. Office IPL League 2025" autoFocus
               onKeyDown={e=>e.key==="Enter"&&createPitch()}
-              style={{width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"10px 14px",color:"#E2EAF4",fontSize:15,fontFamily:"Barlow Condensed,sans-serif",outline:"none",marginBottom:10,boxSizing:"border-box"}} />
+              style={{width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:10,padding:"12px 16px",color:"#E2EAF4",fontSize:15,fontFamily:"Barlow Condensed,sans-serif",outline:"none",marginBottom:10,boxSizing:"border-box"}} />
             {err && <div style={{color:"#FF3D5A",fontSize:12,marginBottom:10}}>{err}</div>}
             <div style={{display:"flex",gap:8}}>
-              <button onClick={()=>{setCreating(false);setNewName("");setErr("");}} style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:10,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
-              <button onClick={createPitch} style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:10,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:15,cursor:"pointer"}}>CREATE & SET UP →</button>
+              <button onClick={()=>{setCreating(false);setNewName("");setErr("");}} style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:10,padding:11,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
+              <button onClick={createPitch} style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:10,padding:11,color:"#050810",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:15,cursor:"pointer",boxShadow:"0 4px 20px #F5A62344"}}>CREATE & SET UP →</button>
             </div>
           </div>
         )}
+        </div>
       </div>
 
       {/* Clone Modal */}
