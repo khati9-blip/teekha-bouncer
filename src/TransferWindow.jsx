@@ -670,6 +670,17 @@ export default function TransferWindow({
                 📅 START NEW WEEK
               </button>
             )}
+
+            {/* Always available to admin — reset all transfer data */}
+            <button onClick={()=>setConfirmModal({
+              message:"Reset ALL transfer records? Clears trade history, ⬆️⬇️ indicators and opens window fresh. Squad assignments are unchanged.",
+              onConfirm:()=>{
+                const cleaned={phase:"closed",weekNum:1,releases:{},tradedPairs:[],ineligible:[],history:[],currentPickTeam:null,pickDeadline:null,reversalAlert:null};
+                onUpdateTransfers(cleaned);
+              }
+            })} style={adminBtn("#4A5E78")}>
+              🗑 RESET RECORDS
+            </button>
           </div>
 
           {/* Teams not compliant warning */}

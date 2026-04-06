@@ -2929,11 +2929,13 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
     // Source of truth for who is physically in the squad right now
     const inSquadNow = new Set(players.filter(p=>assignments[p.id]===teamId).map(p=>p.id));
 
-    // Active players — in squad now, not in any trade-history category
+    // Active players — physically in squad now, not a trade-history special case
+    // Note: we intentionally DON'T exclude netTradedOutPids here —
+    // if a traded-out player was manually re-added, inSquadNow catches them as active
+    // and currentTradedAway's cross-check (inSquadNow.has → null) prevents double-display
     const active = players.filter(p=>
       inSquadNow.has(p.id) &&
       !netTradedInPids.has(p.id) &&
-      !netTradedOutPids.has(p.id) &&
       !returnedPids.has(p.id)
     ).map(p=>{
       const tot = getPtsForTeam(p.id, teamId);
@@ -3963,14 +3965,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:8}}>
                 <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2}}>LEADERBOARD</h2>
                 <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                  {isAdmin && (
-                    <button onClick={()=>setConfirmAction({
-                      msg:"Reset all transfer records? This clears trade history and ⬆️⬇️ indicators. Squad assignments are unchanged.",
-                      fn:()=>{ const cleaned={phase:"closed",weekNum:1,releases:{},tradedPairs:[],ineligible:[],history:[],currentPickTeam:null,pickDeadline:null,reversalAlert:null}; setTransfers(cleaned); storeSet("transfers",cleaned); }
-                    })} style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:"#FF3D5A",borderRadius:8,padding:"8px 14px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13}}>
-                      🗑 RESET TRANSFER RECORDS
-                    </button>
-                  )}
+
                   <button onClick={shareLeaderboard} style={{background:"#25D36622",border:"1px solid #25D36644",color:"#25D366",borderRadius:8,padding:"8px 14px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13}}>
                     📲 SHARE WHATSAPP
                   </button>
