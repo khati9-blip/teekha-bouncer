@@ -2633,16 +2633,20 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
     if(!tid) { delete a[pid]; }
     else {
       a[pid]=tid;
-      // Record ownership — use season start so previous match points count
+      // Record ownership — always use season start so ALL historical match points count
       const seasonStart = "2025-01-01T00:00:00.000Z";
       const existingPeriods = ownershipLog[pid] || [];
       const alreadyOwned = existingPeriods.some(o => o.teamId === tid && !o.to);
-      if (!alreadyOwned) {
-        // Close any open period for another team
+      if (alreadyOwned) {
+        // Fix existing period — ensure from is season start (in case it was set to today)
+        const updatedPeriods = existingPeriods.map(o =>
+          o.teamId === tid && !o.to ? { ...o, from: seasonStart } : o
+        );
+        updOwnership({ ...ownershipLog, [pid]: updatedPeriods });
+      } else {
+        // Close any open period for another team, open new from season start
         const updatedPeriods = existingPeriods.map(o => !o.to ? {...o, to: new Date().toISOString()} : o);
-        // Open period from season start if no prior history, else from now
-        const from = existingPeriods.length === 0 ? seasonStart : new Date().toISOString();
-        updatedPeriods.push({ teamId: tid, from, to: null });
+        updatedPeriods.push({ teamId: tid, from: seasonStart, to: null });
         updOwnership({ ...ownershipLog, [pid]: updatedPeriods });
       }
     }
