@@ -1320,7 +1320,7 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
 
   if (loading) return (
     <div style={{minHeight:"100vh",background:"#050810",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16}}>
-      <div style={{fontSize:40,animation:"spin 2s linear infinite"}}>🏏</div>
+      <img src="/logo.png" alt="Teekha Bouncer" style={{width:60,height:60,objectFit:"contain",borderRadius:16,animation:"spin 2s linear infinite",boxShadow:"0 0 30px #F5A62344"}} />
       <div style={{color:"#F5A623",fontFamily:"Rajdhani,sans-serif",fontSize:18,letterSpacing:4,fontWeight:700}}>LOADING LEAGUES…</div>
       <style>{`@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}} @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}} @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}} @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}} @keyframes floatBall{0%,100%{transform:translateY(0px)}50%{transform:translateY(-12px)}}`}</style>
     </div>
