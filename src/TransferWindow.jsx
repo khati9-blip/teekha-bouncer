@@ -107,7 +107,12 @@ export default function TransferWindow({
   const myTeamId = myTeam?.id || sessionTeamId;
   const isPlayerSafe = (pid) => Object.values(safePlayers || {}).some(arr => arr.includes(pid));
   const sortedTeams = leaderboard.map(t => teams.find(x => x.id === t.id)).filter(Boolean);
-  const pickOrder = [...sortedTeams].reverse(); // reverse: last place picks first
+  // Pick order: fewest active squad players first
+  const pickOrder = [...teams].sort((a, b) => {
+    const countA = players.filter(p => assignments[p.id] === a.id).length;
+    const countB = players.filter(p => assignments[p.id] === b.id).length;
+    return countA - countB; // ascending — fewest picks first
+  });
 
   // ── AUTO WINDOW CHECK — prompt admin instead of auto-opening ──────────────
   useEffect(() => {
