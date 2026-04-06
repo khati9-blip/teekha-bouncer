@@ -1358,7 +1358,7 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
       <div style={{position:"relative",zIndex:10,borderBottom:"1px solid #1E2D4566",backdropFilter:"blur(20px)",background:"rgba(5,8,16,0.8)"}}>
         <div style={{maxWidth:680,margin:"0 auto",padding:"16px 24px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <div style={{display:"flex",alignItems:"center",gap:12}}>
-            <div style={{width:36,height:36,borderRadius:10,background:"linear-gradient(135deg,#F5A623,#FF6B00)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,boxShadow:"0 4px 16px #F5A62344"}}>🏏</div>
+            <img src="/logo.png" alt="Teekha Bouncer" style={{width:36,height:36,borderRadius:10,objectFit:"contain",boxShadow:"0 4px 16px #F5A62344"}} />
             <div>
               <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:18,fontWeight:800,color:"#F5A623",letterSpacing:3,lineHeight:1}}>TEEKHA BOUNCER</div>
               <div style={{fontSize:9,color:"#4A5E78",letterSpacing:3,marginTop:1}}>FANTASY CRICKET LEAGUE</div>
@@ -1383,7 +1383,7 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
         <div style={{animation:"fadeUp 0.6s ease both"}}>
           <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
             <div style={{width:3,height:28,background:"linear-gradient(180deg,#F5A623,#FF3D5A)",borderRadius:2}} />
-            <div style={{fontSize:10,color:"#F5A623",letterSpacing:4,fontWeight:700}}>IPL 2025 SEASON</div>
+            <div style={{fontSize:10,color:"#F5A623",letterSpacing:4,fontWeight:700}}>DESIGN YOUR OWN LEAGUES</div>
           </div>
           <h1 style={{fontFamily:"Rajdhani,sans-serif",fontSize:42,fontWeight:800,color:"#E2EAF4",letterSpacing:1,margin:0,lineHeight:1.1}}>
             YOUR <span style={{color:"#F5A623",textShadow:"0 0 40px #F5A62366"}}>LEAGUES</span>
