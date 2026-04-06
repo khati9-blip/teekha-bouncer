@@ -179,12 +179,13 @@ export default function TransferWindow({
   const currentPickTeamId = transfers?.currentPickTeam;
   const currentPickTeam = teams.find(t => t.id === currentPickTeamId);
   const isMyTurn = currentPickTeamId === myTeamId;
-  const myReversalAlert = isMyTurn && transfers?.reversalAlert?.find(r => r.teamId === myTeamId);
+  const effectiveTeamId = myTeamId || (unlocked ? currentPickTeamId : null);
+  const myReversalAlert = (isMyTurn || unlocked) && transfers?.reversalAlert?.find(r => r.teamId === effectiveTeamId);
 
   // Auto-show reversal alert when it's my turn and I have a reversal
   React.useEffect(() => {
     if (myReversalAlert) setShowReversalAlert(true);
-  }, [currentPickTeamId, myTeamId]);
+  }, [currentPickTeamId, myTeamId, unlocked]);
 
   // ── RELEASE ────────────────────────────────────────────────────────────────
   const handleRelease = (teamId, pid) => {
@@ -299,16 +300,20 @@ export default function TransferWindow({
 
   const handlePass = () => {
     const actingId = myTeamId || currentPickTeamId; // admin acts for current team
-    if (!canPass(actingId)) { alert("You cannot pass — valid picks exist in the pool."); return; }
+    if (!canPass(actingId) && !unlocked) { alert("You cannot pass — valid picks exist in the pool."); return; }
     const myReleased = getReleasedPlayers(actingId);
     const tradedPids = getTradedPairs(actingId).map(t => t.releasedPid);
     const remaining = myReleased.filter(p => !tradedPids.includes(p.id));
     const currentTradedPairs = transfers.tradedPairs || [];
 
-    // Detect reversals: players in remaining that were already picked by another team
-    const reversals = remaining.map(p => {
-      const otherPick = currentTradedPairs.find(tp => tp.pickedPid === p.id && tp.teamId !== myTeamId);
-      return otherPick ? { ...otherPick, returnedPlayerName: p.name } : null;
+    // Detect reversals: our released players (from releases list) that were picked by another team
+    // e.g. Team B released H, Team A picked H → when Team B passes, H must return to Team B
+    const allReleasedByUs = (transfers?.releases?.[actingId] || []);
+    const reversals = allReleasedByUs.map(pid => {
+      const otherPick = currentTradedPairs.find(tp => tp.pickedPid === pid && tp.teamId !== actingId);
+      if (!otherPick) return null;
+      const p = players.find(x => x.id === pid);
+      return p ? { ...otherPick, returnedPlayerName: p.name } : null;
     }).filter(Boolean);
 
     const reversalPids = new Set(reversals.map(r => r.pickedPid));
@@ -317,9 +322,9 @@ export default function TransferWindow({
     // Build new assignments
     const newAssignments = { ...assignments };
     // Return truly self-owned untraded players to this team
-    trulySelfReturning.forEach(p => { newAssignments[p.id] = myTeamId; });
-    // For reversals: H returns to this team (the passer), removed from other team
-    reversals.forEach(r => { newAssignments[r.pickedPid] = myTeamId; });
+    trulySelfReturning.forEach(p => { newAssignments[p.id] = actingId; });
+    // For reversals: H returns to Team B (the passer who released H)
+    reversals.forEach(r => { newAssignments[r.pickedPid] = actingId; });
 
     // Pool: remove truly self-returning players; reversal players were already out of pool
     const returnedPids = new Set(trulySelfReturning.map(p => p.id));
@@ -332,7 +337,7 @@ export default function TransferWindow({
     );
 
     // Build reversal alert for affected teams — also clear THIS team's own alert if they're passing as a re-pick
-    const existingAlerts = (transfers.reversalAlert || []).filter(a => !affectedTeamIds.includes(a.teamId) && a.teamId !== myTeamId);
+    const existingAlerts = (transfers.reversalAlert || []).filter(a => !affectedTeamIds.includes(a.teamId) && a.teamId !== actingId);
     const newAlerts = reversals.map(r => ({
       teamId: r.teamId,
       returnedPlayerName: r.returnedPlayerName,
@@ -1051,11 +1056,21 @@ export default function TransferWindow({
               <div style={{fontSize:12,color:"#4A5E78",marginBottom:12}}>
                 Pick a player from the pool (highlighted green). Must be same role and same/lower tier as a player you released.
               </div>
-              {canPass(myTeamId || currentPickTeamId) && (
+              {canPass(myTeamId || currentPickTeamId) ? (
                 <button onClick={handlePass}
                   style={{width:"100%",background:"#4A5E7822",border:"1px solid #4A5E78",borderRadius:10,padding:12,color:"#E2EAF4",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:14,cursor:"pointer",letterSpacing:0.5}}>
                   PASS — No valid players in pool (released players will return)
                 </button>
+              ) : (
+                <div style={{fontSize:11,color:"#4A5E78",textAlign:"center",padding:"8px 0"}}>
+                  Valid picks exist in pool — PASS not allowed until pool is exhausted
+                  {unlocked && (
+                    <button onClick={handlePass}
+                      style={{display:"block",width:"100%",marginTop:8,background:"#FF3D5A11",border:"1px dashed #FF3D5A44",borderRadius:10,padding:10,color:"#FF3D5A",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:12,cursor:"pointer"}}>
+                      ⚠️ ADMIN: FORCE PASS
+                    </button>
+                  )}
+                </div>
               )}
             </div>
           )}
@@ -1125,7 +1140,7 @@ export default function TransferWindow({
             <button onClick={()=>{
               setShowReversalAlert(false);
               // Clear just this team's alert
-              const cleared = (transfers.reversalAlert||[]).filter(a=>a.teamId!==myTeamId);
+              const cleared = (transfers.reversalAlert||[]).filter(a=>a.teamId!==effectiveTeamId);
               onUpdateTransfers({...transfers, reversalAlert: cleared.length>0?cleared:null});
             }}
               style={{width:"100%",background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:10,padding:13,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:16,cursor:"pointer",letterSpacing:0.5}}>
