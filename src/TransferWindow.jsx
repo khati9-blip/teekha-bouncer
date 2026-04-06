@@ -672,15 +672,71 @@ export default function TransferWindow({
               </button>
             )}
 
-            {/* Always available to admin — reset all transfer data */}
+            {/* Full rollback — undo all trades and restore squads */}
             <button onClick={()=>setConfirmModal({
-              message:"Reset ALL transfer records? Clears trade history, ⬆️⬇️ indicators and opens window fresh. Squad assignments are unchanged.",
+              message:"⚠️ FULL RESET: Undo ALL transfers across all weeks? Players return to their original teams, all trade history is wiped. This cannot be undone.",
               onConfirm:()=>{
-                const cleaned={phase:"closed",weekNum:1,releases:{},tradedPairs:[],ineligible:[],history:[],currentPickTeam:null,pickDeadline:null,reversalAlert:null};
+                // Collect all trade pairs across current window + history
+                const allPairs = [
+                  ...(transfers.tradedPairs || []),
+                  ...((transfers.history || []).flatMap(w => w.tradedPairs || []))
+                ];
+                // Reverse all trades: remove traded-in players, return traded-out players
+                const newAssignments = { ...assignments };
+                const poolAdditions = new Set();
+                const poolRemovals = new Set();
+                for (const pr of allPairs) {
+                  // Traded-in player leaves the team
+                  if (newAssignments[pr.pickedPid] === pr.teamId) {
+                    delete newAssignments[pr.pickedPid];
+                    poolAdditions.add(pr.pickedPid); // goes back to pool
+                  }
+                  // Traded-out player returns to their original team
+                  newAssignments[pr.releasedPid] = pr.teamId;
+                  poolRemovals.add(pr.releasedPid); // leaves pool
+                }
+                // Also return any released-but-not-traded players
+                const allReleases = Object.entries({
+                  ...(transfers.releases || {}),
+                  ...((transfers.history || []).reduce((acc, w) => ({...acc, ...(w.releases || {})}), {}))
+                });
+                for (const [teamId, pids] of allReleases) {
+                  for (const pid of pids) {
+                    if (!allPairs.some(pr => pr.releasedPid === pid)) {
+                      // Released but not traded — return to original team
+                      newAssignments[pid] = teamId;
+                      poolRemovals.add(pid);
+                    }
+                  }
+                }
+                // Update pool
+                const newPool = [
+                  ...unsoldPool.filter(pid => !poolRemovals.has(pid)),
+                  ...[...poolAdditions].filter(pid => !unsoldPool.includes(pid))
+                ];
+                // Clear ownership log entries created by trades
+                const tradedPids = new Set(allPairs.flatMap(pr => [pr.pickedPid, pr.releasedPid]));
+                const newLog = { ...ownershipLog };
+                for (const pid of tradedPids) {
+                  if (newLog[pid]) {
+                    // Keep only the first/original period (before any trades)
+                    const original = newLog[pid][0];
+                    if (original) {
+                      newLog[pid] = [{ ...original, to: null }];
+                    } else {
+                      delete newLog[pid];
+                    }
+                  }
+                }
+                // Clear transfers entirely
+                const cleaned = { phase:"closed", weekNum:1, releases:{}, tradedPairs:[], ineligible:[], history:[], currentPickTeam:null, pickDeadline:null, reversalAlert:null };
+                onUpdateAssignments(newAssignments);
+                onUpdateUnsoldPool(newPool);
+                onUpdateOwnershipLog(newLog);
                 onUpdateTransfers(cleaned);
               }
-            })} style={adminBtn("#4A5E78")}>
-              🗑 RESET RECORDS
+            })} style={adminBtn("#FF3D5A")}>
+              ↩️ FULL RESET
             </button>
           </div>
 
