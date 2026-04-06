@@ -1412,15 +1412,15 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
                 style={{borderRadius:16,border:"1px solid "+(isExpanded?color+"55":"#1E2D45"),background:isExpanded?"linear-gradient(135deg,"+color+"0A,#0E1521 60%)":"#0A0F1A",overflow:"hidden",animation:"fadeUp 0.5s ease "+(i*0.08)+"s both",position:"relative"}}>
                 {/* Color accent bar top */}
                 <div style={{height:2,background:"linear-gradient(90deg,"+color+","+color+"44,transparent)",opacity:isExpanded?1:0.3,transition:"opacity 0.3s"}} />
-                <div style={{padding:"18px 20px",display:"flex",alignItems:"center",gap:16,cursor:"pointer"}} onClick={()=>setExpandedPitch(isExpanded?null:pitch.id)}>
+                <div style={{padding:"14px 16px",display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={()=>setExpandedPitch(isExpanded?null:pitch.id)}>
                   {/* Icon */}
                   <div style={{width:48,height:48,borderRadius:12,background:"linear-gradient(135deg,"+color+"22,"+color+"0A)",border:"1px solid "+color+"33",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flexShrink:0,position:"relative"}}>
                     <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:800,fontSize:13,color:color,letterSpacing:1}}>P{i+1}</div>
                     {returning && <div style={{position:"absolute",top:-3,right:-3,width:8,height:8,borderRadius:"50%",background:color,boxShadow:"0 0 8px "+color}} />}
                   </div>
                   {/* Info */}
-                  <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:19,color:"#E2EAF4",letterSpacing:0.5,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{pitch.name}</div>
+                  <div style={{flex:1,minWidth:0,overflow:"hidden"}}>
+                    <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:16,color:"#E2EAF4",letterSpacing:0.5,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{pitch.name}</div>
                     <div style={{display:"flex",alignItems:"center",gap:8,marginTop:3}}>
                       {roleLabel && <span style={{fontSize:10,background:color+"15",border:"1px solid "+color+"33",color:color,borderRadius:4,padding:"1px 7px",fontWeight:700,letterSpacing:0.5}}>{roleLabel}</span>}
                       {pitch.isClone && <span style={{fontSize:9,background:"#A855F715",border:"1px solid #A855F733",color:"#A855F7",borderRadius:4,padding:"1px 6px",fontWeight:700,letterSpacing:1}}>CLONE</span>}
@@ -1436,7 +1436,7 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
                       </button>
                     )}
                     <button className="enter-btn" onClick={(e)=>{e.stopPropagation();onEnter(pitch);}}
-                      style={{background:"linear-gradient(135deg,"+color+","+color+"BB)",border:"none",borderRadius:10,padding:"9px 20px",color:"#050810",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:13,cursor:"pointer",letterSpacing:1,boxShadow:"0 4px 16px "+color+"33"}}>
+                      style={{background:"linear-gradient(135deg,"+color+","+color+"BB)",border:"none",borderRadius:10,padding:"8px 14px",color:"#050810",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:12,cursor:"pointer",letterSpacing:0.5,boxShadow:"0 4px 16px "+color+"33",whiteSpace:"nowrap",flexShrink:0}}>
                       {returning ? "ENTER →" : "JOIN →"}
                     </button>
                   </div>

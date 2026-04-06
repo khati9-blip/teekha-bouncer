@@ -226,7 +226,7 @@ function NotifBell({ notifications, t }) {
         {unread > 0 && <div style={{ position: "absolute", top: -4, right: -4, width: 16, height: 16, borderRadius: "50%", background: "#FF3D5A", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800, color: "#fff" }}>{unread}</div>}
       </button>
       {open && (
-        <div style={{ position: "fixed", top: "auto", bottom: 80, right: 16, left: 16, zIndex: 1000, background: t.card, borderRadius: 12, border: `1px solid ${t.border}`, boxShadow: "0 8px 32px rgba(0,0,0,0.4)", overflow: "hidden", maxHeight: "60vh", overflowY: "auto" }}>
+        <div style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, left: "auto", zIndex: 100, width: "min(280px, 85vw)", background: t.card, borderRadius: 12, border: `1px solid ${t.border}`, boxShadow: "0 8px 32px rgba(0,0,0,0.5)", overflow: "hidden", transform: "translateX(min(0px, calc(100vw - 100% - 16px)))" }}>
           <div style={{ padding: "10px 14px", borderBottom: `1px solid ${t.border}`, fontFamily: "Rajdhani,sans-serif", fontWeight: 700, fontSize: 13, color: t.text, letterSpacing: 1 }}>NOTIFICATIONS</div>
           {notifications.length === 0 ? (
             <div style={{ padding: "16px 14px", fontSize: 12, color: t.muted, textAlign: "center" }}>All caught up 🎉</div>
