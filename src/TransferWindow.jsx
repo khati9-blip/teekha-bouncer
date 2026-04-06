@@ -116,8 +116,24 @@ export default function TransferWindow({
   }, [unlocked]);
 
   // ── HELPERS ────────────────────────────────────────────────────────────────
-  const getReleasedPlayers = (teamId) =>
-    (transfers?.releases?.[teamId] || []).map(pid => players.find(p => p.id === pid)).filter(Boolean);
+  const getReleasedPlayers = (teamId) => {
+    // Players picked by OTHER teams (not available anymore regardless of our releases)
+    const pickedByOthers = new Set(
+      (transfers?.tradedPairs || [])
+        .filter(tp => tp.teamId !== teamId)
+        .map(tp => tp.pickedPid)
+    );
+    return (transfers?.releases?.[teamId] || [])
+      .map(pid => players.find(p => p.id === pid))
+      .filter(Boolean)
+      .filter(p => {
+        // Always include if this team already traded them (for display)
+        const tradedByUs = (transfers?.tradedPairs || []).some(tp => tp.teamId === teamId && tp.releasedPid === p.id);
+        if (tradedByUs) return true;
+        // Exclude if picked by another team — that slot is gone
+        return !pickedByOthers.has(p.id);
+      });
+  };
 
   const getTradedPairs = (teamId) =>
     (transfers?.tradedPairs || []).filter(t => t.teamId === teamId);
@@ -162,6 +178,12 @@ export default function TransferWindow({
   const currentPickTeamId = transfers?.currentPickTeam;
   const currentPickTeam = teams.find(t => t.id === currentPickTeamId);
   const isMyTurn = currentPickTeamId === myTeamId;
+  const myReversalAlert = isMyTurn && transfers?.reversalAlert?.find(r => r.teamId === myTeamId);
+
+  // Auto-show reversal alert when it's my turn and I have a reversal
+  React.useEffect(() => {
+    if (myReversalAlert) setShowReversalAlert(true);
+  }, [currentPickTeamId, myTeamId]);
 
   // ── RELEASE ────────────────────────────────────────────────────────────────
   const handleRelease = (teamId, pid) => {
@@ -208,7 +230,11 @@ export default function TransferWindow({
 
     // Update assignments
     const newAssignments = { ...assignments, [poolPlayer.id]: tradeAsTeamId };
-    delete newAssignments[releasedPlayer.id];
+    // Only remove the released player's assignment if it's still with this team
+    // (it could have been picked by another team already — don't overwrite that)
+    if (newAssignments[releasedPlayer.id] === tradeAsTeamId) {
+      delete newAssignments[releasedPlayer.id];
+    }
 
     // Update ownership log — freeze released player, reset incoming
     let newLog = { ...(ownershipLog || {}) };
@@ -251,12 +277,16 @@ export default function TransferWindow({
     const deadline = nextTeam ? new Date(Date.now() + 45 * 60 * 1000).toISOString() : null;
     const allDone = !nextTeam;
 
+    // Clear reversal alert for this team (they've re-picked)
+    const clearedAlerts = (transfers.reversalAlert || []).filter(a => a.teamId !== tradeAsTeamId);
+
     const updated = {
       ...transfers,
       tradedPairs,
       currentPickTeam: allDone ? null : nextTeam,
       pickDeadline: allDone ? null : deadline,
       phase: allDone ? "done" : "trade",
+      reversalAlert: clearedAlerts.length > 0 ? clearedAlerts : null,
     };
 
     onUpdateAssignments(newAssignments);
@@ -271,22 +301,58 @@ export default function TransferWindow({
     const myReleased = getReleasedPlayers(myTeamId);
     const tradedPids = getTradedPairs(myTeamId).map(t => t.releasedPid);
     const remaining = myReleased.filter(p => !tradedPids.includes(p.id));
+    const currentTradedPairs = transfers.tradedPairs || [];
 
-    // Return remaining released players to team + remove from unsold pool
+    // Detect reversals: players in remaining that were already picked by another team
+    const reversals = remaining.map(p => {
+      const otherPick = currentTradedPairs.find(tp => tp.pickedPid === p.id && tp.teamId !== myTeamId);
+      return otherPick ? { ...otherPick, returnedPlayerName: p.name } : null;
+    }).filter(Boolean);
+
+    const reversalPids = new Set(reversals.map(r => r.pickedPid));
+    const trulySelfReturning = remaining.filter(p => !reversalPids.has(p.id));
+
+    // Build new assignments
     const newAssignments = { ...assignments };
-    remaining.forEach(p => { newAssignments[p.id] = myTeamId; });
-    const returnedPids = new Set(remaining.map(p => p.id));
-    const newPool = unsoldPool.filter(id => !returnedPids.has(id));
-    onUpdateUnsoldPool(newPool);
+    // Return truly self-owned untraded players to this team
+    trulySelfReturning.forEach(p => { newAssignments[p.id] = myTeamId; });
+    // For reversals: H returns to this team (the passer), removed from other team
+    reversals.forEach(r => { newAssignments[r.pickedPid] = myTeamId; });
 
-    const ineligible = [...(transfers.ineligible || []), ...remaining.map(p => p.id)];
-    const nextTeam = getNextPickTeam(myTeamId, transfers.tradedPairs || []);
+    // Pool: remove truly self-returning players; reversal players were already out of pool
+    const returnedPids = new Set(trulySelfReturning.map(p => p.id));
+    const newPool = unsoldPool.filter(id => !returnedPids.has(id));
+
+    // Remove reversed trade pairs — affected teams need to re-pick
+    const affectedTeamIds = [...new Set(reversals.map(r => r.teamId))];
+    const newTradedPairs = currentTradedPairs.filter(tp =>
+      !reversals.some(r => r.teamId === tp.teamId && r.pickedPid === tp.pickedPid)
+    );
+
+    // Build reversal alert for affected teams — also clear THIS team's own alert if they're passing as a re-pick
+    const existingAlerts = (transfers.reversalAlert || []).filter(a => !affectedTeamIds.includes(a.teamId) && a.teamId !== myTeamId);
+    const newAlerts = reversals.map(r => ({
+      teamId: r.teamId,
+      returnedPlayerName: r.returnedPlayerName,
+      returnedToTeam: teams.find(t => t.id === myTeamId)?.name || "another team",
+      releasedPid: r.releasedPid, // Y — still in pool for re-pick
+    }));
+    const reversalAlert = [...existingAlerts, ...newAlerts];
+
+    // Ineligible: only truly self-returning players
+    const ineligible = [...(transfers.ineligible || []), ...trulySelfReturning.map(p => p.id)];
+
+    // Next team: affected teams get priority to re-pick, then normal order
+    const nextTeam = affectedTeamIds[0] || getNextPickTeam(myTeamId, newTradedPairs);
     const deadline = nextTeam ? new Date(Date.now() + 45 * 60 * 1000).toISOString() : null;
 
     onUpdateAssignments(newAssignments);
+    onUpdateUnsoldPool(newPool);
     onUpdateTransfers({
       ...transfers,
+      tradedPairs: newTradedPairs,
       ineligible,
+      reversalAlert,
       currentPickTeam: nextTeam || null,
       pickDeadline: deadline,
       phase: nextTeam ? "trade" : "done",
@@ -829,19 +895,31 @@ export default function TransferWindow({
                 const releasedByTeam = isNewlyReleased
                   ? teams.find(t => (transfers?.releases?.[t.id] || []).includes(p.id))
                   : null;
+                const teamColor = releasedByTeam?.color || "#1E2D45";
+                const cardBg = canPick ? "#2ECC7111" : isNewlyReleased ? "#FF3D5A08" : "#080C14";
+                const cardBorder = canPick ? "#2ECC7144" : isNewlyReleased ? teamColor+"44" : "#1E2D4544";
                 return (
-                  <div key={p.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",background:canPick?"#2ECC7111":"#080C14",borderRadius:8,border:"1px solid "+(canPick?"#2ECC7144":"#1E2D4544"),marginBottom:6}}>
+                  <div key={p.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",background:cardBg,borderRadius:8,border:"1px solid "+cardBorder,borderLeft:isNewlyReleased?"3px solid "+teamColor+"99":"1px solid "+cardBorder,marginBottom:6}}>
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{display:"flex",alignItems:"center",gap:5,flexWrap:"wrap"}}>
                         <span style={{fontWeight:700,fontSize:12,color:"#E2EAF4"}}>{p.name}</span>
                         <TierBadge tier={p.tier} />
-                        {isNewlyReleased && (
-                          <span style={{fontSize:9,background:"#FF3D5A22",color:"#FF3D5A",border:"1px solid #FF3D5A44",borderRadius:4,padding:"1px 5px",fontWeight:700,letterSpacing:0.5}}>
-                            RELEASED{releasedByTeam ? " · " + releasedByTeam.name : ""}
-                          </span>
+                        {isPlayerSafe(p.id) && (
+                          <span style={{fontSize:9,background:"#2ECC7111",color:"#2ECC71",border:"1px solid #2ECC7133",borderRadius:4,padding:"1px 5px",fontWeight:700}}>🛡 SAFE</span>
                         )}
                       </div>
-                      <div style={{fontSize:10,color:"#4A5E78"}}>{p.iplTeam} • {p.role}</div>
+                      <div style={{display:"flex",alignItems:"center",gap:6,marginTop:2,flexWrap:"wrap"}}>
+                        <span style={{fontSize:10,color:"#4A5E78"}}>{p.iplTeam} • {p.role}</span>
+                        {isNewlyReleased && releasedByTeam && (
+                          <span style={{display:"flex",alignItems:"center",gap:3,fontSize:9,fontWeight:800,letterSpacing:0.5,color:teamColor,background:teamColor+"15",border:"1px solid "+teamColor+"44",borderRadius:4,padding:"1px 6px"}}>
+                            <span style={{width:5,height:5,borderRadius:"50%",background:teamColor,display:"inline-block",flexShrink:0}} />
+                            FROM {releasedByTeam.name.toUpperCase()}
+                          </span>
+                        )}
+                        {!isNewlyReleased && (
+                          <span style={{fontSize:9,color:"#4A5E78",background:"#1E2D4555",border:"1px solid #1E2D4599",borderRadius:4,padding:"1px 6px",fontWeight:700}}>UNSOLD</span>
+                        )}
+                      </div>
                     </div>
                     {canPick && (
                       <button onClick={() => handlePickClick(p)}
@@ -894,8 +972,13 @@ export default function TransferWindow({
 
           {/* My turn actions */}
           {(isMyTurn || unlocked) && phase === "trade" && currentPickTeam && (
-            <div style={{background:"#0E1521",borderRadius:12,border:"2px solid #F5A62344",padding:16,marginBottom:16}}>
-              <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:18,fontWeight:700,color:"#F5A623",marginBottom:6}}>🎯 YOUR TURN</div>
+            <div style={{background:"#0E1521",borderRadius:12,border:"2px solid "+(myReversalAlert?"#FF3D5A44":"#F5A62344"),padding:16,marginBottom:16}}>
+              <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:18,fontWeight:700,color:myReversalAlert?"#FF3D5A":"#F5A623",marginBottom:6}}>{myReversalAlert?"⚠️ RE-PICK REQUIRED":"🎯 YOUR TURN"}</div>
+              {myReversalAlert && (
+                <div style={{background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:8,padding:"8px 12px",marginBottom:10,fontSize:12,color:"#FF3D5A"}}>
+                  <strong>{myReversalAlert.returnedPlayerName}</strong> returned to {myReversalAlert.returnedToTeam}. Pick another player or pass.
+                </div>
+              )}
               <div style={{fontSize:12,color:"#4A5E78",marginBottom:12}}>
                 Pick a player from the pool (highlighted green). Must be same role and same/lower tier as a player you released.
               </div>
@@ -947,6 +1030,38 @@ export default function TransferWindow({
                 📤 OPEN NOW
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* REVERSAL ALERT MODAL */}
+      {showReversalAlert && myReversalAlert && (
+        <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:900,padding:16}}>
+          <div style={{background:"#141E2E",borderRadius:16,border:"2px solid #F5A62366",padding:24,width:"100%",maxWidth:400}}>
+            <div style={{fontSize:32,textAlign:"center",marginBottom:8}}>⚠️</div>
+            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:"#F5A623",textAlign:"center",letterSpacing:1,marginBottom:8}}>
+              TRADE REVERSED
+            </div>
+            <div style={{background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:10,padding:"12px 16px",marginBottom:16,textAlign:"center"}}>
+              <div style={{fontWeight:700,fontSize:16,color:"#FF3D5A",marginBottom:4}}>
+                ⬇️ {myReversalAlert.returnedPlayerName}
+              </div>
+              <div style={{fontSize:12,color:"#4A5E78"}}>
+                has returned to <strong style={{color:"#E2EAF4"}}>{myReversalAlert.returnedToTeam}</strong> — this player is no longer available.
+              </div>
+            </div>
+            <div style={{fontSize:13,color:"#4A5E78",textAlign:"center",marginBottom:20}}>
+              Please choose another eligible player from the pool, or press PASS if no valid options remain.
+            </div>
+            <button onClick={()=>{
+              setShowReversalAlert(false);
+              // Clear just this team's alert
+              const cleared = (transfers.reversalAlert||[]).filter(a=>a.teamId!==myTeamId);
+              onUpdateTransfers({...transfers, reversalAlert: cleared.length>0?cleared:null});
+            }}
+              style={{width:"100%",background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:10,padding:13,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:16,cursor:"pointer",letterSpacing:0.5}}>
+              GOT IT — LET ME RE-PICK
+            </button>
           </div>
         </div>
       )}
