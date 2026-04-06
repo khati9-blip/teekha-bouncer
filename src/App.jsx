@@ -4,6 +4,7 @@ import H2HStats from "./H2HStats";
 import MVPStats from "./MVPStats";
 import TransferWindowComponent from "./TransferWindow";
 import SnatchSection from "./SnatchSection";
+import WeeklyReport from "./WeeklyReport";
 import HomeHub from "./HomeHub";
 import RulesSheet from "./RulesSheet";
 
@@ -1994,6 +1995,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   const [smartStatsMatch, setSmartStatsMatch] = useState(null);
   const [squadView, setSquadView] = useState(false);
   const [showMVP, setShowMVP] = useState(false);
+  const [showWeeklyReport, setShowWeeklyReport] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null); // {msg, fn}
   const [selectedBulk, setSelectedBulk] = useState([]); // toggle squad view
   const [teamFilter, setTeamFilter] = useState(null); // filter by fantasy team
@@ -4488,6 +4490,19 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
           </div>
         )}
 
+        {showWeeklyReport && (
+          <WeeklyReport
+            teams={teams}
+            players={players}
+            assignments={assignments}
+            points={points}
+            captains={captains}
+            matches={matches}
+            ownershipLog={ownershipLog}
+            onClose={()=>setShowWeeklyReport(false)}
+          />
+        )}
+
         {showMVP && (
           <MVPStats
             players={players}
@@ -4604,6 +4619,13 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                   <div style={{flex:1}}>
                     <div style={{fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,color:"#E2EAF4"}}>MVP Stats</div>
                     <div style={{fontSize:11,color:"#4A5E78"}}>Weekly player performance</div>
+                  </div>
+                </button>
+                <button onClick={()=>{setShowWeeklyReport(true);setDrawerOpen(false);}} style={{width:"100%",background:showWeeklyReport?"#2ECC7122":"transparent",border:"1px solid "+(showWeeklyReport?"#2ECC7144":"transparent"),borderRadius:10,padding:"10px 14px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12,marginBottom:4}}>
+                  <span style={{fontSize:20}}>📋</span>
+                  <div style={{flex:1}}>
+                    <div style={{fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,color:"#E2EAF4"}}>Weekly Report</div>
+                    <div style={{fontSize:11,color:"#4A5E78"}}>This week & last week summary</div>
                   </div>
                 </button>
                   <button onClick={()=>{setNotifOpen(o=>!o);if(!notifOpen)markNotifsRead();}} style={{width:"100%",background:"transparent",border:"none",padding:"10px 14px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12}}>
