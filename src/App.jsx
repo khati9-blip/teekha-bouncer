@@ -4,6 +4,7 @@ import H2HStats from "./H2HStats";
 import MVPStats from "./MVPStats";
 import TransferWindowComponent from "./TransferWindow";
 import SnatchSection from "./SnatchSection";
+import FetchPlayers from "./FetchPlayers";
 import WeeklyReport from "./WeeklyReport";
 import HomeHub from "./HomeHub";
 import RulesSheet from "./RulesSheet";
@@ -1947,7 +1948,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [teamIdentity, setTeamIdentity] = useState({});
   const [snatchPinModal, setSnatchPinModal] = useState(null);
-  const [fetchPlayerModal, setFetchPlayerModal] = useState(false);
+  const [fetchPlayerModal, setFetchPlayerModal] = useState(null); // null | { tournamentId, tournamentName }
   const [addTournamentModal, setAddTournamentModal] = useState(false);
   const [addTournamentSource, setAddTournamentSource] = useState(null);
   const [addTournamentSeries, setAddTournamentSeries] = useState([]);
@@ -3424,7 +3425,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,flexWrap:"wrap",gap:8}}>
                   <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2}}>PLAYER DRAFT</h2>
                   <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                    <Btn variant="blue" onClick={()=>withPassword(()=>setFetchPlayerModal(true))} sx={{fontSize:13,padding:"8px 14px"}}>🌐 FETCH PLAYERS</Btn>
+                    <Btn variant="blue" onClick={()=>withPassword(()=>setFetchPlayerModal({tournamentId:null,tournamentName:"General"}))} sx={{fontSize:13,padding:"8px 14px"}}>🌐 FETCH PLAYERS</Btn>
                     <Btn variant="ghost" onClick={()=>withPassword(()=>setEditPlayer({name:"",iplTeam:"",role:"Batsman"}))} sx={{fontSize:13,padding:"8px 14px"}}>✚ ADD</Btn>
                     <Btn variant={squadView?"primary":"ghost"} onClick={()=>setSquadView(v=>!v)} sx={{fontSize:13,padding:"8px 14px"}}>{squadView?"📋 LIST":"👥 SQUAD"}</Btn>
                   </div>
@@ -3726,6 +3727,11 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                           <button onClick={e=>{e.stopPropagation();withPassword(()=>fetchFromCricketData(tournament.id,tournament.name));}}
                             style={{background:"#2ECC7122",border:"1px solid #2ECC7144",color:"#2ECC71",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:10}}
                             title="CricketData — 100 req/day free. Resets daily.">🟢 CD</button>
+                        </div>
+                        <div style={{position:"relative",display:"inline-block"}}>
+                          <button onClick={e=>{e.stopPropagation();withPassword(()=>setFetchPlayerModal({tournamentId:tournament.id,tournamentName:tournament.name}));}}
+                            style={{background:"#4F8EF722",border:"1px solid #4F8EF744",color:"#4F8EF7",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:10}}
+                            title="Fetch players for this tournament">👥 PLAYERS</button>
                         </div>
                       </div>
                       {/* Trade & Snatch toggle */}
@@ -4381,87 +4387,27 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
 
         {/* FETCH PLAYERS MODAL */}
         {fetchPlayerModal && (
-          <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,padding:24,fontFamily:"Barlow Condensed,sans-serif"}}>
-            <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #1E2D45",padding:28,width:"100%",maxWidth:420}}>
-              <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,fontWeight:700,color:"#F5A623",letterSpacing:2,marginBottom:4}}>FETCH PLAYERS</div>
-              <div style={{fontSize:12,color:"#4A5E78",marginBottom:20}}>Choose source then select tournament to fetch squads</div>
-
-              {/* Source selector */}
-              {!fetchPlayerSource ? (
-                <div>
-                  <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,marginBottom:10}}>SELECT SOURCE</div>
-                  <div style={{display:"flex",gap:10}}>
-                    <button onClick={()=>{setFetchPlayerSource('cb');fetchSeriesSuggestions('cb');}}
-                      style={{flex:1,background:"#F5A62322",border:"2px solid #F5A62344",borderRadius:10,padding:"14px 10px",cursor:"pointer",textAlign:"center"}}>
-                      <div style={{fontSize:20,marginBottom:4}}>🟠</div>
-                      <div style={{fontWeight:700,fontSize:14,color:"#F5A623"}}>Cricbuzz</div>
-                      <div style={{fontSize:10,color:"#4A5E78",marginTop:2}}>100 req/month</div>
-                    </button>
-                    <button onClick={()=>{setFetchPlayerSource('cd');fetchSeriesSuggestions('cd');}}
-                      style={{flex:1,background:"#2ECC7122",border:"2px solid #2ECC7144",borderRadius:10,padding:"14px 10px",cursor:"pointer",textAlign:"center"}}>
-                      <div style={{fontSize:20,marginBottom:4}}>🟢</div>
-                      <div style={{fontWeight:700,fontSize:14,color:"#2ECC71"}}>CricketData</div>
-                      <div style={{fontSize:10,color:"#4A5E78",marginTop:2}}>100 req/day</div>
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
-                    <button onClick={()=>{setFetchPlayerSource(null);setFetchPlayerSeries([]);setFetchPlayerSeriesInput('');setFetchPlayerSelectedSeries(null);}}
-                      style={{background:"transparent",border:"none",color:"#4A5E78",cursor:"pointer",fontSize:18,padding:0}}>←</button>
-                    <div style={{fontSize:13,color:fetchPlayerSource==='cb'?"#F5A623":"#2ECC71",fontWeight:700}}>
-                      {fetchPlayerSource==='cb'?"🟠 Cricbuzz":"🟢 CricketData"}
-                    </div>
-                  </div>
-
-                  {/* Series search */}
-                  <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,marginBottom:8}}>SELECT TOURNAMENT</div>
-                  <input value={fetchPlayerSeriesInput} onChange={e=>setFetchPlayerSeriesInput(e.target.value)}
-                    placeholder="Search tournament..." autoFocus
-                    style={{width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"10px 14px",color:"#E2EAF4",fontSize:14,fontFamily:"Barlow Condensed,sans-serif",outline:"none",marginBottom:8,boxSizing:"border-box"}} />
-
-                  {fetchPlayerSeriesLoading ? (
-                    <div style={{textAlign:"center",padding:16,color:"#4A5E78",fontSize:13}}>Loading series...</div>
-                  ) : (
-                    <div style={{maxHeight:200,overflowY:"auto",border:"1px solid #1E2D45",borderRadius:8,marginBottom:12}}>
-                      {fetchPlayerSeries
-                        .filter(s => !fetchPlayerSeriesInput || s.name.toLowerCase().includes(fetchPlayerSeriesInput.toLowerCase()))
-                        .slice(0,20)
-                        .map(s => (
-                          <div key={s.id} onClick={()=>setFetchPlayerSelectedSeries(s)}
-                            style={{padding:"10px 14px",cursor:"pointer",borderBottom:"1px solid #1E2D4433",background:fetchPlayerSelectedSeries?.id===s.id?"#F5A62322":"transparent",color:fetchPlayerSelectedSeries?.id===s.id?"#F5A623":"#E2EAF4",fontSize:13}}>
-                            {s.name}
-                            {fetchPlayerSelectedSeries?.id===s.id && <span style={{marginLeft:8,color:"#F5A623"}}>✓</span>}
-                          </div>
-                        ))}
-                      {fetchPlayerSeries.filter(s => !fetchPlayerSeriesInput || s.name.toLowerCase().includes(fetchPlayerSeriesInput.toLowerCase())).length === 0 && (
-                        <div style={{padding:16,color:"#4A5E78",fontSize:13,textAlign:"center"}}>No series found</div>
-                      )}
-                    </div>
-                  )}
-
-                  {fetchPlayerSelectedSeries && (
-                    <div style={{background:"#F5A62311",border:"1px solid #F5A62333",borderRadius:8,padding:"8px 12px",marginBottom:12,fontSize:12,color:"#F5A623"}}>
-                      Selected: <strong>{fetchPlayerSelectedSeries.name}</strong>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div style={{display:"flex",gap:10,marginTop:16}}>
-                <button onClick={()=>{setFetchPlayerModal(false);setFetchPlayerSource(null);setFetchPlayerSeries([]);setFetchPlayerSeriesInput('');setFetchPlayerSelectedSeries(null);}}
-                  style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:11,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
-                {fetchPlayerSelectedSeries && (
-                  <button onClick={fetchPlayersFromSeries}
-                    style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:11,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:15,cursor:"pointer"}}>FETCH SQUADS</button>
-                )}
-              </div>
-            </div>
-          </div>
+          <FetchPlayers
+            existingPlayers={players}
+            tournamentId={fetchPlayerModal.tournamentId}
+            tournamentName={fetchPlayerModal.tournamentName}
+            onPlayersAdded={(newOnes) => {
+              // Tag players with tournamentId if provided
+              const tagged = newOnes.map(p => fetchPlayerModal.tournamentId ? {...p, tournamentId: fetchPlayerModal.tournamentId} : p);
+              const all = [...players, ...tagged.filter(n => !players.find(p => p.id === n.id))];
+              setPlayers(all); storeSet("players", all);
+            }}
+            onClose={() => {
+              setFetchPlayerModal(null);
+              setFetchPlayerSource(null);
+              setFetchPlayerSeries([]);
+              setFetchPlayerSeriesInput('');
+              setFetchPlayerSelectedSeries(null);
+            }}
+          />
         )}
 
-        {/* CAPTAIN PICKER MODAL */}
+                {/* CAPTAIN PICKER MODAL */}
         {captainMatch && <CaptainModal
           match={captainMatch}
           teams={teams}
