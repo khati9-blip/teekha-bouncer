@@ -178,7 +178,7 @@ function LeaderboardSnapshot({ leaderboard, totalMatches, t }) {
         <div key={team.id} style={{ padding: "10px 18px", borderBottom: i < leaderboard.length - 1 ? `1px solid ${t.border}33` : "none", position: "relative" }}>
           <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${(team.total / max) * 100}%`, background: team.color + "08", borderRight: `1px solid ${team.color}22` }} />
           <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{ fontSize: 18, minWidth: 28 }}>{medals[i] || `#${i + 1}`}</div>
+            <div style={{ fontSize: 18, minWidth: 32, fontFamily: "Rajdhani,sans-serif", fontWeight: 700, color: i >= 3 ? t.sub : "inherit" }}>{medals[i] || <span style={{fontSize:14, color: t.sub}}>#{i + 1}</span>}</div>
             <div style={{ flex: 1 }}><div style={{ fontFamily: "Rajdhani,sans-serif", fontWeight: 700, fontSize: 14, color: team.color }}>{team.name}</div></div>
             <div style={{ fontFamily: "Rajdhani,sans-serif", fontWeight: 800, fontSize: 20, color: t.text }}>{team.total.toLocaleString()}<span style={{ fontSize: 10, color: t.muted, fontWeight: 400, marginLeft: 3 }}>pts</span></div>
           </div>
