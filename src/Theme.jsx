@@ -26,7 +26,7 @@ export const T = {
   // Text
   text:       "#E8E0CC",   // primary text — warm off-white (not pure white)
   sub:        "#8A8299",   // secondary text
-  muted:      "#3A3A52",   // muted / disabled
+  muted:      "#9AA5B8",   // muted / disabled
 
   // Accent — antique gold
   accent:     "#C9A84C",   // primary gold
