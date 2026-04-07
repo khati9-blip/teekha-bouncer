@@ -1125,7 +1125,7 @@ placeholder="Paste scorecard text here... (e.g. V Kohli c Maxwell b Bumrah 82 (5
           <button onClick={submit} style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:11,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>✅ SAVE POINTS ({playingPlayers.length} players)</button>
         </div>
       </div>
-    </div>
+    </div></>
   );
 }
 
