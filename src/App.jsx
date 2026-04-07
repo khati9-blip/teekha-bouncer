@@ -2178,6 +2178,14 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
     })();
   }, []);
 
+  // Auto-navigate admin to setup when no teams exist
+  useEffect(() => {
+    if (!appReady) return;
+    if (isAdmin && teams.length === 0 && page !== "setup") {
+      setPage("setup");
+    }
+  }, [appReady, isAdmin, teams.length]);
+
   // ── LOAD USER-SPECIFIC NOTES & HIGHLIGHTS ────────────────────────────────
   useEffect(() => {
     if (!user?.email) return;
@@ -3374,6 +3382,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
     !ruleProposal.votes[myTeam.id];
 
   const navItems=[
+    ...(isAdmin && teams.length===0 ? [{id:"setup",label:"Setup",icon:"🏗️"}] : []),
     {id:"draft",label:"Draft",icon:"📋"},
     {id:"matches",label:"Matches",icon:"🏏"},
     {id:"transfer",label:"Transfer",icon:"🔄",disabled:teams.length===0},
