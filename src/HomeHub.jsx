@@ -85,7 +85,13 @@ function CountdownHero({ matches }) {
   );
 
   if (!next) return null;
-  const matchTime = new Date(next.date + "T" + (next.time || "14:00:00"));
+  // Safely parse match time — handle missing, invalid, or various time formats
+  let matchTime;
+  try {
+    const timeStr = next.time ? next.time.replace(/[^0-9:]/g, "").slice(0, 8).padEnd(8, ":00").slice(0, 8) : "14:00:00";
+    const parsed = new Date(next.date + "T" + timeStr);
+    matchTime = isNaN(parsed.getTime()) ? new Date(next.date + "T14:00:00") : parsed;
+  } catch { matchTime = new Date(next.date + "T14:00:00"); }
   const diff = matchTime - now;
   const isToday = new Date(next.date).toDateString() === new Date().toDateString();
   const isTomorrow = new Date(next.date).toDateString() === new Date(Date.now() + 86400000).toDateString();
