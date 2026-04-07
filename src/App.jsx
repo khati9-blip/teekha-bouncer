@@ -1035,7 +1035,7 @@ placeholder="Paste scorecard text here... (e.g. V Kohli c Maxwell b Bumrah 82 (5
                   <tbody>
                     {playingPlayers.map(p=>(
                       <tr key={p.id} style={{borderBottom:`1px solid ${T.border}33`}}>
-                        <td style={{padding:"7px 6px",fontSize:13,color:T.text,fontWeight:600}}><div style={{display:"flex",alignItems:"center",gap:4}}>{p.name} {p.tier&&<span style={{fontSize:9,fontWeight:800,letterSpacing:1,padding:"1px 5px",borderRadius:4,fontFamily:fonts.body,textTransform:"uppercase",background:p.tier==="platinum"?"#4A5E7833":p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":"#CD7F3222",border:"1px solid "+(p.tier==="platinum"?"#4A5E7866":p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":"#CD7F3255"),color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32"}}>{p.tier==="platinum"?"PLAT":p.tier==="gold"?"GOLD":p.tier==="silver"?"SILV":"BRNZ"}</span>}</div><span style={{fontSize:10,color:T.muted}}>{p.iplTeam} • {p.role}</span></td>
+                        <td style={{padding:"7px 6px",fontSize:13,color:T.text,fontWeight:600,fontFamily:fonts.body}}><div style={{display:"flex",alignItems:"center",gap:4}}>{p.name} {p.tier&&<span style={{fontSize:9,fontWeight:800,letterSpacing:1,padding:"1px 5px",borderRadius:4,fontFamily:fonts.body,textTransform:"uppercase",background:p.tier==="platinum"?"#4A5E7833":p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":"#CD7F3222",border:"1px solid "+(p.tier==="platinum"?"#4A5E7866":p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":"#CD7F3255"),color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32"}}>{p.tier==="platinum"?"PLAT":p.tier==="gold"?"GOLD":p.tier==="silver"?"SILV":"BRNZ"}</span>}</div><span style={{fontSize:10,color:T.muted}}>{p.iplTeam} • {p.role}</span></td>
                         <td style={{padding:"4px"}}><input type="number" min="0" value={stats[p.id]?.runs||0} onChange={e=>upd(p.id,"runs",e.target.value)} style={inp} /></td>
                         <td style={{padding:"4px"}}><input type="number" min="0" value={stats[p.id]?.balls||0} onChange={e=>upd(p.id,"balls",e.target.value)} style={inp} /></td>
                         <td style={{padding:"4px"}}><input type="number" min="0" value={stats[p.id]?.fours||0} onChange={e=>upd(p.id,"fours",e.target.value)} style={inp} /></td>
@@ -1062,7 +1062,7 @@ placeholder="Paste scorecard text here... (e.g. V Kohli c Maxwell b Bumrah 82 (5
                   <tbody>
                     {playingPlayers.map(p=>(
                       <tr key={p.id} style={{borderBottom:`1px solid ${T.border}33`}}>
-                        <td style={{padding:"7px 6px",fontSize:13,color:T.text,fontWeight:600}}><div style={{display:"flex",alignItems:"center",gap:4}}>{p.name} {p.tier&&<span style={{fontSize:9,fontWeight:800,letterSpacing:1,padding:"1px 5px",borderRadius:4,fontFamily:fonts.body,textTransform:"uppercase",background:p.tier==="platinum"?"#4A5E7833":p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":"#CD7F3222",border:"1px solid "+(p.tier==="platinum"?"#4A5E7866":p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":"#CD7F3255"),color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32"}}>{p.tier==="platinum"?"PLAT":p.tier==="gold"?"GOLD":p.tier==="silver"?"SILV":"BRNZ"}</span>}</div><span style={{fontSize:10,color:T.muted}}>{p.iplTeam} • {p.role}</span></td>
+                        <td style={{padding:"7px 6px",fontSize:13,color:T.text,fontWeight:600,fontFamily:fonts.body}}><div style={{display:"flex",alignItems:"center",gap:4}}>{p.name} {p.tier&&<span style={{fontSize:9,fontWeight:800,letterSpacing:1,padding:"1px 5px",borderRadius:4,fontFamily:fonts.body,textTransform:"uppercase",background:p.tier==="platinum"?"#4A5E7833":p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":"#CD7F3222",border:"1px solid "+(p.tier==="platinum"?"#4A5E7866":p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":"#CD7F3255"),color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32"}}>{p.tier==="platinum"?"PLAT":p.tier==="gold"?"GOLD":p.tier==="silver"?"SILV":"BRNZ"}</span>}</div><span style={{fontSize:10,color:T.muted}}>{p.iplTeam} • {p.role}</span></td>
                         <td style={{padding:"4px"}}><input type="number" min="0" value={stats[p.id]?.wickets||0} onChange={e=>upd(p.id,"wickets",e.target.value)} style={inp} /></td>
                         <td style={{padding:"4px"}}><input type="number" min="0" step="0.1" value={stats[p.id]?.overs||0} onChange={e=>upd(p.id,"overs",e.target.value)} style={inp} /></td>
                         <td style={{padding:"4px"}}><input type="number" min="0" step="0.01" placeholder="—" value={stats[p.id]?.economy||""} onChange={e=>upd(p.id,"economy",e.target.value)} style={inp} /></td>
@@ -1085,7 +1085,7 @@ placeholder="Paste scorecard text here... (e.g. V Kohli c Maxwell b Bumrah 82 (5
                   <tbody>
                     {playingPlayers.map(p=>(
                       <tr key={p.id} style={{borderBottom:`1px solid ${T.border}33`}}>
-                        <td style={{padding:"7px 6px",fontSize:13,color:T.text,fontWeight:600}}><div style={{display:"flex",alignItems:"center",gap:4}}>{p.name} {p.tier&&<span style={{fontSize:9,fontWeight:800,letterSpacing:1,padding:"1px 5px",borderRadius:4,fontFamily:fonts.body,textTransform:"uppercase",background:p.tier==="platinum"?"#4A5E7833":p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":"#CD7F3222",border:"1px solid "+(p.tier==="platinum"?"#4A5E7866":p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":"#CD7F3255"),color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32"}}>{p.tier==="platinum"?"PLAT":p.tier==="gold"?"GOLD":p.tier==="silver"?"SILV":"BRNZ"}</span>}</div><span style={{fontSize:10,color:T.muted}}>{p.iplTeam} • {p.role}</span></td>
+                        <td style={{padding:"7px 6px",fontSize:13,color:T.text,fontWeight:600,fontFamily:fonts.body}}><div style={{display:"flex",alignItems:"center",gap:4}}>{p.name} {p.tier&&<span style={{fontSize:9,fontWeight:800,letterSpacing:1,padding:"1px 5px",borderRadius:4,fontFamily:fonts.body,textTransform:"uppercase",background:p.tier==="platinum"?"#4A5E7833":p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":"#CD7F3222",border:"1px solid "+(p.tier==="platinum"?"#4A5E7866":p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":"#CD7F3255"),color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32"}}>{p.tier==="platinum"?"PLAT":p.tier==="gold"?"GOLD":p.tier==="silver"?"SILV":"BRNZ"}</span>}</div><span style={{fontSize:10,color:T.muted}}>{p.iplTeam} • {p.role}</span></td>
                         <td style={{padding:"4px"}}><input type="number" min="0" value={stats[p.id]?.catches||0} onChange={e=>upd(p.id,"catches",e.target.value)} style={inp} /></td>
                         <td style={{padding:"4px"}}><input type="number" min="0" value={stats[p.id]?.stumpings||0} onChange={e=>upd(p.id,"stumpings",e.target.value)} style={inp} /></td>
                         <td style={{padding:"4px"}}><input type="number" min="0" value={stats[p.id]?.runouts||0} onChange={e=>upd(p.id,"runouts",e.target.value)} style={inp} /></td>
@@ -1107,7 +1107,7 @@ placeholder="Paste scorecard text here... (e.g. V Kohli c Maxwell b Bumrah 82 (5
                     return (
                       <div key={p.id} style={{background:T.card,borderRadius:8,padding:"10px 14px",marginBottom:6,display:"flex",alignItems:"flex-start",gap:12}}>
                         <div style={{flex:1}}>
-                          <div style={{fontWeight:700,fontSize:14,color:T.text}}>{p.name}</div>
+                          <div style={{fontWeight:600,fontSize:14,color:T.text,fontFamily:fonts.body}}>{p.name}</div>
                           <div style={{fontSize:11,color:T.muted,marginTop:2}}>{bd.length>0?bd.join(" • "):"No stats"}</div>
                         </div>
                         <div style={{fontFamily:fonts.display,fontSize:24,fontWeight:800,color:pts>0?"#F5A623":"#4A5E78"}}>{pts}</div>
@@ -3744,7 +3744,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                             <div style={{minWidth:0,flex:1}}>
                               <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
                                 {unlocked&&<input type="checkbox" checked={selectedBulk.includes(p.id)} onChange={e=>setSelectedBulk(prev=>e.target.checked?[...prev,p.id]:prev.filter(x=>x!==p.id))} style={{width:14,height:14,cursor:"pointer",accentColor:T.accent,flexShrink:0}} />}
-                                <span style={{fontWeight:700,fontSize:14,color:T.text}}>{p.name}</span>
+                                <span style={{fontWeight:600,fontSize:14,color:T.text,fontFamily:fonts.body}}>{p.name}</span>
                                 {p.tier&&<span style={{fontSize:9,fontWeight:800,letterSpacing:1,padding:"1px 5px",borderRadius:4,fontFamily:fonts.body,textTransform:"uppercase",background:p.tier==="platinum"?"#4A5E7833":p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":"#CD7F3222",border:"1px solid "+(p.tier==="platinum"?"#4A5E7866":p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":"#CD7F3255"),color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32"}}>{p.tier==="platinum"?"PLAT":p.tier==="gold"?"GOLD":p.tier==="silver"?"SILV":"BRNZ"}</span>}
                                 {isAssigned&&isPlayerSafeForTeam(assignments[p.id],p.id)&&<span style={{background:T.successBg,color:T.success,border:`1px solid ${T.success}44`,borderRadius:10,fontSize:9,padding:"1px 5px",fontWeight:700}}>🛡️</span>}
                               </div>
@@ -3906,7 +3906,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                                         <div style={{fontSize:16,fontWeight:800,color:T.accent,fontFamily:"Rajdhani"}}>{displayNum}</div>
                                       </div>
                                       <div style={{flex:1,minWidth:0}}>
-                                        <div style={{fontWeight:700,fontSize:14,color:T.text}}>{match.team1} <span style={{color:T.muted}}>vs</span> {match.team2}</div>
+                                        <div style={{fontWeight:600,fontSize:14,color:T.text,fontFamily:fonts.body}}>{match.team1} <span style={{color:T.muted}}>vs</span> {match.team2}</div>
                                         <div style={{fontSize:11,color:T.muted,marginTop:2}}>{match.date} • {match.time} IST • {match.venue}</div>
                                         {live && liveScore && <div style={{fontSize:11,color:T.accent,marginTop:2}}>{liveScore.score1} | {liveScore.score2}</div>}
                                       </div>
@@ -4660,14 +4660,14 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                 <button onClick={()=>{setShowMVP(true);setDrawerOpen(false);}} style={{width:"100%",background:"transparent",border:"none",padding:"10px 14px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12}}>
                   <span style={{fontSize:20}}>🏅</span>
                   <div style={{flex:1}}>
-                    <div style={{fontFamily:fonts.body,fontWeight:700,fontSize:14,color:T.text}}>MVP Stats</div>
+                    <div style={{fontFamily:fonts.body,fontWeight:600,fontSize:14,color:T.text,fontFamily:fonts.body}}>MVP Stats</div>
                     <div style={{fontSize:11,color:T.muted}}>Weekly player performance</div>
                   </div>
                 </button>
                 <button onClick={()=>{setShowWeeklyReport(true);setDrawerOpen(false);}} style={{width:"100%",background:showWeeklyReport?"#2ECC7122":"transparent",border:"1px solid "+(showWeeklyReport?"#2ECC7144":"transparent"),borderRadius:10,padding:"10px 14px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12,marginBottom:4}}>
                   <span style={{fontSize:20}}>📋</span>
                   <div style={{flex:1}}>
-                    <div style={{fontFamily:fonts.body,fontWeight:700,fontSize:14,color:T.text}}>Weekly Report</div>
+                    <div style={{fontFamily:fonts.body,fontWeight:600,fontSize:14,color:T.text,fontFamily:fonts.body}}>Weekly Report</div>
                     <div style={{fontSize:11,color:T.muted}}>This week & last week summary</div>
                   </div>
                 </button>
@@ -4677,7 +4677,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                       {unreadNotifCount>0 && <span style={{position:"absolute",top:-4,right:-4,background:"#FF3D5A",borderRadius:"50%",width:14,height:14,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,fontWeight:700,color:"#fff"}}>{unreadNotifCount}</span>}
                     </span>
                     <div style={{flex:1}}>
-                      <div style={{fontFamily:fonts.body,fontWeight:700,fontSize:14,color:T.text}}>Notifications</div>
+                      <div style={{fontFamily:fonts.body,fontWeight:600,fontSize:14,color:T.text,fontFamily:fonts.body}}>Notifications</div>
                       <div style={{fontSize:11,color:T.muted,marginTop:1}}>{unreadNotifCount>0?unreadNotifCount+" unread":"All caught up"}</div>
                     </div>
                     <span style={{color:T.muted,fontSize:11}}>{notifOpen?"▲":"▼"}</span>
@@ -4780,7 +4780,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
               <button onClick={()=>{setShowRulesPanel(true);setDrawerOpen(false);}} style={{width:"100%",background:"transparent",border:"none",padding:"10px 14px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12}}>
                 <span style={{fontSize:20}}>📋</span>
                 <div style={{flex:1}}>
-                  <div style={{fontFamily:fonts.body,fontWeight:700,fontSize:14,color:T.text}}>Points & Rules</div>
+                  <div style={{fontFamily:fonts.body,fontWeight:600,fontSize:14,color:T.text,fontFamily:fonts.body}}>Points & Rules</div>
                   <div style={{fontSize:11,color:T.muted}}>Points system & league timing</div>
                 </div>
                 {pendingVote && <span style={{width:8,height:8,background:"#FF3D5A",borderRadius:"50%",flexShrink:0}} />}

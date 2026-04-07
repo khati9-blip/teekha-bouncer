@@ -12,7 +12,7 @@ import React from "react";
 
 // ── GOOGLE FONTS IMPORT ──────────────────────────────────────────────────
 export const FONT_URL =
-  "https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700;800;900&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap";
+  "https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap";
 
 // ── COLOR TOKENS ─────────────────────────────────────────────────────────
 export const T = {
@@ -51,7 +51,7 @@ export const T = {
 // ── FONT FAMILIES ────────────────────────────────────────────────────────
 export const fonts = {
   display: "'Exo 2', sans-serif",   // headings, numbers, labels, nav
-  body:    "'DM Sans', sans-serif", // body copy, descriptions, inputs
+  body:    "'Plus Jakarta Sans', sans-serif", // body copy, descriptions, inputs
 };
 
 // ── GLOBAL STYLES COMPONENT ───────────────────────────────────────────────
