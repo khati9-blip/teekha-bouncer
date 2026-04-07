@@ -940,14 +940,7 @@ Only include players who appear in the scorecard. Match names as closely as poss
             Copy the scorecard text from any cricket website and paste it below. AI will extract all stats automatically.
           </div>
           <textarea value={pasteText} onChange={e=>setPasteText(e.target.value)}
-            placeholder={"Paste scorecard text here...
-
-Example:
-V Kohli c Maxwell b Bumrah 82 (54) 8x4 3x6
-Rohit Sharma b Chahal 12 (18) 1x4 0x6
-
-Bumrah 4-0-22-3 (Economy: 5.5)
-Chahal 4-0-38-2"}
+placeholder="Paste scorecard text here... (e.g. V Kohli c Maxwell b Bumrah 82 (54) 8x4 3x6 / Bumrah 4-0-22-3)"
             rows={12} style={{width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"10px 14px",color:"#E2EAF4",fontSize:13,fontFamily:"monospace",outline:"none",resize:"vertical",boxSizing:"border-box"}} />
         </div>
         <div style={{padding:"14px 20px",borderTop:"1px solid #1E2D45",display:"flex",gap:10}}>
