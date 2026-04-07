@@ -63,6 +63,7 @@ export function GlobalStyles() {
 
       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+      *, *::before, *::after { font-family: ${fonts.body}; }
       body {
         background: ${T.bg};
         color: ${T.text};
@@ -71,6 +72,8 @@ export function GlobalStyles() {
         line-height: 1.6;
         -webkit-font-smoothing: antialiased;
       }
+      /* Exo 2 only for display elements — override body cascade */
+      h1, h2, h3, h4 { font-family: ${fonts.display}; }
 
       /* Scrollbar */
       ::-webkit-scrollbar { width: 4px; height: 4px; }

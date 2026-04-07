@@ -3383,6 +3383,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
 
   return (
     <>
+      <GlobalStyles />
       {isGuest && <div style={{background:"#4A5E7822",borderBottom:`1px solid ${T.border}`,padding:"6px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:11,fontFamily:fonts.body}}><span style={{color:T.muted}}>👁 Guest — read only</span><button onClick={onLeaveGuest||onLeave} style={{background:"transparent",border:"none",color:T.accent,fontSize:11,cursor:"pointer",fontWeight:700,fontFamily:fonts.body}}>CLAIM TEAM →</button></div>}
       {pitch?.isClone && (
         <div style={{background:"linear-gradient(90deg,#A855F718,#7C3AED18)",borderBottom:"2px solid #A855F766",padding:"10px 20px",display:"flex",alignItems:"center",justifyContent:"center",gap:12}}>
