@@ -2165,6 +2165,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   const [newTournamentName, setNewTournamentName] = useState("");
   const [expandedMatchId, setExpandedMatchId] = useState(null);
   const [captainMatch, setCaptainMatch] = useState(null);
+  const [transferSubTab, setTransferSubTab] = useState("transfer"); // "transfer" | "snatch"
   const [captains, setCaptains] = useState({});
   const [points, setPoints] = useState({});
   const [loading, setLoading] = useState("");
@@ -4136,49 +4137,64 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
 
           {page==="transfer" && (
             <div className="fade-in">
-              <TransferWindowComponent
-                pitch={pitch}
-                teams={teams}
-                players={players}
-                assignments={assignments}
-                transfers={transfers}
-                unsoldPool={unsoldPool}
-                leaderboard={leaderboard}
-                isAdmin={isAdmin}
-                myTeam={myTeam}
-                unlocked={unlocked}
-                withPassword={withPassword}
-                ownershipLog={ownershipLog}
-                points={points}
-                user={user}
-                onUpdateTransfers={(val)=>{setTransfers(val);storeSet("transfers",val);}}
-                onUpdateAssignments={updAssign}
-                onUpdateUnsoldPool={(val)=>{setUnsoldPool(val);storeSet("unsoldPool",val);}}
-                onUpdateOwnershipLog={(val)=>{setOwnershipLog(val);storeSet("ownershipLog",val);}}
-                onUpdatePoints={updPoints}
-                safePlayers={safePlayers}
-              />
-              <SnatchSection
-                teams={teams}
-                players={players}
-                assignments={assignments}
-                snatch={snatch}
-                points={points}
-                matches={matches}
-                leaderboard={leaderboard}
-                myTeam={myTeam}
-                isAdmin={isAdmin}
-                unlocked={unlocked}
-                withPassword={withPassword}
-                teamIdentity={teamIdentity}
-                user={user}
-                pitch={pitch}
-                ownershipLog={ownershipLog}
-                pushNotif={pushNotif}
-                onUpdateSnatch={(val)=>{setSnatch(val);storeSet("snatch",val);}}
-                onUpdateAssignments={updAssign}
-                onUpdateOwnershipLog={(val)=>{setOwnershipLog(val);storeSet("ownershipLog",val);}}
-              />
+              {/* Sub-tabs */}
+              <div style={{display:"flex",gap:4,background:T.card,borderRadius:12,padding:4,marginBottom:16,border:`1px solid ${T.border}`}}>
+                {[["transfer","🔄 Transfer Window"],["snatch","⚡ Snatch Window"]].map(([id,label])=>(
+                  <button key={id} onClick={()=>setTransferSubTab(id)}
+                    style={{flex:1,padding:"10px",border:"none",borderRadius:9,background:transferSubTab===id?T.bg:"transparent",color:transferSubTab===id?T.accent:T.muted,fontFamily:fonts.display,fontWeight:700,fontSize:13,cursor:"pointer",letterSpacing:0.5,transition:"all 0.2s",boxShadow:transferSubTab===id?`0 2px 8px rgba(0,0,0,0.3)`:undefined}}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              {transferSubTab==="transfer" && (
+                <TransferWindowComponent
+                  pitch={pitch}
+                  teams={teams}
+                  players={players}
+                  assignments={assignments}
+                  transfers={transfers}
+                  unsoldPool={unsoldPool}
+                  leaderboard={leaderboard}
+                  isAdmin={isAdmin}
+                  myTeam={myTeam}
+                  unlocked={unlocked}
+                  withPassword={withPassword}
+                  ownershipLog={ownershipLog}
+                  points={points}
+                  user={user}
+                  onUpdateTransfers={(val)=>{setTransfers(val);storeSet("transfers",val);}}
+                  onUpdateAssignments={updAssign}
+                  onUpdateUnsoldPool={(val)=>{setUnsoldPool(val);storeSet("unsoldPool",val);}}
+                  onUpdateOwnershipLog={(val)=>{setOwnershipLog(val);storeSet("ownershipLog",val);}}
+                  onUpdatePoints={updPoints}
+                  safePlayers={safePlayers}
+                />
+              )}
+
+              {transferSubTab==="snatch" && (
+                <SnatchSection
+                  teams={teams}
+                  players={players}
+                  assignments={assignments}
+                  snatch={snatch}
+                  points={points}
+                  matches={matches}
+                  leaderboard={leaderboard}
+                  myTeam={myTeam}
+                  isAdmin={isAdmin}
+                  unlocked={unlocked}
+                  withPassword={withPassword}
+                  teamIdentity={teamIdentity}
+                  user={user}
+                  pitch={pitch}
+                  ownershipLog={ownershipLog}
+                  pushNotif={pushNotif}
+                  onUpdateSnatch={(val)=>{setSnatch(val);storeSet("snatch",val);}}
+                  onUpdateAssignments={updAssign}
+                  onUpdateOwnershipLog={(val)=>{setOwnershipLog(val);storeSet("ownershipLog",val);}}
+                />
+              )}
             </div>
           )}
 
