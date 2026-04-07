@@ -1906,7 +1906,7 @@ function ChatWindow({ myTeam, teams, unlocked, withPassword, storeGet, storeSet,
 
 
 
-function CaptainModal({ match, teams, players, assignments, captains, myTeam, unlocked, isGuest, withPassword, onSave, onClose }) {
+function CaptainModal({ match, teams, players, assignments, captains, points, myTeam, unlocked, isGuest, withPassword, onSave, onClose }) {
   const isLocked = !!captains[match.id+"_locked"];
 
   // Local state to avoid stale closure bug — copy on open, save on close
@@ -1955,7 +1955,12 @@ function CaptainModal({ match, teams, players, assignments, captains, myTeam, un
 
         {teams.map(team => {
           const cap = local[team.id] || {};
-          const teamPlayers = players.filter(p => assignments[p.id] === team.id);
+          // Only show players whose iplTeam is one of the two match teams
+          const matchTeams = [match.team1, match.team2].map(t => t.toLowerCase().trim());
+          const teamPlayers = players.filter(p =>
+            assignments[p.id] === team.id &&
+            matchTeams.some(mt => (p.iplTeam || "").toLowerCase().trim().includes(mt) || mt.includes((p.iplTeam || "").toLowerCase().trim()))
+          );
           const editable = canEdit(team.id);
           const isMyTeam = myTeam?.id === team.id;
 
@@ -1974,15 +1979,21 @@ function CaptainModal({ match, teams, players, assignments, captains, myTeam, un
                   <div key={role}>
                     <div style={{fontSize:10,color:T.muted,letterSpacing:1,marginBottom:6}}>{role==="captain"?"⭐ CAPTAIN (2×)":"🥈 VICE CAPTAIN (1.5×)"}</div>
                     {editable ? (
+                      teamPlayers.length === 0 ? (
+                        <div style={{background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"8px 10px",fontSize:12,color:T.muted,fontFamily:fonts.body}}>
+                          No players from {match.team1} or {match.team2}
+                        </div>
+                      ) : (
                       <select value={cap[role]||""} onChange={e=>handleChange(team.id, role, e.target.value)}
                         style={{width:"100%",background:T.bg,border:"1px solid "+(isMyTeam?team.color+"44":"#1E2D45"),borderRadius:8,padding:"7px 10px",color:T.text,fontSize:13,fontFamily:fonts.body,cursor:"pointer",outline:"none"}}>
                         <option value="">— None —</option>
                         {teamPlayers.map(p=>(
                           <option key={p.id} value={p.id} disabled={(role==="vc"&&cap.captain===p.id)||(role==="captain"&&cap.vc===p.id)}>
-                            {p.name}
+                            {p.name} ({p.iplTeam})
                           </option>
                         ))}
                       </select>
+                      )
                     ) : (
                       <div style={{background:T.bg,borderRadius:8,padding:"8px 12px",fontWeight:700,color:role==="captain"?"#F5A623":"#94A3B8",fontSize:14}}>
                         {teamPlayers.find(p=>p.id===cap[role])?.name||"—"}
@@ -4512,6 +4523,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
           players={players}
           assignments={assignments}
           captains={captains}
+          points={points}
           myTeam={myTeam}
           unlocked={unlocked}
           isGuest={isGuest}
