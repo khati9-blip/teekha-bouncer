@@ -1391,7 +1391,7 @@ function FeedbackWidget({ pitches, user }) {
 
       {/* Modal */}
       {open && (
-        <div style={{position:"fixed",top:"50%",left:"50%",transform:"translate(-50%,-50%)",zIndex:600,width:"min(440px,95vw)",background:T.card,borderRadius:18,border:`1px solid ${T.border}`,boxShadow:"0 24px 80px rgba(0,0,0,0.6)",overflow:"hidden",animation:"tb-fadeUp 0.3s ease both"}}>
+        <div style={{position:"fixed",top:"50%",left:"50%",transform:"translate(-50%,-50%)",zIndex:600,width:"min(440px,95vw)",maxHeight:"90vh",display:"flex",flexDirection:"column",background:T.card,borderRadius:18,border:`1px solid ${T.border}`,boxShadow:"0 24px 80px rgba(0,0,0,0.6)",overflow:"hidden",animation:"tb-fadeUp 0.3s ease both"}}>
           {/* Header */}
           <div style={{padding:"20px 22px 16px",borderBottom:`1px solid ${T.border}`,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
             <div>
@@ -1410,7 +1410,7 @@ function FeedbackWidget({ pitches, user }) {
           </div>
 
           {/* Body */}
-          <div style={{padding:"18px 22px"}}>
+          <div style={{padding:"18px 22px",overflowY:"auto",flex:1}}>
             {sent ? (
               <div style={{textAlign:"center",padding:"24px 0"}}>
                 <div style={{fontSize:48,marginBottom:12}}>🎉</div>
