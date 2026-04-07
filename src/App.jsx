@@ -3679,8 +3679,8 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
               {players.length===0?(
                 <Card sx={{padding:60,textAlign:"center"}}>
                   <div style={{fontSize:56}}>🏏</div>
-                  <div style={{color:T.muted,marginTop:16,fontSize:16}}>Click "Fetch IPL Players" to load all 10 squads</div>
-                  <div style={{color:T.muted,marginTop:8,fontSize:13}}>This fetches each team one by one — takes about 30 seconds</div>
+                  <div style={{color:T.muted,marginTop:16,fontSize:16}}>Click "Fetch Players" to load squads</div>
+                  <div style={{color:T.muted,marginTop:8,fontSize:13}}>Choose from any cricket league — IPL, BBL, PSL, The Hundred and more</div>
                 </Card>
               ):squadView?(
                 <div style={{display:"flex",flexDirection:"column",gap:12}}>
