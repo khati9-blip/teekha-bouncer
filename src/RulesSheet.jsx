@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { T, fonts } from "./Theme";
+import { T, fonts, FONT_URL } from "./Theme";
 
 const sections = [
   {
@@ -100,6 +100,7 @@ export default function RulesSheet() {
   return (
     <>
       <style>{`
+        @import url('${FONT_URL}');
         @keyframes rsSlideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
         @keyframes rsFadeIn{from{opacity:0}to{opacity:1}}
         .rs-btn:hover{background:${T.accentBg}!important;border-color:${T.accentBorder}!important;color:${T.accent}!important;transform:scale(1.06);}
