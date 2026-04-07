@@ -1698,11 +1698,12 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
             </div>
           </div>
         )}
+        {/* Feedback */}
+        <FeedbackWidget pitches={pitches} user={user} />
         </div>
       </div>
 
       <RulesSheet />
-      <FeedbackWidget pitches={pitches} user={user} />
 
       {/* Clone Modal */}
       {cloneModal && (
