@@ -1610,9 +1610,6 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
 }
 
 
-}
-
-
 function TeamClaimScreen({ pitch, user, onClaimed, onBack, onGuest, onAdmin, guestAllowed }) {
   const [mode, setMode] = useState(null); // null | 'teamid' | 'admin'
   const [teamIdInput, setTeamIdInput] = useState("");
