@@ -1398,16 +1398,15 @@ function FeedbackWidget({ pitches, user }) {
               <div style={{fontFamily:fonts.display,fontWeight:800,fontSize:19,color:T.accent,letterSpacing:1}}>💬 SEND FEEDBACK</div>
               <div style={{fontFamily:fonts.body,fontSize:12,color:T.muted,marginTop:3}}>We read every message — help us make this better</div>
             </div>
+            <button onClick={reset} style={{background:T.border,border:"none",borderRadius:8,width:30,height:30,color:T.sub,fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
           </div>
           {/* What kind of feedback */}
-          <div style={{padding:"12px 22px",background:T.accentBg,borderBottom:`1px solid ${T.border}`,display:"flex",gap:16,flexWrap:"wrap"}}>
-            {[["🐛","Bug / something broken"],["💡","Feature request"],["⚙️","Rule change / new rule"],["📊","Points system tweak"],["🎨","Design feedback"]].map(([emoji,label])=>(
+          <div style={{padding:"10px 22px",background:T.accentBg,borderBottom:`1px solid ${T.border}`,display:"flex",gap:14,flexWrap:"wrap"}}>
+            {[["🐛","Bug"],["💡","Feature"],["⚙️","Rule change"],["📊","Points"],["🎨","Design"]].map(([emoji,label])=>(
               <div key={label} style={{fontFamily:fonts.body,fontSize:11,color:T.muted,display:"flex",alignItems:"center",gap:4}}>
                 <span>{emoji}</span><span>{label}</span>
               </div>
             ))}
-            </div>
-            <button onClick={reset} style={{background:T.border,border:"none",borderRadius:8,width:30,height:30,color:T.sub,fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
           </div>
 
           {/* Body */}
