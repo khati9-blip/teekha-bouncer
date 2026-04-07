@@ -934,6 +934,13 @@ export default function TransferWindow({
                                 <span style={{fontSize:11,color:T.muted}}>↩️ returned (passed)</span>
                               </div>
                             </>
+                          ) : (phase === "done" || !currentPickTeamId) ? (
+                            <>
+                              <span style={{color:T.muted,fontSize:14}}>→</span>
+                              <div style={{background:"#4A5E7822",border:"1px solid #4A5E7844",borderRadius:8,padding:"5px 10px"}}>
+                                <span style={{fontSize:11,color:T.muted}}>↩️ returned to squad</span>
+                              </div>
+                            </>
                           ) : (
                             <>
                               <span style={{color:T.muted,fontSize:14}}>→</span>
