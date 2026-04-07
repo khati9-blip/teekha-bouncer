@@ -1273,11 +1273,24 @@ export default function TransferWindow({
 }
 
 function TransferHistory({ transfers, players, teams }) {
-  const history = [...(transfers.history || [])].reverse(); // newest first
   const currentWeek = transfers.weekNum || 1;
-
   const getPlayer = (pid) => players.find(p => p.id === pid);
   const getTeam   = (tid) => teams.find(t => t.id === tid);
+
+  // Include current week trades if any exist (even before archiving)
+  const currentTrades = transfers.tradedPairs || [];
+  const currentReleases = transfers.releases || {};
+  const hasCurrentActivity = currentTrades.length > 0 || Object.values(currentReleases).some(r => r.length > 0);
+
+  const currentWeekEntry = hasCurrentActivity ? [{
+    week: currentWeek,
+    tradedPairs: currentTrades,
+    releases: currentReleases,
+    returnedPlayers: [],
+    isCurrent: true,
+  }] : [];
+
+  const history = [...currentWeekEntry, ...[...(transfers.history || [])].reverse()];
 
   if (history.length === 0) {
     return (
@@ -1315,7 +1328,7 @@ function TransferHistory({ transfers, players, teams }) {
             <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 18px",borderBottom:`1px solid ${T.border}`,background:T.bg}}>
               <div style={{display:"flex",alignItems:"center",gap:12}}>
                 <div style={{background:T.accentBg,border:`1px solid ${T.accentBorder}`,borderRadius:8,padding:"4px 12px",fontFamily:fonts.display,fontWeight:800,fontSize:18,color:T.accent}}>
-                  W{weekNum}
+                  W{weekNum}{week.isCurrent ? " 🔴" : ""}
                 </div>
                 <div>
                   <div style={{fontFamily:fonts.display,fontWeight:700,fontSize:15,color:T.text,letterSpacing:1}}>
