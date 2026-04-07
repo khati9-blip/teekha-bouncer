@@ -85,12 +85,25 @@ function CountdownHero({ matches }) {
   );
 
   if (!next) return null;
-  // Safely parse match time — handle missing, invalid, or various time formats
+  // Safely parse match time — handles "7:30 PM", "19:30", "19:30:00", missing
   let matchTime;
   try {
-    const timeStr = next.time ? next.time.replace(/[^0-9:]/g, "").slice(0, 8).padEnd(8, ":00").slice(0, 8) : "14:00:00";
-    const parsed = new Date(next.date + "T" + timeStr);
-    matchTime = isNaN(parsed.getTime()) ? new Date(next.date + "T14:00:00") : parsed;
+    let hours = 14, minutes = 0;
+    if (next.time) {
+      const t = next.time.trim();
+      const isPM = /pm/i.test(t);
+      const isAM = /am/i.test(t);
+      const nums = t.replace(/[^0-9:]/g, "");
+      const parts = nums.split(":");
+      hours = parseInt(parts[0]) || 14;
+      minutes = parseInt(parts[1]) || 0;
+      // Convert 12-hour to 24-hour
+      if (isPM && hours < 12) hours += 12;
+      if (isAM && hours === 12) hours = 0;
+    }
+    const pad = n => String(n).padStart(2, "0");
+    matchTime = new Date(next.date + "T" + pad(hours) + ":" + pad(minutes) + ":00");
+    if (isNaN(matchTime.getTime())) matchTime = new Date(next.date + "T14:00:00");
   } catch { matchTime = new Date(next.date + "T14:00:00"); }
   const diff = matchTime - now;
   const isToday = new Date(next.date).toDateString() === new Date().toDateString();
