@@ -685,6 +685,85 @@ function SmartStatsModal({ match, players, assignments, existingStats, onSave, o
   const [activeTab, setActiveTab] = React.useState("batting");
   const [fetching, setFetching] = React.useState(false);
   const [fetchStatus, setFetchStatus] = React.useState("");
+  const [showPasteModal, setShowPasteModal] = React.useState(false);
+  const [pasteText, setPasteText] = React.useState("");
+  const [parsing, setParsing] = React.useState(false);
+
+  const parseScorecard = async () => {
+    if (!pasteText.trim()) return;
+    setParsing(true);
+    setFetchStatus("AI parsing scorecard…");
+    try {
+      const playerList = matchPlayers.map(p => p.name + " (" + (p.iplTeam||"") + ")").join(", ");
+      const res = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 4000,
+          system: "You are a cricket scorecard parser. Extract player stats from the scorecard text and return ONLY a valid JSON array. No markdown, no explanation.",
+          messages: [{ role: "user", content: `Parse this cricket scorecard and extract stats for these players: ${playerList}.
+
+Scorecard:
+${pasteText}
+
+Return ONLY a JSON array: [{"name":"Player Name","runs":0,"balls":0,"fours":0,"sixes":0,"dismissed":false,"wickets":0,"overs":0,"economy":0,"maidens":0,"catches":0,"stumpings":0,"runouts":0,"longestSix":false,"mom":false}]
+Only include players who appear in the scorecard. Match names as closely as possible.` }],
+        }),
+      });
+      const data = await res.json();
+      const text = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("");
+      const clean = text.replace(/^```json\s*/m,"").replace(/^```\s*/m,"").replace(/```\s*$/m,"").trim();
+      let parsed = [];
+      try { parsed = JSON.parse(clean); } catch { throw new Error("Could not parse AI response"); }
+      
+      // Match parsed players to our matchPlayers
+      const nameMap = {};
+      matchPlayers.forEach(p => {
+        nameMap[p.name.toLowerCase()] = p;
+        p.name.toLowerCase().split(" ").forEach(part => { if(part.length > 3) nameMap[part] = p; });
+      });
+      const findP = (name) => {
+        const n = (name||"").toLowerCase().trim();
+        if (nameMap[n]) return nameMap[n];
+        for (const part of n.split(" ")) { if(part.length >= 4 && nameMap[part]) return nameMap[part]; }
+        return null;
+      };
+
+      const newStats = {...stats};
+      let matched = 0;
+      for (const entry of parsed) {
+        const p = findP(entry.name);
+        if (!p) continue;
+        matched++;
+        newStats[p.id] = {
+          ...newStats[p.id],
+          runs: +entry.runs || 0,
+          balls: +entry.balls || 0,
+          fours: +entry.fours || 0,
+          sixes: +entry.sixes || 0,
+          dismissed: !!entry.dismissed,
+          wickets: +entry.wickets || 0,
+          overs: +entry.overs || 0,
+          economy: +entry.economy || 0,
+          maidens: +entry.maidens || 0,
+          catches: +entry.catches || 0,
+          stumpings: +entry.stumpings || 0,
+          runouts: +entry.runouts || 0,
+          longestSix: !!entry.longestSix,
+          mom: !!entry.mom,
+          played: true,
+        };
+      }
+      setStats(newStats);
+      setFetchStatus("✅ Parsed " + matched + " players from scorecard");
+      setShowPasteModal(false);
+      setPasteText("");
+    } catch(e) {
+      setFetchStatus("❌ Parse failed: " + e.message);
+    }
+    setParsing(false);
+  };
 
   const upd = (pid, field, val) => setStats(s => ({...s, [pid]: {...s[pid], [field]: val}}));
 
@@ -845,6 +924,43 @@ function SmartStatsModal({ match, players, assignments, existingStats, onSave, o
     onSave(result);
   };
 
+  // Paste scorecard modal
+  const PasteModal = () => !showPasteModal ? null : (
+    <div style={{position:"fixed",inset:0,background:"rgba(5,8,16,0.95)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:400,padding:20}}>
+      <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #A855F744",width:"100%",maxWidth:500,display:"flex",flexDirection:"column",maxHeight:"85vh"}}>
+        <div style={{padding:"18px 20px",borderBottom:"1px solid #1E2D45",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div>
+            <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:800,fontSize:18,color:"#A855F7",letterSpacing:2}}>📋 PASTE SCORECARD</div>
+            <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>Paste from Cricinfo, Google, anywhere — AI will parse it</div>
+          </div>
+          <button onClick={()=>{setShowPasteModal(false);setPasteText("");}} style={{background:"#1E2D45",border:"none",borderRadius:8,width:30,height:30,color:"#94A3B8",fontSize:16,cursor:"pointer"}}>✕</button>
+        </div>
+        <div style={{flex:1,overflowY:"auto",padding:"16px 20px"}}>
+          <div style={{fontSize:11,color:"#4A5E78",marginBottom:8,lineHeight:1.6}}>
+            Copy the scorecard text from any cricket website and paste it below. AI will extract all stats automatically.
+          </div>
+          <textarea value={pasteText} onChange={e=>setPasteText(e.target.value)}
+            placeholder={"Paste scorecard text here...
+
+Example:
+V Kohli c Maxwell b Bumrah 82 (54) 8x4 3x6
+Rohit Sharma b Chahal 12 (18) 1x4 0x6
+
+Bumrah 4-0-22-3 (Economy: 5.5)
+Chahal 4-0-38-2"}
+            rows={12} style={{width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"10px 14px",color:"#E2EAF4",fontSize:13,fontFamily:"monospace",outline:"none",resize:"vertical",boxSizing:"border-box"}} />
+        </div>
+        <div style={{padding:"14px 20px",borderTop:"1px solid #1E2D45",display:"flex",gap:10}}>
+          <button onClick={()=>{setShowPasteModal(false);setPasteText("");}} style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:10,padding:11,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
+          <button onClick={parseScorecard} disabled={!pasteText.trim()||parsing}
+            style={{flex:2,background:"linear-gradient(135deg,#A855F7,#7C3AED)",border:"none",borderRadius:10,padding:11,color:"#fff",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:14,cursor:!pasteText.trim()||parsing?"not-allowed":"pointer",opacity:!pasteText.trim()||parsing?0.6:1}}>
+            {parsing?"🤖 PARSING…":"🤖 PARSE WITH AI"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   const tabBtn = (tab, label) => (
     <button onClick={()=>setActiveTab(tab)} style={{padding:"8px 16px",border:"none",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,letterSpacing:1,background:activeTab===tab?"#F5A623":"transparent",color:activeTab===tab?"#080C14":"#4A5E78",borderRadius:6}}>
       {label}
@@ -854,6 +970,7 @@ function SmartStatsModal({ match, players, assignments, existingStats, onSave, o
   const inp = {width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:6,padding:"6px 4px",color:"#E2EAF4",fontSize:14,fontFamily:"Barlow Condensed,sans-serif",textAlign:"center"};
 
   return (
+    <><PasteModal />
     <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,backdropFilter:"blur(6px)"}}>
       <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #1E2D45",width:"100%",maxWidth:720,margin:"0 12px",maxHeight:"92vh",display:"flex",flexDirection:"column"}}>
 
@@ -862,12 +979,19 @@ function SmartStatsModal({ match, players, assignments, existingStats, onSave, o
           <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:"#F5A623",letterSpacing:2}}>📊 MATCH STATS — M{match.matchNum}</div>
           <div style={{color:"#4A5E78",fontSize:13,marginTop:2}}>{match.team1} vs {match.team2} • {match.date} • {match.venue}</div>
           <div style={{marginTop:12,display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-            <button onClick={fetchFromCricbuzz} disabled={fetching}
-              style={{background:"linear-gradient(135deg,#4F8EF7,#1a5fb4)",border:"none",borderRadius:8,padding:"9px 18px",color:"#fff",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:fetching?"not-allowed":"pointer",opacity:fetching?0.6:1,letterSpacing:1}}>
-              {fetching?"⏳ FETCHING…":"🟠 CRICBUZZ"}
+            <button onClick={fetchFromCricketData} disabled={fetching}
+              style={{background:"linear-gradient(135deg,#2ECC71,#16a34a)",border:"none",borderRadius:8,padding:"9px 18px",color:"#fff",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:fetching?"not-allowed":"pointer",opacity:fetching?0.6:1,letterSpacing:1}}>
+              {fetching?"⏳ FETCHING…":"🟢 SYNC FROM CRICKETDATA"}
             </button>
-            <span style={{fontSize:11,color:"#4A5E78",padding:"4px 0"}}>🔄 Cricbuzz resets April 1st</span>
-            {fetchStatus && <span style={{fontSize:12,color:fetchStatus.startsWith("✅")?"#2ECC71":fetchStatus.startsWith("❌")?"#FF3D5A":"#F5A623"}}>{fetchStatus}</span>}
+            <button onClick={fetchFromCricbuzz} disabled={fetching}
+              style={{background:"transparent",border:"1px solid #4F8EF744",borderRadius:8,padding:"9px 14px",color:"#4F8EF7",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:12,cursor:fetching?"not-allowed":"pointer",opacity:fetching?0.6:1,letterSpacing:1}}>
+              🟠 CRICBUZZ
+            </button>
+            <button onClick={()=>setShowPasteModal(true)} disabled={fetching}
+              style={{background:"transparent",border:"1px solid #A855F744",borderRadius:8,padding:"9px 14px",color:"#A855F7",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",letterSpacing:1}}>
+              📋 PASTE SCORECARD
+            </button>
+            {fetchStatus && <span style={{fontSize:12,color:fetchStatus.startsWith("✅")?"#2ECC71":fetchStatus.startsWith("❌")?"#FF3D5A":"#F5A623",marginTop:4,width:"100%"}}>{fetchStatus}</span>}
           </div>
         </div>
 
