@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import { T, fonts, FONT_URL } from "./Theme";
 
 async function callAI(userPrompt, system = "Return only valid JSON.") {
   const body = { model: "claude-sonnet-4-20250514", max_tokens: 4000, system, messages: [{ role: "user", content: userPrompt }] };
@@ -38,24 +39,24 @@ const POPULAR_LEAGUES = [
 ];
 
 const TAB_STYLE = (active) => ({
-  flex: 1, padding: "10px 4px", border: "none", borderRadius: 8,
-  background: active ? "#1E2D45" : "transparent",
-  color: active ? "#F5A623" : "#4A5E78",
-  fontFamily: "Barlow Condensed,sans-serif", fontWeight: 700, fontSize: 12,
+  flex: 1, padding: "9px 4px", border: "none", borderRadius: 8,
+  background: active ? T.border : "transparent",
+  color: active ? T.accent : T.muted,
+  fontFamily: fonts.display, fontWeight: 700, fontSize: 11,
   cursor: "pointer", letterSpacing: 0.3,
 });
 
 const BTN = (color) => ({
   background: `linear-gradient(135deg,${color},${color}BB)`,
   border: "none", borderRadius: 10, padding: "11px 20px",
-  color: "#080C14", fontFamily: "Barlow Condensed,sans-serif",
-  fontWeight: 800, fontSize: 14, cursor: "pointer",
+  color: T.bg, fontFamily: fonts.display, fontWeight: 800, fontSize: 13,
+  cursor: "pointer", letterSpacing: 0.5,
 });
 
 const INP = {
-  width: "100%", background: "#080C14", border: "1px solid #1E2D45",
-  borderRadius: 8, padding: "10px 14px", color: "#E2EAF4", fontSize: 14,
-  fontFamily: "Barlow Condensed,sans-serif", outline: "none",
+  width: "100%", background: T.bg, border: `1px solid ${T.border}`,
+  borderRadius: 8, padding: "10px 14px", color: T.text, fontSize: 14,
+  fontFamily: fonts.body, outline: "none",
   marginBottom: 10, boxSizing: "border-box",
 };
 
@@ -110,7 +111,7 @@ function CricketDataTab({ existingPlayers, onDone, setStatus }) {
 
   return (
     <div>
-      <div style={{ fontSize: 12, color: "#4A5E78", marginBottom: 14, lineHeight: 1.5 }}>Fetch squads from <span style={{ color: "#2ECC71" }}>CricketData</span> — 100 req/day.</div>
+      <div style={{ fontSize: 12, color: T.muted, marginBottom: 14, lineHeight: 1.5 }}>Fetch squads from <span style={{ color: T.success }}>CricketData</span> — 100 req/day.</div>
       {series.length === 0 ? (
         <button onClick={loadSeries} disabled={loading} style={{ ...BTN("#2ECC71"), width: "100%" }}>
           {loading ? "Loading…" : "🟢 LOAD TOURNAMENT LIST"}
@@ -118,16 +119,16 @@ function CricketDataTab({ existingPlayers, onDone, setStatus }) {
       ) : (
         <>
           <input value={input} onChange={e => setInput(e.target.value)} placeholder="Search tournament…" autoFocus style={INP} />
-          <div style={{ maxHeight: 200, overflowY: "auto", border: "1px solid #1E2D45", borderRadius: 8, marginBottom: 12 }}>
+          <div style={{ maxHeight: 200, overflowY: "auto", border: `1px solid ${T.border}`, borderRadius: 8, marginBottom: 12 }}>
             {filtered.slice(0, 30).map(s => (
               <div key={s.id} onClick={() => setSelected(s)}
                 style={{ padding: "10px 14px", cursor: "pointer", borderBottom: "1px solid #1E2D4433", background: selected?.id === s.id ? "#2ECC7122" : "transparent", color: selected?.id === s.id ? "#2ECC71" : "#E2EAF4", fontSize: 13 }}>
                 {s.name} {selected?.id === s.id && "✓"}
               </div>
             ))}
-            {filtered.length === 0 && <div style={{ padding: 16, color: "#4A5E78", fontSize: 13, textAlign: "center" }}>No results</div>}
+            {filtered.length === 0 && <div style={{ padding: 16, color: T.muted, fontSize: 13, textAlign: "center" }}>No results</div>}
           </div>
-          {selected && <div style={{ background: "#2ECC7111", border: "1px solid #2ECC7133", borderRadius: 8, padding: "8px 12px", marginBottom: 12, fontSize: 12, color: "#2ECC71" }}>Selected: <strong>{selected.name}</strong></div>}
+          {selected && <div style={{ background: "#2ECC7111", border: "1px solid #2ECC7133", borderRadius: 8, padding: "8px 12px", marginBottom: 12, fontSize: 12, color: T.success }}>Selected: <strong>{selected.name}</strong></div>}
           <button onClick={fetch_} disabled={!selected || fetching} style={{ ...BTN("#2ECC71"), width: "100%", opacity: !selected || fetching ? 0.5 : 1 }}>
             {fetching ? "Fetching…" : "🟢 FETCH SQUADS"}
           </button>
@@ -176,22 +177,22 @@ function AIGenerateTab({ existingPlayers, onDone, setStatus }) {
 
   return (
     <div>
-      <div style={{ fontSize: 12, color: "#4A5E78", marginBottom: 14 }}>Use AI to generate squads for any cricket league worldwide.</div>
+      <div style={{ fontSize: 12, color: T.muted, marginBottom: 14 }}>Use AI to generate squads for any cricket league worldwide.</div>
       {!mode && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <button onClick={() => setMode("preset")} style={{ ...BTN("#A855F7"), width: "100%", padding: "14px" }}>🏆 POPULAR LEAGUES</button>
-          <button onClick={() => setMode("custom")} style={{ background: "#4A5E7822", border: "1px solid #4A5E7844", borderRadius: 10, padding: "14px", color: "#94A3B8", fontFamily: "Barlow Condensed,sans-serif", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>✏️ CUSTOM TEAMS</button>
+          <button onClick={() => setMode("custom")} style={{ background: "#4A5E7822", border: "1px solid #4A5E7844", borderRadius: 10, padding: "14px", color: T.sub, fontFamily: fonts.body, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>✏️ CUSTOM TEAMS</button>
         </div>
       )}
       {mode === "preset" && (
         <div>
-          <button onClick={() => setMode(null)} style={{ background: "none", border: "none", color: "#4A5E78", cursor: "pointer", fontSize: 13, marginBottom: 10, padding: 0 }}>← Back</button>
+          <button onClick={() => setMode(null)} style={{ background: "none", border: "none", color: T.muted, cursor: "pointer", fontSize: 13, marginBottom: 10, padding: 0 }}>← Back</button>
           <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
             {POPULAR_LEAGUES.map(l => (
               <div key={l.name} onClick={() => setPreset(l)}
                 style={{ padding: "12px 14px", background: preset?.name === l.name ? "#A855F722" : "#080C14", border: `1px solid ${preset?.name === l.name ? "#A855F744" : "#1E2D45"}`, borderRadius: 8, cursor: "pointer" }}>
                 <div style={{ fontWeight: 700, fontSize: 13, color: preset?.name === l.name ? "#A855F7" : "#E2EAF4" }}>{l.name}</div>
-                <div style={{ fontSize: 11, color: "#4A5E78", marginTop: 2 }}>{l.teams.split(",").length} teams</div>
+                <div style={{ fontSize: 11, color: T.muted, marginTop: 2 }}>{l.teams.split(",").length} teams</div>
               </div>
             ))}
           </div>
@@ -200,10 +201,10 @@ function AIGenerateTab({ existingPlayers, onDone, setStatus }) {
       )}
       {mode === "custom" && (
         <div>
-          <button onClick={() => setMode(null)} style={{ background: "none", border: "none", color: "#4A5E78", cursor: "pointer", fontSize: 13, marginBottom: 10, padding: 0 }}>← Back</button>
-          <div style={{ fontSize: 11, color: "#4A5E78", marginBottom: 6 }}>Team names, comma-separated:</div>
+          <button onClick={() => setMode(null)} style={{ background: "none", border: "none", color: T.muted, cursor: "pointer", fontSize: 13, marginBottom: 10, padding: 0 }}>← Back</button>
+          <div style={{ fontSize: 11, color: T.muted, marginBottom: 6 }}>Team names, comma-separated:</div>
           <textarea value={custom} onChange={e => setCustom(e.target.value)} placeholder="e.g. Mumbai Indians, Chennai Super Kings, RCB" rows={4} style={{ ...INP, resize: "vertical" }} />
-          <div style={{ fontSize: 11, color: "#4A5E78", marginBottom: 10 }}>{custom.split(",").filter(t => t.trim()).length} teams</div>
+          <div style={{ fontSize: 11, color: T.muted, marginBottom: 10 }}>{custom.split(",").filter(t => t.trim()).length} teams</div>
           <button onClick={() => run(custom.split(","))} disabled={!custom.trim() || generating} style={{ ...BTN("#A855F7"), width: "100%", opacity: !custom.trim() || generating ? 0.5 : 1 }}>{generating ? progress : "🤖 GENERATE SQUADS"}</button>
         </div>
       )}
@@ -262,9 +263,9 @@ function ManualTab({ existingPlayers, onDone, setStatus }) {
 
   return (
     <div>
-      <div style={{ display: "flex", gap: 4, background: "#080C14", borderRadius: 8, padding: 4, marginBottom: 14 }}>
+      <div style={{ display: "flex", gap: 4, background: T.bg, borderRadius: 8, padding: 4, marginBottom: 14 }}>
         {[["single", "➕ Single"], ["bulk", "📋 Bulk"], ["csv", "📁 CSV"]].map(([id, label]) => (
-          <button key={id} onClick={() => setSub(id)} style={{ flex: 1, padding: "7px 4px", border: "none", borderRadius: 6, background: sub === id ? "#1E2D45" : "transparent", color: sub === id ? "#E2EAF4" : "#4A5E78", fontFamily: "Barlow Condensed,sans-serif", fontWeight: 700, fontSize: 11, cursor: "pointer" }}>{label}</button>
+          <button key={id} onClick={() => setSub(id)} style={{ flex: 1, padding: "7px 4px", border: "none", borderRadius: 6, background: sub === id ? "#1E2D45" : "transparent", color: sub === id ? "#E2EAF4" : "#4A5E78", fontFamily: fonts.body, fontWeight: 700, fontSize: 11, cursor: "pointer" }}>{label}</button>
         ))}
       </div>
 
@@ -281,12 +282,12 @@ function ManualTab({ existingPlayers, onDone, setStatus }) {
 
       {sub === "bulk" && (
         <div>
-          <div style={{ fontSize: 12, color: "#4A5E78", marginBottom: 8 }}>One per line: <code style={{ color: "#F5A623" }}>Name, Team, Role</code></div>
+          <div style={{ fontSize: 12, color: T.muted, marginBottom: 8 }}>One per line: <code style={{ color: T.accent }}>Name, Team, Role</code></div>
           <textarea value={bulk} onChange={e => { setBulk(e.target.value); setPreview(parseBulk(e.target.value)); }} placeholder={"Rohit Sharma, MI, Batsman\nJasprit Bumrah, MI, Bowler"} rows={6} style={{ ...INP, resize: "vertical", fontFamily: "monospace", fontSize: 12 }} />
           {preview.length > 0 && (
-            <div style={{ background: "#080C14", borderRadius: 8, border: "1px solid #1E2D45", padding: "8px 12px", marginBottom: 10, maxHeight: 100, overflowY: "auto" }}>
-              {preview.slice(0, 6).map((p, i) => <div key={i} style={{ fontSize: 11, color: "#94A3B8" }}><span style={{ color: "#E2EAF4" }}>{p.name}</span>{p.iplTeam && <span style={{ color: "#4A5E78" }}> · {p.iplTeam}</span>}</div>)}
-              {preview.length > 6 && <div style={{ fontSize: 11, color: "#4A5E78" }}>+{preview.length - 6} more</div>}
+            <div style={{ background: T.bg, borderRadius: 8, border: `1px solid ${T.border}`, padding: "8px 12px", marginBottom: 10, maxHeight: 100, overflowY: "auto" }}>
+              {preview.slice(0, 6).map((p, i) => <div key={i} style={{ fontSize: 11, color: T.sub }}><span style={{ color: T.text }}>{p.name}</span>{p.iplTeam && <span style={{ color: T.muted }}> · {p.iplTeam}</span>}</div>)}
+              {preview.length > 6 && <div style={{ fontSize: 11, color: T.muted }}>+{preview.length - 6} more</div>}
             </div>
           )}
           <button onClick={addBulk} disabled={!preview.length} style={{ ...BTN("#4F8EF7"), width: "100%", opacity: !preview.length ? 0.5 : 1 }}>➕ ADD {preview.length} PLAYERS</button>
@@ -295,14 +296,14 @@ function ManualTab({ existingPlayers, onDone, setStatus }) {
 
       {sub === "csv" && (
         <div>
-          <div style={{ fontSize: 12, color: "#4A5E78", marginBottom: 12, lineHeight: 1.6 }}>Upload a <code style={{ color: "#F5A623" }}>.csv</code> — columns: Name, Team, Role</div>
+          <div style={{ fontSize: 12, color: T.muted, marginBottom: 12, lineHeight: 1.6 }}>Upload a <code style={{ color: T.accent }}>.csv</code> — columns: Name, Team, Role</div>
           <div onClick={() => fileRef.current?.click()} style={{ border: "2px dashed #1E2D45", borderRadius: 12, padding: "28px 20px", textAlign: "center", cursor: "pointer", marginBottom: 10 }}>
             <div style={{ fontSize: 32, marginBottom: 8 }}>📁</div>
-            <div style={{ fontFamily: "Rajdhani,sans-serif", fontWeight: 700, fontSize: 15, color: "#E2EAF4" }}>Click to upload CSV</div>
+            <div style={{ fontFamily: fonts.display, fontWeight: 700, fontSize: 15, color: T.text }}>Click to upload CSV</div>
           </div>
           <input ref={fileRef} type="file" accept=".csv" onChange={handleCSV} style={{ display: "none" }} />
-          <div style={{ fontSize: 11, color: "#4A5E78", textAlign: "center" }}>
-            <a href="data:text/csv;charset=utf-8,Name%2CTeam%2CRole%0AVirat%20Kohli%2CRCB%2CBatsman" download="template.csv" style={{ color: "#4F8EF7", textDecoration: "none" }}>⬇️ Download template</a>
+          <div style={{ fontSize: 11, color: T.muted, textAlign: "center" }}>
+            <a href="data:text/csv;charset=utf-8,Name%2CTeam%2CRole%0AVirat%20Kohli%2CRCB%2CBatsman" download="template.csv" style={{ color: T.info, textDecoration: "none" }}>⬇️ Download template</a>
           </div>
         </div>
       )}
@@ -323,19 +324,19 @@ export default function FetchPlayers({ existingPlayers, onPlayersAdded, onClose,
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "rgba(8,12,20,0.97)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300, padding: 20, fontFamily: "Barlow Condensed,sans-serif" }}>
-      <div style={{ background: "#141E2E", borderRadius: 16, border: "1px solid #1E2D45", width: "100%", maxWidth: 440, maxHeight: "90vh", display: "flex", flexDirection: "column" }}>
+    <div style={{ position: "fixed", inset: 0, background: "rgba(5,8,16,0.97)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 300, padding: 20, fontFamily: fonts.body }}>
+      <div style={{ background: T.card, borderRadius: 16, border: `1px solid ${T.border}`, width: "100%", maxWidth: 440, maxHeight: "90vh", display: "flex", flexDirection: "column" }}>
 
         {/* Header */}
         <div style={{ padding: "20px 22px 14px", borderBottom: "1px solid #1E2D45", flexShrink: 0 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 3 }}>
-            <div style={{ fontFamily: "Rajdhani,sans-serif", fontSize: 22, fontWeight: 800, color: "#F5A623", letterSpacing: 2 }}>FETCH PLAYERS</div>
-            <button onClick={onClose} style={{ background: "#1E2D45", border: "none", borderRadius: 8, width: 30, height: 30, color: "#94A3B8", fontSize: 16, cursor: "pointer" }}>✕</button>
+            <div style={{ fontFamily: fonts.display, fontSize: 22, fontWeight: 800, color: T.accent, letterSpacing: 2 }}>FETCH PLAYERS</div>
+            <button onClick={onClose} style={{ background: T.border, border: "none", borderRadius: 8, width: 30, height: 30, color: T.sub, fontSize: 16, cursor: "pointer" }}>✕</button>
           </div>
-          <div style={{ fontSize: 11, color: "#4A5E78" }}>
-            {tournamentName && <span style={{ color: "#4F8EF7", marginRight: 6 }}>🏆 {tournamentName} ·</span>}
+          <div style={{ fontSize: 11, color: T.muted }}>
+            {tournamentName && <span style={{ color: T.info, marginRight: 6 }}>🏆 {tournamentName} ·</span>}
             {existingPlayers.length} in pool
-            {added > 0 && <span style={{ color: "#2ECC71", marginLeft: 8 }}>· +{added} added this session</span>}
+            {added > 0 && <span style={{ color: T.success, marginLeft: 8 }}>· +{added} added this session</span>}
           </div>
         </div>
 
@@ -362,7 +363,7 @@ export default function FetchPlayers({ existingPlayers, onPlayersAdded, onClose,
 
         {/* Footer */}
         <div style={{ padding: "12px 22px", borderTop: "1px solid #1E2D45", flexShrink: 0 }}>
-          <button onClick={onClose} style={{ width: "100%", background: "transparent", border: "1px solid #1E2D45", borderRadius: 10, padding: 11, color: "#4A5E78", fontFamily: "Barlow Condensed,sans-serif", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
+          <button onClick={onClose} style={{ width: "100%", background: "transparent", border: `1px solid ${T.border}`, borderRadius: 10, padding: 11, color: T.muted, fontFamily: fonts.body, fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
             {added > 0 ? `DONE — ${added} players added` : "CLOSE"}
           </button>
         </div>
