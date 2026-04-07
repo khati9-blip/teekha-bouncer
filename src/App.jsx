@@ -348,11 +348,12 @@ function generateTeamId() {
 // Snatch window: Saturday 12:00 AM IST to Saturday 12:00 PM IST
 function getSnatchWindowStatus() {
   const now = new Date();
-  // Convert to IST (UTC+5:30)
-  const ist = new Date(now.getTime() + (5.5 * 60 * 60 * 1000));
-  const day = ist.getUTCDay(); // 0=Sun, 6=Sat
-  const hour = ist.getUTCHours();
-  const min = ist.getUTCMinutes();
+  // Convert to IST using UTC offset (UTC+5:30) — avoids double-adding on IST machines
+  const utcMs = now.getTime() + now.getTimezoneOffset() * 60000; // get true UTC
+  const ist = new Date(utcMs + (5.5 * 60 * 60 * 1000));
+  const day = ist.getDay(); // 0=Sun, 6=Sat
+  const hour = ist.getHours();
+  const min = ist.getMinutes();
   const totalMins = hour * 60 + min;
 
   // Open: Saturday (day=6), 0:00 to 11:59
@@ -366,18 +367,20 @@ function getSnatchWindowStatus() {
   // Closed — calculate time until next Saturday 12:00 AM IST
   let daysUntilSat = (6 - day + 7) % 7;
   if (day === 6 && totalMins >= 720) daysUntilSat = 7; // past noon Saturday, next week
-  if (daysUntilSat === 0 && totalMins < 720) daysUntilSat = 0; // already open
 
   const minsUntilMidnight = (24 * 60) - totalMins;
-  const totalMinsUntil = (daysUntilSat === 0 ? 0 : (daysUntilSat - 1) * 24 * 60 + minsUntilMidnight);
+  const totalMinsUntil = Math.max(0, daysUntilSat === 0 ? 0 : (daysUntilSat - 1) * 24 * 60 + minsUntilMidnight);
   const daysLeft = Math.floor(totalMinsUntil / (24 * 60));
   const hoursLeft = Math.floor((totalMinsUntil % (24 * 60)) / 60);
+  const minsLeft = totalMinsUntil % 60;
 
   let countdown = "";
   if (daysLeft > 0) countdown = daysLeft + "d " + hoursLeft + "h";
-  else countdown = hoursLeft + "h " + (totalMinsUntil % 60) + "m";
+  else if (hoursLeft > 0) countdown = hoursLeft + "h " + minsLeft + "m";
+  else if (minsLeft > 0) countdown = minsLeft + "m";
+  else countdown = "soon";
 
-  return { open: false, label: "WINDOW CLOSED", countdown: "Opens in " + countdown + " (Sat 12AM IST)" };
+  return { open: false, label: "WINDOW CLOSED", countdown: "Opens Sat 12:00 AM IST · " + countdown + " away" };
 }
 
 // User auth helpers
