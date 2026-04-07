@@ -401,9 +401,9 @@ function PasswordModal({ onSuccess, onClose, storedHash }) {
   const [sending, setSending] = useState(false);
   const isFirstTime = !storedHash;
 
-  const inp = {width:"100%",background:"#080C14",border:`1px solid ${err?"#FF3D5A":"#1E2D45"}`,borderRadius:8,padding:"12px 16px",color:"#E2EAF4",fontSize:16,fontFamily:"Barlow Condensed,sans-serif",outline:"none",marginBottom:err?8:20,boxSizing:"border-box"};
-  const cancelBtn = {flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:11,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"};
-  const primaryBtn = (col="#F5A623") => ({flex:2,background:`linear-gradient(135deg,${col},${col}bb)`,border:"none",borderRadius:8,padding:11,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"});
+  const inp = {width:"100%",background:T.bg,border:`1px solid ${err?"#FF3D5A":"#1E2D45"}`,borderRadius:8,padding:"12px 16px",color:T.text,fontSize:16,fontFamily:fonts.body,outline:"none",marginBottom:err?8:20,boxSizing:"border-box"};
+  const cancelBtn = {flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:8,padding:11,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"};
+  const primaryBtn = (col="#F5A623") => ({flex:2,background:`linear-gradient(135deg,${col},${col}bb)`,border:"none",borderRadius:8,padding:11,color:"#080C14",fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"});
 
   const submit = async () => {
     if (!pw.trim()) { setErr("Enter a password"); return; }
@@ -451,36 +451,36 @@ function PasswordModal({ onSuccess, onClose, storedHash }) {
 
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.95)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,backdropFilter:"blur(6px)"}}>
-      <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #1E2D45",padding:32,width:"100%",maxWidth:360,margin:"0 16px"}}>
+      <div style={{background:T.card,borderRadius:16,border:`1px solid ${T.border}`,padding:32,width:"100%",maxWidth:360,margin:"0 16px"}}>
 
         {mode==="login" && <>
           <div style={{fontSize:36,textAlign:"center",marginBottom:8}}>🔐</div>
-          <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,fontWeight:700,color:"#F5A623",textAlign:"center",letterSpacing:2,marginBottom:4}}>
+          <div style={{fontFamily:fonts.display,fontSize:22,fontWeight:700,color:T.accent,textAlign:"center",letterSpacing:2,marginBottom:4}}>
             {isFirstTime ? "SET ADMIN PASSWORD" : "ADMIN PASSWORD"}
           </div>
-          <div style={{fontSize:13,color:"#4A5E78",textAlign:"center",marginBottom:24}}>
+          <div style={{fontSize:13,color:T.muted,textAlign:"center",marginBottom:24}}>
             {isFirstTime ? "Choose a password to protect squad changes" : "Enter password to modify squads"}
           </div>
           <input type="password" value={pw} onChange={e=>{setPw(e.target.value);setErr("");}} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder={isFirstTime?"Choose admin password…":"Admin password…"} autoFocus style={inp} />
-          {err && <div style={{color:"#FF3D5A",fontSize:13,marginBottom:16,textAlign:"center"}}>{err}</div>}
+          {err && <div style={{color:T.danger,fontSize:13,marginBottom:16,textAlign:"center"}}>{err}</div>}
           <div style={{display:"flex",gap:10}}>
             <button onClick={onClose} style={cancelBtn}>CANCEL</button>
             <button onClick={submit} style={primaryBtn()}>{isFirstTime?"SET PASSWORD":"UNLOCK"}</button>
           </div>
           {!isFirstTime && (
             <div style={{marginTop:16,textAlign:"center",display:"flex",justifyContent:"center",gap:20}}>
-              <button onClick={async()=>{const p=prompt("Enter NEW password:");if(!p)return;onSuccess(await hashPw(p),true);}} style={{background:"none",border:"none",color:"#4A5E78",fontSize:12,cursor:"pointer",textDecoration:"underline"}}>Change password</button>
-              <button onClick={()=>{reset();setMode("forgot");}} style={{background:"none",border:"none",color:"#FF3D5A",fontSize:12,cursor:"pointer",textDecoration:"underline"}}>Forgot password?</button>
+              <button onClick={async()=>{const p=prompt("Enter NEW password:");if(!p)return;onSuccess(await hashPw(p),true);}} style={{background:"none",border:"none",color:T.muted,fontSize:12,cursor:"pointer",textDecoration:"underline"}}>Change password</button>
+              <button onClick={()=>{reset();setMode("forgot");}} style={{background:"none",border:"none",color:T.danger,fontSize:12,cursor:"pointer",textDecoration:"underline"}}>Forgot password?</button>
             </div>
           )}
         </>}
 
         {mode==="forgot" && <>
           <div style={{fontSize:36,textAlign:"center",marginBottom:8}}>📧</div>
-          <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,fontWeight:700,color:"#F5A623",textAlign:"center",letterSpacing:2,marginBottom:4}}>RESET PASSWORD</div>
-          <div style={{fontSize:13,color:"#4A5E78",textAlign:"center",marginBottom:24}}>Enter the admin email — we'll send a reset code</div>
+          <div style={{fontFamily:fonts.display,fontSize:22,fontWeight:700,color:T.accent,textAlign:"center",letterSpacing:2,marginBottom:4}}>RESET PASSWORD</div>
+          <div style={{fontSize:13,color:T.muted,textAlign:"center",marginBottom:24}}>Enter the admin email — we'll send a reset code</div>
           <input type="email" value={pw} onChange={e=>{setPw(e.target.value);setErr("");}} onKeyDown={e=>e.key==="Enter"&&sendCode()} placeholder="Admin email address…" autoFocus style={inp} />
-          {err && <div style={{color:"#FF3D5A",fontSize:13,marginBottom:16,textAlign:"center"}}>{err}</div>}
+          {err && <div style={{color:T.danger,fontSize:13,marginBottom:16,textAlign:"center"}}>{err}</div>}
           <div style={{display:"flex",gap:10}}>
             <button onClick={()=>{reset();setMode("login");}} style={cancelBtn}>BACK</button>
             <button onClick={sendCode} disabled={sending} style={{...primaryBtn("#4F8EF7"),color:"#fff",opacity:sending?0.6:1}}>{sending?"SENDING…":"SEND CODE"}</button>
@@ -489,11 +489,11 @@ function PasswordModal({ onSuccess, onClose, storedHash }) {
 
         {mode==="enterCode" && <>
           <div style={{fontSize:36,textAlign:"center",marginBottom:8}}>✉️</div>
-          <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,fontWeight:700,color:"#F5A623",textAlign:"center",letterSpacing:2,marginBottom:4}}>ENTER CODE</div>
-          <div style={{fontSize:13,color:"#2ECC71",textAlign:"center",marginBottom:24}}>Reset code sent! Check your email inbox.</div>
+          <div style={{fontFamily:fonts.display,fontSize:22,fontWeight:700,color:T.accent,textAlign:"center",letterSpacing:2,marginBottom:4}}>ENTER CODE</div>
+          <div style={{fontSize:13,color:T.success,textAlign:"center",marginBottom:24}}>Reset code sent! Check your email inbox.</div>
           <input type="text" value={pw} onChange={e=>{setPw(e.target.value);setErr("");}} onKeyDown={e=>e.key==="Enter"&&verifyCode()} placeholder="Paste reset code…" autoFocus
             style={{...inp,letterSpacing:4,textAlign:"center"}} />
-          {err && <div style={{color:"#FF3D5A",fontSize:13,marginBottom:16,textAlign:"center"}}>{err}</div>}
+          {err && <div style={{color:T.danger,fontSize:13,marginBottom:16,textAlign:"center"}}>{err}</div>}
           <div style={{display:"flex",gap:10}}>
             <button onClick={()=>{reset();setMode("forgot");}} style={cancelBtn}>BACK</button>
             <button onClick={verifyCode} style={primaryBtn()}>VERIFY & RESET</button>
@@ -532,8 +532,8 @@ const css = `
 function Spinner() { return <div style={{width:24,height:24,border:"3px solid #1E2D45",borderTop:"3px solid #F5A623",borderRadius:"50%",animation:"spin 0.8s linear infinite",display:"inline-block"}} />; }
 function Badge({ label, color="#4F8EF7" }) { return <span style={{background:color+"22",color,border:"1px solid "+color+"44",padding:"2px 8px",borderRadius:4,fontSize:11,fontWeight:600}}>{label}</span>; }
 function Btn({ children, onClick, variant="primary", disabled, style:sx={} }) {
-  const base={fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:15,letterSpacing:1,textTransform:"uppercase",border:"none",borderRadius:8,padding:"10px 22px",cursor:disabled?"not-allowed":"pointer",opacity:disabled?0.5:1,...sx};
-  const v={primary:{background:"linear-gradient(135deg,#F5A623,#FF8C00)",color:"#080C14"},blue:{background:"linear-gradient(135deg,#4F8EF7,#1a5fb4)",color:"#fff"},ghost:{background:"transparent",color:"#4A5E78",border:"1px solid #1E2D45"},danger:{background:"#FF3D5A22",color:"#FF3D5A",border:"1px solid #FF3D5A44"}};
+  const base={fontFamily:fonts.body,fontWeight:700,fontSize:15,letterSpacing:1,textTransform:"uppercase",border:"none",borderRadius:8,padding:"10px 22px",cursor:disabled?"not-allowed":"pointer",opacity:disabled?0.5:1,...sx};
+  const v={primary:{background:"linear-gradient(135deg,#F5A623,#FF8C00)",color:"#080C14"},blue:{background:"linear-gradient(135deg,#4F8EF7,#1a5fb4)",color:"#fff"},ghost:{background:"transparent",color:T.muted,border:`1px solid ${T.border}`},danger:{background:"#FF3D5A22",color:T.danger,border:"1px solid #FF3D5A44"}};
   return <button onClick={disabled?undefined:onClick} style={{...base,...v[variant],...sx}}>{children}</button>;
 }
 function Card({ children, style:sx={}, accent }) {
@@ -559,28 +559,28 @@ function EditPlayerModal({ player, onSave, onAdd, onClose }) {
 
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.95)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,backdropFilter:"blur(6px)"}}>
-      <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #1E2D45",padding:32,width:"100%",maxWidth:400,margin:"0 16px"}}>
-        <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,fontWeight:700,color:"#F5A623",letterSpacing:2,marginBottom:24}}>{isNew ? "✚ ADD PLAYER" : "✏️ EDIT PLAYER"}</div>
+      <div style={{background:T.card,borderRadius:16,border:`1px solid ${T.border}`,padding:32,width:"100%",maxWidth:400,margin:"0 16px"}}>
+        <div style={{fontFamily:fonts.display,fontSize:22,fontWeight:700,color:T.accent,letterSpacing:2,marginBottom:24}}>{isNew ? "✚ ADD PLAYER" : "✏️ EDIT PLAYER"}</div>
         <div style={{marginBottom:14}}>
-          <div style={{fontSize:11,color:"#4A5E78",letterSpacing:1,marginBottom:6}}>PLAYER NAME</div>
-          <input value={name} onChange={e=>setName(e.target.value)} placeholder="Full Name" style={{width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"10px 14px",color:"#E2EAF4",fontSize:15,fontFamily:"Barlow Condensed,sans-serif",outline:"none",boxSizing:"border-box"}} />
+          <div style={{fontSize:11,color:T.muted,letterSpacing:1,marginBottom:6}}>PLAYER NAME</div>
+          <input value={name} onChange={e=>setName(e.target.value)} placeholder="Full Name" style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 14px",color:T.text,fontSize:15,fontFamily:fonts.body,outline:"none",boxSizing:"border-box"}} />
         </div>
         <div style={{marginBottom:14}}>
-          <div style={{fontSize:11,color:"#4A5E78",letterSpacing:1,marginBottom:6}}>IPL FRANCHISE</div>
-          <select value={iplTeam} onChange={e=>setIplTeam(e.target.value)} style={{width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"10px 14px",color:"#E2EAF4",fontSize:15,fontFamily:"Barlow Condensed,sans-serif",outline:"none"}}>
+          <div style={{fontSize:11,color:T.muted,letterSpacing:1,marginBottom:6}}>IPL FRANCHISE</div>
+          <select value={iplTeam} onChange={e=>setIplTeam(e.target.value)} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 14px",color:T.text,fontSize:15,fontFamily:fonts.body,outline:"none"}}>
             <option value="">— Select Franchise —</option>
             {IPL_FRANCHISE.map(t=><option key={t} value={t}>{t}</option>)}
           </select>
         </div>
         <div style={{marginBottom:24}}>
-          <div style={{fontSize:11,color:"#4A5E78",letterSpacing:1,marginBottom:6}}>ROLE</div>
-          <select value={role} onChange={e=>setRole(e.target.value)} style={{width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"10px 14px",color:"#E2EAF4",fontSize:15,fontFamily:"Barlow Condensed,sans-serif",outline:"none"}}>
+          <div style={{fontSize:11,color:T.muted,letterSpacing:1,marginBottom:6}}>ROLE</div>
+          <select value={role} onChange={e=>setRole(e.target.value)} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 14px",color:T.text,fontSize:15,fontFamily:fonts.body,outline:"none"}}>
             {["Batsman","Bowler","All-Rounder","Wicket-Keeper"].map(r=><option key={r} value={r}>{r}</option>)}
           </select>
         </div>
         <div style={{display:"flex",gap:10}}>
-          <button onClick={onClose} style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:11,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
-          <button onClick={submit} style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:11,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>{isNew ? "ADD PLAYER" : "SAVE CHANGES"}</button>
+          <button onClick={onClose} style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:8,padding:11,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
+          <button onClick={submit} style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:11,color:"#080C14",fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>{isNew ? "ADD PLAYER" : "SAVE CHANGES"}</button>
         </div>
       </div>
     </div>
@@ -928,26 +928,26 @@ Only include players who appear in the scorecard. Match names as closely as poss
   // Paste scorecard modal
   const PasteModal = () => !showPasteModal ? null : (
     <div style={{position:"fixed",inset:0,background:"rgba(5,8,16,0.95)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:400,padding:20}}>
-      <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #A855F744",width:"100%",maxWidth:500,display:"flex",flexDirection:"column",maxHeight:"85vh"}}>
-        <div style={{padding:"18px 20px",borderBottom:"1px solid #1E2D45",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      <div style={{background:T.card,borderRadius:16,border:"1px solid #A855F744",width:"100%",maxWidth:500,display:"flex",flexDirection:"column",maxHeight:"85vh"}}>
+        <div style={{padding:"18px 20px",borderBottom:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <div>
-            <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:800,fontSize:18,color:"#A855F7",letterSpacing:2}}>📋 PASTE SCORECARD</div>
-            <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>Paste from Cricinfo, Google, anywhere — AI will parse it</div>
+            <div style={{fontFamily:fonts.display,fontWeight:800,fontSize:18,color:T.purple,letterSpacing:2}}>📋 PASTE SCORECARD</div>
+            <div style={{fontSize:11,color:T.muted,marginTop:2}}>Paste from Cricinfo, Google, anywhere — AI will parse it</div>
           </div>
-          <button onClick={()=>{setShowPasteModal(false);setPasteText("");}} style={{background:"#1E2D45",border:"none",borderRadius:8,width:30,height:30,color:"#94A3B8",fontSize:16,cursor:"pointer"}}>✕</button>
+          <button onClick={()=>{setShowPasteModal(false);setPasteText("");}} style={{background:"#1E2D45",border:"none",borderRadius:8,width:30,height:30,color:T.sub,fontSize:16,cursor:"pointer"}}>✕</button>
         </div>
         <div style={{flex:1,overflowY:"auto",padding:"16px 20px"}}>
-          <div style={{fontSize:11,color:"#4A5E78",marginBottom:8,lineHeight:1.6}}>
+          <div style={{fontSize:11,color:T.muted,marginBottom:8,lineHeight:1.6}}>
             Copy the scorecard text from any cricket website and paste it below. AI will extract all stats automatically.
           </div>
           <textarea value={pasteText} onChange={e=>setPasteText(e.target.value)}
 placeholder="Paste scorecard text here... (e.g. V Kohli c Maxwell b Bumrah 82 (54) 8x4 3x6 / Bumrah 4-0-22-3)"
-            rows={12} style={{width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"10px 14px",color:"#E2EAF4",fontSize:13,fontFamily:"monospace",outline:"none",resize:"vertical",boxSizing:"border-box"}} />
+            rows={12} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 14px",color:T.text,fontSize:13,fontFamily:"monospace",outline:"none",resize:"vertical",boxSizing:"border-box"}} />
         </div>
-        <div style={{padding:"14px 20px",borderTop:"1px solid #1E2D45",display:"flex",gap:10}}>
-          <button onClick={()=>{setShowPasteModal(false);setPasteText("");}} style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:10,padding:11,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
+        <div style={{padding:"14px 20px",borderTop:`1px solid ${T.border}`,display:"flex",gap:10}}>
+          <button onClick={()=>{setShowPasteModal(false);setPasteText("");}} style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:10,padding:11,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
           <button onClick={parseScorecard} disabled={!pasteText.trim()||parsing}
-            style={{flex:2,background:"linear-gradient(135deg,#A855F7,#7C3AED)",border:"none",borderRadius:10,padding:11,color:"#fff",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:14,cursor:!pasteText.trim()||parsing?"not-allowed":"pointer",opacity:!pasteText.trim()||parsing?0.6:1}}>
+            style={{flex:2,background:"linear-gradient(135deg,#A855F7,#7C3AED)",border:"none",borderRadius:10,padding:11,color:"#fff",fontFamily:fonts.body,fontWeight:800,fontSize:14,cursor:!pasteText.trim()||parsing?"not-allowed":"pointer",opacity:!pasteText.trim()||parsing?0.6:1}}>
             {parsing?"🤖 PARSING…":"🤖 PARSE WITH AI"}
           </button>
         </div>
@@ -956,33 +956,33 @@ placeholder="Paste scorecard text here... (e.g. V Kohli c Maxwell b Bumrah 82 (5
   );
 
   const tabBtn = (tab, label) => (
-    <button onClick={()=>setActiveTab(tab)} style={{padding:"8px 16px",border:"none",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,letterSpacing:1,background:activeTab===tab?"#F5A623":"transparent",color:activeTab===tab?"#080C14":"#4A5E78",borderRadius:6}}>
+    <button onClick={()=>setActiveTab(tab)} style={{padding:"8px 16px",border:"none",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:13,letterSpacing:1,background:activeTab===tab?"#F5A623":"transparent",color:activeTab===tab?"#080C14":"#4A5E78",borderRadius:6}}>
       {label}
     </button>
   );
 
-  const inp = {width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:6,padding:"6px 4px",color:"#E2EAF4",fontSize:14,fontFamily:"Barlow Condensed,sans-serif",textAlign:"center"};
+  const inp = {width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 4px",color:T.text,fontSize:14,fontFamily:fonts.body,textAlign:"center"};
 
   return (
     <><PasteModal />
     <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,backdropFilter:"blur(6px)"}}>
-      <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #1E2D45",width:"100%",maxWidth:720,margin:"0 12px",maxHeight:"92vh",display:"flex",flexDirection:"column"}}>
+      <div style={{background:T.card,borderRadius:16,border:`1px solid ${T.border}`,width:"100%",maxWidth:720,margin:"0 12px",maxHeight:"92vh",display:"flex",flexDirection:"column"}}>
 
         {/* Header */}
-        <div style={{padding:"18px 24px",borderBottom:"1px solid #1E2D45",flexShrink:0}}>
-          <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:"#F5A623",letterSpacing:2}}>📊 MATCH STATS — M{match.matchNum}</div>
-          <div style={{color:"#4A5E78",fontSize:13,marginTop:2}}>{match.team1} vs {match.team2} • {match.date} • {match.venue}</div>
+        <div style={{padding:"18px 24px",borderBottom:`1px solid ${T.border}`,flexShrink:0}}>
+          <div style={{fontFamily:fonts.display,fontSize:20,fontWeight:700,color:T.accent,letterSpacing:2}}>📊 MATCH STATS — M{match.matchNum}</div>
+          <div style={{color:T.muted,fontSize:13,marginTop:2}}>{match.team1} vs {match.team2} • {match.date} • {match.venue}</div>
           <div style={{marginTop:12,display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
             <button onClick={fetchFromCricketData} disabled={fetching}
-              style={{background:"linear-gradient(135deg,#2ECC71,#16a34a)",border:"none",borderRadius:8,padding:"9px 18px",color:"#fff",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:fetching?"not-allowed":"pointer",opacity:fetching?0.6:1,letterSpacing:1}}>
+              style={{background:"linear-gradient(135deg,#2ECC71,#16a34a)",border:"none",borderRadius:8,padding:"9px 18px",color:"#fff",fontFamily:fonts.body,fontWeight:700,fontSize:13,cursor:fetching?"not-allowed":"pointer",opacity:fetching?0.6:1,letterSpacing:1}}>
               {fetching?"⏳ FETCHING…":"🟢 SYNC FROM CRICKETDATA"}
             </button>
             <button onClick={fetchFromCricbuzz} disabled={fetching}
-              style={{background:"transparent",border:"1px solid #4F8EF744",borderRadius:8,padding:"9px 14px",color:"#4F8EF7",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:12,cursor:fetching?"not-allowed":"pointer",opacity:fetching?0.6:1,letterSpacing:1}}>
+              style={{background:"transparent",border:"1px solid #4F8EF744",borderRadius:8,padding:"9px 14px",color:T.info,fontFamily:fonts.body,fontWeight:700,fontSize:12,cursor:fetching?"not-allowed":"pointer",opacity:fetching?0.6:1,letterSpacing:1}}>
               🟠 CRICBUZZ
             </button>
             <button onClick={()=>setShowPasteModal(true)} disabled={fetching}
-              style={{background:"transparent",border:"1px solid #A855F744",borderRadius:8,padding:"9px 14px",color:"#A855F7",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:12,cursor:"pointer",letterSpacing:1}}>
+              style={{background:"transparent",border:"1px solid #A855F744",borderRadius:8,padding:"9px 14px",color:T.purple,fontFamily:fonts.body,fontWeight:700,fontSize:12,cursor:"pointer",letterSpacing:1}}>
               📋 PASTE SCORECARD
             </button>
             {fetchStatus && <span style={{fontSize:12,color:fetchStatus.startsWith("✅")?"#2ECC71":fetchStatus.startsWith("❌")?"#FF3D5A":"#F5A623",marginTop:4,width:"100%"}}>{fetchStatus}</span>}
@@ -990,16 +990,16 @@ placeholder="Paste scorecard text here... (e.g. V Kohli c Maxwell b Bumrah 82 (5
         </div>
 
         {/* Step 1: Mark players */}
-        <div style={{padding:"14px 24px",borderBottom:"1px solid #1E2D45",flexShrink:0}}>
-          <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginBottom:8}}>
-            STEP 1 — MARK WHO PLAYED &nbsp;<span style={{color:"#2ECC71"}}>({playingPlayers.length} selected)</span>
+        <div style={{padding:"14px 24px",borderBottom:`1px solid ${T.border}`,flexShrink:0}}>
+          <div style={{fontSize:11,color:T.muted,letterSpacing:2,fontWeight:700,marginBottom:8}}>
+            STEP 1 — MARK WHO PLAYED &nbsp;<span style={{color:T.success}}>({playingPlayers.length} selected)</span>
           </div>
           <input placeholder="Search…" value={search} onChange={e=>setSearch(e.target.value)}
-            style={{width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"7px 12px",color:"#E2EAF4",fontSize:13,fontFamily:"Barlow Condensed",marginBottom:8,boxSizing:"border-box"}} />
+            style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"7px 12px",color:T.text,fontSize:13,fontFamily:"Barlow Condensed",marginBottom:8,boxSizing:"border-box"}} />
           <div style={{maxHeight:100,overflowY:"auto",display:"flex",flexWrap:"wrap",gap:5}}>
             {filteredPlayers.map(p=>(
               <button key={p.id} onClick={()=>upd(p.id,"played",!stats[p.id]?.played)}
-                style={{padding:"4px 10px",borderRadius:20,border:"1px solid "+(stats[p.id]?.played?"#2ECC71":"#1E2D45"),background:stats[p.id]?.played?"#2ECC7122":"transparent",color:stats[p.id]?.played?"#2ECC71":"#4A5E78",fontSize:12,fontFamily:"Barlow Condensed,sans-serif",cursor:"pointer",fontWeight:600}}>
+                style={{padding:"4px 10px",borderRadius:20,border:"1px solid "+(stats[p.id]?.played?"#2ECC71":"#1E2D45"),background:stats[p.id]?.played?"#2ECC7122":"transparent",color:stats[p.id]?.played?"#2ECC71":"#4A5E78",fontSize:12,fontFamily:fonts.body,cursor:"pointer",fontWeight:600}}>
                 {stats[p.id]?.played?"✓ ":""}{p.name} <span style={{opacity:0.5,fontSize:10}}>({p.iplTeam})</span>
               </button>
             ))}
@@ -1009,8 +1009,8 @@ placeholder="Paste scorecard text here... (e.g. V Kohli c Maxwell b Bumrah 82 (5
         {/* Step 2: Stats tabs */}
         {playingPlayers.length > 0 && (
           <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column"}}>
-            <div style={{padding:"10px 24px",borderBottom:"1px solid #1E2D45",flexShrink:0,display:"flex",gap:6,alignItems:"center"}}>
-              <span style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginRight:8}}>STEP 2 — ENTER / VERIFY STATS:</span>
+            <div style={{padding:"10px 24px",borderBottom:`1px solid ${T.border}`,flexShrink:0,display:"flex",gap:6,alignItems:"center"}}>
+              <span style={{fontSize:11,color:T.muted,letterSpacing:2,fontWeight:700,marginRight:8}}>STEP 2 — ENTER / VERIFY STATS:</span>
               {tabBtn("batting","🏏 BATTING")}
               {tabBtn("bowling","🎳 BOWLING")}
               {tabBtn("fielding","🧤 FIELDING")}
@@ -1022,7 +1022,7 @@ placeholder="Paste scorecard text here... (e.g. V Kohli c Maxwell b Bumrah 82 (5
               {activeTab==="batting" && (
                 <table style={{width:"100%",borderCollapse:"collapse",marginTop:8}}>
                   <thead>
-                    <tr style={{fontSize:11,color:"#4A5E78",letterSpacing:1,background:"#0E152188"}}>
+                    <tr style={{fontSize:11,color:T.muted,letterSpacing:1,background:"#0E152188"}}>
                       <th style={{textAlign:"left",padding:"8px 6px",fontWeight:700}}>PLAYER</th>
                       <th style={{padding:"8px 4px",fontWeight:700,minWidth:50}}>RUNS</th>
                       <th style={{padding:"8px 4px",fontWeight:700,minWidth:45}}>BALLS</th>
@@ -1034,8 +1034,8 @@ placeholder="Paste scorecard text here... (e.g. V Kohli c Maxwell b Bumrah 82 (5
                   </thead>
                   <tbody>
                     {playingPlayers.map(p=>(
-                      <tr key={p.id} style={{borderBottom:"1px solid #1E2D4533"}}>
-                        <td style={{padding:"7px 6px",fontSize:13,color:"#E2EAF4",fontWeight:600}}><div style={{display:"flex",alignItems:"center",gap:4}}>{p.name} {p.tier&&<span style={{fontSize:9,fontWeight:800,letterSpacing:1,padding:"1px 5px",borderRadius:4,fontFamily:"Barlow Condensed,sans-serif",textTransform:"uppercase",background:p.tier==="platinum"?"#4A5E7833":p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":"#CD7F3222",border:"1px solid "+(p.tier==="platinum"?"#4A5E7866":p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":"#CD7F3255"),color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32"}}>{p.tier==="platinum"?"PLAT":p.tier==="gold"?"GOLD":p.tier==="silver"?"SILV":"BRNZ"}</span>}</div><span style={{fontSize:10,color:"#4A5E78"}}>{p.iplTeam} • {p.role}</span></td>
+                      <tr key={p.id} style={{borderBottom:`1px solid ${T.border}33`}}>
+                        <td style={{padding:"7px 6px",fontSize:13,color:T.text,fontWeight:600}}><div style={{display:"flex",alignItems:"center",gap:4}}>{p.name} {p.tier&&<span style={{fontSize:9,fontWeight:800,letterSpacing:1,padding:"1px 5px",borderRadius:4,fontFamily:fonts.body,textTransform:"uppercase",background:p.tier==="platinum"?"#4A5E7833":p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":"#CD7F3222",border:"1px solid "+(p.tier==="platinum"?"#4A5E7866":p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":"#CD7F3255"),color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32"}}>{p.tier==="platinum"?"PLAT":p.tier==="gold"?"GOLD":p.tier==="silver"?"SILV":"BRNZ"}</span>}</div><span style={{fontSize:10,color:T.muted}}>{p.iplTeam} • {p.role}</span></td>
                         <td style={{padding:"4px"}}><input type="number" min="0" value={stats[p.id]?.runs||0} onChange={e=>upd(p.id,"runs",e.target.value)} style={inp} /></td>
                         <td style={{padding:"4px"}}><input type="number" min="0" value={stats[p.id]?.balls||0} onChange={e=>upd(p.id,"balls",e.target.value)} style={inp} /></td>
                         <td style={{padding:"4px"}}><input type="number" min="0" value={stats[p.id]?.fours||0} onChange={e=>upd(p.id,"fours",e.target.value)} style={inp} /></td>
@@ -1051,7 +1051,7 @@ placeholder="Paste scorecard text here... (e.g. V Kohli c Maxwell b Bumrah 82 (5
               {activeTab==="bowling" && (
                 <table style={{width:"100%",borderCollapse:"collapse",marginTop:8}}>
                   <thead>
-                    <tr style={{fontSize:11,color:"#4A5E78",letterSpacing:1,background:"#0E152188"}}>
+                    <tr style={{fontSize:11,color:T.muted,letterSpacing:1,background:"#0E152188"}}>
                       <th style={{textAlign:"left",padding:"8px 6px",fontWeight:700}}>PLAYER</th>
                       <th style={{padding:"8px 4px",fontWeight:700,minWidth:55}}>WICKETS</th>
                       <th style={{padding:"8px 4px",fontWeight:700,minWidth:50}}>OVERS</th>
@@ -1061,8 +1061,8 @@ placeholder="Paste scorecard text here... (e.g. V Kohli c Maxwell b Bumrah 82 (5
                   </thead>
                   <tbody>
                     {playingPlayers.map(p=>(
-                      <tr key={p.id} style={{borderBottom:"1px solid #1E2D4533"}}>
-                        <td style={{padding:"7px 6px",fontSize:13,color:"#E2EAF4",fontWeight:600}}><div style={{display:"flex",alignItems:"center",gap:4}}>{p.name} {p.tier&&<span style={{fontSize:9,fontWeight:800,letterSpacing:1,padding:"1px 5px",borderRadius:4,fontFamily:"Barlow Condensed,sans-serif",textTransform:"uppercase",background:p.tier==="platinum"?"#4A5E7833":p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":"#CD7F3222",border:"1px solid "+(p.tier==="platinum"?"#4A5E7866":p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":"#CD7F3255"),color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32"}}>{p.tier==="platinum"?"PLAT":p.tier==="gold"?"GOLD":p.tier==="silver"?"SILV":"BRNZ"}</span>}</div><span style={{fontSize:10,color:"#4A5E78"}}>{p.iplTeam} • {p.role}</span></td>
+                      <tr key={p.id} style={{borderBottom:`1px solid ${T.border}33`}}>
+                        <td style={{padding:"7px 6px",fontSize:13,color:T.text,fontWeight:600}}><div style={{display:"flex",alignItems:"center",gap:4}}>{p.name} {p.tier&&<span style={{fontSize:9,fontWeight:800,letterSpacing:1,padding:"1px 5px",borderRadius:4,fontFamily:fonts.body,textTransform:"uppercase",background:p.tier==="platinum"?"#4A5E7833":p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":"#CD7F3222",border:"1px solid "+(p.tier==="platinum"?"#4A5E7866":p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":"#CD7F3255"),color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32"}}>{p.tier==="platinum"?"PLAT":p.tier==="gold"?"GOLD":p.tier==="silver"?"SILV":"BRNZ"}</span>}</div><span style={{fontSize:10,color:T.muted}}>{p.iplTeam} • {p.role}</span></td>
                         <td style={{padding:"4px"}}><input type="number" min="0" value={stats[p.id]?.wickets||0} onChange={e=>upd(p.id,"wickets",e.target.value)} style={inp} /></td>
                         <td style={{padding:"4px"}}><input type="number" min="0" step="0.1" value={stats[p.id]?.overs||0} onChange={e=>upd(p.id,"overs",e.target.value)} style={inp} /></td>
                         <td style={{padding:"4px"}}><input type="number" min="0" step="0.01" placeholder="—" value={stats[p.id]?.economy||""} onChange={e=>upd(p.id,"economy",e.target.value)} style={inp} /></td>
@@ -1075,7 +1075,7 @@ placeholder="Paste scorecard text here... (e.g. V Kohli c Maxwell b Bumrah 82 (5
               {activeTab==="fielding" && (
                 <table style={{width:"100%",borderCollapse:"collapse",marginTop:8}}>
                   <thead>
-                    <tr style={{fontSize:11,color:"#4A5E78",letterSpacing:1,background:"#0E152188"}}>
+                    <tr style={{fontSize:11,color:T.muted,letterSpacing:1,background:"#0E152188"}}>
                       <th style={{textAlign:"left",padding:"8px 6px",fontWeight:700}}>PLAYER</th>
                       <th style={{padding:"8px 4px",fontWeight:700,minWidth:65}}>CATCHES</th>
                       <th style={{padding:"8px 4px",fontWeight:700,minWidth:75}}>STUMPINGS</th>
@@ -1084,8 +1084,8 @@ placeholder="Paste scorecard text here... (e.g. V Kohli c Maxwell b Bumrah 82 (5
                   </thead>
                   <tbody>
                     {playingPlayers.map(p=>(
-                      <tr key={p.id} style={{borderBottom:"1px solid #1E2D4533"}}>
-                        <td style={{padding:"7px 6px",fontSize:13,color:"#E2EAF4",fontWeight:600}}><div style={{display:"flex",alignItems:"center",gap:4}}>{p.name} {p.tier&&<span style={{fontSize:9,fontWeight:800,letterSpacing:1,padding:"1px 5px",borderRadius:4,fontFamily:"Barlow Condensed,sans-serif",textTransform:"uppercase",background:p.tier==="platinum"?"#4A5E7833":p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":"#CD7F3222",border:"1px solid "+(p.tier==="platinum"?"#4A5E7866":p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":"#CD7F3255"),color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32"}}>{p.tier==="platinum"?"PLAT":p.tier==="gold"?"GOLD":p.tier==="silver"?"SILV":"BRNZ"}</span>}</div><span style={{fontSize:10,color:"#4A5E78"}}>{p.iplTeam} • {p.role}</span></td>
+                      <tr key={p.id} style={{borderBottom:`1px solid ${T.border}33`}}>
+                        <td style={{padding:"7px 6px",fontSize:13,color:T.text,fontWeight:600}}><div style={{display:"flex",alignItems:"center",gap:4}}>{p.name} {p.tier&&<span style={{fontSize:9,fontWeight:800,letterSpacing:1,padding:"1px 5px",borderRadius:4,fontFamily:fonts.body,textTransform:"uppercase",background:p.tier==="platinum"?"#4A5E7833":p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":"#CD7F3222",border:"1px solid "+(p.tier==="platinum"?"#4A5E7866":p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":"#CD7F3255"),color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32"}}>{p.tier==="platinum"?"PLAT":p.tier==="gold"?"GOLD":p.tier==="silver"?"SILV":"BRNZ"}</span>}</div><span style={{fontSize:10,color:T.muted}}>{p.iplTeam} • {p.role}</span></td>
                         <td style={{padding:"4px"}}><input type="number" min="0" value={stats[p.id]?.catches||0} onChange={e=>upd(p.id,"catches",e.target.value)} style={inp} /></td>
                         <td style={{padding:"4px"}}><input type="number" min="0" value={stats[p.id]?.stumpings||0} onChange={e=>upd(p.id,"stumpings",e.target.value)} style={inp} /></td>
                         <td style={{padding:"4px"}}><input type="number" min="0" value={stats[p.id]?.runouts||0} onChange={e=>upd(p.id,"runouts",e.target.value)} style={inp} /></td>
@@ -1099,18 +1099,18 @@ placeholder="Paste scorecard text here... (e.g. V Kohli c Maxwell b Bumrah 82 (5
 
               {activeTab==="preview" && (
                 <div style={{marginTop:8}}>
-                  <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,marginBottom:10}}>POINTS PREVIEW (before captain multiplier)</div>
+                  <div style={{fontSize:11,color:T.muted,letterSpacing:2,marginBottom:10}}>POINTS PREVIEW (before captain multiplier)</div>
                   {playingPlayers.sort((a,b)=>calcPoints(stats[b.id]||{}, pointsConfig||DEFAULT_POINTS)-calcPoints(stats[a.id]||{}, pointsConfig||DEFAULT_POINTS)).map(p => {
                     const s = stats[p.id] || {};
                     const pts = calcPoints(s, pointsConfig||DEFAULT_POINTS);
                     const bd = calcBreakdown(s);
                     return (
-                      <div key={p.id} style={{background:"#0E1521",borderRadius:8,padding:"10px 14px",marginBottom:6,display:"flex",alignItems:"flex-start",gap:12}}>
+                      <div key={p.id} style={{background:T.card,borderRadius:8,padding:"10px 14px",marginBottom:6,display:"flex",alignItems:"flex-start",gap:12}}>
                         <div style={{flex:1}}>
-                          <div style={{fontWeight:700,fontSize:14,color:"#E2EAF4"}}>{p.name}</div>
-                          <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>{bd.length>0?bd.join(" • "):"No stats"}</div>
+                          <div style={{fontWeight:700,fontSize:14,color:T.text}}>{p.name}</div>
+                          <div style={{fontSize:11,color:T.muted,marginTop:2}}>{bd.length>0?bd.join(" • "):"No stats"}</div>
                         </div>
-                        <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:24,fontWeight:800,color:pts>0?"#F5A623":"#4A5E78"}}>{pts}</div>
+                        <div style={{fontFamily:fonts.display,fontSize:24,fontWeight:800,color:pts>0?"#F5A623":"#4A5E78"}}>{pts}</div>
                       </div>
                     );
                   })}
@@ -1121,9 +1121,9 @@ placeholder="Paste scorecard text here... (e.g. V Kohli c Maxwell b Bumrah 82 (5
         )}
 
         {/* Footer */}
-        <div style={{padding:"14px 24px",borderTop:"1px solid #1E2D45",display:"flex",gap:10,flexShrink:0}}>
-          <button onClick={onClose} style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:11,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
-          <button onClick={submit} style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:11,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>✅ SAVE POINTS ({playingPlayers.length} players)</button>
+        <div style={{padding:"14px 24px",borderTop:`1px solid ${T.border}`,display:"flex",gap:10,flexShrink:0}}>
+          <button onClick={onClose} style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:8,padding:11,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
+          <button onClick={submit} style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:11,color:"#080C14",fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>✅ SAVE POINTS ({playingPlayers.length} players)</button>
         </div>
       </div>
     </div></>
@@ -1145,10 +1145,10 @@ function SplashScreen({ onLogin }) {
   const [codeSent, setCodeSent] = useState(false);
 
   const inputStyle = (hasErr) => ({
-    width:"100%", background:"#080C14",
+    width:"100%", background:T.bg,
     border:"1px solid "+(hasErr?"#FF3D5A":"#1E2D45"),
-    borderRadius:8, padding:"12px 16px", color:"#E2EAF4",
-    fontSize:16, fontFamily:"Barlow Condensed,sans-serif",
+    borderRadius:8, padding:"12px 16px", color:T.text,
+    fontSize:16, fontFamily:fonts.body,
     outline:"none", marginBottom:12, boxSizing:"border-box"
   });
 
@@ -1235,20 +1235,20 @@ function SplashScreen({ onLogin }) {
   };
 
   if (mode === 'splash') return (
-    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#080C14 0%,#0E1521 50%,#080C14 100%)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"20px",fontFamily:"Barlow Condensed,sans-serif"}}>
+    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#080C14 0%,#0E1521 50%,#080C14 100%)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"20px",fontFamily:fonts.body}}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Barlow+Condensed:wght@400;600;700;800&display=swap');*{box-sizing:border-box;margin:0;padding:0;}body{background:#080C14;}`}</style>
 
       {/* Logo area */}
       <div style={{textAlign:"center",marginBottom:48}}>
         <img src="/logo.png" alt="Teekha Bouncer" style={{width:120,height:120,objectFit:"contain",borderRadius:20,marginBottom:16,boxShadow:"0 0 40px #F5A62344"}} />
-        <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:42,color:"#F5A623",letterSpacing:4,lineHeight:1}}>TEEKHA</div>
-        <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:42,color:"#E2EAF4",letterSpacing:4,lineHeight:1}}>BOUNCER</div>
-        <div style={{fontSize:13,color:"#4A5E78",letterSpacing:6,marginTop:8,textTransform:"uppercase"}}>Fantasy Cricket League</div>
+        <div style={{fontFamily:fonts.display,fontWeight:700,fontSize:42,color:T.accent,letterSpacing:4,lineHeight:1}}>TEEKHA</div>
+        <div style={{fontFamily:fonts.display,fontWeight:700,fontSize:42,color:T.text,letterSpacing:4,lineHeight:1}}>BOUNCER</div>
+        <div style={{fontSize:13,color:T.muted,letterSpacing:6,marginTop:8,textTransform:"uppercase"}}>Fantasy Cricket League</div>
       </div>
 
       {/* Tagline */}
-      <div style={{background:"#0E1521",border:"1px solid #1E2D45",borderRadius:12,padding:"16px 24px",marginBottom:40,textAlign:"center",maxWidth:320}}>
-        <div style={{fontSize:14,color:"#94A3B8",lineHeight:1.6}}>
+      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:"16px 24px",marginBottom:40,textAlign:"center",maxWidth:320}}>
+        <div style={{fontSize:14,color:T.sub,lineHeight:1.6}}>
           Track fantasy points, manage squads, and compete with your friends across multiple leagues 🏆
         </div>
       </div>
@@ -1256,11 +1256,11 @@ function SplashScreen({ onLogin }) {
       {/* Buttons */}
       <div style={{width:"100%",maxWidth:320,display:"flex",flexDirection:"column",gap:12}}>
         <button onClick={() => setMode('signup')}
-          style={{background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:12,padding:"16px",color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:18,cursor:"pointer",letterSpacing:2}}>
+          style={{background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:12,padding:"16px",color:"#080C14",fontFamily:fonts.body,fontWeight:800,fontSize:18,cursor:"pointer",letterSpacing:2}}>
           GET STARTED
         </button>
         <button onClick={() => setMode('login')}
-          style={{background:"transparent",border:"2px solid #1E2D45",borderRadius:12,padding:"14px",color:"#E2EAF4",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:16,cursor:"pointer",letterSpacing:1}}>
+          style={{background:"transparent",border:"2px solid #1E2D45",borderRadius:12,padding:"14px",color:T.text,fontFamily:fonts.body,fontWeight:700,fontSize:16,cursor:"pointer",letterSpacing:1}}>
           I HAVE AN ACCOUNT
         </button>
       </div>
@@ -1270,37 +1270,37 @@ function SplashScreen({ onLogin }) {
   );
 
   return (
-    <div style={{minHeight:"100vh",background:"#080C14",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"20px",fontFamily:"Barlow Condensed,sans-serif"}}>
+    <div style={{minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"20px",fontFamily:fonts.body}}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Barlow+Condensed:wght@400;600;700;800&display=swap');*{box-sizing:border-box;margin:0;padding:0;}body{background:#080C14;color:#E2EAF4;}`}</style>
 
       <div style={{width:"100%",maxWidth:380}}>
         {/* Header */}
         <div style={{textAlign:"center",marginBottom:32}}>
           <img src="/logo.png" alt="Teekha Bouncer" style={{width:64,height:64,objectFit:"contain",borderRadius:12,margin:"0 auto",display:"block"}} />
-          <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:28,color:"#F5A623",letterSpacing:3,marginTop:8}}>
+          <div style={{fontFamily:fonts.display,fontWeight:700,fontSize:28,color:T.accent,letterSpacing:3,marginTop:8}}>
             {mode==='login' ? "WELCOME BACK" : "CREATE ACCOUNT"}
           </div>
-          <div style={{fontSize:13,color:"#4A5E78",marginTop:4}}>
+          <div style={{fontSize:13,color:T.muted,marginTop:4}}>
             {mode==='login' ? "Sign in to your Teekha Bouncer account" : "Join Teekha Bouncer League"}
           </div>
         </div>
 
         {/* Form */}
-        <div style={{background:"#0E1521",borderRadius:16,border:"1px solid #1E2D45",padding:28}}>
+        <div style={{background:T.card,borderRadius:16,border:`1px solid ${T.border}`,padding:28}}>
           <input type="email" value={email} onChange={e=>{setEmail(e.target.value);setErr('');}} placeholder="Email address" style={inputStyle(err && !pw)} />
           <input type="password" value={pw} onChange={e=>{setPw(e.target.value);setErr('');}} onKeyDown={e=>e.key==="Enter"&&(mode==='login'?handleLogin():null)} placeholder="Password" style={inputStyle(err && pw && !pw2)} />
           {mode==='signup' && (
             <input type="password" value={pw2} onChange={e=>{setPw2(e.target.value);setErr('');}} onKeyDown={e=>e.key==="Enter"&&handleSignup()} placeholder="Confirm password" style={inputStyle(false)} />
           )}
-          {err && <div style={{color:"#FF3D5A",fontSize:13,marginBottom:12,textAlign:"center"}}>{err}</div>}
+          {err && <div style={{color:T.danger,fontSize:13,marginBottom:12,textAlign:"center"}}>{err}</div>}
           <button onClick={mode==='login' ? handleLogin : handleSignup} disabled={loading}
-            style={{width:"100%",background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:14,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:16,cursor:loading?"not-allowed":"pointer",opacity:loading?0.7:1,letterSpacing:1}}>
+            style={{width:"100%",background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:14,color:"#080C14",fontFamily:fonts.body,fontWeight:800,fontSize:16,cursor:loading?"not-allowed":"pointer",opacity:loading?0.7:1,letterSpacing:1}}>
             {loading ? "PLEASE WAIT..." : mode==='login' ? "SIGN IN" : "CREATE ACCOUNT"}
           </button>
           {mode==='login' && (
             <div style={{textAlign:"center",marginTop:12}}>
               <button onClick={()=>{setMode('forgot');setErr('');setPw('');setCodeSent(false);setResetCode('');}}
-                style={{background:"none",border:"none",color:"#FF3D5A",fontSize:12,cursor:"pointer",textDecoration:"underline",fontFamily:"Barlow Condensed,sans-serif"}}>
+                style={{background:"none",border:"none",color:T.danger,fontSize:12,cursor:"pointer",textDecoration:"underline",fontFamily:fonts.body}}>
                 Forgot password?
               </button>
             </div>
@@ -1308,16 +1308,16 @@ function SplashScreen({ onLogin }) {
         </div>
 
         {/* Toggle */}
-        <div style={{textAlign:"center",marginTop:20,fontSize:14,color:"#4A5E78"}}>
+        <div style={{textAlign:"center",marginTop:20,fontSize:14,color:T.muted}}>
           {mode==='login' ? "Don't have an account? " : "Already have an account? "}
           <button onClick={()=>{setMode(mode==='login'?'signup':'login');setErr('');setPw('');setPw2('');}}
-            style={{background:"none",border:"none",color:"#F5A623",fontSize:14,cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,textDecoration:"underline"}}>
+            style={{background:"none",border:"none",color:T.accent,fontSize:14,cursor:"pointer",fontFamily:fonts.body,fontWeight:700,textDecoration:"underline"}}>
             {mode==='login' ? "Sign up" : "Sign in"}
           </button>
         </div>
 
         <button onClick={() => setMode('splash')}
-          style={{display:"block",margin:"16px auto 0",background:"none",border:"none",color:"#4A5E78",fontSize:12,cursor:"pointer"}}>
+          style={{display:"block",margin:"16px auto 0",background:"none",border:"none",color:T.muted,fontSize:12,cursor:"pointer"}}>
           ← Back
         </button>
       </div>
@@ -1332,9 +1332,9 @@ class ErrorBoundary extends React.Component {
   static getDerivedStateFromError(error) { return { error: error.message }; }
   render() {
     if (this.state.error) return (
-      <div style={{minHeight:"100vh",background:"#080C14",padding:24,fontFamily:"monospace"}}>
-        <div style={{color:"#FF3D5A",fontSize:18,marginBottom:16}}>💥 CRASH REPORT</div>
-        <div style={{background:"#0E1521",padding:16,borderRadius:8,color:"#E2EAF4",fontSize:13,wordBreak:"break-all",whiteSpace:"pre-wrap"}}>{this.state.error}</div>
+      <div style={{minHeight:"100vh",background:T.bg,padding:24,fontFamily:"monospace"}}>
+        <div style={{color:T.danger,fontSize:18,marginBottom:16}}>💥 CRASH REPORT</div>
+        <div style={{background:T.card,padding:16,borderRadius:8,color:T.text,fontSize:13,wordBreak:"break-all",whiteSpace:"pre-wrap"}}>{this.state.error}</div>
         <button onClick={()=>{ localStorage.clear(); window.location.reload(); }} style={{marginTop:20,background:"#F5A623",border:"none",borderRadius:8,padding:"10px 20px",color:"#080C14",fontWeight:700,cursor:"pointer"}}>CLEAR & RELOAD</button>
       </div>
     );
@@ -1684,52 +1684,52 @@ function TeamClaimScreen({ pitch, user, onClaimed, onBack, onGuest, onAdmin, gue
     setLoading(false);
   };
 
-  const inp = {width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"12px 16px",color:"#E2EAF4",fontSize:16,fontFamily:"Barlow Condensed,sans-serif",outline:"none",marginBottom:10,boxSizing:"border-box"};
+  const inp = {width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"12px 16px",color:T.text,fontSize:16,fontFamily:fonts.body,outline:"none",marginBottom:10,boxSizing:"border-box"};
 
   return (
-    <div style={{minHeight:"100vh",background:"#080C14",display:"flex",alignItems:"center",justifyContent:"center",padding:20,fontFamily:"Barlow Condensed,sans-serif"}}>
+    <div style={{minHeight:"100vh",background:T.bg,display:"flex",alignItems:"center",justifyContent:"center",padding:20,fontFamily:fonts.body}}>
       <div style={{width:"100%",maxWidth:380}}>
-        <button onClick={onBack} style={{background:"transparent",border:"none",color:"#4A5E78",fontSize:13,cursor:"pointer",marginBottom:20,padding:0,display:"flex",alignItems:"center",gap:4}}>← Back to Pitches</button>
+        <button onClick={onBack} style={{background:"transparent",border:"none",color:T.muted,fontSize:13,cursor:"pointer",marginBottom:20,padding:0,display:"flex",alignItems:"center",gap:4}}>← Back to Pitches</button>
         <div style={{textAlign:"center",marginBottom:24}}>
           <div style={{fontSize:40,marginBottom:8}}>🏏</div>
-          <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:26,fontWeight:700,color:"#F5A623",letterSpacing:2}}>{pitch.name}</div>
-          <div style={{fontSize:12,color:"#4A5E78",marginTop:4}}>How would you like to enter?</div>
+          <div style={{fontFamily:fonts.display,fontSize:26,fontWeight:700,color:T.accent,letterSpacing:2}}>{pitch.name}</div>
+          <div style={{fontSize:12,color:T.muted,marginTop:4}}>How would you like to enter?</div>
         </div>
 
         {!mode && (
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
             <button onClick={()=>{setMode("teamid");setErr("");}}
-              style={{background:"#141E2E",border:"2px solid #F5A62344",borderRadius:12,padding:"16px 20px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14}}>
+              style={{background:T.card,border:"2px solid #F5A62344",borderRadius:12,padding:"16px 20px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14}}>
               <span style={{fontSize:28}}>🎫</span>
               <div>
-                <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:17,color:"#F5A623"}}>Enter with Team ID</div>
-                <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>Use the Team ID given by your admin</div>
+                <div style={{fontFamily:fonts.display,fontWeight:700,fontSize:17,color:T.accent}}>Enter with Team ID</div>
+                <div style={{fontSize:11,color:T.muted,marginTop:2}}>Use the Team ID given by your admin</div>
               </div>
             </button>
             {guestAllowed && (
               <button onClick={onGuest}
-                style={{background:"#141E2E",border:"2px solid #4A5E7833",borderRadius:12,padding:"16px 20px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14}}>
+                style={{background:T.card,border:"2px solid #4A5E7833",borderRadius:12,padding:"16px 20px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14}}>
                 <span style={{fontSize:28}}>👁</span>
                 <div>
-                  <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:17,color:"#E2EAF4"}}>Enter as Guest</div>
-                  <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>View only — no editing or transfers</div>
+                  <div style={{fontFamily:fonts.display,fontWeight:700,fontSize:17,color:T.text}}>Enter as Guest</div>
+                  <div style={{fontSize:11,color:T.muted,marginTop:2}}>View only — no editing or transfers</div>
                 </div>
               </button>
             )}
             {!guestAllowed && (
-              <div style={{background:"#141E2E",border:"2px solid #1E2D4533",borderRadius:12,padding:"16px 20px",display:"flex",alignItems:"center",gap:14,opacity:0.4}}>
+              <div style={{background:T.card,border:"2px solid #1E2D4533",borderRadius:12,padding:"16px 20px",display:"flex",alignItems:"center",gap:14,opacity:0.4}}>
                 <span style={{fontSize:28}}>🚫</span>
                 <div>
-                  <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:17,color:"#4A5E78"}}>Guest Access Disabled</div>
+                  <div style={{fontFamily:fonts.display,fontWeight:700,fontSize:17,color:T.muted}}>Guest Access Disabled</div>
                   <div style={{fontSize:11,color:"#2D3E52",marginTop:2}}>Admin has restricted guest viewing</div>
                 </div>
               </div>
             )}
             <button onClick={()=>{setMode("admin");setErr("");}}
-              style={{background:"#141E2E",border:"2px solid #4A5E7833",borderRadius:12,padding:"14px 20px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14}}>
+              style={{background:T.card,border:"2px solid #4A5E7833",borderRadius:12,padding:"14px 20px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14}}>
               <span style={{fontSize:24}}>🔑</span>
               <div>
-                <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:15,color:"#4A5E78"}}>Admin Entry</div>
+                <div style={{fontFamily:fonts.display,fontWeight:700,fontSize:15,color:T.muted}}>Admin Entry</div>
                 <div style={{fontSize:11,color:"#2D3E52",marginTop:2}}>For pitch administrators only</div>
               </div>
             </button>
@@ -1738,15 +1738,15 @@ function TeamClaimScreen({ pitch, user, onClaimed, onBack, onGuest, onAdmin, gue
 
         {mode === "teamid" && step === 1 && (
           <div>
-            <button onClick={()=>{setMode(null);setErr("");}} style={{background:"transparent",border:"none",color:"#4A5E78",cursor:"pointer",fontSize:13,marginBottom:16,padding:0}}>← Back</button>
-            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:18,fontWeight:700,color:"#E2EAF4",marginBottom:4}}>🎫 ENTER TEAM ID</div>
-            <div style={{fontSize:12,color:"#4A5E78",marginBottom:16}}>Your admin will have shared a unique Team ID with you</div>
+            <button onClick={()=>{setMode(null);setErr("");}} style={{background:"transparent",border:"none",color:T.muted,cursor:"pointer",fontSize:13,marginBottom:16,padding:0}}>← Back</button>
+            <div style={{fontFamily:fonts.display,fontSize:18,fontWeight:700,color:T.text,marginBottom:4}}>🎫 ENTER TEAM ID</div>
+            <div style={{fontSize:12,color:T.muted,marginBottom:16}}>Your admin will have shared a unique Team ID with you</div>
             <input value={teamIdInput} onChange={e=>{setTeamIdInput(e.target.value.toUpperCase());setErr("");}}
               onKeyDown={e=>e.key==="Enter"&&submitTeamId()}
               placeholder="e.g. TBL-X7K2" autoFocus style={inp} />
-            {err && <div style={{color:"#FF3D5A",fontSize:12,marginBottom:10}}>{err}</div>}
+            {err && <div style={{color:T.danger,fontSize:12,marginBottom:10}}>{err}</div>}
             <button onClick={submitTeamId} disabled={loading}
-              style={{width:"100%",background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:12,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:15,cursor:"pointer"}}>
+              style={{width:"100%",background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:12,color:"#080C14",fontFamily:fonts.body,fontWeight:800,fontSize:15,cursor:"pointer"}}>
               {loading ? "CHECKING…" : "VERIFY TEAM ID →"}
             </button>
           </div>
@@ -1755,17 +1755,17 @@ function TeamClaimScreen({ pitch, user, onClaimed, onBack, onGuest, onAdmin, gue
         {mode === "teamid" && step === 2 && claimedTeamInfo && (
           <div>
             <div style={{background:"#F5A62311",border:"1px solid #F5A62333",borderRadius:10,padding:"12px 16px",marginBottom:16,textAlign:"center"}}>
-              <div style={{fontSize:11,color:"#4A5E78",letterSpacing:1,marginBottom:4}}>YOU ARE CLAIMING</div>
-              <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,fontWeight:700,color:claimedTeamInfo.color||"#F5A623"}}>{claimedTeamInfo.name}</div>
+              <div style={{fontSize:11,color:T.muted,letterSpacing:1,marginBottom:4}}>YOU ARE CLAIMING</div>
+              <div style={{fontFamily:fonts.display,fontSize:22,fontWeight:700,color:claimedTeamInfo.color||"#F5A623"}}>{claimedTeamInfo.name}</div>
             </div>
-            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:16,fontWeight:700,color:"#E2EAF4",marginBottom:4}}>SET YOUR PIN</div>
-            <div style={{fontSize:12,color:"#4A5E78",marginBottom:12}}>This PIN is used for snatch, voting and approvals</div>
+            <div style={{fontFamily:fonts.display,fontSize:16,fontWeight:700,color:T.text,marginBottom:4}}>SET YOUR PIN</div>
+            <div style={{fontSize:12,color:T.muted,marginBottom:12}}>This PIN is used for snatch, voting and approvals</div>
             <input type="password" inputMode="numeric" value={pin} onChange={e=>{setPin(e.target.value);setErr("");}} placeholder="Choose a 4+ digit PIN" autoFocus style={inp} />
             <input type="password" inputMode="numeric" value={pinConfirm} onChange={e=>{setPinConfirm(e.target.value);setErr("");}}
               onKeyDown={e=>e.key==="Enter"&&submitPin()} placeholder="Confirm PIN" style={inp} />
-            {err && <div style={{color:"#FF3D5A",fontSize:12,marginBottom:10}}>{err}</div>}
+            {err && <div style={{color:T.danger,fontSize:12,marginBottom:10}}>{err}</div>}
             <button onClick={submitPin} disabled={loading}
-              style={{width:"100%",background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:12,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:15,cursor:"pointer"}}>
+              style={{width:"100%",background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:12,color:"#080C14",fontFamily:fonts.body,fontWeight:800,fontSize:15,cursor:"pointer"}}>
               {loading ? "SAVING…" : "CLAIM TEAM & ENTER →"}
             </button>
           </div>
@@ -1773,14 +1773,14 @@ function TeamClaimScreen({ pitch, user, onClaimed, onBack, onGuest, onAdmin, gue
 
         {mode === "admin" && (
           <div>
-            <button onClick={()=>{setMode(null);setErr("");}} style={{background:"transparent",border:"none",color:"#4A5E78",cursor:"pointer",fontSize:13,marginBottom:16,padding:0}}>← Back</button>
-            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:18,fontWeight:700,color:"#E2EAF4",marginBottom:4}}>🔑 ADMIN ENTRY</div>
-            <div style={{fontSize:12,color:"#4A5E78",marginBottom:16}}>Enter the admin password for this pitch</div>
+            <button onClick={()=>{setMode(null);setErr("");}} style={{background:"transparent",border:"none",color:T.muted,cursor:"pointer",fontSize:13,marginBottom:16,padding:0}}>← Back</button>
+            <div style={{fontFamily:fonts.display,fontSize:18,fontWeight:700,color:T.text,marginBottom:4}}>🔑 ADMIN ENTRY</div>
+            <div style={{fontSize:12,color:T.muted,marginBottom:16}}>Enter the admin password for this pitch</div>
             <input type="password" value={adminPw} onChange={e=>{setAdminPw(e.target.value);setErr("");}}
               onKeyDown={e=>e.key==="Enter"&&submitAdmin()} placeholder="Admin password…" autoFocus style={inp} />
-            {err && <div style={{color:"#FF3D5A",fontSize:12,marginBottom:10}}>{err}</div>}
+            {err && <div style={{color:T.danger,fontSize:12,marginBottom:10}}>{err}</div>}
             <button onClick={submitAdmin} disabled={loading}
-              style={{width:"100%",background:"linear-gradient(135deg,#4F8EF7,#1a5fb4)",border:"none",borderRadius:8,padding:12,color:"#fff",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:15,cursor:"pointer"}}>
+              style={{width:"100%",background:"linear-gradient(135deg,#4F8EF7,#1a5fb4)",border:"none",borderRadius:8,padding:12,color:"#fff",fontFamily:fonts.body,fontWeight:800,fontSize:15,cursor:"pointer"}}>
               {loading ? "VERIFYING…" : "ENTER AS ADMIN →"}
             </button>
           </div>
@@ -1845,26 +1845,26 @@ function ChatWindow({ myTeam, teams, unlocked, withPassword, storeGet, storeSet,
   };
 
   const renderText = (text) => text.split(' ').map((w,i) => {
-    if (w.startsWith('@')) { const t = teams.find(t=>t.name.toLowerCase().includes(w.slice(1).toLowerCase())); return React.createElement('span',{key:i,style:{color:t?t.color:"#4F8EF7",fontWeight:700}},(i>0?' ':'')+w); }
+    if (w.startsWith('@')) { const t = teams.find(t=>t.name.toLowerCase().includes(w.slice(1).toLowerCase())); return React.createElement('span',{key:i,style:{color:t?t.color:T.info,fontWeight:700}},(i>0?' ':'')+w); }
     return React.createElement('span',{key:i},(i>0?' ':'')+w);
   });
 
-  return React.createElement('div', {style:{position:"fixed",bottom:"calc(env(safe-area-inset-bottom) + 72px)",left:8,zIndex:500,fontFamily:"Barlow Condensed,sans-serif"}},
+  return React.createElement('div', {style:{position:"fixed",bottom:"calc(env(safe-area-inset-bottom) + 72px)",left:8,zIndex:500,fontFamily:fonts.body}},
     !open && React.createElement('button',{onClick:()=>setOpen(true),style:{width:52,height:52,borderRadius:"50%",background:"linear-gradient(135deg,#4F8EF7,#1a5fb4)",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 16px rgba(79,142,247,0.4)",position:"relative"}},
       React.createElement('span',{style:{fontSize:22}},"💬"),
       unread>0 && React.createElement('span',{style:{position:"absolute",top:-2,right:-2,background:"#FF3D5A",borderRadius:"50%",width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"#fff"}},unread>9?"9+":unread)
     ),
-    open && React.createElement('div',{style:{width:maximized?"min(520px,90vw)":"min(320px,85vw)",height:maximized?"min(600px,80vh)":"min(420px,60vh)",background:"#0E1521",borderRadius:16,border:"1px solid #4F8EF744",display:"flex",flexDirection:"column",boxShadow:"0 8px 32px rgba(0,0,0,0.6)",overflow:"hidden"}},
+    open && React.createElement('div',{style:{width:maximized?"min(520px,90vw)":"min(320px,85vw)",height:maximized?"min(600px,80vh)":"min(420px,60vh)",background:T.card,borderRadius:16,border:"1px solid #4F8EF744",display:"flex",flexDirection:"column",boxShadow:"0 8px 32px rgba(0,0,0,0.6)",overflow:"hidden"}},
       React.createElement('div',{style:{background:"#4F8EF711",borderBottom:"1px solid #4F8EF733",padding:"10px 14px",display:"flex",alignItems:"center",gap:8}},
         React.createElement('span',{style:{fontSize:16}},"💬"),
-        React.createElement('div',{style:{flex:1,fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:15,color:"#4F8EF7",letterSpacing:1}},"PITCH CHAT"),
-        React.createElement('button',{onClick:()=>setMaximized(v=>!v),style:{background:"transparent",border:"none",color:"#4A5E78",cursor:"pointer",fontSize:14,padding:"2px 6px"}},maximized?"⊡":"⊞"),
-        React.createElement('button',{onClick:()=>setOpen(false),style:{background:"transparent",border:"none",color:"#4A5E78",cursor:"pointer",fontSize:16,padding:"2px 6px"}},"✕")
+        React.createElement('div',{style:{flex:1,fontFamily:fonts.display,fontWeight:700,fontSize:15,color:T.info,letterSpacing:1}},"PITCH CHAT"),
+        React.createElement('button',{onClick:()=>setMaximized(v=>!v),style:{background:"transparent",border:"none",color:T.muted,cursor:"pointer",fontSize:14,padding:"2px 6px"}},maximized?"⊡":"⊞"),
+        React.createElement('button',{onClick:()=>setOpen(false),style:{background:"transparent",border:"none",color:T.muted,cursor:"pointer",fontSize:16,padding:"2px 6px"}},"✕")
       ),
       pinned && React.createElement('div',{style:{background:"#F5A62311",borderBottom:"1px solid #F5A62322",padding:"6px 14px",display:"flex",alignItems:"center",gap:6}},
         React.createElement('span',{style:{fontSize:11}},"📌"),
-        React.createElement('div',{style:{flex:1,fontSize:11,color:"#F5A623",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},pinned.senderName+": "+pinned.text),
-        unlocked && React.createElement('button',{onClick:()=>pin(pinned),style:{background:"transparent",border:"none",color:"#4A5E78",cursor:"pointer",fontSize:10}},"✕")
+        React.createElement('div',{style:{flex:1,fontSize:11,color:T.accent,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},pinned.senderName+": "+pinned.text),
+        unlocked && React.createElement('button',{onClick:()=>pin(pinned),style:{background:"transparent",border:"none",color:T.muted,cursor:"pointer",fontSize:10}},"✕")
       ),
       React.createElement('div',{style:{flex:1,overflowY:"auto",padding:"10px 12px",display:"flex",flexDirection:"column",gap:8}},
         messages.length===0 && React.createElement('div',{style:{textAlign:"center",color:"#2D3E52",fontSize:13,marginTop:40}},"No messages yet. Say hello! 👋"),
@@ -1873,14 +1873,14 @@ function ChatWindow({ myTeam, teams, unlocked, withPassword, storeGet, storeSet,
           return React.createElement('div',{key:msg.id,style:{display:"flex",flexDirection:"column",alignItems:isMe?"flex-end":"flex-start"}},
             React.createElement('div',{style:{maxWidth:"80%",background:isMe?"#4F8EF722":"#141E2E",border:"1px solid "+(isMe?"#4F8EF744":"#1E2D45"),borderRadius:isMe?"12px 12px 4px 12px":"12px 12px 12px 4px",padding:"7px 10px"}},
               !isMe && React.createElement('div',{style:{fontSize:10,color:msg.senderColor||"#4F8EF7",fontWeight:700,marginBottom:3}},msg.senderName),
-              React.createElement('div',{style:{fontSize:13,color:"#E2EAF4",lineHeight:1.4}},renderText(msg.text)),
+              React.createElement('div',{style:{fontSize:13,color:T.text,lineHeight:1.4}},renderText(msg.text)),
               React.createElement('div',{style:{display:"flex",alignItems:"center",justifyContent:"space-between",marginTop:4,gap:4}},
                 React.createElement('div',{style:{fontSize:9,color:"#2D3E52"}},new Date(msg.ts).toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"})),
                 React.createElement('div',{style:{display:"flex",gap:3,flexWrap:"wrap"}},
-                  ...Object.entries(msg.reactions||{}).map(([emoji,users]) => React.createElement('button',{key:emoji,onClick:()=>react(msg.id,emoji),style:{background:users.includes(myTeam?.id)?"#4F8EF733":"#1E2D45",border:"none",borderRadius:10,padding:"1px 6px",cursor:"pointer",fontSize:11,color:"#E2EAF4"}},emoji+" "+users.length)),
+                  ...Object.entries(msg.reactions||{}).map(([emoji,users]) => React.createElement('button',{key:emoji,onClick:()=>react(msg.id,emoji),style:{background:users.includes(myTeam?.id)?"#4F8EF733":"#1E2D45",border:"none",borderRadius:10,padding:"1px 6px",cursor:"pointer",fontSize:11,color:T.text}},emoji+" "+users.length)),
                   ...["👍","🔥","😂","💀","🏏"].map(emoji => React.createElement('button',{key:emoji,onClick:()=>react(msg.id,emoji),style:{background:"transparent",border:"none",cursor:"pointer",fontSize:11,opacity:0.4,padding:"1px 2px"}},emoji)),
-                  (isMe||unlocked) && React.createElement('button',{onClick:()=>del(msg.id,!isMe),style:{background:"transparent",border:"none",color:"#FF3D5A",cursor:"pointer",fontSize:10,opacity:0.5}},"✕"),
-                  unlocked && React.createElement('button',{onClick:()=>pin(msg),style:{background:"transparent",border:"none",color:"#F5A623",cursor:"pointer",fontSize:10,opacity:0.5}},"📌")
+                  (isMe||unlocked) && React.createElement('button',{onClick:()=>del(msg.id,!isMe),style:{background:"transparent",border:"none",color:T.danger,cursor:"pointer",fontSize:10,opacity:0.5}},"✕"),
+                  unlocked && React.createElement('button',{onClick:()=>pin(msg),style:{background:"transparent",border:"none",color:T.accent,cursor:"pointer",fontSize:10,opacity:0.5}},"📌")
                 )
               )
             )
@@ -1889,17 +1889,17 @@ function ChatWindow({ myTeam, teams, unlocked, withPassword, storeGet, storeSet,
         React.createElement('div',{ref:endRef})
       ),
       myTeam && !isGuest
-        ? React.createElement('div',{style:{borderTop:"1px solid #1E2D45",padding:"8px 10px"}},
-            showMention && React.createElement('div',{style:{background:"#141E2E",border:"1px solid #1E2D45",borderRadius:8,marginBottom:6,overflow:"hidden"}},
-              ...teams.map(t=>React.createElement('button',{key:t.id,onClick:()=>{const last=input.lastIndexOf('@');setInput(input.slice(0,last)+'@'+t.name+' ');setShowMention(false);},style:{width:"100%",background:"transparent",border:"none",padding:"7px 12px",textAlign:"left",cursor:"pointer",color:t.color,fontSize:13,fontWeight:700,fontFamily:"Barlow Condensed,sans-serif",display:"block"}},"@"+t.name))
+        ? React.createElement('div',{style:{borderTop:`1px solid ${T.border}`,padding:"8px 10px"}},
+            showMention && React.createElement('div',{style:{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,marginBottom:6,overflow:"hidden"}},
+              ...teams.map(t=>React.createElement('button',{key:t.id,onClick:()=>{const last=input.lastIndexOf('@');setInput(input.slice(0,last)+'@'+t.name+' ');setShowMention(false);},style:{width:"100%",background:"transparent",border:"none",padding:"7px 12px",textAlign:"left",cursor:"pointer",color:t.color,fontSize:13,fontWeight:700,fontFamily:fonts.body,display:"block"}},"@"+t.name))
             ),
             React.createElement('div',{style:{display:"flex",gap:6}},
-              React.createElement('input',{value:input,onChange:e=>{const v=e.target.value;setInput(v);const last=v.lastIndexOf('@');setShowMention(last>=0&&last===v.length-1);},onKeyDown:e=>{if(e.key==="Enter"){e.preventDefault();send();setShowMention(false);}if(e.key==="Escape")setShowMention(false);},placeholder:"Message as "+myTeam.name+"... (@ to tag)",maxLength:200,style:{flex:1,background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"8px 10px",color:"#E2EAF4",fontSize:13,fontFamily:"Barlow Condensed,sans-serif",outline:"none"}}),
+              React.createElement('input',{value:input,onChange:e=>{const v=e.target.value;setInput(v);const last=v.lastIndexOf('@');setShowMention(last>=0&&last===v.length-1);},onKeyDown:e=>{if(e.key==="Enter"){e.preventDefault();send();setShowMention(false);}if(e.key==="Escape")setShowMention(false);},placeholder:"Message as "+myTeam.name+"... (@ to tag)",maxLength:200,style:{flex:1,background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"8px 10px",color:T.text,fontSize:13,fontFamily:fonts.body,outline:"none"}}),
               React.createElement('button',{onClick:send,style:{background:"#4F8EF7",border:"none",borderRadius:8,padding:"8px 12px",color:"#fff",cursor:"pointer",fontSize:14}},"➤")
             ),
             React.createElement('div',{style:{fontSize:9,color:"#2D3E52",marginTop:4,textAlign:"right"}},input.length+"/200")
           )
-        : React.createElement('div',{style:{borderTop:"1px solid #1E2D45",padding:"10px",textAlign:"center",fontSize:11,color:"#2D3E52"}},isGuest?"👁 Guests can read only":"Claim a team to chat")
+        : React.createElement('div',{style:{borderTop:`1px solid ${T.border}`,padding:"10px",textAlign:"center",fontSize:11,color:"#2D3E52"}},isGuest?"👁 Guests can read only":"Claim a team to chat")
     )
   );
 }
@@ -1941,17 +1941,17 @@ function CaptainModal({ match, teams, players, assignments, captains, myTeam, un
   };
 
   return (
-    <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.96)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,padding:16,fontFamily:"Barlow Condensed,sans-serif"}}>
-      <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #1E2D45",padding:24,width:"100%",maxWidth:480,maxHeight:"85vh",overflowY:"auto"}}>
+    <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.96)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,padding:16,fontFamily:fonts.body}}>
+      <div style={{background:T.card,borderRadius:16,border:`1px solid ${T.border}`,padding:24,width:"100%",maxWidth:480,maxHeight:"85vh",overflowY:"auto"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-          <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:isLocked?"#FF3D5A":"#F5A623",letterSpacing:2}}>
+          <div style={{fontFamily:fonts.display,fontSize:20,fontWeight:700,color:isLocked?"#FF3D5A":"#F5A623",letterSpacing:2}}>
             {isLocked?"🔒 C/VC LOCKED":"👑 SET C / VC"}
           </div>
-          <button onClick={onClose} style={{background:"transparent",border:"none",color:"#4A5E78",fontSize:18,cursor:"pointer"}}>✕</button>
+          <button onClick={onClose} style={{background:"transparent",border:"none",color:T.muted,fontSize:18,cursor:"pointer"}}>✕</button>
         </div>
-        <div style={{fontSize:12,color:"#4A5E78",marginBottom:isLocked?8:16}}>M{match.matchNum} — {match.team1} vs {match.team2}</div>
+        <div style={{fontSize:12,color:T.muted,marginBottom:isLocked?8:16}}>M{match.matchNum} — {match.team1} vs {match.team2}</div>
 
-        {isLocked && <div style={{background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:8,padding:"8px 12px",marginBottom:14,fontSize:12,color:"#FF3D5A"}}>🔒 Captain/VC selections are locked.</div>}
+        {isLocked && <div style={{background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:8,padding:"8px 12px",marginBottom:14,fontSize:12,color:T.danger}}>🔒 Captain/VC selections are locked.</div>}
 
         {teams.map(team => {
           const cap = local[team.id] || {};
@@ -1960,22 +1960,22 @@ function CaptainModal({ match, teams, players, assignments, captains, myTeam, un
           const isMyTeam = myTeam?.id === team.id;
 
           return (
-            <div key={team.id} style={{background:"#0E1521",borderRadius:10,border:"2px solid "+(isMyTeam?team.color+"66":team.color+"22"),padding:14,marginBottom:10,opacity:(!editable&&!isLocked&&!unlocked&&myTeam&&!isMyTeam)?0.5:1}}>
+            <div key={team.id} style={{background:T.card,borderRadius:10,border:"2px solid "+(isMyTeam?team.color+"66":team.color+"22"),padding:14,marginBottom:10,opacity:(!editable&&!isLocked&&!unlocked&&myTeam&&!isMyTeam)?0.5:1}}>
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-                <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:14,color:team.color}}>{team.name}</div>
+                <div style={{fontFamily:fonts.display,fontWeight:700,fontSize:14,color:team.color}}>{team.name}</div>
                 {isMyTeam && <span style={{fontSize:9,background:team.color+"22",color:team.color,border:"1px solid "+team.color+"44",borderRadius:10,padding:"1px 7px",fontWeight:700,letterSpacing:0.5}}>YOUR TEAM</span>}
                 {!editable && !isLocked && !unlocked && myTeam && !isMyTeam && (
-                  <span style={{fontSize:9,color:"#4A5E78",background:"#1E2D4555",border:"1px solid #1E2D45",borderRadius:10,padding:"1px 7px",fontWeight:700}}>VIEW ONLY</span>
+                  <span style={{fontSize:9,color:T.muted,background:"#1E2D4555",border:`1px solid ${T.border}`,borderRadius:10,padding:"1px 7px",fontWeight:700}}>VIEW ONLY</span>
                 )}
               </div>
 
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
                 {["captain","vc"].map(role => (
                   <div key={role}>
-                    <div style={{fontSize:10,color:"#4A5E78",letterSpacing:1,marginBottom:6}}>{role==="captain"?"⭐ CAPTAIN (2×)":"🥈 VICE CAPTAIN (1.5×)"}</div>
+                    <div style={{fontSize:10,color:T.muted,letterSpacing:1,marginBottom:6}}>{role==="captain"?"⭐ CAPTAIN (2×)":"🥈 VICE CAPTAIN (1.5×)"}</div>
                     {editable ? (
                       <select value={cap[role]||""} onChange={e=>handleChange(team.id, role, e.target.value)}
-                        style={{width:"100%",background:"#080C14",border:"1px solid "+(isMyTeam?team.color+"44":"#1E2D45"),borderRadius:8,padding:"7px 10px",color:"#E2EAF4",fontSize:13,fontFamily:"Barlow Condensed,sans-serif",cursor:"pointer",outline:"none"}}>
+                        style={{width:"100%",background:T.bg,border:"1px solid "+(isMyTeam?team.color+"44":"#1E2D45"),borderRadius:8,padding:"7px 10px",color:T.text,fontSize:13,fontFamily:fonts.body,cursor:"pointer",outline:"none"}}>
                         <option value="">— None —</option>
                         {teamPlayers.map(p=>(
                           <option key={p.id} value={p.id} disabled={(role==="vc"&&cap.captain===p.id)||(role==="captain"&&cap.vc===p.id)}>
@@ -1984,7 +1984,7 @@ function CaptainModal({ match, teams, players, assignments, captains, myTeam, un
                         ))}
                       </select>
                     ) : (
-                      <div style={{background:"#080C14",borderRadius:8,padding:"8px 12px",fontWeight:700,color:role==="captain"?"#F5A623":"#94A3B8",fontSize:14}}>
+                      <div style={{background:T.bg,borderRadius:8,padding:"8px 12px",fontWeight:700,color:role==="captain"?"#F5A623":"#94A3B8",fontSize:14}}>
                         {teamPlayers.find(p=>p.id===cap[role])?.name||"—"}
                       </div>
                     )}
@@ -1998,18 +1998,18 @@ function CaptainModal({ match, teams, players, assignments, captains, myTeam, un
         <div style={{display:"flex",gap:8,marginTop:4}}>
           {!isLocked && unlocked && (
             <button onClick={()=>withPassword(()=>onSave({...captains,[match.id+"_locked"]:true}))}
-              style={{flex:1,background:"#FF3D5A22",border:"1px solid #FF3D5A44",borderRadius:10,padding:12,color:"#FF3D5A",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:14,cursor:"pointer"}}>
+              style={{flex:1,background:"#FF3D5A22",border:"1px solid #FF3D5A44",borderRadius:10,padding:12,color:T.danger,fontFamily:fonts.body,fontWeight:800,fontSize:14,cursor:"pointer"}}>
               🔒 LOCK
             </button>
           )}
           {isLocked && unlocked && (
             <button onClick={()=>withPassword(()=>{const u={...captains};delete u[match.id+"_locked"];onSave(u);})}
-              style={{flex:1,background:"#2ECC7122",border:"1px solid #2ECC7133",borderRadius:10,padding:12,color:"#2ECC71",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:14,cursor:"pointer"}}>
+              style={{flex:1,background:"#2ECC7122",border:"1px solid #2ECC7133",borderRadius:10,padding:12,color:T.success,fontFamily:fonts.body,fontWeight:800,fontSize:14,cursor:"pointer"}}>
               🔓 UNLOCK
             </button>
           )}
           <button onClick={isLocked ? onClose : saveAndClose}
-            style={{flex:2,background:"#F5A623",border:"none",borderRadius:10,padding:12,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:15,cursor:"pointer"}}>
+            style={{flex:2,background:"#F5A623",border:"none",borderRadius:10,padding:12,color:"#080C14",fontFamily:fonts.body,fontWeight:800,fontSize:15,cursor:"pointer"}}>
             {isLocked?"CLOSE":"✅ SAVE & CLOSE"}
           </button>
         </div>
@@ -3375,27 +3375,27 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
       <style>{css}</style>
       <div style={{minHeight:"100vh",background:"var(--bg)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16}}>
         <img src="/logo.png" style={{width:80,height:80,objectFit:"contain",borderRadius:12,animation:"spin 2s linear infinite"}} />
-        <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,fontWeight:700,color:"#F5A623",letterSpacing:3}}>TEEKHA BOUNCER</div>
-        <div style={{color:"#4A5E78",fontSize:14,letterSpacing:1}}>Loading league data…</div>
+        <div style={{fontFamily:fonts.display,fontSize:22,fontWeight:700,color:T.accent,letterSpacing:3}}>TEEKHA BOUNCER</div>
+        <div style={{color:T.muted,fontSize:14,letterSpacing:1}}>Loading league data…</div>
       </div>
     </>
   );
 
   return (
     <>
-      {isGuest && <div style={{background:"#4A5E7822",borderBottom:"1px solid #1E2D45",padding:"6px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:11,fontFamily:"Barlow Condensed,sans-serif"}}><span style={{color:"#4A5E78"}}>👁 Guest — read only</span><button onClick={onLeaveGuest||onLeave} style={{background:"transparent",border:"none",color:"#F5A623",fontSize:11,cursor:"pointer",fontWeight:700,fontFamily:"Barlow Condensed,sans-serif"}}>CLAIM TEAM →</button></div>}
+      {isGuest && <div style={{background:"#4A5E7822",borderBottom:`1px solid ${T.border}`,padding:"6px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",fontSize:11,fontFamily:fonts.body}}><span style={{color:T.muted}}>👁 Guest — read only</span><button onClick={onLeaveGuest||onLeave} style={{background:"transparent",border:"none",color:T.accent,fontSize:11,cursor:"pointer",fontWeight:700,fontFamily:fonts.body}}>CLAIM TEAM →</button></div>}
       {pitch?.isClone && (
         <div style={{background:"linear-gradient(90deg,#A855F718,#7C3AED18)",borderBottom:"2px solid #A855F766",padding:"10px 20px",display:"flex",alignItems:"center",justifyContent:"center",gap:12}}>
           <span style={{fontSize:20}}>🧬</span>
           <div>
-            <span style={{fontFamily:"Rajdhani,sans-serif",fontWeight:800,fontSize:15,color:"#A855F7",letterSpacing:2}}>CLONE PITCH</span>
-            <span style={{color:"#4A5E78",fontSize:12,marginLeft:10}}>Cloned from <span style={{color:"#E2EAF4",fontWeight:600}}>{pitch.clonedFromName}</span> · Changes here won't affect the original</span>
+            <span style={{fontFamily:fonts.display,fontWeight:800,fontSize:15,color:T.purple,letterSpacing:2}}>CLONE PITCH</span>
+            <span style={{color:T.muted,fontSize:12,marginLeft:10}}>Cloned from <span style={{color:T.text,fontWeight:600}}>{pitch.clonedFromName}</span> · Changes here won't affect the original</span>
           </div>
         </div>
       )}
-      {guestToast && <div style={{position:"fixed",top:60,left:"50%",transform:"translateX(-50%)",background:"#1E2D45",border:"1px solid #4A5E78",borderRadius:10,padding:"10px 20px",zIndex:9999,fontFamily:"Barlow Condensed,sans-serif",fontSize:14,color:"#E2EAF4",display:"flex",alignItems:"center",gap:8,boxShadow:"0 4px 20px rgba(0,0,0,0.5)"}}>
+      {guestToast && <div style={{position:"fixed",top:60,left:"50%",transform:"translateX(-50%)",background:"#1E2D45",border:"1px solid #4A5E78",borderRadius:10,padding:"10px 20px",zIndex:9999,fontFamily:fonts.body,fontSize:14,color:T.text,display:"flex",alignItems:"center",gap:8,boxShadow:"0 4px 20px rgba(0,0,0,0.5)"}}>
         <span style={{fontSize:18}}>👁</span>
-        <span>View only — <strong style={{color:"#F5A623"}}>guests cannot make changes</strong></span>
+        <span>View only — <strong style={{color:T.accent}}>guests cannot make changes</strong></span>
       </div>}
       <ChatWindow myTeam={myTeam} teams={teams} unlocked={unlocked} withPassword={withPassword} storeGet={storeGet} storeSet={storeSet} isGuest={isGuest} />
       <style>{css}</style>
@@ -3429,7 +3429,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
         {editPlayer&&<EditPlayerModal player={editPlayer} onSave={(updated)=>{const updated_players=players.map(p=>p.id===updated.id?updated:p);setPlayers(updated_players);storeSet("players",updated_players);setEditPlayer(null);}} onAdd={(np)=>{const all=[...players,np];setPlayers(all);storeSet("players",all);setEditPlayer(null);}} onClose={()=>setEditPlayer(null)} />}
 
         {/* TOP BAR */}
-        <div style={{background:"linear-gradient(180deg,#0E1521 0%,#080C14 100%)",borderBottom:"1px solid #1E2D45",padding:"10px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:50}}>
+        <div style={{background:"linear-gradient(180deg,#0E1521 0%,#080C14 100%)",borderBottom:`1px solid ${T.border}`,padding:"10px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:50}}>
           <div style={{display:"flex",alignItems:"center",gap:8}}>
             <button onClick={()=>setDrawerOpen(true)} style={{background:"transparent",border:"none",cursor:"pointer",padding:"6px 4px",display:"flex",flexDirection:"column",justifyContent:"center",gap:4,flexShrink:0,position:"relative"}}>
               <span style={{display:"block",width:20,height:2,background:"#E2EAF4",borderRadius:2}} />
@@ -3440,18 +3440,18 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
             <div style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={onLeave} title="Back to pitches">
             <img src="/logo.png" alt="Teekha Bouncer" style={{height:36,width:36,objectFit:"contain",borderRadius:6}} />
             <div>
-              <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:14,color:"#F5A623",letterSpacing:1,lineHeight:1}}>TEEKHA BOUNCER LEAGUE</div>
-              <div style={{fontSize:9,color:"#4A5E78",letterSpacing:1,marginTop:2}}>{pitch ? pitch.name : ""} {user ? "• "+user.email.split("@")[0] : ""}</div>
+              <div style={{fontFamily:fonts.display,fontWeight:700,fontSize:14,color:T.accent,letterSpacing:1,lineHeight:1}}>TEEKHA BOUNCER LEAGUE</div>
+              <div style={{fontSize:9,color:T.muted,letterSpacing:1,marginTop:2}}>{pitch ? pitch.name : ""} {user ? "• "+user.email.split("@")[0] : ""}</div>
             </div>
           </div>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:6}}>
-            <button onClick={()=>{if(unlocked)setUnlocked(false);else{setPendingAction(null);setShowPwModal(true);}}} style={{background:unlocked?"#2ECC7122":"transparent",border:"1px solid "+(unlocked?"#2ECC71":"#1E2D45"),color:unlocked?"#2ECC71":"#4A5E78",fontSize:13,borderRadius:6,padding:"6px 12px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>
+            <button onClick={()=>{if(unlocked)setUnlocked(false);else{setPendingAction(null);setShowPwModal(true);}}} style={{background:unlocked?"#2ECC7122":"transparent",border:"1px solid "+(unlocked?"#2ECC71":"#1E2D45"),color:unlocked?"#2ECC71":"#4A5E78",fontSize:13,borderRadius:6,padding:"6px 12px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700}}>
               <span className="desk-only">{unlocked?"🔓 ON":"🔒 OFF"}</span>
               <span className="mob-only">{unlocked?"🔓":"🔒"}</span>
             </button>
-            <button onClick={()=>withPassword(()=>{if(!confirm("Reset ALL data? This cannot be undone!"))return;["teams","players","assignments","matches","captains","points","page","pwhash"].forEach(k=>storeDel(k));window.location.reload();})} style={{background:"transparent",border:"1px solid #1E2D45",color:"#4A5E78",fontSize:13,borderRadius:6,padding:"6px 10px",cursor:"pointer"}}>⚙️</button>
-            <button onClick={onLogout} style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:"#FF3D5A",fontSize:13,borderRadius:6,padding:"6px 10px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>
+            <button onClick={()=>withPassword(()=>{if(!confirm("Reset ALL data? This cannot be undone!"))return;["teams","players","assignments","matches","captains","points","page","pwhash"].forEach(k=>storeDel(k));window.location.reload();})} style={{background:"transparent",border:`1px solid ${T.border}`,color:T.muted,fontSize:13,borderRadius:6,padding:"6px 10px",cursor:"pointer"}}>⚙️</button>
+            <button onClick={onLogout} style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:T.danger,fontSize:13,borderRadius:6,padding:"6px 10px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700}}>
               <span className="desk-only">LOGOUT</span>
               <span className="mob-only" style={{fontSize:11}}>OUT</span>
             </button>
@@ -3459,12 +3459,12 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
         </div>
 
         {/* BOTTOM NAV */}
-        <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:50,background:"#0E1521",borderTop:"1px solid #1E2D45",display:"flex",paddingBottom:"max(8px, env(safe-area-inset-bottom))"}}>
+        <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:50,background:T.card,borderTop:`1px solid ${T.border}`,display:"flex",paddingBottom:"max(8px, env(safe-area-inset-bottom))"}}>
           {navItems.map(n=>(
             <button key={n.id} onClick={()=>!n.disabled&&nav(n.id)}
               style={{flex:1,background:"transparent",border:"none",cursor:n.disabled?"not-allowed":"pointer",padding:"10px 2px 6px",display:"flex",flexDirection:"column",alignItems:"center",gap:3,opacity:n.disabled?0.25:1,borderTop:page===n.id?"2px solid #F5A623":"2px solid transparent",transition:"all .15s"}}>
               <span style={{fontSize:22,lineHeight:1}}>{n.icon}</span>
-              <span style={{fontSize:9,fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,letterSpacing:0.5,color:page===n.id?"#F5A623":"#4A5E78",textTransform:"uppercase"}}>{n.label}</span>
+              <span style={{fontSize:9,fontFamily:fonts.body,fontWeight:700,letterSpacing:0.5,color:page===n.id?"#F5A623":"#4A5E78",textTransform:"uppercase"}}>{n.label}</span>
             </button>
           ))}
         </div>
@@ -3472,8 +3472,8 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
         {loading&&(
           <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.92)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",zIndex:200,backdropFilter:"blur(4px)"}}>
             <Spinner />
-            <div style={{marginTop:16,color:"#F5A623",fontWeight:700,fontSize:16,textAlign:"center",padding:"0 20px"}}>{loading}</div>
-            <div style={{marginTop:6,color:"#4A5E78",fontSize:13}}>Please wait…</div>
+            <div style={{marginTop:16,color:T.accent,fontWeight:700,fontSize:16,textAlign:"center",padding:"0 20px"}}>{loading}</div>
+            <div style={{marginTop:6,color:T.muted,fontSize:13}}>Please wait…</div>
           </div>
         )}
 
@@ -3481,33 +3481,33 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
 
           {page==="setup"&&(
             <div className="fade-in">
-              <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2,marginBottom:24}}>LEAGUE SETUP</h2>
+              <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:T.accent,letterSpacing:2,marginBottom:24}}>LEAGUE SETUP</h2>
               <Card sx={{padding:24,marginBottom:16}}>
-                <div style={{fontWeight:700,color:"#4A5E78",letterSpacing:2,fontSize:12,marginBottom:16}}>NUMBER OF TEAMS</div>
+                <div style={{fontWeight:700,color:T.muted,letterSpacing:2,fontSize:12,marginBottom:16}}>NUMBER OF TEAMS</div>
                 <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:12}}>
-                  <span style={{fontSize:48,fontFamily:"Rajdhani",fontWeight:800,color:"#F5A623",minWidth:60}}>{numTeams}</span>
+                  <span style={{fontSize:48,fontFamily:"Rajdhani",fontWeight:800,color:T.accent,minWidth:60}}>{numTeams}</span>
                   <input type="range" min={2} max={10} value={numTeams} onChange={e=>{setNumTeams(+e.target.value);storeSet("numteams",+e.target.value);}} style={{flex:1,accentColor:"#F5A623",height:6}} />
                 </div>
-                <div style={{display:"flex",justifyContent:"space-between",color:"#4A5E78",fontSize:12}}><span>2 teams</span><span>10 teams</span></div>
+                <div style={{display:"flex",justifyContent:"space-between",color:T.muted,fontSize:12}}><span>2 teams</span><span>10 teams</span></div>
               </Card>
               <Card sx={{padding:24,marginBottom:20}}>
-                <div style={{fontWeight:700,color:"#4A5E78",letterSpacing:2,fontSize:12,marginBottom:16}}>TEAM NAMES</div>
+                <div style={{fontWeight:700,color:T.muted,letterSpacing:2,fontSize:12,marginBottom:16}}>TEAM NAMES</div>
                 <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(240px,1fr))",gap:12}}>
                   {Array.from({length:numTeams},(_,i)=>(
                     <div key={i} style={{display:"flex",alignItems:"center",gap:10}}>
                       <div style={{width:10,height:10,borderRadius:"50%",background:PALETTE[i],flexShrink:0}} />
-                      <input value={tNames[i]} onChange={e=>{const n=[...tNames];n[i]=e.target.value;setTNames(n);}} style={{flex:1,background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"9px 14px",color:"#E2EAF4",fontSize:15,fontFamily:"Barlow Condensed,sans-serif",fontWeight:600}} placeholder={"Team "+(i+1)} />
+                      <input value={tNames[i]} onChange={e=>{const n=[...tNames];n[i]=e.target.value;setTNames(n);}} style={{flex:1,background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"9px 14px",color:T.text,fontSize:15,fontFamily:fonts.body,fontWeight:600}} placeholder={"Team "+(i+1)} />
                     </div>
                   ))}
                 </div>
               </Card>
               <Card sx={{padding:20,marginBottom:20}}>
-                <div style={{fontWeight:700,color:"#4A5E78",letterSpacing:2,fontSize:12,marginBottom:14}}>POINTS SYSTEM</div>
+                <div style={{fontWeight:700,color:T.muted,letterSpacing:2,fontSize:12,marginBottom:14}}>POINTS SYSTEM</div>
                 <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))",gap:14,fontSize:13}}>
                   {[{title:"🏏 BATTING",items:["1 pt per run","8 pts per four","12 pts per six","+10 for 50+","+20 for 100+"]},{title:"🎳 BOWLING",items:["25 pts per wicket","+8 for 4-wkt haul","+15 for 5+ wickets","+10 econ <6 (min 2 ov)"]},{title:"🧤 FIELDING",items:["8 pts per catch","12 pts stumping","12 pts run-out"]},{title:"⭐ BONUSES",items:["30+ runs & 2+ wkts = +15","Longest six = +50","Captain = 2× pts","VC = 1.5× pts"]}].map(sec=>(
                     <div key={sec.title}>
-                      <div style={{color:"#F5A623",fontWeight:700,fontSize:12,letterSpacing:1,marginBottom:8}}>{sec.title}</div>
-                      {sec.items.map(item=><div key={item} style={{color:"#94A3B8",marginBottom:4}}>• {item}</div>)}
+                      <div style={{color:T.accent,fontWeight:700,fontSize:12,letterSpacing:1,marginBottom:8}}>{sec.title}</div>
+                      {sec.items.map(item=><div key={item} style={{color:T.sub,marginBottom:4}}>• {item}</div>)}
                     </div>
                   ))}
                 </div>
@@ -3520,7 +3520,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
             <div className="fade-in">
               <div style={{marginBottom:16}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,flexWrap:"wrap",gap:8}}>
-                  <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2}}>PLAYER DRAFT</h2>
+                  <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:T.accent,letterSpacing:2}}>PLAYER DRAFT</h2>
                   <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
                     <Btn variant="blue" onClick={()=>withPassword(()=>setFetchPlayerModal({tournamentId:null,tournamentName:"General"}))} sx={{fontSize:13,padding:"8px 14px"}}>🌐 FETCH PLAYERS</Btn>
                     <Btn variant="ghost" onClick={()=>withPassword(()=>setEditPlayer({name:"",iplTeam:"",role:"Batsman"}))} sx={{fontSize:13,padding:"8px 14px"}}>✚ ADD</Btn>
@@ -3528,10 +3528,10 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                   </div>
                 </div>
                 {/* Draft sub-tabs */}
-                <div style={{display:"flex",background:"#0E1521",borderRadius:10,padding:4,gap:4}}>
+                <div style={{display:"flex",background:T.card,borderRadius:10,padding:4,gap:4}}>
                   {[{id:"players",label:"📋 Players"},{id:"unsold",label:"🏷️ Unsold Pool"}].map(t=>(
                     <button key={t.id} onClick={()=>setDraftTab(t.id)}
-                      style={{flex:1,padding:"8px",border:"none",borderRadius:8,cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,letterSpacing:1,background:draftTab===t.id?"#F5A623":"transparent",color:draftTab===t.id?"#080C14":"#4A5E78",transition:"all .15s"}}>
+                      style={{flex:1,padding:"8px",border:"none",borderRadius:8,cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:14,letterSpacing:1,background:draftTab===t.id?"#F5A623":"transparent",color:draftTab===t.id?"#080C14":"#4A5E78",transition:"all .15s"}}>
                       {t.label}
                     </button>
                   ))}
@@ -3541,32 +3541,32 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
               {draftTab==="unsold" && (
                 <div>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-                    <div style={{fontSize:13,color:"#4A5E78"}}>
+                    <div style={{fontSize:13,color:T.muted}}>
                       Players in the unsold pool can be picked up during the transfer window.
                     </div>
-                    <span style={{background:"#F5A62322",color:"#F5A623",border:"1px solid #F5A62344",borderRadius:6,padding:"4px 10px",fontSize:12,fontWeight:700}}>{unsoldPool.length} players</span>
+                    <span style={{background:"#F5A62322",color:T.accent,border:"1px solid #F5A62344",borderRadius:6,padding:"4px 10px",fontSize:12,fontWeight:700}}>{unsoldPool.length} players</span>
                   </div>
 
                   {/* Add unassigned players to pool */}
                   <div style={{marginBottom:16}}>
-                    <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginBottom:10}}>ADD FROM UNASSIGNED PLAYERS</div>
+                    <div style={{fontSize:11,color:T.muted,letterSpacing:2,fontWeight:700,marginBottom:10}}>ADD FROM UNASSIGNED PLAYERS</div>
                     <div style={{maxHeight:160,overflowY:"auto",display:"flex",flexWrap:"wrap",gap:6}}>
                       {players.filter(p=>!assignments[p.id]&&!unsoldPool.includes(p.id)).map(p=>(
                         <button key={p.id} onClick={()=>addToUnsoldPool(p.id)}
-                          style={{padding:"5px 12px",borderRadius:20,border:"1px solid #1E2D45",background:"transparent",color:"#4A5E78",fontSize:12,fontFamily:"Barlow Condensed,sans-serif",cursor:"pointer"}}>
+                          style={{padding:"5px 12px",borderRadius:20,border:`1px solid ${T.border}`,background:"transparent",color:T.muted,fontSize:12,fontFamily:fonts.body,cursor:"pointer"}}>
                           + {p.name} <span style={{opacity:0.5}}>({p.iplTeam})</span>
                         </button>
                       ))}
                       {players.filter(p=>!assignments[p.id]&&!unsoldPool.includes(p.id)).length===0&&(
-                        <div style={{color:"#4A5E78",fontSize:13}}>All unassigned players are already in the pool</div>
+                        <div style={{color:T.muted,fontSize:13}}>All unassigned players are already in the pool</div>
                       )}
                     </div>
                   </div>
 
                   {/* Current unsold pool */}
-                  <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginBottom:10}}>CURRENT UNSOLD POOL</div>
+                  <div style={{fontSize:11,color:T.muted,letterSpacing:2,fontWeight:700,marginBottom:10}}>CURRENT UNSOLD POOL</div>
                   {unsoldPool.length===0 ? (
-                    <div style={{textAlign:"center",padding:"32px",color:"#4A5E78",fontSize:14,background:"#0E1521",borderRadius:10}}>
+                    <div style={{textAlign:"center",padding:"32px",color:T.muted,fontSize:14,background:T.card,borderRadius:10}}>
                       Pool is empty — add players above
                     </div>
                   ) : (
@@ -3584,7 +3584,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                             <div style={{flex:1,minWidth:0}}>
                               <div style={{display:"flex",alignItems:"center",gap:5,flexWrap:"wrap"}}>
                                 <span style={{fontWeight:700,fontSize:14,color:myHighlights[pid]?"#F5A623":"#E2EAF4"}}>{p.name}</span>
-                                {p.tier&&<span style={{fontSize:9,fontWeight:800,letterSpacing:1,padding:"1px 5px",borderRadius:4,fontFamily:"Barlow Condensed,sans-serif",textTransform:"uppercase",background:p.tier==="platinum"?"#4A5E7833":p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":"#CD7F3222",border:"1px solid "+(p.tier==="platinum"?"#4A5E7866":p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":"#CD7F3255"),color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32"}}>{p.tier==="platinum"?"PLAT":p.tier==="gold"?"GOLD":p.tier==="silver"?"SILV":"BRNZ"}</span>}
+                                {p.tier&&<span style={{fontSize:9,fontWeight:800,letterSpacing:1,padding:"1px 5px",borderRadius:4,fontFamily:fonts.body,textTransform:"uppercase",background:p.tier==="platinum"?"#4A5E7833":p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":"#CD7F3222",border:"1px solid "+(p.tier==="platinum"?"#4A5E7866":p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":"#CD7F3255"),color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32"}}>{p.tier==="platinum"?"PLAT":p.tier==="gold"?"GOLD":p.tier==="silver"?"SILV":"BRNZ"}</span>}
                                 {releasedByTeam && (
                                   <span style={{display:"flex",alignItems:"center",gap:3,fontSize:9,fontWeight:800,letterSpacing:0.5,color:releasedByTeam.color,background:releasedByTeam.color+"15",border:"1px solid "+releasedByTeam.color+"44",borderRadius:4,padding:"1px 6px"}}>
                                     <span style={{width:5,height:5,borderRadius:"50%",background:releasedByTeam.color,display:"inline-block",flexShrink:0}}/>
@@ -3592,13 +3592,13 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                                   </span>
                                 )}
                               </div>
-                              <div style={{fontSize:11,color:"#4A5E78"}}>{p.iplTeam} • {p.role}{!releasedByTeam&&<span style={{marginLeft:6,fontSize:9,color:"#4A5E78",background:"#1E2D4555",border:"1px solid #1E2D4599",borderRadius:3,padding:"0px 4px",fontWeight:700}}>UNSOLD</span>}</div>
-                              {myNotes[pid]&&editingNote!==pid&&<div style={{fontSize:11,color:"#F5A623",marginTop:4,fontStyle:"italic",background:"#F5A62311",borderRadius:4,padding:"3px 8px",display:"inline-block"}}>"{myNotes[pid]}"</div>}
+                              <div style={{fontSize:11,color:T.muted}}>{p.iplTeam} • {p.role}{!releasedByTeam&&<span style={{marginLeft:6,fontSize:9,color:T.muted,background:"#1E2D4555",border:"1px solid #1E2D4599",borderRadius:3,padding:"0px 4px",fontWeight:700}}>UNSOLD</span>}</div>
+                              {myNotes[pid]&&editingNote!==pid&&<div style={{fontSize:11,color:T.accent,marginTop:4,fontStyle:"italic",background:"#F5A62311",borderRadius:4,padding:"3px 8px",display:"inline-block"}}>"{myNotes[pid]}"</div>}
                               {editingNote===pid&&(
                                 <div style={{display:"flex",gap:6,marginTop:6}}>
-                                  <input autoFocus value={noteInput} onChange={e=>setNoteInput(e.target.value)} onKeyDown={async e=>{if(e.key==="Enter"){const u={...myNotes,[pid]:noteInput.trim()};if(!noteInput.trim())delete u[pid];await saveNotes(u);setEditingNote(null);}if(e.key==="Escape")setEditingNote(null);}} placeholder="Private note..." maxLength={100} style={{flex:1,background:"#080C14",border:"1px solid #F5A62344",borderRadius:6,padding:"4px 8px",color:"#E2EAF4",fontSize:12,fontFamily:"Barlow Condensed,sans-serif",outline:"none"}} />
+                                  <input autoFocus value={noteInput} onChange={e=>setNoteInput(e.target.value)} onKeyDown={async e=>{if(e.key==="Enter"){const u={...myNotes,[pid]:noteInput.trim()};if(!noteInput.trim())delete u[pid];await saveNotes(u);setEditingNote(null);}if(e.key==="Escape")setEditingNote(null);}} placeholder="Private note..." maxLength={100} style={{flex:1,background:T.bg,border:"1px solid #F5A62344",borderRadius:6,padding:"4px 8px",color:T.text,fontSize:12,fontFamily:fonts.body,outline:"none"}} />
                                   <button onClick={async()=>{const u={...myNotes,[pid]:noteInput.trim()};if(!noteInput.trim())delete u[pid];await saveNotes(u);setEditingNote(null);}} style={{background:"#F5A623",border:"none",borderRadius:6,padding:"4px 10px",color:"#080C14",fontWeight:800,fontSize:12,cursor:"pointer"}}>SAVE</button>
-                                  <button onClick={()=>setEditingNote(null)} style={{background:"transparent",border:"1px solid #1E2D45",borderRadius:6,padding:"4px 8px",color:"#4A5E78",fontSize:12,cursor:"pointer"}}>✕</button>
+                                  <button onClick={()=>setEditingNote(null)} style={{background:"transparent",border:`1px solid ${T.border}`,borderRadius:6,padding:"4px 8px",color:T.muted,fontSize:12,cursor:"pointer"}}>✕</button>
                                 </div>
                               )}
                             </div>
@@ -3607,7 +3607,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                                 {myHighlights[pid]?"⭐":"☆"}
                               </button>
                               <button onClick={()=>{setNoteInput(myNotes[pid]||"");setEditingNote(pid);}} style={{background:myNotes[pid]?"#4F8EF722":"transparent",border:"1px solid "+(myNotes[pid]?"#4F8EF744":"#1E2D45"),borderRadius:6,padding:"5px 8px",cursor:"pointer",fontSize:13}}>📝</button>
-                              {unlocked&&<button onClick={()=>removeFromUnsoldPool(pid)} style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:"#FF3D5A",borderRadius:6,padding:"5px 8px",cursor:"pointer",fontSize:11,fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>✕</button>}
+                              {unlocked&&<button onClick={()=>removeFromUnsoldPool(pid)} style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:T.danger,borderRadius:6,padding:"5px 8px",cursor:"pointer",fontSize:11,fontFamily:fonts.body,fontWeight:700}}>✕</button>}
                             </div>
                           </div>
                         );
@@ -3622,9 +3622,9 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
               <div style={{background:unlocked?"#2ECC7112":"#F5A62310",border:"1px solid "+(unlocked?"#2ECC7133":"#F5A62333"),borderRadius:10,padding:"12px 16px",marginBottom:16,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
                 <div>
                   <span style={{fontWeight:700,color:unlocked?"#2ECC71":"#F5A623",fontSize:14}}>{unlocked?"🔓 Squad changes unlocked":"🔒 Squad changes are locked"}</span>
-                  <span style={{color:"#4A5E78",fontSize:12,marginLeft:10}}>{unlocked?"Assign, replace or remove freely":"Password required to modify squads"}</span>
+                  <span style={{color:T.muted,fontSize:12,marginLeft:10}}>{unlocked?"Assign, replace or remove freely":"Password required to modify squads"}</span>
                 </div>
-                <button onClick={()=>{if(unlocked)setUnlocked(false);else{setPendingAction(null);setShowPwModal(true);}}} style={{background:unlocked?"#FF3D5A22":"#F5A62322",border:"1px solid "+(unlocked?"#FF3D5A44":"#F5A62344"),color:unlocked?"#FF3D5A":"#F5A623",borderRadius:7,padding:"7px 16px",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+                <button onClick={()=>{if(unlocked)setUnlocked(false);else{setPendingAction(null);setShowPwModal(true);}}} style={{background:unlocked?"#FF3D5A22":"#F5A62322",border:"1px solid "+(unlocked?"#FF3D5A44":"#F5A62344"),color:unlocked?"#FF3D5A":"#F5A623",borderRadius:7,padding:"7px 16px",fontFamily:fonts.body,fontWeight:700,fontSize:13,cursor:"pointer"}}>
                   {unlocked?"LOCK":"UNLOCK"}
                 </button>
               </div>
@@ -3638,10 +3638,10 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                       <div onClick={()=>setTeamFilter(active?null:t.id)} style={{padding:"7px 10px",cursor:"pointer",display:"flex",alignItems:"center",gap:6,flex:1}}>
                         {teamLogos[t.id]&&<img src={teamLogos[t.id]} style={{width:22,height:22,objectFit:"contain",borderRadius:4}} />}
                         <span style={{color:t.color,fontWeight:700}}>{t.name}</span>
-                        <span style={{color:"#4A5E78"}}>{cnt}p</span>
+                        <span style={{color:T.muted}}>{cnt}p</span>
                         {active&&<span style={{color:t.color,fontSize:11}}>✓</span>}
                       </div>
-                      <label title="Upload team logo" style={{padding:"7px 8px",cursor:"pointer",color:"#4A5E78",fontSize:12,borderLeft:"1px solid #1E2D4555"}}>
+                      <label title="Upload team logo" style={{padding:"7px 8px",cursor:"pointer",color:T.muted,fontSize:12,borderLeft:"1px solid #1E2D4555"}}>
                         📷
                         <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>e.target.files[0]&&uploadTeamLogo(t.id,e.target.files[0])} />
                       </label>
@@ -3650,16 +3650,16 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                 })}
                 <div onClick={()=>setTeamFilter("unassigned")}
                   style={{background:teamFilter==="unassigned"?"#4A5E7833":"#0E1521",borderRadius:8,padding:"7px 14px",fontSize:13,cursor:"pointer",border:teamFilter==="unassigned"?"1px solid #4A5E78":"1px solid transparent",transition:"all .15s"}}>
-                  <span style={{color:"#4A5E78"}}>Unassigned: </span>
-                  <span style={{color:"#E2EAF4"}}>{players.filter(p=>!assignments[p.id]).length}</span>
-                  {teamFilter==="unassigned"&&<span style={{color:"#4A5E78",marginLeft:6,fontSize:11}}>✓</span>}
+                  <span style={{color:T.muted}}>Unassigned: </span>
+                  <span style={{color:T.text}}>{players.filter(p=>!assignments[p.id]).length}</span>
+                  {teamFilter==="unassigned"&&<span style={{color:T.muted,marginLeft:6,fontSize:11}}>✓</span>}
                 </div>
               </div>
               {players.length===0?(
                 <Card sx={{padding:60,textAlign:"center"}}>
                   <div style={{fontSize:56}}>🏏</div>
-                  <div style={{color:"#4A5E78",marginTop:16,fontSize:16}}>Click "Fetch IPL Players" to load all 10 squads</div>
-                  <div style={{color:"#4A5E78",marginTop:8,fontSize:13}}>This fetches each team one by one — takes about 30 seconds</div>
+                  <div style={{color:T.muted,marginTop:16,fontSize:16}}>Click "Fetch IPL Players" to load all 10 squads</div>
+                  <div style={{color:T.muted,marginTop:8,fontSize:13}}>This fetches each team one by one — takes about 30 seconds</div>
                 </Card>
               ):squadView?(
                 <div style={{display:"flex",flexDirection:"column",gap:12}}>
@@ -3668,14 +3668,14 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                     const unassignedCount=players.filter(p=>!assignments[p.id]).length;
                     return(
                       <Card key={team.id} accent={team.color} sx={{overflow:"hidden"}}>
-                        <div style={{padding:"14px 18px",borderBottom:"1px solid #1E2D45",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                        <div style={{padding:"14px 18px",borderBottom:`1px solid ${T.border}`,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
                           <div>
-                            <span style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:18,color:team.color,letterSpacing:1}}>{team.name}</span>
-                            <span style={{color:"#4A5E78",fontSize:13,marginLeft:10}}>{teamPlayers.length} players</span>
+                            <span style={{fontFamily:fonts.display,fontWeight:700,fontSize:18,color:team.color,letterSpacing:1}}>{team.name}</span>
+                            <span style={{color:T.muted,fontSize:13,marginLeft:10}}>{teamPlayers.length} players</span>
                           </div>
                         </div>
                         {teamPlayers.length===0?(
-                          <div style={{padding:"16px 18px",color:"#4A5E78",fontSize:13}}>No players assigned yet</div>
+                          <div style={{padding:"16px 18px",color:T.muted,fontSize:13}}>No players assigned yet</div>
                         ):(
                           <div style={{padding:"8px 0"}}>
                             {["Batsman","Wicket-Keeper","All-Rounder","Bowler"].map(role=>{
@@ -3683,15 +3683,15 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                               if(rp.length===0) return null;
                               return(
                                 <div key={role}>
-                                  <div style={{padding:"6px 18px",fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,background:"#0E152188"}}>{role.toUpperCase()}S ({rp.length})</div>
+                                  <div style={{padding:"6px 18px",fontSize:11,color:T.muted,letterSpacing:2,fontWeight:700,background:"#0E152188"}}>{role.toUpperCase()}S ({rp.length})</div>
                                   {rp.map(p=>(
                                     <div key={p.id} style={{display:"flex",alignItems:"center",padding:"8px 18px",borderBottom:"1px solid #1E2D4522",gap:10}}>
                                       <div style={{flex:1}}>
-                                        <span style={{fontSize:14,fontWeight:600,color:"#E2EAF4"}}>{p.name}</span>
-                                        <span style={{fontSize:12,color:"#4A5E78",marginLeft:8}}>{p.iplTeam}</span>
+                                        <span style={{fontSize:14,fontWeight:600,color:T.text}}>{p.name}</span>
+                                        <span style={{fontSize:12,color:T.muted,marginLeft:8}}>{p.iplTeam}</span>
                                       </div>
-                                      <button onClick={()=>withPassword(()=>setEditPlayer(p))} style={{background:"#4F8EF722",border:"1px solid #4F8EF744",color:"#4F8EF7",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:12}}>✏️</button>
-                                      <button onClick={()=>removePlayer(p.id)} style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:"#FF3D5A",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:12}}>✕</button>
+                                      <button onClick={()=>withPassword(()=>setEditPlayer(p))} style={{background:"#4F8EF722",border:"1px solid #4F8EF744",color:T.info,borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:12}}>✏️</button>
+                                      <button onClick={()=>removePlayer(p.id)} style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:T.danger,borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:12}}>✕</button>
                                     </div>
                                   ))}
                                 </div>
@@ -3703,19 +3703,19 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                     );
                   })}
                   <Card sx={{padding:16}}>
-                    <div style={{color:"#4A5E78",fontSize:13,textAlign:"center"}}>
-                      <span style={{color:"#E2EAF4",fontWeight:700}}>{players.filter(p=>!assignments[p.id]).length}</span> players unassigned
+                    <div style={{color:T.muted,fontSize:13,textAlign:"center"}}>
+                      <span style={{color:T.text,fontWeight:700}}>{players.filter(p=>!assignments[p.id]).length}</span> players unassigned
                     </div>
                   </Card>
                 </div>
               ):(
                 <>
                   <div style={{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap"}}>
-                    <input placeholder="Search name or franchise…" value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:180,background:"#0E1521",border:"1px solid #1E2D45",borderRadius:8,padding:"10px 14px",color:"#E2EAF4",fontSize:14,fontFamily:"Barlow Condensed"}} />
-                    <select value={roleFilter} onChange={e=>setRoleFilter(e.target.value)} style={{background:"#0E1521",border:"1px solid #1E2D45",borderRadius:8,padding:"10px 14px",color:"#E2EAF4",fontSize:14,fontFamily:"Barlow Condensed"}}>
+                    <input placeholder="Search name or franchise…" value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:180,background:T.card,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 14px",color:T.text,fontSize:14,fontFamily:"Barlow Condensed"}} />
+                    <select value={roleFilter} onChange={e=>setRoleFilter(e.target.value)} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 14px",color:T.text,fontSize:14,fontFamily:"Barlow Condensed"}}>
                       {ROLES.map(r=><option key={r}>{r}</option>)}
                     </select>
-                    <select value={sortOrder} onChange={e=>setSortOrder(e.target.value)} style={{background:"#0E1521",border:"1px solid #1E2D45",borderRadius:8,padding:"10px 14px",color:"#E2EAF4",fontSize:14,fontFamily:"Barlow Condensed"}}>
+                    <select value={sortOrder} onChange={e=>setSortOrder(e.target.value)} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 14px",color:T.text,fontSize:14,fontFamily:"Barlow Condensed"}}>
                       <option value="default">Default</option>
                       <option value="az">A → Z</option>
                       <option value="za">Z → A</option>
@@ -3726,40 +3726,40 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                       <img src={teamLogos[teamFilter]} style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:280,opacity:0.06,pointerEvents:"none",zIndex:0,objectFit:"contain"}} />
                     )}
                     {unlocked && selectedBulk.length > 0 && (
-                      <div style={{background:"#0E1521",border:"1px solid #F5A62344",borderRadius:10,padding:"10px 14px",marginBottom:10,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-                        <div style={{fontSize:12,color:"#F5A623",fontWeight:700,minWidth:60}}>{selectedBulk.length} selected</div>
+                      <div style={{background:T.card,border:"1px solid #F5A62344",borderRadius:10,padding:"10px 14px",marginBottom:10,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                        <div style={{fontSize:12,color:T.accent,fontWeight:700,minWidth:60}}>{selectedBulk.length} selected</div>
                         {[["platinum","PLATINUM","#B0BEC5","#4A5E7833","#4A5E7866"],["gold","GOLD","#F5A623","#F5A62322","#F5A62366"],["silver","SILVER","#94A3B8","#94A3B822","#94A3B855"],["bronze","BRONZE","#CD7F32","#CD7F3222","#CD7F3255"]].map(([t,label,col,bg,br])=>(
-                          <button key={t} onClick={()=>{const updated=players.map(p=>selectedBulk.includes(p.id)?{...p,tier:t}:p);setPlayers(updated);storeSet("players",updated);setSelectedBulk([]);}} style={{background:bg,border:"1px solid "+br,borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:11,fontWeight:800,fontFamily:"Barlow Condensed,sans-serif",color:col,letterSpacing:1}}>{label}</button>
+                          <button key={t} onClick={()=>{const updated=players.map(p=>selectedBulk.includes(p.id)?{...p,tier:t}:p);setPlayers(updated);storeSet("players",updated);setSelectedBulk([]);}} style={{background:bg,border:"1px solid "+br,borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:11,fontWeight:800,fontFamily:fonts.body,color:col,letterSpacing:1}}>{label}</button>
                         ))}
-                        <button onClick={()=>{const updated=players.map(p=>selectedBulk.includes(p.id)?{...p,tier:""}:p);setPlayers(updated);storeSet("players",updated);setSelectedBulk([]);}} style={{background:"transparent",border:"1px solid #1E2D45",borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:11,fontFamily:"Barlow Condensed,sans-serif",color:"#4A5E78"}}>CLEAR</button>
-                        <button onClick={()=>setSelectedBulk([])} style={{background:"transparent",border:"none",color:"#4A5E78",cursor:"pointer",fontSize:11,marginLeft:"auto"}}>deselect all</button>
+                        <button onClick={()=>{const updated=players.map(p=>selectedBulk.includes(p.id)?{...p,tier:""}:p);setPlayers(updated);storeSet("players",updated);setSelectedBulk([]);}} style={{background:"transparent",border:`1px solid ${T.border}`,borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:11,fontFamily:fonts.body,color:T.muted}}>CLEAR</button>
+                        <button onClick={()=>setSelectedBulk([])} style={{background:"transparent",border:"none",color:T.muted,cursor:"pointer",fontSize:11,marginLeft:"auto"}}>deselect all</button>
                       </div>
                     )}
                     {filteredPlayers.map(p=>{
                       const aTeam=teams.find(t=>t.id===assignments[p.id]);
                       const isAssigned=!!assignments[p.id];
                       return(
-                        <div key={p.id} style={{padding:"10px 14px",background:"#0E1521",borderRadius:8,borderLeft:"3px solid "+(aTeam?aTeam.color:"#1E2D45")}}>
+                        <div key={p.id} style={{padding:"10px 14px",background:T.card,borderRadius:8,borderLeft:"3px solid "+(aTeam?aTeam.color:"#1E2D45")}}>
                           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
                             <div style={{minWidth:0,flex:1}}>
                               <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
                                 {unlocked&&<input type="checkbox" checked={selectedBulk.includes(p.id)} onChange={e=>setSelectedBulk(prev=>e.target.checked?[...prev,p.id]:prev.filter(x=>x!==p.id))} style={{width:14,height:14,cursor:"pointer",accentColor:"#F5A623",flexShrink:0}} />}
-                                <span style={{fontWeight:700,fontSize:14,color:"#E2EAF4"}}>{p.name}</span>
-                                {p.tier&&<span style={{fontSize:9,fontWeight:800,letterSpacing:1,padding:"1px 5px",borderRadius:4,fontFamily:"Barlow Condensed,sans-serif",textTransform:"uppercase",background:p.tier==="platinum"?"#4A5E7833":p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":"#CD7F3222",border:"1px solid "+(p.tier==="platinum"?"#4A5E7866":p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":"#CD7F3255"),color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32"}}>{p.tier==="platinum"?"PLAT":p.tier==="gold"?"GOLD":p.tier==="silver"?"SILV":"BRNZ"}</span>}
-                                {isAssigned&&isPlayerSafeForTeam(assignments[p.id],p.id)&&<span style={{background:"#2ECC7122",color:"#2ECC71",border:"1px solid #2ECC7144",borderRadius:10,fontSize:9,padding:"1px 5px",fontWeight:700}}>🛡️</span>}
+                                <span style={{fontWeight:700,fontSize:14,color:T.text}}>{p.name}</span>
+                                {p.tier&&<span style={{fontSize:9,fontWeight:800,letterSpacing:1,padding:"1px 5px",borderRadius:4,fontFamily:fonts.body,textTransform:"uppercase",background:p.tier==="platinum"?"#4A5E7833":p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":"#CD7F3222",border:"1px solid "+(p.tier==="platinum"?"#4A5E7866":p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":"#CD7F3255"),color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32"}}>{p.tier==="platinum"?"PLAT":p.tier==="gold"?"GOLD":p.tier==="silver"?"SILV":"BRNZ"}</span>}
+                                {isAssigned&&isPlayerSafeForTeam(assignments[p.id],p.id)&&<span style={{background:"#2ECC7122",color:T.success,border:"1px solid #2ECC7144",borderRadius:10,fontSize:9,padding:"1px 5px",fontWeight:700}}>🛡️</span>}
                               </div>
-                              <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>{p.iplTeam} • <span style={{color:ROLE_COLORS[p.role]||"#94A3B8"}}>{p.role}</span>{isAssigned&&<span style={{marginLeft:6,color:aTeam?.color,fontWeight:700}}>{aTeam?.name}</span>}</div>
+                              <div style={{fontSize:11,color:T.muted,marginTop:2}}>{p.iplTeam} • <span style={{color:ROLE_COLORS[p.role]||"#94A3B8"}}>{p.role}</span>{isAssigned&&<span style={{marginLeft:6,color:aTeam?.color,fontWeight:700}}>{aTeam?.name}</span>}</div>
                             </div>
                           </div>
                           <div style={{display:"flex",alignItems:"center",gap:6}}>
-                            <select value={assignments[p.id]||""} onChange={e=>assignPlayer(p.id,e.target.value)} style={{flex:1,background:"#141E2E",border:"1px solid "+(aTeam?aTeam.color+"66":"#1E2D45"),borderRadius:6,padding:"6px 8px",color:aTeam?aTeam.color:"#4A5E78",fontSize:12,fontFamily:"Barlow Condensed",fontWeight:600,cursor:"pointer",minWidth:0}}>
+                            <select value={assignments[p.id]||""} onChange={e=>assignPlayer(p.id,e.target.value)} style={{flex:1,background:T.card,border:"1px solid "+(aTeam?aTeam.color+"66":"#1E2D45"),borderRadius:6,padding:"6px 8px",color:aTeam?aTeam.color:T.muted,fontSize:12,fontFamily:"Barlow Condensed",fontWeight:600,cursor:"pointer",minWidth:0}}>
                               <option value="">{isAssigned?"Move to…":"— Assign —"}</option>
                               {teams.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
                             </select>
-                            {isAssigned&&<button onClick={()=>removePlayer(p.id)} style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:"#FF3D5A",borderRadius:6,padding:"6px 8px",cursor:"pointer",fontSize:13,flexShrink:0}}>✕</button>}
-                            <button onClick={()=>withPassword(()=>setEditPlayer(p))} style={{background:"#4F8EF722",border:"1px solid #4F8EF744",color:"#4F8EF7",borderRadius:6,padding:"6px 8px",cursor:"pointer",fontSize:13,flexShrink:0}}>✏️</button>
+                            {isAssigned&&<button onClick={()=>removePlayer(p.id)} style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:T.danger,borderRadius:6,padding:"6px 8px",cursor:"pointer",fontSize:13,flexShrink:0}}>✕</button>}
+                            <button onClick={()=>withPassword(()=>setEditPlayer(p))} style={{background:"#4F8EF722",border:"1px solid #4F8EF744",color:T.info,borderRadius:6,padding:"6px 8px",cursor:"pointer",fontSize:13,flexShrink:0}}>✏️</button>
                             {isAssigned&&<button onClick={()=>toggleSafePlayer(assignments[p.id],p.id)} style={{background:isPlayerSafeForTeam(assignments[p.id],p.id)?"#2ECC7133":"transparent",border:"1px solid "+(isPlayerSafeForTeam(assignments[p.id],p.id)?"#2ECC71":"#1E2D45"),color:isPlayerSafeForTeam(assignments[p.id],p.id)?"#2ECC71":"#4A5E78",borderRadius:6,padding:"6px 8px",cursor:"pointer",fontSize:13,flexShrink:0}}>🛡️</button>}
-                            <button onClick={()=>deletePlayer(p.id)} style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:"#FF3D5A",borderRadius:6,padding:"6px 8px",cursor:"pointer",fontSize:11,flexShrink:0}}>🗑️</button>
+                            <button onClick={()=>deletePlayer(p.id)} style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:T.danger,borderRadius:6,padding:"6px 8px",cursor:"pointer",fontSize:11,flexShrink:0}}>🗑️</button>
                           </div>
                         </div>
                       );
@@ -3774,24 +3774,24 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
           {page==="matches"&&(
             <div className="fade-in">
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:12}}>
-                <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2}}>MATCHES</h2>
+                <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:T.accent,letterSpacing:2}}>MATCHES</h2>
               </div>
 
               {/* Add tournament - always visible, password on click */}
               <button onClick={()=>withPassword(()=>setAddTournamentModal(true))}
-                style={{width:"100%",background:"#0E1521",borderRadius:10,border:"1px solid #1E2D45",padding:"12px 16px",marginBottom:16,cursor:"pointer",display:"flex",alignItems:"center",gap:10,fontFamily:"Barlow Condensed,sans-serif"}}>
+                style={{width:"100%",background:T.card,borderRadius:10,border:`1px solid ${T.border}`,padding:"12px 16px",marginBottom:16,cursor:"pointer",display:"flex",alignItems:"center",gap:10,fontFamily:fonts.body}}>
                 <span style={{fontSize:18}}>➕</span>
                 <div style={{textAlign:"left"}}>
-                  <div style={{fontWeight:700,fontSize:14,color:"#F5A623"}}>ADD TOURNAMENT</div>
-                  <div style={{fontSize:11,color:"#4A5E78",marginTop:1}}>Fetch from Cricbuzz or CricketData</div>
+                  <div style={{fontWeight:700,fontSize:14,color:T.accent}}>ADD TOURNAMENT</div>
+                  <div style={{fontSize:11,color:T.muted,marginTop:1}}>Fetch from Cricbuzz or CricketData</div>
                 </div>
               </button>
 
               {/* Source legend */}
               {unlocked && (
-                <div style={{display:"flex",gap:8,marginBottom:12,fontSize:11,color:"#4A5E78"}}>
-                  <span style={{color:"#F5A623"}}>🟠 CB</span> Cricbuzz · 100/month
-                  <span style={{marginLeft:8,color:"#2ECC71"}}>🟢 CD</span> CricketData · 100/day
+                <div style={{display:"flex",gap:8,marginBottom:12,fontSize:11,color:T.muted}}>
+                  <span style={{color:T.accent}}>🟠 CB</span> Cricbuzz · 100/month
+                  <span style={{marginLeft:8,color:T.success}}>🟢 CD</span> CricketData · 100/day
                 </div>
               )}
 
@@ -3803,31 +3803,31 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                 const TOURNEY_COLORS = ["#F5A623","#4F8EF7","#2ECC71","#A855F7","#FF3D5A","#06B6D4","#F97316","#EC4899"];
                 const tColor = TOURNEY_COLORS[tIdx % TOURNEY_COLORS.length];
                 return (
-                  <div key={tournament.id} style={{marginBottom:12,background:"#0E1521",borderRadius:12,border:"1px solid "+tColor+"44",overflow:"hidden"}}>
+                  <div key={tournament.id} style={{marginBottom:12,background:T.card,borderRadius:12,border:"1px solid "+tColor+"44",overflow:"hidden"}}>
                     {/* Tournament header */}
                     <div style={{display:"flex",alignItems:"center",padding:"12px 16px",cursor:"pointer",gap:10,background:tColor+"0D",borderBottom:isOpen?"1px solid "+tColor+"33":"none"}}
                       onClick={()=>setExpandedTournaments(prev=>({...prev,[tournament.id]:!prev[tournament.id]}))}>
                       <div style={{flex:1}}>
-                        <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:16,fontWeight:700,color:tColor,letterSpacing:1}}>{tournament.name}</div>
-                        <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>
+                        <div style={{fontFamily:fonts.display,fontSize:16,fontWeight:700,color:tColor,letterSpacing:1}}>{tournament.name}</div>
+                        <div style={{fontSize:11,color:T.muted,marginTop:2}}>
                           {tMatches.length} matches{liveCount>0?" • "+liveCount+" LIVE 🔴":""}
-                          {tournament.tradeSnatchEnabled && <span style={{marginLeft:6,color:"#A855F7",fontSize:10,fontWeight:700}}>⚡ TRADE & SNATCH ON</span>}
+                          {tournament.tradeSnatchEnabled && <span style={{marginLeft:6,color:T.purple,fontSize:10,fontWeight:700}}>⚡ TRADE & SNATCH ON</span>}
                         </div>
                       </div>
                       <div style={{display:"flex",gap:4}}>
                         <div style={{position:"relative",display:"inline-block"}} className="tooltip-wrap">
                           <button onClick={e=>{e.stopPropagation();withPassword(()=>fetchMatchesForTournament(tournament.id,tournament.name,tournament.seriesId));}}
-                            style={{background:"#F5A62322",border:"1px solid #F5A62344",color:"#F5A623",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:10}}
+                            style={{background:"#F5A62322",border:"1px solid #F5A62344",color:T.accent,borderRadius:6,padding:"4px 8px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:10}}
                             title="Cricbuzz — 100 req/month free. Resets monthly.">🟠 CB</button>
                         </div>
                         <div style={{position:"relative",display:"inline-block"}}>
                           <button onClick={e=>{e.stopPropagation();withPassword(()=>fetchFromCricketData(tournament.id,tournament.name));}}
-                            style={{background:"#2ECC7122",border:"1px solid #2ECC7144",color:"#2ECC71",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:10}}
+                            style={{background:"#2ECC7122",border:"1px solid #2ECC7144",color:T.success,borderRadius:6,padding:"4px 8px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:10}}
                             title="CricketData — 100 req/day free. Resets daily.">🟢 CD</button>
                         </div>
                         <div style={{position:"relative",display:"inline-block"}}>
                           <button onClick={e=>{e.stopPropagation();withPassword(()=>setFetchPlayerModal({tournamentId:tournament.id,tournamentName:tournament.name}));}}
-                            style={{background:"#4F8EF722",border:"1px solid #4F8EF744",color:"#4F8EF7",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:10}}
+                            style={{background:"#4F8EF722",border:"1px solid #4F8EF744",color:T.info,borderRadius:6,padding:"4px 8px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:10}}
                             title="Fetch players for this tournament">👥 PLAYERS</button>
                         </div>
                       </div>
@@ -3864,16 +3864,16 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                       })()}
                       {unlocked && tournament.id !== "t_ipl" && (
                         <button onClick={e=>{e.stopPropagation();if(!confirm("Remove this tournament?"))return;const updated=tournaments.filter(t=>t.id!==tournament.id);setTournaments(updated);storeSet("tournaments",updated);}}
-                          style={{background:"transparent",border:"1px solid #1E2D45",color:"#4A5E78",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:11}}>✕</button>
+                          style={{background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:11}}>✕</button>
                       )}
                       <span style={{color:tColor,fontSize:12,opacity:0.7}}>{isOpen?"▲":"▼"}</span>
                     </div>
 
                     {/* Matches list */}
                     {isOpen && (
-                      <div style={{borderTop:"1px solid #1E2D45",padding:"8px 8px"}}>
+                      <div style={{borderTop:`1px solid ${T.border}`,padding:"8px 8px"}}>
                         {tMatches.length === 0 ? (
-                          <div style={{textAlign:"center",padding:"24px",color:"#4A5E78",fontSize:13}}>
+                          <div style={{textAlign:"center",padding:"24px",color:T.muted,fontSize:13}}>
                             No matches yet — hit ↻ REFRESH to fetch from Cricbuzz
                           </div>
                         ) : (
@@ -3899,25 +3899,25 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                                 const liveScore = liveScores[match.id];
                                 const isSynced = completed && Object.keys(points).some(pid=>points[pid][match.id]);
                                 return (
-                                  <div key={match.id} style={{background:"#141E2E",borderRadius:10,border:"1px solid "+(live?"#FF3D5A33":completed?"#2ECC7122":"#1E2D45")}}>
+                                  <div key={match.id} style={{background:T.card,borderRadius:10,border:"1px solid "+(live?"#FF3D5A33":completed?"#2ECC7122":"#1E2D45")}}>
                                     <div style={{display:"flex",alignItems:"center",padding:"10px 14px",gap:12,cursor:"pointer"}} onClick={()=>setExpandedMatchId(expandedMatchId===match.id?null:match.id)}>
-                                      <div style={{background:"#080C14",borderRadius:6,padding:"3px 8px",minWidth:38,textAlign:"center",flexShrink:0}}>
-                                        <div style={{fontSize:9,color:"#4A5E78"}}>M</div>
-                                        <div style={{fontSize:16,fontWeight:800,color:"#F5A623",fontFamily:"Rajdhani"}}>{displayNum}</div>
+                                      <div style={{background:T.bg,borderRadius:6,padding:"3px 8px",minWidth:38,textAlign:"center",flexShrink:0}}>
+                                        <div style={{fontSize:9,color:T.muted}}>M</div>
+                                        <div style={{fontSize:16,fontWeight:800,color:T.accent,fontFamily:"Rajdhani"}}>{displayNum}</div>
                                       </div>
                                       <div style={{flex:1,minWidth:0}}>
-                                        <div style={{fontWeight:700,fontSize:14,color:"#E2EAF4"}}>{match.team1} <span style={{color:"#4A5E78"}}>vs</span> {match.team2}</div>
-                                        <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>{match.date} • {match.time} IST • {match.venue}</div>
-                                        {live && liveScore && <div style={{fontSize:11,color:"#F5A623",marginTop:2}}>{liveScore.score1} | {liveScore.score2}</div>}
+                                        <div style={{fontWeight:700,fontSize:14,color:T.text}}>{match.team1} <span style={{color:T.muted}}>vs</span> {match.team2}</div>
+                                        <div style={{fontSize:11,color:T.muted,marginTop:2}}>{match.date} • {match.time} IST • {match.venue}</div>
+                                        {live && liveScore && <div style={{fontSize:11,color:T.accent,marginTop:2}}>{liveScore.score1} | {liveScore.score2}</div>}
                                       </div>
                                       <div style={{flexShrink:0,textAlign:"right"}}>
                                         {live ? (
                                           <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:3}}>
-                                            <span style={{fontSize:10,color:"#FF3D5A",fontWeight:700}}>🔴 LIVE</span>
+                                            <span style={{fontSize:10,color:T.danger,fontWeight:700}}>🔴 LIVE</span>
                                             {unlocked && (
                                               <div style={{display:"flex",gap:3}}>
-                                                <button onClick={e=>{e.stopPropagation();const upd=matches.map(m=>m.id===match.id?{...m,status:"completed"}:m);updMatches(upd);}} style={{fontSize:9,color:"#4A5E78",background:"transparent",border:"1px solid #1E2D45",borderRadius:4,padding:"2px 5px",cursor:"pointer"}}>✓ Done</button>
-                                                <button onClick={e=>{e.stopPropagation();const upd=matches.map(m=>m.id===match.id?{...m,status:"upcoming"}:m);updMatches(upd);}} style={{fontSize:9,color:"#4A5E78",background:"transparent",border:"1px solid #1E2D45",borderRadius:4,padding:"2px 5px",cursor:"pointer"}}>↩ Reset</button>
+                                                <button onClick={e=>{e.stopPropagation();const upd=matches.map(m=>m.id===match.id?{...m,status:"completed"}:m);updMatches(upd);}} style={{fontSize:9,color:T.muted,background:"transparent",border:`1px solid ${T.border}`,borderRadius:4,padding:"2px 5px",cursor:"pointer"}}>✓ Done</button>
+                                                <button onClick={e=>{e.stopPropagation();const upd=matches.map(m=>m.id===match.id?{...m,status:"upcoming"}:m);updMatches(upd);}} style={{fontSize:9,color:T.muted,background:"transparent",border:`1px solid ${T.border}`,borderRadius:4,padding:"2px 5px",cursor:"pointer"}}>↩ Reset</button>
                                               </div>
                                             )}
                                           </div>
@@ -3926,35 +3926,35 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                                             <div style={{fontSize:10,fontWeight:700,color:isSynced?"#2ECC71":"#F5A623"}}>
                                               {isSynced ? "✓ SYNCED" : "⚠ UNSYNCED"}
                                             </div>
-                                            <div style={{fontSize:9,color:"#4A5E78",marginTop:1}}>COMPLETED</div>
+                                            <div style={{fontSize:9,color:T.muted,marginTop:1}}>COMPLETED</div>
                                           </div>
                                         ) : (
                                           <div style={{textAlign:"right"}}>
-                                            <span style={{fontSize:10,color:"#4A5E78",fontWeight:700}}>UPCOMING</span>
-                                            {unlocked && <div><button onClick={e=>{e.stopPropagation();const upd=matches.map(m=>m.id===match.id?{...m,status:"live"}:m);updMatches(upd);}} style={{fontSize:9,color:"#FF3D5A",background:"transparent",border:"1px solid #FF3D5A44",borderRadius:4,padding:"2px 5px",cursor:"pointer",marginTop:2}}>🔴 Mark Live</button></div>}
+                                            <span style={{fontSize:10,color:T.muted,fontWeight:700}}>UPCOMING</span>
+                                            {unlocked && <div><button onClick={e=>{e.stopPropagation();const upd=matches.map(m=>m.id===match.id?{...m,status:"live"}:m);updMatches(upd);}} style={{fontSize:9,color:T.danger,background:"transparent",border:"1px solid #FF3D5A44",borderRadius:4,padding:"2px 5px",cursor:"pointer",marginTop:2}}>🔴 Mark Live</button></div>}
                                           </div>
                                         )}
                                     {/* Expandable actions for all matches */}
                                     {expandedMatchId===match.id && (
-                                      <div style={{borderTop:"1px solid #1E2D45",padding:"10px 14px",display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
+                                      <div style={{borderTop:`1px solid ${T.border}`,padding:"10px 14px",display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
                                         {!isGuest && <button onClick={()=>setCaptainMatch(match)}
-                                          style={{background:"#4F8EF722",border:"1px solid #4F8EF744",color:"#4F8EF7",borderRadius:7,padding:"6px 12px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:12}}>
+                                          style={{background:"#4F8EF722",border:"1px solid #4F8EF744",color:T.info,borderRadius:7,padding:"6px 12px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:12}}>
                                           {captains[match.id+"_locked"]?"🔒 C/VC":"👑 SET C/VC"}
                                         </button>}
                                         {completed && unlocked && (
                                           <button onClick={()=>withPassword(()=>setSmartStatsMatch(match))}
-                                            style={{background:"#F5A62322",border:"1px solid #F5A62344",color:"#F5A623",borderRadius:7,padding:"6px 12px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:12}}>
+                                            style={{background:"#F5A62322",border:"1px solid #F5A62344",color:T.accent,borderRadius:7,padding:"6px 12px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:12}}>
                                             📊 {isSynced?"EDIT STATS":"SYNC STATS"}
                                           </button>
                                         )}
                                         {unlocked && (
                                           <div style={{display:"flex",gap:6,marginLeft:"auto"}}>
                                             {match.status!=="live" && <button onClick={()=>{const upd=matches.map(m=>m.id===match.id?{...m,status:"live"}:m);updMatches(upd);}}
-                                              style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:"#FF3D5A",borderRadius:7,padding:"6px 10px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:11}}>🔴 LIVE</button>}
+                                              style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:T.danger,borderRadius:7,padding:"6px 10px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:11}}>🔴 LIVE</button>}
                                             {match.status!=="completed" && <button onClick={()=>{const upd=matches.map(m=>m.id===match.id?{...m,status:"completed"}:m);updMatches(upd);}}
-                                              style={{background:"#2ECC7122",border:"1px solid #2ECC7144",color:"#2ECC71",borderRadius:7,padding:"6px 10px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:11}}>✓ DONE</button>}
+                                              style={{background:"#2ECC7122",border:"1px solid #2ECC7144",color:T.success,borderRadius:7,padding:"6px 10px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:11}}>✓ DONE</button>}
                                             {match.status!=="upcoming" && <button onClick={()=>{const upd=matches.map(m=>m.id===match.id?{...m,status:"upcoming"}:m);updMatches(upd);}}
-                                              style={{background:"#4A5E7822",border:"1px solid #4A5E7844",color:"#4A5E78",borderRadius:7,padding:"6px 10px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:11}}>↩ RESET</button>}
+                                              style={{background:"#4A5E7822",border:"1px solid #4A5E7844",color:T.muted,borderRadius:7,padding:"6px 10px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:11}}>↩ RESET</button>}
                                           </div>
                                         )}
                                       </div>
@@ -3964,13 +3964,13 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
 
                                     {/* Expanded match actions */}
                                     {expandedMatchId===match.id && completed && (
-                                      <div style={{borderTop:"1px solid #1E2D45",padding:"10px 14px",display:"flex",gap:8,flexWrap:"wrap"}}>
+                                      <div style={{borderTop:`1px solid ${T.border}`,padding:"10px 14px",display:"flex",gap:8,flexWrap:"wrap"}}>
                                         <button onClick={()=>withPassword(()=>setSmartStatsMatch(match))}
-                                          style={{background:"#F5A62322",border:"1px solid #F5A62344",color:"#F5A623",borderRadius:7,padding:"6px 12px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:12}}>
+                                          style={{background:"#F5A62322",border:"1px solid #F5A62344",color:T.accent,borderRadius:7,padding:"6px 12px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:12}}>
                                           📊 {isSynced?"EDIT STATS":"SYNC STATS"}
                                         </button>
                                         {!isGuest && <button onClick={()=>setCaptainMatch(match)}
-                                          style={{background:"#4F8EF722",border:"1px solid #4F8EF744",color:"#4F8EF7",borderRadius:7,padding:"6px 12px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:12}}>
+                                          style={{background:"#4F8EF722",border:"1px solid #4F8EF744",color:T.info,borderRadius:7,padding:"6px 12px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:12}}>
                                           {captains[match.id+"_locked"]?"🔒 C/VC":"👑 SET C/VC"}
                                         </button>}
                                       </div>
@@ -4039,10 +4039,10 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
 
           {page==="results" && (
             <div className="fade-in">
-              <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2,marginBottom:24}}>MATCH RESULTS</h2>
+              <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:T.accent,letterSpacing:2,marginBottom:24}}>MATCH RESULTS</h2>
 
               {matches.filter(m=>m.status==="completed"&&Object.keys(points).some(pid=>points[pid][m.id])).length===0 ? (
-                <div style={{textAlign:"center",padding:60,color:"#4A5E78"}}>
+                <div style={{textAlign:"center",padding:60,color:T.muted}}>
                   <div style={{fontSize:56}}>📊</div>
                   <div style={{marginTop:16,fontSize:16}}>No match results yet. Sync stats from the Matches tab first.</div>
                 </div>
@@ -4083,53 +4083,53 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                     }).sort((a,b)=>b.total-a.total);
 
                     return (
-                      <div key={match.id} style={{background:"#0E1521",borderRadius:12,border:"1px solid #1E2D45",overflow:"hidden"}}>
+                      <div key={match.id} style={{background:T.card,borderRadius:12,border:`1px solid ${T.border}`,overflow:"hidden"}}>
                         {/* Match header */}
                         <div style={{display:"flex",alignItems:"center",padding:"14px 18px",cursor:"pointer",gap:14}} onClick={()=>setExpandedMatch(open?null:match.id)}>
-                          <div style={{background:"#080C14",borderRadius:6,padding:"4px 10px",minWidth:44,textAlign:"center"}}>
-                            <div style={{fontSize:11,color:"#4A5E78"}}>M</div>
-                            <div style={{fontSize:18,fontWeight:800,color:"#F5A623",fontFamily:"Rajdhani"}}>{displayNum}</div>
+                          <div style={{background:T.bg,borderRadius:6,padding:"4px 10px",minWidth:44,textAlign:"center"}}>
+                            <div style={{fontSize:11,color:T.muted}}>M</div>
+                            <div style={{fontSize:18,fontWeight:800,color:T.accent,fontFamily:"Rajdhani"}}>{displayNum}</div>
                           </div>
                           <div style={{flex:1}}>
-                            <div style={{fontWeight:700,fontSize:15,color:"#E2EAF4"}}>{match.team1} <span style={{color:"#4A5E78"}}>vs</span> {match.team2}</div>
-                            <div style={{fontSize:12,color:"#4A5E78",marginTop:2}}>{match.date} • {match.result||match.venue}</div>
+                            <div style={{fontWeight:700,fontSize:15,color:T.text}}>{match.team1} <span style={{color:T.muted}}>vs</span> {match.team2}</div>
+                            <div style={{fontSize:12,color:T.muted,marginTop:2}}>{match.date} • {match.result||match.venue}</div>
                           </div>
-                          <span style={{color:"#4A5E78",fontSize:12}}>{open?"▲":"▼"}</span>
+                          <span style={{color:T.muted,fontSize:12}}>{open?"▲":"▼"}</span>
                         </div>
 
                         {/* Expanded breakdown */}
                         {open && (
-                          <div style={{borderTop:"1px solid #1E2D45",padding:"16px 18px",display:"flex",flexDirection:"column",gap:14}}>
+                          <div style={{borderTop:`1px solid ${T.border}`,padding:"16px 18px",display:"flex",flexDirection:"column",gap:14}}>
                             {teamBreakdowns.map((tb,rank)=>(
-                              <div key={tb.team.id} style={{background:"#080C14",borderRadius:10,border:"1px solid "+tb.team.color+"33",overflow:"hidden"}}>
+                              <div key={tb.team.id} style={{background:T.bg,borderRadius:10,border:"1px solid "+tb.team.color+"33",overflow:"hidden"}}>
                                 {/* Team header */}
-                                <div style={{padding:"10px 16px",borderBottom:"1px solid #1E2D4544",display:"flex",alignItems:"center",justifyContent:"space-between",background:tb.team.color+"11"}}>
+                                <div style={{padding:"10px 16px",borderBottom:`1px solid ${T.border}44`,display:"flex",alignItems:"center",justifyContent:"space-between",background:tb.team.color+"11"}}>
                                   <div style={{display:"flex",alignItems:"center",gap:10}}>
                                     <span style={{fontSize:20}}>{"#"+(rank+1)}</span>
-                                    <span style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:16,color:tb.team.color,letterSpacing:1}}>{tb.team.name}</span>
+                                    <span style={{fontFamily:fonts.display,fontWeight:700,fontSize:16,color:tb.team.color,letterSpacing:1}}>{tb.team.name}</span>
                                   </div>
-                                  <span style={{fontFamily:"Rajdhani,sans-serif",fontWeight:800,fontSize:22,color:"#F5A623"}}>{tb.total} pts</span>
+                                  <span style={{fontFamily:fonts.display,fontWeight:800,fontSize:22,color:T.accent}}>{tb.total} pts</span>
                                 </div>
 
                                 {/* Players */}
                                 {tb.players.length===0 ? (
-                                  <div style={{padding:"12px 16px",color:"#4A5E78",fontSize:13}}>No players scored in this match</div>
+                                  <div style={{padding:"12px 16px",color:T.muted,fontSize:13}}>No players scored in this match</div>
                                 ) : (
                                   tb.players.map(p=>(
                                     <div key={p.id} style={{padding:"10px 16px",borderBottom:"1px solid #1E2D4522",display:"flex",alignItems:"flex-start",gap:12,opacity:p.tradedOut?0.6:1}}>
                                       <div style={{flex:1,minWidth:0}}>
                                         <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
                                           <span style={{fontWeight:700,fontSize:14,color:p.tradedOut?"#4A5E78":"#E2EAF4",textDecoration:p.tradedOut?"line-through":"none"}}>{p.name}</span>
-                                          {p.tradedOut && <span style={{fontSize:9,color:"#FF3D5A",background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:4,padding:"1px 5px",fontWeight:700,letterSpacing:0.5}}>TRADED OUT</span>}
+                                          {p.tradedOut && <span style={{fontSize:9,color:T.danger,background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:4,padding:"1px 5px",fontWeight:700,letterSpacing:0.5}}>TRADED OUT</span>}
                                           {p.mult>1 && <span style={{background:p.mult===2?"#F5A62322":"#94A3B822",color:p.mult===2?"#F5A623":"#94A3B8",border:"1px solid "+(p.mult===2?"#F5A62344":"#94A3B844"),fontSize:10,padding:"1px 7px",borderRadius:10,fontWeight:700}}>
                                             {p.mult===2?"⭐ CAPTAIN 2×":"🥈 VC 1.5×"}
                                           </span>}
                                         </div>
-                                        <div style={{fontSize:11,color:"#4A5E78",marginTop:3}}>{p.breakdown.join(" • ")||"No contributions"}</div>
+                                        <div style={{fontSize:11,color:T.muted,marginTop:3}}>{p.breakdown.join(" • ")||"No contributions"}</div>
                                       </div>
                                       <div style={{textAlign:"right",flexShrink:0}}>
-                                        <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:800,fontSize:20,color:p.pts>0?"#F5A623":"#4A5E78"}}>{p.pts}</div>
-                                        {p.mult>1&&<div style={{fontSize:10,color:"#4A5E78"}}>base: {p.base}</div>}
+                                        <div style={{fontFamily:fonts.display,fontWeight:800,fontSize:20,color:p.pts>0?"#F5A623":"#4A5E78"}}>{p.pts}</div>
+                                        {p.mult>1&&<div style={{fontSize:10,color:T.muted}}>base: {p.base}</div>}
                                       </div>
                                     </div>
                                   ))
@@ -4149,8 +4149,8 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
           {page==="form" && (
             <div className="fade-in">
               <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:20}}>
-                <button onClick={()=>nav("leaderboard")} style={{background:"transparent",border:"none",color:"#4A5E78",fontSize:22,cursor:"pointer",lineHeight:1,padding:"0 4px"}}>←</button>
-                <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2}}>PLAYER FORM</h2>
+                <button onClick={()=>nav("leaderboard")} style={{background:"transparent",border:"none",color:T.muted,fontSize:22,cursor:"pointer",lineHeight:1,padding:"0 4px"}}>←</button>
+                <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:T.accent,letterSpacing:2}}>PLAYER FORM</h2>
               </div>
               <FormChart players={players} assignments={assignments} points={points} teams={teams} />
             </div>
@@ -4159,8 +4159,8 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
           {page==="h2h" && (
             <div className="fade-in">
               <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:20}}>
-                <button onClick={()=>nav("leaderboard")} style={{background:"transparent",border:"none",color:"#4A5E78",fontSize:22,cursor:"pointer",lineHeight:1,padding:"0 4px"}}>←</button>
-                <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2}}>HEAD TO HEAD</h2>
+                <button onClick={()=>nav("leaderboard")} style={{background:"transparent",border:"none",color:T.muted,fontSize:22,cursor:"pointer",lineHeight:1,padding:"0 4px"}}>←</button>
+                <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:T.accent,letterSpacing:2}}>HEAD TO HEAD</h2>
               </div>
               <H2HStats teams={teams} matches={matches} points={points} assignments={assignments} players={players} captains={captains} />
             </div>
@@ -4169,37 +4169,37 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
           {page==="leaderboard"&&(
             <div className="fade-in">
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:8}}>
-                <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:"#F5A623",letterSpacing:2}}>LEADERBOARD</h2>
+                <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:T.accent,letterSpacing:2}}>LEADERBOARD</h2>
                 <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
 
-                  <button onClick={shareLeaderboard} style={{background:"#25D36622",border:"1px solid #25D36644",color:"#25D366",borderRadius:8,padding:"8px 14px",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13}}>
+                  <button onClick={shareLeaderboard} style={{background:"#25D36622",border:"1px solid #25D36644",color:"#25D366",borderRadius:8,padding:"8px 14px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:13}}>
                     📲 SHARE WHATSAPP
                   </button>
                 </div>
               </div>
               {leaderboard.length===0?(
-                <Card sx={{padding:60,textAlign:"center"}}><div style={{fontSize:56}}>🏆</div><div style={{color:"#4A5E78",marginTop:16}}>Set up your league first</div></Card>
+                <Card sx={{padding:60,textAlign:"center"}}><div style={{fontSize:56}}>🏆</div><div style={{color:T.muted,marginTop:16}}>Set up your league first</div></Card>
               ):(
                 <>
                   <div style={{marginBottom:32}}>
                     {leaderboard.map((team,i)=>{
                       const medals=["🥇","🥈","🥉"],mc=["#F5A623","#94A3B8","#CD7C2F"];
                       return(
-                        <div key={team.id} style={{display:"flex",alignItems:"center",gap:16,background:"#0E1521",borderRadius:10,padding:"16px 20px",marginBottom:8,borderLeft:"4px solid "+team.color}}>
+                        <div key={team.id} style={{display:"flex",alignItems:"center",gap:16,background:T.card,borderRadius:10,padding:"16px 20px",marginBottom:8,borderLeft:"4px solid "+team.color}}>
                           <div style={{fontSize:28,minWidth:36}}>{medals[i]||("#"+(i+1))}</div>
                           <div style={{flex:1}}>
                             <div style={{fontWeight:700,fontSize:18,color:team.color,fontFamily:"Rajdhani",letterSpacing:1}}>{team.name}</div>
-                            <div style={{fontSize:12,color:"#4A5E78"}}>{players.filter(p=>assignments[p.id]===team.id).length} players drafted</div>
+                            <div style={{fontSize:12,color:T.muted}}>{players.filter(p=>assignments[p.id]===team.id).length} players drafted</div>
                           </div>
                           <div style={{textAlign:"right"}}>
                             <div style={{fontSize:32,fontWeight:800,color:i<3?mc[i]:"#E2EAF4",fontFamily:"Rajdhani"}}>{team.total}</div>
-                            <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2}}>POINTS</div>
+                            <div style={{fontSize:11,color:T.muted,letterSpacing:2}}>POINTS</div>
                           </div>
                         </div>
                       );
                     })}
                   </div>
-                  <div style={{fontWeight:700,color:"#4A5E78",letterSpacing:2,fontSize:12,marginBottom:16}}>TEAM PLAYER BREAKDOWN</div>
+                  <div style={{fontWeight:700,color:T.muted,letterSpacing:2,fontSize:12,marginBottom:16}}>TEAM PLAYER BREAKDOWN</div>
                   {leaderboard.map(team=>{
                     const breakdown=getPlayerBreakdown(team.id),isOpen=expandedTeam===team.id;
                     const activeCount=breakdown.filter(p=>p.status!=="traded-out"&&p.status!=="snatched-out"&&p.status!=="snatch-returned-in"&&p.status!=="released").length;
@@ -4207,15 +4207,15 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                     return(
                       <Card key={team.id} accent={team.color} sx={{marginBottom:12,overflow:"hidden"}}>
                         <div style={{display:"flex",alignItems:"center",padding:"14px 18px",cursor:"pointer"}} onClick={()=>setExpandedTeam(isOpen?null:team.id)}>
-                          <div style={{flex:1}}><span style={{fontWeight:700,color:team.color,fontFamily:"Rajdhani",fontSize:17,letterSpacing:1}}>{team.name}</span><span style={{color:"#4A5E78",marginLeft:10,fontSize:13}}>{activeCount} players</span></div>
-                          <span style={{color:"#F5A623",fontWeight:800,fontFamily:"Rajdhani",fontSize:22,marginRight:16}}>{team.total} pts</span>
+                          <div style={{flex:1}}><span style={{fontWeight:700,color:team.color,fontFamily:"Rajdhani",fontSize:17,letterSpacing:1}}>{team.name}</span><span style={{color:T.muted,marginLeft:10,fontSize:13}}>{activeCount} players</span></div>
+                          <span style={{color:T.accent,fontWeight:800,fontFamily:"Rajdhani",fontSize:22,marginRight:16}}>{team.total} pts</span>
                           <span style={{color:team.color,fontSize:12,opacity:0.7}}>{isOpen?"▲":"▼"}</span>
                         </div>
                         {isOpen&&breakdown.length>0&&(
-                          <div style={{borderTop:"1px solid #1E2D45",padding:"12px 18px"}}>
-                            <div style={{display:"flex",fontSize:11,color:"#4A5E78",marginBottom:10,padding:"0 4px"}}><span style={{flex:1}}>PLAYER</span><span style={{width:90}}>ROLE</span><span style={{width:70,textAlign:"right"}}>POINTS</span></div>
+                          <div style={{borderTop:`1px solid ${T.border}`,padding:"12px 18px"}}>
+                            <div style={{display:"flex",fontSize:11,color:T.muted,marginBottom:10,padding:"0 4px"}}><span style={{flex:1}}>PLAYER</span><span style={{width:90}}>ROLE</span><span style={{width:70,textAlign:"right"}}>POINTS</span></div>
                             {breakdown.map((p,idx)=>(
-                              <div key={p.id} style={{display:"flex",alignItems:"center",padding:"9px 4px",borderBottom:"1px solid #1E2D45",opacity:p.status==="snatched-out"||p.status==="snatch-returned-in"||p.status==="traded-out"?0.65:1}}>
+                              <div key={p.id} style={{display:"flex",alignItems:"center",padding:"9px 4px",borderBottom:`1px solid ${T.border}`,opacity:p.status==="snatched-out"||p.status==="snatch-returned-in"||p.status==="traded-out"?0.65:1}}>
                                 <div style={{flex:1,fontWeight:idx<3?700:400,fontSize:14,
                                   color:p.status==="traded-in"?"#2ECC71":p.status==="returned"?"#F5A623":p.status==="traded-out"?"#FF3D5A":idx===0&&p.status==="active"?"#F5A623":"#E2EAF4",
                                   textDecoration:p.status==="snatched-out"||p.status==="snatch-returned-in"||p.status==="traded-out"?"line-through":"none"}}>
@@ -4223,28 +4223,28 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                                   {p.status==="traded-in"&&<span style={{marginRight:4}}>⬆️</span>}
                                   {p.status==="returned"&&<span style={{marginRight:4}}>↩️</span>}
                                   {p.name}
-                                  {p.status==="traded-out"&&<span style={{fontSize:9,color:"#FF3D5A",marginLeft:6,textDecoration:"none",fontWeight:700}}>→ {p.tradedFor}</span>}
-                                  {p.status==="traded-in"&&<span style={{fontSize:9,color:"#2ECC71",marginLeft:6,textDecoration:"none",fontWeight:700}}>FROM POOL</span>}
-                                  {p.status==="returned"&&<span style={{fontSize:9,color:"#F5A623",marginLeft:6,textDecoration:"none",fontWeight:700}}>↩ RETURNED</span>}
-                                  {p.status==="snatched-out"&&<span style={{fontSize:9,color:"#A855F7",marginLeft:6,textDecoration:"none",fontWeight:700}}> SNATCHED</span>}
-                                  {p.status==="snatched-in"&&<span style={{fontSize:9,color:"#2ECC71",marginLeft:6,textDecoration:"none",fontWeight:700}}> ON LOAN</span>}
-                                  {p.status==="snatch-returned-in"&&<span style={{fontSize:9,color:"#4A5E78",marginLeft:6,textDecoration:"none"}}> RETURNED</span>}
-                                  {p.status==="released"&&<span style={{fontSize:9,color:"#4A5E78",marginLeft:6,textDecoration:"none"}}> RELEASED</span>}
+                                  {p.status==="traded-out"&&<span style={{fontSize:9,color:T.danger,marginLeft:6,textDecoration:"none",fontWeight:700}}>→ {p.tradedFor}</span>}
+                                  {p.status==="traded-in"&&<span style={{fontSize:9,color:T.success,marginLeft:6,textDecoration:"none",fontWeight:700}}>FROM POOL</span>}
+                                  {p.status==="returned"&&<span style={{fontSize:9,color:T.accent,marginLeft:6,textDecoration:"none",fontWeight:700}}>↩ RETURNED</span>}
+                                  {p.status==="snatched-out"&&<span style={{fontSize:9,color:T.purple,marginLeft:6,textDecoration:"none",fontWeight:700}}> SNATCHED</span>}
+                                  {p.status==="snatched-in"&&<span style={{fontSize:9,color:T.success,marginLeft:6,textDecoration:"none",fontWeight:700}}> ON LOAN</span>}
+                                  {p.status==="snatch-returned-in"&&<span style={{fontSize:9,color:T.muted,marginLeft:6,textDecoration:"none"}}> RETURNED</span>}
+                                  {p.status==="released"&&<span style={{fontSize:9,color:T.muted,marginLeft:6,textDecoration:"none"}}> RELEASED</span>}
                                 </div>
                                 <div style={{width:90}}><Badge label={p.role||"—"} color={ROLE_COLORS[p.role]||"#4A5E78"} /></div>
                                 <div style={{width:70,textAlign:"right",fontWeight:700,
                                   color:p.status==="traded-in"?"#2ECC71":p.status==="returned"?"#F5A623":p.status==="traded-out"||p.status==="snatched-out"||p.status==="snatch-returned-in"?"#4A5E78":p.total>0?"#E2EAF4":"#4A5E78",
                                   fontFamily:"Rajdhani",fontSize:17}}>
                                   {p.total}
-                                  {p.status==="traded-in"&&<span style={{fontSize:9,display:"block",color:"#2ECC71",letterSpacing:0.5}}>RESET</span>}
-                                  {p.status==="returned"&&<span style={{fontSize:9,display:"block",color:"#F5A623",letterSpacing:0.5}}>BACK</span>}
-                                  {p.status==="traded-out"&&<span style={{fontSize:9,display:"block",color:"#FF3D5A",letterSpacing:0.5}}>FROZEN</span>}
+                                  {p.status==="traded-in"&&<span style={{fontSize:9,display:"block",color:T.success,letterSpacing:0.5}}>RESET</span>}
+                                  {p.status==="returned"&&<span style={{fontSize:9,display:"block",color:T.accent,letterSpacing:0.5}}>BACK</span>}
+                                  {p.status==="traded-out"&&<span style={{fontSize:9,display:"block",color:T.danger,letterSpacing:0.5}}>FROZEN</span>}
                                 </div>
                               </div>
                             ))}
                           </div>
                         )}
-                        {isOpen&&breakdown.length===0&&<div style={{padding:"16px 18px",color:"#4A5E78",fontSize:13,borderTop:"1px solid #1E2D45"}}>No players assigned yet.</div>}
+                        {isOpen&&breakdown.length===0&&<div style={{padding:"16px 18px",color:T.muted,fontSize:13,borderTop:`1px solid ${T.border}`}}>No players assigned yet.</div>}
                       </Card>
                     );
                   })}
@@ -4256,18 +4256,18 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
 
         {/* LEAGUE RULES PANEL */}
         {showRulesPanel && (
-          <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",zIndex:200,overflowY:"auto",padding:24,fontFamily:"Barlow Condensed,sans-serif"}}>
+          <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",zIndex:200,overflowY:"auto",padding:24,fontFamily:fonts.body}}>
             <div style={{maxWidth:500,margin:"0 auto"}}>
               <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:24}}>
-                <button onClick={()=>setShowRulesPanel(false)} style={{background:"transparent",border:"none",color:"#4A5E78",fontSize:22,cursor:"pointer",padding:"0 4px"}}>←</button>
-                <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:26,fontWeight:700,color:"#F5A623",letterSpacing:2}}>POINTS & RULES</div>
+                <button onClick={()=>setShowRulesPanel(false)} style={{background:"transparent",border:"none",color:T.muted,fontSize:22,cursor:"pointer",padding:"0 4px"}}>←</button>
+                <div style={{fontFamily:fonts.display,fontSize:26,fontWeight:700,color:T.accent,letterSpacing:2}}>POINTS & RULES</div>
               </div>
 
               {/* Points System */}
               {/* Points System - Beautiful Display */}
               <div style={{marginBottom:16}}>
                 {[
-                  {label:"🏏 BATTING",color:"#F5A623",items:[
+                  {label:"🏏 BATTING",color:T.accent,items:[
                     {name:"Per Run",val:pointsConfig.run,unit:"pt",pos:true},
                     {name:"Per Four",val:pointsConfig.four,unit:"pts",pos:true},
                     {name:"Per Six",val:pointsConfig.six,unit:"pts",pos:true},
@@ -4277,7 +4277,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                     {name:"Duck Penalty",val:pointsConfig.duckPenalty,unit:"pts",pos:false},
                     {name:"SR Penalty (SR<"+pointsConfig.srPenaltyThreshold+")",val:pointsConfig.srPenalty,unit:"pts",pos:false},
                   ]},
-                  {label:"🎳 BOWLING",color:"#4F8EF7",items:[
+                  {label:"🎳 BOWLING",color:T.info,items:[
                     {name:"Per Wicket",val:pointsConfig.wicket,unit:"pts",pos:true},
                     {name:"4-Wicket Haul",val:pointsConfig.fourWkt,unit:"pts",pos:true},
                     {name:"5-Wicket Haul",val:pointsConfig.fiveWkt,unit:"pts",pos:true},
@@ -4285,12 +4285,12 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                     {name:"Maiden Over",val:pointsConfig.maiden,unit:"pts",pos:true},
                     {name:"Economy Penalty (>"+pointsConfig.ecoPenaltyThreshold+")",val:pointsConfig.ecoPenalty,unit:"pts",pos:false},
                   ]},
-                  {label:"🧤 FIELDING",color:"#2ECC71",items:[
+                  {label:"🧤 FIELDING",color:T.success,items:[
                     {name:"Catch",val:pointsConfig.catch,unit:"pts",pos:true},
                     {name:"Stumping",val:pointsConfig.stumping,unit:"pts",pos:true},
                     {name:"Run-out",val:pointsConfig.runout,unit:"pts",pos:true},
                   ]},
-                  {label:"⭐ BONUSES",color:"#A855F7",items:[
+                  {label:"⭐ BONUSES",color:T.purple,items:[
                     {name:"All-round ("+pointsConfig.allRoundMinRuns+"+R & "+pointsConfig.allRoundMinWkts+"+W)",val:pointsConfig.allRoundBonus,unit:"pts",pos:true},
                     {name:"Longest Six",val:pointsConfig.longestSix,unit:"pts",pos:true},
                     {name:"Man of the Match",val:pointsConfig.momBonus,unit:"pts",pos:true},
@@ -4299,38 +4299,38 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                     {name:"VC Multiplier",val:pointsConfig.vcMult,unit:"×",pos:true},
                   ]},
                 ].map(section=>(
-                  <div key={section.label} style={{background:"#0E1521",borderRadius:12,border:"1px solid #1E2D45",marginBottom:8,overflow:"hidden"}}>
+                  <div key={section.label} style={{background:T.card,borderRadius:12,border:`1px solid ${T.border}`,marginBottom:8,overflow:"hidden"}}>
                     <div style={{background:section.color+"18",borderBottom:"1px solid "+section.color+"33",padding:"8px 14px"}}>
-                      <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:14,fontWeight:700,color:section.color,letterSpacing:2}}>{section.label}</div>
+                      <div style={{fontFamily:fonts.display,fontSize:14,fontWeight:700,color:section.color,letterSpacing:2}}>{section.label}</div>
                     </div>
                     <div style={{padding:"2px 14px 6px"}}>
                       {section.items.map(item=>(
                         <div key={item.name} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"1px solid #1E2D4222",opacity:item.val===0?0.3:1}}>
-                          <div style={{fontSize:12,color:"#94A3B8"}}>{item.name}{item.val===0&&<span style={{fontSize:10,color:"#2D3E52",marginLeft:6}}>disabled</span>}</div>
-                          <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:16,fontWeight:800,color:item.val===0?"#2D3E52":item.pos?"#F5A623":"#FF3D5A"}}>{item.pos?"+":"-"}{item.val}<span style={{fontSize:10,color:"#4A5E78",fontWeight:400,marginLeft:2}}>{item.unit}</span></div>
+                          <div style={{fontSize:12,color:T.sub}}>{item.name}{item.val===0&&<span style={{fontSize:10,color:"#2D3E52",marginLeft:6}}>disabled</span>}</div>
+                          <div style={{fontFamily:fonts.display,fontSize:16,fontWeight:800,color:item.val===0?"#2D3E52":item.pos?"#F5A623":"#FF3D5A"}}>{item.pos?"+":"-"}{item.val}<span style={{fontSize:10,color:T.muted,fontWeight:400,marginLeft:2}}>{item.unit}</span></div>
                         </div>
                       ))}
                     </div>
                   </div>
                 ))}
                 {(!ruleProposal || ruleProposal.status !== "pending") && (
-                  <button onClick={()=>withPassword(()=>setShowRulesPanel("points"))} style={{width:"100%",background:"#F5A62322",border:"1px solid #F5A62344",borderRadius:10,padding:10,color:"#F5A623",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+                  <button onClick={()=>withPassword(()=>setShowRulesPanel("points"))} style={{width:"100%",background:"#F5A62322",border:"1px solid #F5A62344",borderRadius:10,padding:10,color:T.accent,fontFamily:fonts.body,fontWeight:700,fontSize:13,cursor:"pointer"}}>
                     ✏️ {(!tournamentStarted||!eligibleVoters.length)?"EDIT POINTS — Admin":"PROPOSE POINTS CHANGE — Needs Team Vote"}
                   </button>
                 )}
               </div>
 
               {/* Current Rules */}
-              <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #1E2D45",padding:20,marginBottom:16}}>
-                <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginBottom:12}}>⏰ TIMING RULES</div>
+              <div style={{background:T.card,borderRadius:12,border:`1px solid ${T.border}`,padding:20,marginBottom:16}}>
+                <div style={{fontSize:11,color:T.muted,letterSpacing:2,fontWeight:700,marginBottom:12}}>⏰ TIMING RULES</div>
                 {[
                   ["Transfer Window", "Sunday 11:59 PM → Monday 11:00 AM IST"],
                   ["Snatch Window", "Saturday 12:00 AM → 12:00 PM IST"],
                   ["Snatch Return", "Friday 11:58 PM IST"],
                 ].map(([label, val]) => (
-                  <div key={label} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid #1E2D4533"}}>
-                    <div style={{fontSize:13,color:"#4A5E78"}}>{label}</div>
-                    <div style={{fontSize:13,color:"#E2EAF4",fontWeight:700}}>{val}</div>
+                  <div key={label} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${T.border}33`}}>
+                    <div style={{fontSize:13,color:T.muted}}>{label}</div>
+                    <div style={{fontSize:13,color:T.text,fontWeight:700}}>{val}</div>
                   </div>
                 ))}
               </div>
@@ -4339,16 +4339,16 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
               {/* Pending proposal */}
               {ruleProposal && ruleProposal.status === "pending" && (
                 <div style={{background:"#F5A62311",borderRadius:12,border:"1px solid #F5A62344",padding:20,marginBottom:16}}>
-                  <div style={{fontSize:11,color:"#F5A623",letterSpacing:2,fontWeight:700,marginBottom:4}}>⏳ PENDING PROPOSAL</div>
-                  <div style={{fontSize:11,color:"#4A5E78",marginBottom:12}}>Proposed by {teams.find(t=>t.id===ruleProposal.proposedBy)?.name || "Admin"} • {new Date(ruleProposal.proposedAt).toLocaleDateString()}</div>
+                  <div style={{fontSize:11,color:T.accent,letterSpacing:2,fontWeight:700,marginBottom:4}}>⏳ PENDING PROPOSAL</div>
+                  <div style={{fontSize:11,color:T.muted,marginBottom:12}}>Proposed by {teams.find(t=>t.id===ruleProposal.proposedBy)?.name || "Admin"} • {new Date(ruleProposal.proposedAt).toLocaleDateString()}</div>
                   {Object.entries(ruleProposal.changes).map(([key, val]) => (
-                    <div key={key} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:"1px solid #1E2D4533"}}>
-                      <div style={{fontSize:12,color:"#4A5E78"}}>{key}</div>
-                      <div style={{fontSize:12,color:"#F5A623",fontWeight:700}}>{val}</div>
+                    <div key={key} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:`1px solid ${T.border}33`}}>
+                      <div style={{fontSize:12,color:T.muted}}>{key}</div>
+                      <div style={{fontSize:12,color:T.accent,fontWeight:700}}>{val}</div>
                     </div>
                   ))}
                   <div style={{marginTop:12}}>
-                    <div style={{fontSize:11,color:"#4A5E78",marginBottom:8}}>VOTES ({Object.keys(ruleProposal.votes).length}/{eligibleVoters.length}):</div>
+                    <div style={{fontSize:11,color:T.muted,marginBottom:8}}>VOTES ({Object.keys(ruleProposal.votes).length}/{eligibleVoters.length}):</div>
                     {eligibleVoters.map(t => (
                       <div key={t.id} style={{display:"flex",justifyContent:"space-between",padding:"4px 0"}}>
                         <div style={{fontSize:12,color:t.color}}>{t.name}</div>
@@ -4358,25 +4358,25 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                   </div>
                   {/* Vote section for current user */}
                   {myTeam && eligibleVoters.some(t=>t.id===myTeam.id) && !ruleProposal.votes[myTeam.id] && (
-                    <div style={{marginTop:16,paddingTop:16,borderTop:"1px solid #1E2D45"}}>
-                      <div style={{fontSize:12,color:"#E2EAF4",marginBottom:8}}>Cast your vote as <span style={{color:myTeam.color,fontWeight:700}}>{myTeam.name}</span></div>
+                    <div style={{marginTop:16,paddingTop:16,borderTop:`1px solid ${T.border}`}}>
+                      <div style={{fontSize:12,color:T.text,marginBottom:8}}>Cast your vote as <span style={{color:myTeam.color,fontWeight:700}}>{myTeam.name}</span></div>
                       <input type="password" value={votePin} onChange={e=>{setVotePin(e.target.value);setVotePinErr('');}} placeholder="Enter your team PIN" maxLength={6}
-                        style={{width:"100%",background:"#080C14",border:"1px solid "+(votePinErr?"#FF3D5A":"#1E2D45"),borderRadius:8,padding:"10px 14px",color:"#E2EAF4",fontSize:18,letterSpacing:4,textAlign:"center",fontFamily:"Rajdhani,sans-serif",outline:"none",marginBottom:votePinErr?6:12,boxSizing:"border-box"}} />
-                      {votePinErr && <div style={{color:"#FF3D5A",fontSize:12,marginBottom:10,textAlign:"center"}}>{votePinErr}</div>}
+                        style={{width:"100%",background:T.bg,border:"1px solid "+(votePinErr?"#FF3D5A":"#1E2D45"),borderRadius:8,padding:"10px 14px",color:T.text,fontSize:18,letterSpacing:4,textAlign:"center",fontFamily:fonts.display,outline:"none",marginBottom:votePinErr?6:12,boxSizing:"border-box"}} />
+                      {votePinErr && <div style={{color:T.danger,fontSize:12,marginBottom:10,textAlign:"center"}}>{votePinErr}</div>}
                       <div style={{display:"flex",gap:8}}>
-                        <button onClick={()=>voteOnProposal(false)} style={{flex:1,background:"#FF3D5A22",border:"1px solid #FF3D5A44",borderRadius:8,padding:10,color:"#FF3D5A",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>✕ REJECT</button>
-                        <button onClick={()=>voteOnProposal(true)} style={{flex:1,background:"#2ECC7122",border:"1px solid #2ECC7144",borderRadius:8,padding:10,color:"#2ECC71",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>✓ APPROVE</button>
+                        <button onClick={()=>voteOnProposal(false)} style={{flex:1,background:"#FF3D5A22",border:"1px solid #FF3D5A44",borderRadius:8,padding:10,color:T.danger,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>✕ REJECT</button>
+                        <button onClick={()=>voteOnProposal(true)} style={{flex:1,background:"#2ECC7122",border:"1px solid #2ECC7144",borderRadius:8,padding:10,color:T.success,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>✓ APPROVE</button>
                       </div>
                     </div>
                   )}
                   {/* Admin cancel proposal */}
-                  <button onClick={()=>withPassword(()=>updRuleProposal(null))} style={{width:"100%",marginTop:10,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:8,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:12,cursor:"pointer"}}>CANCEL PROPOSAL (Admin)</button>
+                  <button onClick={()=>withPassword(()=>updRuleProposal(null))} style={{width:"100%",marginTop:10,background:"transparent",border:`1px solid ${T.border}`,borderRadius:8,padding:8,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:12,cursor:"pointer"}}>CANCEL PROPOSAL (Admin)</button>
                 </div>
               )}
 
               {/* Last approved/rejected */}
               {ruleProposal && ruleProposal.status !== "pending" && (
-                <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #1E2D45",padding:16,marginBottom:16}}>
+                <div style={{background:T.card,borderRadius:12,border:`1px solid ${T.border}`,padding:16,marginBottom:16}}>
                   <div style={{fontSize:11,color:ruleProposal.status==="approved"?"#2ECC71":"#FF3D5A",letterSpacing:2,fontWeight:700}}>
                     {ruleProposal.status==="approved"?"✓ LAST PROPOSAL APPROVED":"✕ LAST PROPOSAL REJECTED"}
                   </div>
@@ -4407,26 +4407,26 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
 
         {/* ADD TOURNAMENT MODAL */}
         {addTournamentModal && (
-          <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,padding:24,fontFamily:"Barlow Condensed,sans-serif"}}>
-            <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #1E2D45",padding:28,width:"100%",maxWidth:420}}>
-              <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,fontWeight:700,color:"#F5A623",letterSpacing:2,marginBottom:4}}>ADD TOURNAMENT</div>
-              <div style={{fontSize:12,color:"#4A5E78",marginBottom:20}}>Choose source then search for your tournament</div>
+          <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,padding:24,fontFamily:fonts.body}}>
+            <div style={{background:T.card,borderRadius:16,border:`1px solid ${T.border}`,padding:28,width:"100%",maxWidth:420}}>
+              <div style={{fontFamily:fonts.display,fontSize:22,fontWeight:700,color:T.accent,letterSpacing:2,marginBottom:4}}>ADD TOURNAMENT</div>
+              <div style={{fontSize:12,color:T.muted,marginBottom:20}}>Choose source then search for your tournament</div>
 
               {!addTournamentSource ? (
                 <div>
-                  <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,marginBottom:10}}>SELECT SOURCE</div>
+                  <div style={{fontSize:11,color:T.muted,letterSpacing:2,marginBottom:10}}>SELECT SOURCE</div>
                   <div style={{display:"flex",gap:10}}>
                     <button onClick={()=>{setAddTournamentSource('cb');fetchTournamentSeriesSuggestions('cb');}}
                       style={{flex:1,background:"#F5A62322",border:"2px solid #F5A62344",borderRadius:10,padding:"14px 10px",cursor:"pointer",textAlign:"center"}}>
                       <div style={{fontSize:20,marginBottom:4}}>🟠</div>
-                      <div style={{fontWeight:700,fontSize:14,color:"#F5A623"}}>Cricbuzz</div>
-                      <div style={{fontSize:10,color:"#4A5E78",marginTop:2}}>100 req/month</div>
+                      <div style={{fontWeight:700,fontSize:14,color:T.accent}}>Cricbuzz</div>
+                      <div style={{fontSize:10,color:T.muted,marginTop:2}}>100 req/month</div>
                     </button>
                     <button onClick={()=>{setAddTournamentSource('cd');fetchTournamentSeriesSuggestions('cd');}}
                       style={{flex:1,background:"#2ECC7122",border:"2px solid #2ECC7144",borderRadius:10,padding:"14px 10px",cursor:"pointer",textAlign:"center"}}>
                       <div style={{fontSize:20,marginBottom:4}}>🟢</div>
-                      <div style={{fontWeight:700,fontSize:14,color:"#2ECC71"}}>CricketData</div>
-                      <div style={{fontSize:10,color:"#4A5E78",marginTop:2}}>100 req/day</div>
+                      <div style={{fontWeight:700,fontSize:14,color:T.success}}>CricketData</div>
+                      <div style={{fontSize:10,color:T.muted,marginTop:2}}>100 req/day</div>
                     </button>
                   </div>
                 </div>
@@ -4434,19 +4434,19 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                 <div>
                   <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
                     <button onClick={()=>{setAddTournamentSource(null);setAddTournamentSeries([]);setAddTournamentSeriesInput('');setAddTournamentSelected(null);}}
-                      style={{background:"transparent",border:"none",color:"#4A5E78",cursor:"pointer",fontSize:18,padding:0}}>←</button>
+                      style={{background:"transparent",border:"none",color:T.muted,cursor:"pointer",fontSize:18,padding:0}}>←</button>
                     <div style={{fontSize:13,color:addTournamentSource==='cb'?"#F5A623":"#2ECC71",fontWeight:700}}>
                       {addTournamentSource==='cb'?"🟠 Cricbuzz":"🟢 CricketData"}
                     </div>
                   </div>
-                  <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,marginBottom:8}}>SEARCH TOURNAMENT</div>
+                  <div style={{fontSize:11,color:T.muted,letterSpacing:2,marginBottom:8}}>SEARCH TOURNAMENT</div>
                   <input value={addTournamentSeriesInput} onChange={e=>setAddTournamentSeriesInput(e.target.value)}
                     placeholder="Search tournament..." autoFocus
-                    style={{width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"10px 14px",color:"#E2EAF4",fontSize:14,fontFamily:"Barlow Condensed,sans-serif",outline:"none",marginBottom:8,boxSizing:"border-box"}} />
+                    style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 14px",color:T.text,fontSize:14,fontFamily:fonts.body,outline:"none",marginBottom:8,boxSizing:"border-box"}} />
                   {addTournamentSeriesLoading ? (
-                    <div style={{textAlign:"center",padding:16,color:"#4A5E78",fontSize:13}}>Fetching tournaments...</div>
+                    <div style={{textAlign:"center",padding:16,color:T.muted,fontSize:13}}>Fetching tournaments...</div>
                   ) : (
-                    <div style={{maxHeight:220,overflowY:"auto",border:"1px solid #1E2D45",borderRadius:8,marginBottom:12}}>
+                    <div style={{maxHeight:220,overflowY:"auto",border:`1px solid ${T.border}`,borderRadius:8,marginBottom:12}}>
                       {addTournamentSeries
                         .filter(s=>!addTournamentSeriesInput||s.name.toLowerCase().includes(addTournamentSeriesInput.toLowerCase()))
                         .slice(0,25)
@@ -4458,12 +4458,12 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                           </div>
                         ))}
                       {addTournamentSeries.filter(s=>!addTournamentSeriesInput||s.name.toLowerCase().includes(addTournamentSeriesInput.toLowerCase())).length===0&&(
-                        <div style={{padding:16,color:"#4A5E78",fontSize:13,textAlign:"center"}}>No tournaments found</div>
+                        <div style={{padding:16,color:T.muted,fontSize:13,textAlign:"center"}}>No tournaments found</div>
                       )}
                     </div>
                   )}
                   {addTournamentSelected&&(
-                    <div style={{background:"#F5A62311",border:"1px solid #F5A62333",borderRadius:8,padding:"8px 12px",marginBottom:4,fontSize:12,color:"#F5A623"}}>
+                    <div style={{background:"#F5A62311",border:"1px solid #F5A62333",borderRadius:8,padding:"8px 12px",marginBottom:4,fontSize:12,color:T.accent}}>
                       Selected: <strong>{addTournamentSelected.name}</strong>
                     </div>
                   )}
@@ -4472,10 +4472,10 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
 
               <div style={{display:"flex",gap:10,marginTop:16}}>
                 <button onClick={()=>{setAddTournamentModal(false);setAddTournamentSource(null);setAddTournamentSeries([]);setAddTournamentSeriesInput('');setAddTournamentSelected(null);}}
-                  style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:11,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
+                  style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:8,padding:11,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
                 {addTournamentSelected&&(
                   <button onClick={confirmAddTournament}
-                    style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:11,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:15,cursor:"pointer"}}>ADD TOURNAMENT</button>
+                    style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:11,color:"#080C14",fontFamily:fonts.body,fontWeight:800,fontSize:15,cursor:"pointer"}}>ADD TOURNAMENT</button>
                 )}
               </div>
             </div>
@@ -4521,13 +4521,13 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
 
         {/* GENERIC CONFIRM MODAL */}
         {confirmAction && (
-          <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.95)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:500,padding:16,fontFamily:"Barlow Condensed,sans-serif"}}>
-            <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #FF3D5A44",padding:24,width:"100%",maxWidth:380}}>
+          <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.95)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:500,padding:16,fontFamily:fonts.body}}>
+            <div style={{background:T.card,borderRadius:16,border:"1px solid #FF3D5A44",padding:24,width:"100%",maxWidth:380}}>
               <div style={{fontSize:22,marginBottom:12,textAlign:"center"}}>⚠️</div>
-              <div style={{fontSize:14,color:"#E2EAF4",marginBottom:20,textAlign:"center",lineHeight:1.5}}>{confirmAction.msg}</div>
+              <div style={{fontSize:14,color:T.text,marginBottom:20,textAlign:"center",lineHeight:1.5}}>{confirmAction.msg}</div>
               <div style={{display:"flex",gap:8}}>
-                <button onClick={()=>setConfirmAction(null)} style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:11,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
-                <button onClick={()=>{confirmAction.fn();setConfirmAction(null);}} style={{flex:1,background:"#FF3D5A22",border:"1px solid #FF3D5A",borderRadius:8,padding:11,color:"#FF3D5A",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:14,cursor:"pointer"}}>CONFIRM</button>
+                <button onClick={()=>setConfirmAction(null)} style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:8,padding:11,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
+                <button onClick={()=>{confirmAction.fn();setConfirmAction(null);}} style={{flex:1,background:"#FF3D5A22",border:"1px solid #FF3D5A",borderRadius:8,padding:11,color:T.danger,fontFamily:fonts.body,fontWeight:800,fontSize:14,cursor:"pointer"}}>CONFIRM</button>
               </div>
             </div>
           </div>
@@ -4560,27 +4560,27 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
 
         {/* ADMIN CLAIM TEAM MODAL */}
         {adminClaimModal && adminClaimTeam && (
-          <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:400,padding:20,fontFamily:"Barlow Condensed,sans-serif"}}>
-            <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #1E2D45",padding:24,width:"100%",maxWidth:360}}>
-              <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:"#2ECC71",marginBottom:4}}>CLAIM YOUR TEAM</div>
+          <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:400,padding:20,fontFamily:fonts.body}}>
+            <div style={{background:T.card,borderRadius:16,border:`1px solid ${T.border}`,padding:24,width:"100%",maxWidth:360}}>
+              <div style={{fontFamily:fonts.display,fontSize:20,fontWeight:700,color:T.success,marginBottom:4}}>CLAIM YOUR TEAM</div>
               <div style={{background:"#2ECC7111",border:"1px solid #2ECC7133",borderRadius:8,padding:"10px 14px",marginBottom:16,textAlign:"center"}}>
-                <div style={{fontSize:11,color:"#4A5E78",marginBottom:2}}>Claiming as admin</div>
-                <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:adminClaimTeam.color}}>{adminClaimTeam.name}</div>
+                <div style={{fontSize:11,color:T.muted,marginBottom:2}}>Claiming as admin</div>
+                <div style={{fontFamily:fonts.display,fontSize:20,fontWeight:700,color:adminClaimTeam.color}}>{adminClaimTeam.name}</div>
               </div>
-              <div style={{fontSize:12,color:"#4A5E78",marginBottom:12}}>Set a PIN for snatch, voting and approvals</div>
+              <div style={{fontSize:12,color:T.muted,marginBottom:12}}>Set a PIN for snatch, voting and approvals</div>
               <input type="password" inputMode="numeric" value={adminPin}
                 onChange={e=>{setAdminPin(e.target.value);setAdminPinErr('');}}
                 placeholder="Choose a 4+ digit PIN" autoFocus
-                style={{width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"10px 14px",color:"#E2EAF4",fontSize:14,fontFamily:"Barlow Condensed,sans-serif",outline:"none",marginBottom:8,boxSizing:"border-box"}} />
+                style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 14px",color:T.text,fontSize:14,fontFamily:fonts.body,outline:"none",marginBottom:8,boxSizing:"border-box"}} />
               <input type="password" inputMode="numeric" value={adminPinConfirm}
                 onChange={e=>{setAdminPinConfirm(e.target.value);setAdminPinErr('');}}
                 onKeyDown={async e=>{if(e.key==="Enter") await doAdminClaim();}}
                 placeholder="Confirm PIN"
-                style={{width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"10px 14px",color:"#E2EAF4",fontSize:14,fontFamily:"Barlow Condensed,sans-serif",outline:"none",marginBottom:8,boxSizing:"border-box"}} />
-              {adminPinErr && <div style={{color:"#FF3D5A",fontSize:12,marginBottom:8}}>{adminPinErr}</div>}
+                style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 14px",color:T.text,fontSize:14,fontFamily:fonts.body,outline:"none",marginBottom:8,boxSizing:"border-box"}} />
+              {adminPinErr && <div style={{color:T.danger,fontSize:12,marginBottom:8}}>{adminPinErr}</div>}
               <div style={{display:"flex",gap:8,marginTop:4}}>
                 <button onClick={()=>{setAdminClaimModal(false);setAdminClaimTeam(null);}}
-                  style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:10,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
+                  style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:8,padding:10,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
                 <button onClick={async()=>{
                   if(adminPin.length<4){setAdminPinErr("PIN must be at least 4 digits");return;}
                   if(adminPin!==adminPinConfirm){setAdminPinErr("PINs don't match");return;}
@@ -4599,7 +4599,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                   alert("✅ You've claimed "+adminClaimTeam.name+"! Reloading to apply changes.");
                   window.location.reload();
                 }}
-                  style={{flex:2,background:"linear-gradient(135deg,#2ECC71,#16a34a)",border:"none",borderRadius:8,padding:10,color:"#fff",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:15,cursor:"pointer"}}>CLAIM & SET PIN</button>
+                  style={{flex:2,background:"linear-gradient(135deg,#2ECC71,#16a34a)",border:"none",borderRadius:8,padding:10,color:"#fff",fontFamily:fonts.body,fontWeight:800,fontSize:15,cursor:"pointer"}}>CLAIM & SET PIN</button>
               </div>
             </div>
           </div>
@@ -4608,25 +4608,25 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
         {/* SNATCH PIN MODAL */}
         {snatchPinModal && (
           <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.96)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,padding:24}}>
-            <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #A855F744",padding:32,width:"100%",maxWidth:340}}>
+            <div style={{background:T.card,borderRadius:16,border:"1px solid #A855F744",padding:32,width:"100%",maxWidth:340}}>
               <div style={{fontSize:32,textAlign:"center",marginBottom:8}}>⚡</div>
-              <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,fontWeight:700,color:"#A855F7",textAlign:"center",letterSpacing:2,marginBottom:4}}>CONFIRM SNATCH</div>
-              <div style={{fontSize:13,color:"#FF3D5A",textAlign:"center",marginBottom:4,fontWeight:700}}>This action cannot be undone!</div>
-              <div style={{fontSize:12,color:"#4A5E78",textAlign:"center",marginBottom:16}}>Player returns Friday 11:58 PM. Enter your team PIN to confirm.</div>
-              <div style={{background:"#080C14",borderRadius:8,padding:"10px 14px",marginBottom:16,textAlign:"center"}}>
-                <div style={{fontWeight:700,fontSize:15,color:"#E2EAF4"}}>{players.find(x=>x.id===snatchPinModal.pid)?.name}</div>
+              <div style={{fontFamily:fonts.display,fontSize:22,fontWeight:700,color:T.purple,textAlign:"center",letterSpacing:2,marginBottom:4}}>CONFIRM SNATCH</div>
+              <div style={{fontSize:13,color:T.danger,textAlign:"center",marginBottom:4,fontWeight:700}}>This action cannot be undone!</div>
+              <div style={{fontSize:12,color:T.muted,textAlign:"center",marginBottom:16}}>Player returns Friday 11:58 PM. Enter your team PIN to confirm.</div>
+              <div style={{background:T.bg,borderRadius:8,padding:"10px 14px",marginBottom:16,textAlign:"center"}}>
+                <div style={{fontWeight:700,fontSize:15,color:T.text}}>{players.find(x=>x.id===snatchPinModal.pid)?.name}</div>
                 <div style={{fontSize:12,color:teams.find(t=>t.id===snatchPinModal.fromTeamId)?.color,marginTop:2}}>from {teams.find(t=>t.id===snatchPinModal.fromTeamId)?.name}</div>
               </div>
               <input type="password" value={snatchPin} onChange={e=>{setSnatchPin(e.target.value);setSnatchPinErr('');}}
                 onKeyDown={e=>e.key==="Enter"&&confirmSnatch()}
                 placeholder="Your team PIN" autoFocus maxLength={6}
-                style={{width:"100%",background:"#080C14",border:"1px solid "+(snatchPinErr?"#FF3D5A":"#A855F744"),borderRadius:8,padding:"12px 16px",color:"#E2EAF4",fontSize:20,letterSpacing:6,textAlign:"center",fontFamily:"Rajdhani,sans-serif",outline:"none",marginBottom:snatchPinErr?8:16,boxSizing:"border-box"}} />
-              {snatchPinErr && <div style={{color:"#FF3D5A",fontSize:13,marginBottom:16,textAlign:"center"}}>{snatchPinErr}</div>}
+                style={{width:"100%",background:T.bg,border:"1px solid "+(snatchPinErr?"#FF3D5A":"#A855F744"),borderRadius:8,padding:"12px 16px",color:T.text,fontSize:20,letterSpacing:6,textAlign:"center",fontFamily:fonts.display,outline:"none",marginBottom:snatchPinErr?8:16,boxSizing:"border-box"}} />
+              {snatchPinErr && <div style={{color:T.danger,fontSize:13,marginBottom:16,textAlign:"center"}}>{snatchPinErr}</div>}
               <div style={{display:"flex",gap:10}}>
                 <button onClick={()=>{setSnatchPinModal(null);setSnatchPin('');setSnatchPinErr('');}}
-                  style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:12,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
+                  style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:8,padding:12,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
                 <button onClick={confirmSnatch}
-                  style={{flex:2,background:"linear-gradient(135deg,#A855F7,#7C3AED)",border:"none",borderRadius:8,padding:12,color:"#fff",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:15,cursor:"pointer"}}>CONFIRM SNATCH</button>
+                  style={{flex:2,background:"linear-gradient(135deg,#A855F7,#7C3AED)",border:"none",borderRadius:8,padding:12,color:"#fff",fontFamily:fonts.body,fontWeight:800,fontSize:15,cursor:"pointer"}}>CONFIRM SNATCH</button>
               </div>
             </div>
           </div>
@@ -4634,24 +4634,24 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
 
         {drawerOpen && (
           <div onClick={()=>setDrawerOpen(false)} style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,0.6)",display:"flex"}}>
-            <div onClick={e=>e.stopPropagation()} style={{width:260,background:"#0E1521",borderRight:"1px solid #1E2D45",display:"flex",flexDirection:"column",height:"100%"}}>
-              <div style={{padding:"20px 16px",borderBottom:"1px solid #1E2D45",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:16,color:"#F5A623",letterSpacing:2}}>MENU</div>
-                <button onClick={()=>setDrawerOpen(false)} style={{background:"transparent",border:"none",color:"#4A5E78",fontSize:20,cursor:"pointer",lineHeight:1}}>×</button>
+            <div onClick={e=>e.stopPropagation()} style={{width:260,background:T.card,borderRight:`1px solid ${T.border}`,display:"flex",flexDirection:"column",height:"100%"}}>
+              <div style={{padding:"20px 16px",borderBottom:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div style={{fontFamily:fonts.display,fontWeight:700,fontSize:16,color:T.accent,letterSpacing:2}}>MENU</div>
+                <button onClick={()=>setDrawerOpen(false)} style={{background:"transparent",border:"none",color:T.muted,fontSize:20,cursor:"pointer",lineHeight:1}}>×</button>
               </div>
               <div style={{flex:1,padding:"12px 8px",overflowY:"auto"}}>
                 <button onClick={()=>{nav("form");setDrawerOpen(false);}} style={{width:"100%",background:page==="form"?"#F5A62322":"transparent",border:"1px solid "+(page==="form"?"#F5A62344":"transparent"),borderRadius:10,padding:"12px 14px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12,marginBottom:4}}>
                   <span style={{fontSize:22}}>📈</span>
                   <div>
-                    <div style={{fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,color:page==="form"?"#F5A623":"#E2EAF4"}}>Player Form Chart</div>
-                    <div style={{fontSize:11,color:"#4A5E78",marginTop:1}}>Last 5 matches per player</div>
+                    <div style={{fontFamily:fonts.body,fontWeight:700,fontSize:14,color:page==="form"?"#F5A623":"#E2EAF4"}}>Player Form Chart</div>
+                    <div style={{fontSize:11,color:T.muted,marginTop:1}}>Last 5 matches per player</div>
                   </div>
                 </button>
                 <button onClick={()=>{nav("h2h");setDrawerOpen(false);}} style={{width:"100%",background:page==="h2h"?"#4F8EF722":"transparent",border:"1px solid "+(page==="h2h"?"#4F8EF744":"transparent"),borderRadius:10,padding:"12px 14px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12,marginBottom:4}}>
                   <span style={{fontSize:22}}>⚔️</span>
                   <div>
-                    <div style={{fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,color:page==="h2h"?"#4F8EF7":"#E2EAF4"}}>Head to Head</div>
-                    <div style={{fontSize:11,color:"#4A5E78",marginTop:1}}>Compare two teams across matches</div>
+                    <div style={{fontFamily:fonts.body,fontWeight:700,fontSize:14,color:page==="h2h"?"#4F8EF7":"#E2EAF4"}}>Head to Head</div>
+                    <div style={{fontSize:11,color:T.muted,marginTop:1}}>Compare two teams across matches</div>
                   </div>
                 </button>
 
@@ -4660,15 +4660,15 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                 <button onClick={()=>{setShowMVP(true);setDrawerOpen(false);}} style={{width:"100%",background:"transparent",border:"none",padding:"10px 14px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12}}>
                   <span style={{fontSize:20}}>🏅</span>
                   <div style={{flex:1}}>
-                    <div style={{fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,color:"#E2EAF4"}}>MVP Stats</div>
-                    <div style={{fontSize:11,color:"#4A5E78"}}>Weekly player performance</div>
+                    <div style={{fontFamily:fonts.body,fontWeight:700,fontSize:14,color:T.text}}>MVP Stats</div>
+                    <div style={{fontSize:11,color:T.muted}}>Weekly player performance</div>
                   </div>
                 </button>
                 <button onClick={()=>{setShowWeeklyReport(true);setDrawerOpen(false);}} style={{width:"100%",background:showWeeklyReport?"#2ECC7122":"transparent",border:"1px solid "+(showWeeklyReport?"#2ECC7144":"transparent"),borderRadius:10,padding:"10px 14px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12,marginBottom:4}}>
                   <span style={{fontSize:20}}>📋</span>
                   <div style={{flex:1}}>
-                    <div style={{fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,color:"#E2EAF4"}}>Weekly Report</div>
-                    <div style={{fontSize:11,color:"#4A5E78"}}>This week & last week summary</div>
+                    <div style={{fontFamily:fonts.body,fontWeight:700,fontSize:14,color:T.text}}>Weekly Report</div>
+                    <div style={{fontSize:11,color:T.muted}}>This week & last week summary</div>
                   </div>
                 </button>
                   <button onClick={()=>{setNotifOpen(o=>!o);if(!notifOpen)markNotifsRead();}} style={{width:"100%",background:"transparent",border:"none",padding:"10px 14px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12}}>
@@ -4677,20 +4677,20 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                       {unreadNotifCount>0 && <span style={{position:"absolute",top:-4,right:-4,background:"#FF3D5A",borderRadius:"50%",width:14,height:14,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,fontWeight:700,color:"#fff"}}>{unreadNotifCount}</span>}
                     </span>
                     <div style={{flex:1}}>
-                      <div style={{fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,color:"#E2EAF4"}}>Notifications</div>
-                      <div style={{fontSize:11,color:"#4A5E78",marginTop:1}}>{unreadNotifCount>0?unreadNotifCount+" unread":"All caught up"}</div>
+                      <div style={{fontFamily:fonts.body,fontWeight:700,fontSize:14,color:T.text}}>Notifications</div>
+                      <div style={{fontSize:11,color:T.muted,marginTop:1}}>{unreadNotifCount>0?unreadNotifCount+" unread":"All caught up"}</div>
                     </div>
-                    <span style={{color:"#4A5E78",fontSize:11}}>{notifOpen?"▲":"▼"}</span>
+                    <span style={{color:T.muted,fontSize:11}}>{notifOpen?"▲":"▼"}</span>
                   </button>
                   {notifOpen && (
-                    <div style={{background:"#080C14",borderRadius:10,margin:"0 8px 8px",border:"1px solid #1E2D45",maxHeight:280,overflowY:"auto"}}>
+                    <div style={{background:T.bg,borderRadius:10,margin:"0 8px 8px",border:`1px solid ${T.border}`,maxHeight:280,overflowY:"auto"}}>
                       {notifications.length===0 && <div style={{padding:16,textAlign:"center",color:"#2D3E52",fontSize:12}}>No notifications yet</div>}
                       {[...notifications].reverse().map(n=>(
                         <div key={n.id} style={{padding:"10px 14px",borderBottom:"1px solid #1E2D4433",background:n.ts>notifLastRead?"#F5A62308":"transparent"}}>
                           <div style={{display:"flex",alignItems:"flex-start",gap:8}}>
                             <span style={{fontSize:14,flexShrink:0}}>{n.emoji}</span>
                             <div style={{flex:1}}>
-                              <div style={{fontSize:12,color:"#E2EAF4",lineHeight:1.4}}>{n.text}</div>
+                              <div style={{fontSize:12,color:T.text,lineHeight:1.4}}>{n.text}</div>
                               <div style={{fontSize:10,color:"#2D3E52",marginTop:3}}>{new Date(n.ts).toLocaleString("en-IN",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</div>
                             </div>
                             {n.ts>notifLastRead && <span style={{width:6,height:6,borderRadius:"50%",background:"#F5A623",flexShrink:0,marginTop:4}} />}
@@ -4698,14 +4698,14 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                         </div>
                       ))}
                       {unlocked && (
-                        <div style={{padding:"8px 10px",borderTop:"1px solid #1E2D45"}}>
+                        <div style={{padding:"8px 10px",borderTop:`1px solid ${T.border}`}}>
                           <div style={{display:"flex",gap:6,marginBottom:6}}>
                             <input value={broadcastInput} onChange={e=>setBroadcastInput(e.target.value)} placeholder="Broadcast message..."
                               onKeyDown={e=>e.key==="Enter"&&broadcastNotif()}
-                              style={{flex:1,background:"#141E2E",border:"1px solid #1E2D45",borderRadius:6,padding:"6px 10px",color:"#E2EAF4",fontSize:12,fontFamily:"Barlow Condensed,sans-serif",outline:"none"}} />
-                            <button onClick={broadcastNotif} style={{background:"#F5A62322",border:"1px solid #F5A62344",color:"#F5A623",borderRadius:6,padding:"5px 8px",cursor:"pointer",fontSize:12,fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>📢</button>
+                              style={{flex:1,background:T.card,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 10px",color:T.text,fontSize:12,fontFamily:fonts.body,outline:"none"}} />
+                            <button onClick={broadcastNotif} style={{background:"#F5A62322",border:"1px solid #F5A62344",color:T.accent,borderRadius:6,padding:"5px 8px",cursor:"pointer",fontSize:12,fontFamily:fonts.body,fontWeight:700}}>📢</button>
                           </div>
-                          <button onClick={()=>withPassword(clearNotifications)} style={{width:"100%",background:"transparent",border:"1px solid #1E2D45",borderRadius:6,padding:"5px",color:"#4A5E78",fontSize:11,cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif"}}>Clear all notifications</button>
+                          <button onClick={()=>withPassword(clearNotifications)} style={{width:"100%",background:"transparent",border:`1px solid ${T.border}`,borderRadius:6,padding:"5px",color:T.muted,fontSize:11,cursor:"pointer",fontFamily:fonts.body}}>Clear all notifications</button>
                         </div>
                       )}
                     </div>
@@ -4713,41 +4713,41 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                 </div>
 
                 {/* Team IDs - collapsible */}
-                <div style={{marginTop:8,paddingTop:8,borderTop:"1px solid #1E2D45"}}>
+                <div style={{marginTop:8,paddingTop:8,borderTop:`1px solid ${T.border}`}}>
                   <button onClick={()=>setTeamIdsOpen(o=>!o)} style={{width:"100%",background:"transparent",border:"none",padding:"4px 6px 8px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                    <div style={{fontSize:10,color:"#F5A623",letterSpacing:2,fontWeight:700}}>🔑 TEAM IDs</div>
-                    <span style={{fontSize:10,color:"#4A5E78"}}>{teamIdsOpen?"▲":"▼"}</span>
+                    <div style={{fontSize:10,color:T.accent,letterSpacing:2,fontWeight:700}}>🔑 TEAM IDs</div>
+                    <span style={{fontSize:10,color:T.muted}}>{teamIdsOpen?"▲":"▼"}</span>
                   </button>
                   {teamIdsOpen && teams.map(t => {
                     const ti = teamIdentity[t.id] || {};
                     return (
-                      <div key={t.id} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,padding:"8px 10px",background:"#080C14",borderRadius:8,border:"1px solid "+t.color+"33"}}>
+                      <div key={t.id} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,padding:"8px 10px",background:T.bg,borderRadius:8,border:"1px solid "+t.color+"33"}}>
                         <div style={{flex:1,minWidth:0}}>
                           <div style={{fontWeight:700,fontSize:12,color:t.color}}>{t.name}</div>
-                          <div style={{fontSize:10,color:"#4A5E78",marginTop:1}}>{ti.claimedBy ? ti.claimedBy.split("@")[0] : "Unclaimed"}</div>
+                          <div style={{fontSize:10,color:T.muted,marginTop:1}}>{ti.claimedBy ? ti.claimedBy.split("@")[0] : "Unclaimed"}</div>
                         </div>
                         {ti.claimedBy ? (
                           <div style={{display:"flex",alignItems:"center",gap:4}}>
-                            <span style={{fontSize:10,color:"#2ECC71",fontWeight:700}}>✓ {ti.claimedBy.split("@")[0]}</span>
+                            <span style={{fontSize:10,color:T.success,fontWeight:700}}>✓ {ti.claimedBy.split("@")[0]}</span>
                             <button onClick={async()=>{
                               if(!confirm("Reset claim for "+t.name+"?")) return;
                               const updated = {...teamIdentity, [t.id]: {...ti, claimedBy:null, pinHash:null}};
                               setTeamIdentity(updated);
                               await storeSet("teamIdentity", updated);
-                            }} style={{background:"#FF3D5A11",border:"1px solid #FF3D5A33",color:"#FF3D5A",borderRadius:4,padding:"2px 5px",cursor:"pointer",fontSize:9,fontWeight:700}}>RESET</button>
+                            }} style={{background:"#FF3D5A11",border:"1px solid #FF3D5A33",color:T.danger,borderRadius:4,padding:"2px 5px",cursor:"pointer",fontSize:9,fontWeight:700}}>RESET</button>
                           </div>
                         ) : ti.teamId ? (
                           <div style={{display:"flex",alignItems:"center",gap:4}}>
-                            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:14,fontWeight:800,color:"#F5A623",letterSpacing:2,background:"#F5A62322",padding:"3px 8px",borderRadius:6}}>{ti.teamId}</div>
+                            <div style={{fontFamily:fonts.display,fontSize:14,fontWeight:800,color:T.accent,letterSpacing:2,background:"#F5A62322",padding:"3px 8px",borderRadius:6}}>{ti.teamId}</div>
                             <button onClick={()=>{setAdminClaimTeam(t);setAdminClaimModal(true);setAdminPin('');setAdminPinConfirm('');setAdminPinErr('');}}
-                              style={{background:"#2ECC7122",border:"1px solid #2ECC7144",color:"#2ECC71",borderRadius:4,padding:"2px 5px",cursor:"pointer",fontSize:9,fontWeight:700}}>CLAIM</button>
+                              style={{background:"#2ECC7122",border:"1px solid #2ECC7144",color:T.success,borderRadius:4,padding:"2px 5px",cursor:"pointer",fontSize:9,fontWeight:700}}>CLAIM</button>
                             <button onClick={()=>withPassword(async()=>{
                               if(!confirm("Reset this Team ID?")) return;
                               const newId = generateTeamId();
                               const updated = {...teamIdentity, [t.id]: {teamId: newId}};
                               setTeamIdentity(updated);
                               await storeSet("teamIdentity", updated);
-                            })} style={{background:"transparent",border:"1px solid #1E2D45",color:"#4A5E78",borderRadius:4,padding:"2px 5px",cursor:"pointer",fontSize:10}}>↺</button>
+                            })} style={{background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:4,padding:"2px 5px",cursor:"pointer",fontSize:10}}>↺</button>
                           </div>
                         ) : (
                           <div style={{display:"flex",alignItems:"center",gap:4}}>
@@ -4756,9 +4756,9 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                               const updated = {...teamIdentity, [t.id]: {...ti, teamId: newId}};
                               setTeamIdentity(updated);
                               await storeSet("teamIdentity", updated);
-                            })} style={{background:"#F5A62322",border:"1px solid #F5A62344",color:"#F5A623",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:11,fontFamily:"Barlow Condensed,sans-serif",fontWeight:700}}>GENERATE</button>
+                            })} style={{background:"#F5A62322",border:"1px solid #F5A62344",color:T.accent,borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:11,fontFamily:fonts.body,fontWeight:700}}>GENERATE</button>
                             <button onClick={()=>{setAdminClaimTeam(t);setAdminClaimModal(true);setAdminPin('');setAdminPinConfirm('');setAdminPinErr('');}}
-                              style={{background:"#2ECC7122",border:"1px solid #2ECC7144",color:"#2ECC71",borderRadius:4,padding:"2px 5px",cursor:"pointer",fontSize:9,fontWeight:700}}>CLAIM</button>
+                              style={{background:"#2ECC7122",border:"1px solid #2ECC7144",color:T.success,borderRadius:4,padding:"2px 5px",cursor:"pointer",fontSize:9,fontWeight:700}}>CLAIM</button>
                           </div>
                         )}
                       </div>
@@ -4770,9 +4770,9 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
               {/* Pending vote notification */}
               {pendingVote && (
                 <div style={{margin:"0 8px 8px",background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:10,padding:"12px 14px"}}>
-                  <div style={{fontSize:11,color:"#FF3D5A",fontWeight:700,letterSpacing:1,marginBottom:4}}>⚡ VOTE NEEDED</div>
-                  <div style={{fontSize:11,color:"#E2EAF4",marginBottom:8}}>A rule change has been proposed and needs your vote.</div>
-                  <button onClick={()=>{setShowRulesPanel(true);setDrawerOpen(false);}} style={{width:"100%",background:"#FF3D5A22",border:"1px solid #FF3D5A",borderRadius:6,padding:"7px",color:"#FF3D5A",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:12,cursor:"pointer"}}>VIEW & VOTE →</button>
+                  <div style={{fontSize:11,color:T.danger,fontWeight:700,letterSpacing:1,marginBottom:4}}>⚡ VOTE NEEDED</div>
+                  <div style={{fontSize:11,color:T.text,marginBottom:8}}>A rule change has been proposed and needs your vote.</div>
+                  <button onClick={()=>{setShowRulesPanel(true);setDrawerOpen(false);}} style={{width:"100%",background:"#FF3D5A22",border:"1px solid #FF3D5A",borderRadius:6,padding:"7px",color:T.danger,fontFamily:fonts.body,fontWeight:700,fontSize:12,cursor:"pointer"}}>VIEW & VOTE →</button>
                 </div>
               )}
 
@@ -4780,8 +4780,8 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
               <button onClick={()=>{setShowRulesPanel(true);setDrawerOpen(false);}} style={{width:"100%",background:"transparent",border:"none",padding:"10px 14px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12}}>
                 <span style={{fontSize:20}}>📋</span>
                 <div style={{flex:1}}>
-                  <div style={{fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,color:"#E2EAF4"}}>Points & Rules</div>
-                  <div style={{fontSize:11,color:"#4A5E78"}}>Points system & league timing</div>
+                  <div style={{fontFamily:fonts.body,fontWeight:700,fontSize:14,color:T.text}}>Points & Rules</div>
+                  <div style={{fontSize:11,color:T.muted}}>Points system & league timing</div>
                 </div>
                 {pendingVote && <span style={{width:8,height:8,background:"#FF3D5A",borderRadius:"50%",flexShrink:0}} />}
               </button>
@@ -4789,10 +4789,10 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
               {/* Guest Access toggle - always visible to admin */}
               {isAdmin && (
                 <div style={{padding:"8px 14px 0"}}>
-                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",background:"#080C14",borderRadius:10,border:"1px solid #1E2D45"}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",background:T.bg,borderRadius:10,border:`1px solid ${T.border}`}}>
                     <div>
-                      <div style={{fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:13,color:"#E2EAF4"}}>👁 Guest Access</div>
-                      <div style={{fontSize:10,color:"#4A5E78",marginTop:2}}>Allow guests to view this pitch</div>
+                      <div style={{fontFamily:fonts.body,fontWeight:700,fontSize:13,color:T.text}}>👁 Guest Access</div>
+                      <div style={{fontSize:10,color:T.muted,marginTop:2}}>Allow guests to view this pitch</div>
                     </div>
                     <button onClick={async()=>{
                       const now = !guestAllowed;
@@ -4808,8 +4808,8 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                   </div>
                 </div>
               )}
-              <div style={{padding:"16px",borderTop:"1px solid #1E2D45"}}>
-                <button onClick={onLogout} style={{width:"100%",background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:8,padding:"10px",color:"#FF3D5A",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>LOGOUT</button>
+              <div style={{padding:"16px",borderTop:`1px solid ${T.border}`}}>
+                <button onClick={onLogout} style={{width:"100%",background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:8,padding:"10px",color:T.danger,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>LOGOUT</button>
               </div>
             </div>
           </div>
@@ -4850,18 +4850,18 @@ function AdminSetupScreen({ pitch, onDone, onBack, sbGet, sbSet, hashPw }) {
     setLoading(false);
   };
 
-  const inp = {width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"12px 16px",color:"#E2EAF4",fontSize:16,fontFamily:"Barlow Condensed,sans-serif",outline:"none",marginBottom:10,boxSizing:"border-box"};
+  const inp = {width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"12px 16px",color:T.text,fontSize:16,fontFamily:fonts.body,outline:"none",marginBottom:10,boxSizing:"border-box"};
 
   return (
-    <div style={{minHeight:"100vh",background:"#080C14",display:"flex",alignItems:"center",justifyContent:"center",padding:20,fontFamily:"Barlow Condensed,sans-serif"}}>
+    <div style={{minHeight:"100vh",background:T.bg,display:"flex",alignItems:"center",justifyContent:"center",padding:20,fontFamily:fonts.body}}>
       <div style={{width:"100%",maxWidth:380}}>
-        <button onClick={onBack} style={{background:"transparent",border:"none",color:"#4A5E78",fontSize:13,cursor:"pointer",marginBottom:20,padding:0}}>← Back</button>
+        <button onClick={onBack} style={{background:"transparent",border:"none",color:T.muted,fontSize:13,cursor:"pointer",marginBottom:20,padding:0}}>← Back</button>
         <div style={{textAlign:"center",marginBottom:24}}>
           <div style={{fontSize:40,marginBottom:8}}>🔑</div>
-          <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:24,fontWeight:700,color:"#F5A623",letterSpacing:2}}>
+          <div style={{fontFamily:fonts.display,fontSize:24,fontWeight:700,color:T.accent,letterSpacing:2}}>
             {checking?"LOADING…":alreadySet?"ENTER ADMIN PASSWORD":"SET ADMIN PASSWORD"}
           </div>
-          <div style={{fontSize:13,color:"#4A5E78",marginTop:6}}>{pitch.name}</div>
+          <div style={{fontSize:13,color:T.muted,marginTop:6}}>{pitch.name}</div>
           <div style={{fontSize:12,color:"#2D3E52",marginTop:4}}>
             {alreadySet?"Enter your existing admin password to continue":"This password will be used for all admin actions in this pitch"}
           </div>
@@ -4882,7 +4882,7 @@ function AdminSetupScreen({ pitch, onDone, onBack, sbGet, sbSet, hashPw }) {
                 }
               }}
               placeholder="Admin password…" autoFocus style={inp} />
-            {err && <div style={{color:"#FF3D5A",fontSize:12,marginBottom:10}}>{err}</div>}
+            {err && <div style={{color:T.danger,fontSize:12,marginBottom:10}}>{err}</div>}
             <button onClick={async()=>{
               setLoading(true);setErr("");
               const h=await hashPw(pw);
@@ -4890,7 +4890,7 @@ function AdminSetupScreen({ pitch, onDone, onBack, sbGet, sbSet, hashPw }) {
               if(h!==stored){setErr("Wrong password");setLoading(false);return;}
               onDone({...pitch,hash:h});setLoading(false);
             }} disabled={loading}
-              style={{width:"100%",background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:13,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:16,cursor:"pointer",letterSpacing:1}}>
+              style={{width:"100%",background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:13,color:"#080C14",fontFamily:fonts.body,fontWeight:800,fontSize:16,cursor:"pointer",letterSpacing:1}}>
               {loading?"VERIFYING…":"ENTER AS ADMIN →"}
             </button>
           </div>
@@ -4898,9 +4898,9 @@ function AdminSetupScreen({ pitch, onDone, onBack, sbGet, sbSet, hashPw }) {
           <div>
             <input type="password" value={pw} onChange={e=>{setPw(e.target.value);setErr("");}} placeholder="Choose admin password…" autoFocus style={inp} />
             <input type="password" value={pwConfirm} onChange={e=>{setPwConfirm(e.target.value);setErr("");}} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder="Confirm password…" style={inp} />
-            {err && <div style={{color:"#FF3D5A",fontSize:12,marginBottom:10}}>{err}</div>}
+            {err && <div style={{color:T.danger,fontSize:12,marginBottom:10}}>{err}</div>}
             <button onClick={submit} disabled={loading}
-              style={{width:"100%",background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:13,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:16,cursor:"pointer"}}>
+              style={{width:"100%",background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:13,color:"#080C14",fontFamily:fonts.body,fontWeight:800,fontSize:16,cursor:"pointer"}}>
               {loading?"SETTING UP…":"SET PASSWORD & ENTER →"}
             </button>
           </div>
@@ -5096,10 +5096,10 @@ function Root() {
         isGuest={isGuest} isAdmin={isAdmin} />
     );
   } catch(e) {
-    return <div style={{minHeight:"100vh",background:"#080C14",display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16,padding:24,fontFamily:"Barlow Condensed,sans-serif"}}>
+    return <div style={{minHeight:"100vh",background:T.bg,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16,padding:24,fontFamily:fonts.body}}>
       <div style={{fontSize:48}}>⚠️</div>
-      <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,color:"#FF3D5A",fontWeight:700}}>CRASH: {e.message}</div>
-      <button onClick={()=>{localStorage.clear();window.location.reload();}} style={{background:"#F5A623",border:"none",borderRadius:8,padding:"10px 20px",color:"#080C14",fontWeight:700,fontFamily:"Barlow Condensed,sans-serif",fontSize:14,cursor:"pointer",marginTop:8}}>CLEAR AND RELOAD</button>
+      <div style={{fontFamily:fonts.display,fontSize:22,color:T.danger,fontWeight:700}}>CRASH: {e.message}</div>
+      <button onClick={()=>{localStorage.clear();window.location.reload();}} style={{background:"#F5A623",border:"none",borderRadius:8,padding:"10px 20px",color:"#080C14",fontWeight:700,fontFamily:fonts.body,fontSize:14,cursor:"pointer",marginTop:8}}>CLEAR AND RELOAD</button>
     </div>;
   }
 }
@@ -5109,36 +5109,36 @@ export default Root;
 function EditPointsForm({ config, onSave, onCancel }) {
   const [cfg, setCfg] = useState({...config});
   const field = (label, key, step) => (
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:"1px solid #1E2D4533"}}>
-      <div style={{fontSize:12,color:"#4A5E78",flex:1}}>{label}</div>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${T.border}33`}}>
+      <div style={{fontSize:12,color:T.muted,flex:1}}>{label}</div>
       <input type="number" value={cfg[key]} step={step||1} min={0}
         onChange={e=>setCfg(prev=>({...prev,[key]:parseFloat(e.target.value)||0}))}
-        style={{width:64,background:"#080C14",border:"1px solid #1E2D45",borderRadius:6,padding:"4px 8px",color:"#F5A623",fontSize:14,fontFamily:"Rajdhani,sans-serif",fontWeight:700,textAlign:"center",outline:"none"}} />
+        style={{width:64,background:T.bg,border:`1px solid ${T.border}`,borderRadius:6,padding:"4px 8px",color:T.accent,fontSize:14,fontFamily:fonts.display,fontWeight:700,textAlign:"center",outline:"none"}} />
     </div>
   );
   return (
-    <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #F5A62344",padding:20,marginBottom:16}}>
-      <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:18,fontWeight:700,color:"#F5A623",letterSpacing:2,marginBottom:16}}>EDIT POINTS SYSTEM</div>
-      <div style={{fontSize:11,color:"#4A5E78",letterSpacing:1,marginBottom:8}}>BATTING</div>
-      <div style={{fontSize:11,color:"#F5A623",letterSpacing:1,marginBottom:8}}>🏏 BATTING</div>
+    <div style={{background:T.card,borderRadius:12,border:"1px solid #F5A62344",padding:20,marginBottom:16}}>
+      <div style={{fontFamily:fonts.display,fontSize:18,fontWeight:700,color:T.accent,letterSpacing:2,marginBottom:16}}>EDIT POINTS SYSTEM</div>
+      <div style={{fontSize:11,color:T.muted,letterSpacing:1,marginBottom:8}}>BATTING</div>
+      <div style={{fontSize:11,color:T.accent,letterSpacing:1,marginBottom:8}}>🏏 BATTING</div>
       {field("Per run","run",0.5)}{field("Per four","four")}{field("Per six","six")}
       {field("Half-century","fifty")}{field("Century","century")}
       {field("SR Bonus pts","srBonus")}{field("SR Bonus threshold","srBonusThreshold")}
-      <div style={{fontSize:11,color:"#FF3D5A",letterSpacing:1,marginBottom:8,marginTop:12}}>PENALTIES</div>
+      <div style={{fontSize:11,color:T.danger,letterSpacing:1,marginBottom:8,marginTop:12}}>PENALTIES</div>
       {field("Duck penalty","duckPenalty")}{field("SR penalty pts","srPenalty")}{field("SR penalty threshold","srPenaltyThreshold")}
-      <div style={{fontSize:11,color:"#4F8EF7",letterSpacing:1,marginBottom:8,marginTop:12}}>🎳 BOWLING</div>
+      <div style={{fontSize:11,color:T.info,letterSpacing:1,marginBottom:8,marginTop:12}}>🎳 BOWLING</div>
       {field("Per wicket","wicket")}{field("4-wkt haul","fourWkt")}{field("5-wkt haul","fiveWkt")}
       {field("Maiden over","maiden")}{field("Economy bonus","ecoBonus")}{field("Economy < threshold","ecoThreshold",0.5)}
       {field("Min overs (eco)","ecoMinOvers",0.5)}{field("Economy penalty","ecoPenalty")}{field("Eco penalty > threshold","ecoPenaltyThreshold",0.5)}
-      <div style={{fontSize:11,color:"#2ECC71",letterSpacing:1,marginBottom:8,marginTop:12}}>🧤 FIELDING</div>
+      <div style={{fontSize:11,color:T.success,letterSpacing:1,marginBottom:8,marginTop:12}}>🧤 FIELDING</div>
       {field("Per catch","catch")}{field("Per stumping","stumping")}{field("Per run-out","runout")}
-      <div style={{fontSize:11,color:"#A855F7",letterSpacing:1,marginBottom:8,marginTop:12}}>⭐ BONUSES</div>
+      <div style={{fontSize:11,color:T.purple,letterSpacing:1,marginBottom:8,marginTop:12}}>⭐ BONUSES</div>
       {field("All-round bonus","allRoundBonus")}{field("All-round min runs","allRoundMinRuns")}{field("All-round min wkts","allRoundMinWkts")}
       {field("Longest six","longestSix")}{field("MOM bonus","momBonus")}{field("Playing XI bonus","playingXIBonus")}
       {field("Captain mult","captainMult",0.5)}{field("VC mult","vcMult",0.5)}
       <div style={{display:"flex",gap:8,marginTop:16}}>
-        <button onClick={onCancel} style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:10,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
-        <button onClick={()=>onSave(cfg)} style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:10,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:14,cursor:"pointer"}}>SAVE POINTS</button>
+        <button onClick={onCancel} style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:8,padding:10,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
+        <button onClick={()=>onSave(cfg)} style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:10,color:"#080C14",fontFamily:fonts.body,fontWeight:800,fontSize:14,cursor:"pointer"}}>SAVE POINTS</button>
       </div>
     </div>
   );
@@ -5159,32 +5159,32 @@ function ProposeRulesForm({ teams, eligibleVoters, onPropose, withPassword, tour
   const times = ["12:00 AM","1:00 AM","2:00 AM","3:00 AM","6:00 AM","9:00 AM","10:00 AM","11:00 AM","12:00 PM","1:00 PM","3:00 PM","6:00 PM","9:00 PM","10:00 PM","11:00 PM","11:58 PM"];
 
   if (!open) return (
-    <button onClick={()=>withPassword(()=>setOpen(true))} style={{width:"100%",background:"#F5A62322",border:"1px solid #F5A62344",borderRadius:12,padding:14,color:"#F5A623",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:15,cursor:"pointer"}}>
+    <button onClick={()=>withPassword(()=>setOpen(true))} style={{width:"100%",background:"#F5A62322",border:"1px solid #F5A62344",borderRadius:12,padding:14,color:T.accent,fontFamily:fonts.body,fontWeight:700,fontSize:15,cursor:"pointer"}}>
       ✏️ PROPOSE TIMING CHANGE (Admin)
     </button>
   );
 
   const sel = (label, val, setVal, opts) => (
     <div style={{marginBottom:12}}>
-      <div style={{fontSize:11,color:"#4A5E78",marginBottom:4,letterSpacing:1}}>{label}</div>
-      <select value={val} onChange={e=>setVal(e.target.value)} style={{width:"100%",background:"#080C14",border:"1px solid #1E2D45",borderRadius:8,padding:"8px 12px",color:"#E2EAF4",fontSize:14,fontFamily:"Barlow Condensed,sans-serif",cursor:"pointer",outline:"none"}}>
+      <div style={{fontSize:11,color:T.muted,marginBottom:4,letterSpacing:1}}>{label}</div>
+      <select value={val} onChange={e=>setVal(e.target.value)} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"8px 12px",color:T.text,fontSize:14,fontFamily:fonts.body,cursor:"pointer",outline:"none"}}>
         {opts.map(o=><option key={o} value={o}>{o}</option>)}
       </select>
     </div>
   );
 
   return (
-    <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #F5A62344",padding:20}}>
-      <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:18,fontWeight:700,color:"#F5A623",letterSpacing:2,marginBottom:4}}>PROPOSE RULE CHANGE</div>
-      <div style={{fontSize:11,color:"#4A5E78",marginBottom:16}}>All {eligibleVoters.length} claimed teams must approve for changes to take effect.</div>
+    <div style={{background:T.card,borderRadius:12,border:"1px solid #F5A62344",padding:20}}>
+      <div style={{fontFamily:fonts.display,fontSize:18,fontWeight:700,color:T.accent,letterSpacing:2,marginBottom:4}}>PROPOSE RULE CHANGE</div>
+      <div style={{fontSize:11,color:T.muted,marginBottom:16}}>All {eligibleVoters.length} claimed teams must approve for changes to take effect.</div>
       {sel("Transfer Window Start Day", transferDay, setTransferDay, days)}
       {sel("Transfer Window End Time", transferTime, setTransferTime, times)}
       {sel("Snatch Window Start", snatchStart, setSnatchStart, days.map(d=>{const s="12:00 AM";return d+" "+s;}).concat(days.map(d=>{const s="12:00 PM";return d+" "+s;})))}
       {sel("Snatch Window End", snatchEnd, setSnatchEnd, days.map(d=>{const s="12:00 PM";return d+" "+s;}).concat(days.map(d=>{const s="6:00 PM";return d+" "+s;})))}
       {sel("Snatch Return Time", snatchReturn, setSnatchReturn, days.map(d=>{const s="11:58 PM";return d+" "+s;}).concat(days.map(d=>{const s="11:00 PM";return d+" "+s;})))}
       <div style={{display:"flex",gap:8,marginTop:4}}>
-        <button onClick={()=>setOpen(false)} style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:10,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
-        <button onClick={()=>{onPropose({"Transfer Start":transferDay,"Transfer End":transferTime,"Snatch Window":snatchStart+" to "+snatchEnd,"Snatch Return":snatchReturn});setOpen(false);}} style={{flex:2,background:"#F5A623",border:"none",borderRadius:8,padding:10,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:14,cursor:"pointer"}}>SUBMIT FOR VOTE</button>
+        <button onClick={()=>setOpen(false)} style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:8,padding:10,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
+        <button onClick={()=>{onPropose({"Transfer Start":transferDay,"Transfer End":transferTime,"Snatch Window":snatchStart+" to "+snatchEnd,"Snatch Return":snatchReturn});setOpen(false);}} style={{flex:2,background:"#F5A623",border:"none",borderRadius:8,padding:10,color:"#080C14",fontFamily:fonts.body,fontWeight:800,fontSize:14,cursor:"pointer"}}>SUBMIT FOR VOTE</button>
       </div>
     </div>
   );
