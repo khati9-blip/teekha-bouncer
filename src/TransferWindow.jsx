@@ -1,3 +1,4 @@
+import { T, fonts, FONT_URL } from "./Theme";
 import React, { useState, useEffect, useCallback } from "react";
 
 const SB_URL = "https://rmcxhorijitrhqyrvvkn.supabase.co/rest/v1/league_data";
@@ -14,7 +15,7 @@ function TierBadge({ tier }) {
   if (!tier) return null;
   return (
     <span style={{fontSize:9,fontWeight:800,letterSpacing:1,padding:"1px 5px",borderRadius:4,
-      fontFamily:"Barlow Condensed,sans-serif",textTransform:"uppercase",
+      fontFamily:fonts.body,textTransform:"uppercase",
       background:TIER_BG[tier],border:"1px solid "+TIER_BORDER[tier],color:TIER_COLORS[tier]}}>
       {tier==="platinum"?"PLAT":tier==="gold"?"GOLD":tier==="silver"?"SILV":"BRNZ"}
     </span>
@@ -35,10 +36,10 @@ function Timer({ deadline, label = "REMAINING" }) {
   const s = left % 60;
   const urgent = left < 300;
   return (
-    <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:32,fontWeight:700,
+    <div style={{fontFamily:fonts.display,fontSize:32,fontWeight:700,
       color:left===0?"#4A5E78":urgent?"#FF3D5A":"#F5A623",textAlign:"center",letterSpacing:2}}>
       {left === 0 ? "TIME UP" : h > 0 ? `${h}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}` : `${m}:${String(s).padStart(2,"0")}`}
-      <div style={{fontSize:10,color:"#4A5E78",letterSpacing:2,marginTop:2}}>{left===0?"EXPIRED":label}</div>
+      <div style={{fontSize:10,color:T.muted,letterSpacing:2,marginTop:2}}>{left===0?"EXPIRED":label}</div>
     </div>
   );
 }
@@ -577,43 +578,43 @@ export default function TransferWindow({
   const phaseBadge = { closed:"#4A5E78", release:"#F5A623", trade:"#2ECC71", done:"#4F8EF7" };
 
   return (
-    <div style={{fontFamily:"Barlow Condensed,sans-serif",paddingBottom:40}}>
+    <div style={{fontFamily:fonts.body,paddingBottom:40}}>
 
       {/* HEADER */}
       <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",flexWrap:"wrap",gap:12,marginBottom:20}}>
         <div>
-          <h2 style={{fontFamily:"Rajdhani,sans-serif",fontSize:28,color:"#F5A623",letterSpacing:2,marginBottom:4}}>TRANSFER WINDOW</h2>
+          <h2 style={{fontFamily:fonts.display,fontSize:28,color:T.accent,letterSpacing:2,marginBottom:4}}>TRANSFER WINDOW</h2>
           <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
-            <span style={{fontSize:11,color:"#4A5E78"}}>Week {transfers?.weekNum || 1}</span>
+            <span style={{fontSize:11,color:T.muted}}>Week {transfers?.weekNum || 1}</span>
             <span style={{background:phaseBadge[phase]+"22",color:phaseBadge[phase],border:"1px solid "+phaseBadge[phase]+"44",padding:"2px 10px",borderRadius:20,fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>
               {phase}
             </span>
             {phase === "closed" && (
-              <span style={{fontSize:11,color:"#4A5E78"}}>Auto-opens Sun 11:59 PM IST</span>
+              <span style={{fontSize:11,color:T.muted}}>Auto-opens Sun 11:59 PM IST</span>
             )}
           </div>
         </div>
 
         {/* Auto countdown to next window */}
         {phase === "closed" && (
-          <div style={{background:"#0E1521",borderRadius:10,padding:"10px 16px",textAlign:"center",border:"1px solid #1E2D45"}}>
-            <div style={{fontSize:10,color:"#4A5E78",letterSpacing:2,marginBottom:4}}>NEXT WINDOW OPENS</div>
+          <div style={{background:T.card,borderRadius:10,padding:"10px 16px",textAlign:"center",border:`1px solid ${T.border}`}}>
+            <div style={{fontSize:10,color:T.muted,letterSpacing:2,marginBottom:4}}>NEXT WINDOW OPENS</div>
             <Timer deadline={nextAutoOpen} label="UNTIL SUNDAY 11:59 PM IST" />
           </div>
         )}
         {phase === "release" && (
-          <div style={{background:"#F5A62311",borderRadius:10,padding:"10px 16px",textAlign:"center",border:"1px solid #F5A62333"}}>
-            <div style={{fontSize:10,color:"#F5A623",letterSpacing:2,marginBottom:4}}>RELEASE WINDOW CLOSES</div>
+          <div style={{background:T.accentBg,borderRadius:10,padding:"10px 16px",textAlign:"center",border:`1px solid ${T.accentBorder}`}}>
+            <div style={{fontSize:10,color:T.accent,letterSpacing:2,marginBottom:4}}>RELEASE WINDOW CLOSES</div>
             <Timer deadline={releaseDeadline} label="MONDAY 11:00 AM IST" />
           </div>
         )}
       </div>
 
       {/* TAB SWITCHER */}
-      <div style={{display:"flex",gap:6,marginBottom:20,background:"#080C14",borderRadius:10,padding:4,border:"1px solid #1E2D45"}}>
+      <div style={{display:"flex",gap:6,marginBottom:20,background:T.bg,borderRadius:10,padding:4,border:`1px solid ${T.border}`}}>
         {[{id:"window",label:"🔄 Transfer Window"},{id:"history",label:"📜 History"}].map(tab=>(
           <button key={tab.id} onClick={()=>setTwTab(tab.id)}
-            style={{flex:1,padding:"9px 0",borderRadius:8,border:"none",cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,letterSpacing:0.5,transition:"all 0.2s",
+            style={{flex:1,padding:"9px 0",borderRadius:8,border:"none",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:14,letterSpacing:0.5,transition:"all 0.2s",
               background:twTab===tab.id?"#1E2D45":"transparent",
               color:twTab===tab.id?"#F5A623":"#4A5E78"}}>
             {tab.label}
@@ -629,8 +630,8 @@ export default function TransferWindow({
 
       {/* ADMIN CONTROLS */}
       {unlocked && (
-        <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #F5A62333",padding:16,marginBottom:20}}>
-          <div style={{fontSize:11,color:"#F5A623",letterSpacing:2,fontWeight:700,marginBottom:12}}>🔑 ADMIN CONTROLS</div>
+        <div style={{background:T.card,borderRadius:12,border:`1px solid ${T.accentBorder}`,padding:16,marginBottom:20}}>
+          <div style={{fontSize:11,color:T.accent,letterSpacing:2,fontWeight:700,marginBottom:12}}>🔑 ADMIN CONTROLS</div>
           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
 
             {/* Always visible: Open / Close window */}
@@ -753,7 +754,7 @@ export default function TransferWindow({
           {phase === "release" && (
             <div style={{marginTop:12,display:"flex",flexWrap:"wrap",gap:6}}>
               {sortedTeams.filter(t => (transfers?.releases?.[t.id]||[]).length < 3).map(t => (
-                <div key={t.id} style={{background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:8,padding:"5px 10px",fontSize:11,color:"#FF3D5A"}}>
+                <div key={t.id} style={{background:T.dangerBg,border:`1px solid ${T.danger}33`,borderRadius:8,padding:"5px 10px",fontSize:11,color:T.danger}}>
                   ⚠️ {t.name}: {(transfers?.releases?.[t.id]||[]).length}/3 released
                 </div>
               ))}
@@ -764,20 +765,20 @@ export default function TransferWindow({
 
       {/* CLOSED STATE */}
       {phase === "closed" && (
-        <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #1E2D45",padding:40,textAlign:"center"}}>
+        <div style={{background:T.card,borderRadius:12,border:`1px solid ${T.border}`,padding:40,textAlign:"center"}}>
           <div style={{fontSize:48,marginBottom:12}}>🔒</div>
-          <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:22,fontWeight:700,color:"#4A5E78",letterSpacing:2,marginBottom:8}}>TRANSFER WINDOW CLOSED</div>
-          <div style={{fontSize:13,color:"#4A5E78"}}>Opens automatically every Sunday at 11:59 PM IST</div>
+          <div style={{fontFamily:fonts.display,fontSize:22,fontWeight:700,color:T.muted,letterSpacing:2,marginBottom:8}}>TRANSFER WINDOW CLOSED</div>
+          <div style={{fontSize:13,color:T.muted}}>Opens automatically every Sunday at 11:59 PM IST</div>
         </div>
       )}
 
       {/* RELEASE PHASE */}
       {phase === "release" && (
         <div style={{marginBottom:20}}>
-          <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:18,fontWeight:700,color:"#F5A623",letterSpacing:2,marginBottom:6}}>
+          <div style={{fontFamily:fonts.display,fontSize:18,fontWeight:700,color:T.accent,letterSpacing:2,marginBottom:6}}>
             📤 RELEASE PHASE
           </div>
-          <div style={{fontSize:12,color:"#4A5E78",marginBottom:16}}>
+          <div style={{fontSize:12,color:T.muted,marginBottom:16}}>
             Select up to 3 players to release. Window closes Monday 11:00 AM IST. You can change selections until then.
           </div>
 
@@ -794,10 +795,10 @@ export default function TransferWindow({
             const allReleased = released.length;
 
             return (
-              <div key={team.id} style={{background:"#0E1521",borderRadius:12,border:"2px solid "+(isMe?team.color+"66":team.color+"22"),padding:16,marginBottom:12}}>
+              <div key={team.id} style={{background:T.card,borderRadius:12,border:"2px solid "+(isMe?team.color+"66":team.color+"22"),padding:16,marginBottom:12}}>
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
                   <div style={{display:"flex",alignItems:"center",gap:8}}>
-                    <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:16,color:team.color}}>{team.name}</div>
+                    <div style={{fontFamily:fonts.display,fontWeight:700,fontSize:16,color:team.color}}>{team.name}</div>
                     {isMe && <span style={{fontSize:10,background:team.color+"22",color:team.color,border:"1px solid "+team.color+"44",borderRadius:20,padding:"2px 8px",fontWeight:700,letterSpacing:1}}>YOUR TEAM</span>}
                   </div>
                   <div style={{fontSize:12,color:allReleased===3?"#2ECC71":"#F5A623",fontWeight:700,background:allReleased===3?"#2ECC7111":"#F5A62311",padding:"3px 10px",borderRadius:20,border:"1px solid "+(allReleased===3?"#2ECC7133":"#F5A62333")}}>
@@ -807,8 +808,8 @@ export default function TransferWindow({
 
                 {/* Instruction for own team */}
                 {isMe && (
-                  <div style={{fontSize:12,color:"#4A5E78",marginBottom:10,background:"#F5A62308",border:"1px solid #F5A62322",borderRadius:8,padding:"7px 12px"}}>
-                    Tap <strong style={{color:"#F5A623"}}>RELEASE</strong> to add a player to the pool. Tap <strong style={{color:"#FF3D5A"}}>UNDO</strong> to take them back. You can change until the window closes.
+                  <div style={{fontSize:12,color:T.muted,marginBottom:10,background:"#F5A62308",border:"1px solid #F5A62322",borderRadius:8,padding:"7px 12px"}}>
+                    Tap <strong style={{color:T.accent}}>RELEASE</strong> to add a player to the pool. Tap <strong style={{color:T.danger}}>UNDO</strong> to take them back. You can change until the window closes.
                   </div>
                 )}
 
@@ -823,28 +824,28 @@ export default function TransferWindow({
                             <span style={{fontWeight:700,fontSize:13,color:isReleased?"#FF3D5A":"#E2EAF4",textDecoration:isReleased?"line-through":"none"}}>{p.name}</span>
                             <TierBadge tier={p.tier} />
                           </div>
-                          <div style={{fontSize:11,color:"#4A5E78"}}>{p.iplTeam} • {p.role}</div>
+                          <div style={{fontSize:11,color:T.muted}}>{p.iplTeam} • {p.role}</div>
                         </div>
                         {/* Release/Undo button — only for own team, no lock needed */}
                         {isPlayerSafe(p.id) ? (
-                            <span style={{fontSize:10,color:"#2ECC71",fontWeight:700,background:"#2ECC7111",border:"1px solid #2ECC7133",padding:"3px 8px",borderRadius:6,letterSpacing:0.5}}>🛡 SAFE</span>
+                            <span style={{fontSize:10,color:T.success,fontWeight:700,background:"#2ECC7111",border:`1px solid ${T.success}33`,padding:"3px 8px",borderRadius:6,letterSpacing:0.5}}>🛡 SAFE</span>
                           ) : canEdit ? (
                             <button onClick={() => handleRelease(team.id, p.id)}
-                              style={{background:isReleased?"#FF3D5A22":"#1E2D4533",border:"1px solid "+(isReleased?"#FF3D5A":"#1E2D45"),borderRadius:6,padding:"6px 14px",color:isReleased?"#FF3D5A":"#4A5E78",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"Barlow Condensed,sans-serif",letterSpacing:0.5}}>
+                              style={{background:isReleased?"#FF3D5A22":"#1E2D4533",border:"1px solid "+(isReleased?"#FF3D5A":"#1E2D45"),borderRadius:6,padding:"6px 14px",color:isReleased?"#FF3D5A":"#4A5E78",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:fonts.body,letterSpacing:0.5}}>
                               {isReleased ? "UNDO ✕" : "RELEASE"}
                             </button>
                           ) : isReleased ? (
-                            <span style={{fontSize:10,color:"#FF3D5A",fontWeight:700,background:"#FF3D5A11",border:"1px solid #FF3D5A33",padding:"3px 8px",borderRadius:6}}>RELEASED</span>
+                            <span style={{fontSize:10,color:T.danger,fontWeight:700,background:T.dangerBg,border:`1px solid ${T.danger}33`,padding:"3px 8px",borderRadius:6}}>RELEASED</span>
                           ) : null}
                         {/* Read-only view for admin */}
                         {!canEdit && isReleased && (
-                          <span style={{fontSize:10,color:"#FF3D5A",fontWeight:700,background:"#FF3D5A11",border:"1px solid #FF3D5A33",padding:"3px 8px",borderRadius:6}}>RELEASED</span>
+                          <span style={{fontSize:10,color:T.danger,fontWeight:700,background:T.dangerBg,border:`1px solid ${T.danger}33`,padding:"3px 8px",borderRadius:6}}>RELEASED</span>
                         )}
                       </div>
                     );
                   })}
                   {teamPlayers.length === 0 && (
-                    <div style={{fontSize:12,color:"#4A5E78",textAlign:"center",padding:16}}>No players in squad</div>
+                    <div style={{fontSize:12,color:T.muted,textAlign:"center",padding:16}}>No players in squad</div>
                   )}
                 </div>
               </div>
@@ -853,11 +854,11 @@ export default function TransferWindow({
 
           {/* Admin without myTeam: show team picker — only during release phase */}
           {!myTeamId && isAdmin && phase === "release" && (
-            <div style={{background:"#F5A62311",borderRadius:12,border:"1px solid #F5A62333",padding:16,marginBottom:12}}>
-              <div style={{fontSize:11,color:"#F5A623",letterSpacing:2,fontWeight:700,marginBottom:8}}>🔑 WHICH TEAM ARE YOU MANAGING?</div>
-              <div style={{fontSize:12,color:"#4A5E78",marginBottom:10}}>You're logged in as admin. Select your team to manage releases.</div>
+            <div style={{background:T.accentBg,borderRadius:12,border:`1px solid ${T.accentBorder}`,padding:16,marginBottom:12}}>
+              <div style={{fontSize:11,color:T.accent,letterSpacing:2,fontWeight:700,marginBottom:8}}>🔑 WHICH TEAM ARE YOU MANAGING?</div>
+              <div style={{fontSize:12,color:T.muted,marginBottom:10}}>You're logged in as admin. Select your team to manage releases.</div>
               <select onChange={e=>setSessionTeamId(e.target.value)} defaultValue=""
-                style={{width:"100%",background:"#0E1521",border:"1px solid #F5A62344",borderRadius:8,padding:"10px 14px",color:"#E2EAF4",fontSize:14,fontFamily:"Barlow Condensed,sans-serif"}}>
+                style={{width:"100%",background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:8,padding:"10px 14px",color:T.text,fontSize:14,fontFamily:fonts.body}}>
                 <option value="">-- Select your team --</option>
                 {sortedTeams.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
@@ -872,9 +873,9 @@ export default function TransferWindow({
 
           {/* Current pick timer */}
           {phase === "trade" && currentPickTeam && (
-            <div style={{background:"#0E1521",borderRadius:12,border:"2px solid "+currentPickTeam.color+"66",padding:20,marginBottom:16,textAlign:"center"}}>
-              <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,marginBottom:4}}>NOW PICKING</div>
-              <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:24,fontWeight:700,color:currentPickTeam.color,marginBottom:12,letterSpacing:1}}>
+            <div style={{background:T.card,borderRadius:12,border:"2px solid "+currentPickTeam.color+"66",padding:20,marginBottom:16,textAlign:"center"}}>
+              <div style={{fontSize:11,color:T.muted,letterSpacing:2,marginBottom:4}}>NOW PICKING</div>
+              <div style={{fontFamily:fonts.display,fontSize:24,fontWeight:700,color:currentPickTeam.color,marginBottom:12,letterSpacing:1}}>
                 {currentPickTeam.name} {isMyTurn ? "— YOUR TURN 🎯" : ""}
               </div>
               {transfers.pickDeadline && <Timer deadline={transfers.pickDeadline} label="TO MAKE A PICK" />}
@@ -882,22 +883,22 @@ export default function TransferWindow({
           )}
 
           {phase === "done" && (
-            <div style={{background:"#2ECC7111",border:"1px solid #2ECC7133",borderRadius:12,padding:16,marginBottom:16,textAlign:"center"}}>
-              <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:"#2ECC71"}}>✅ TRADE PHASE COMPLETE</div>
-              <div style={{fontSize:12,color:"#4A5E78",marginTop:4}}>All trades finalised for Week {transfers.weekNum}</div>
+            <div style={{background:"#2ECC7111",border:`1px solid ${T.success}33`,borderRadius:12,padding:16,marginBottom:16,textAlign:"center"}}>
+              <div style={{fontFamily:fonts.display,fontSize:20,fontWeight:700,color:T.success}}>✅ TRADE PHASE COMPLETE</div>
+              <div style={{fontSize:12,color:T.muted,marginTop:4}}>All trades finalised for Week {transfers.weekNum}</div>
             </div>
           )}
 
           {/* ── LIVE TRACK ──────────────────────────────────────────────── */}
-          <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #1E2D45",padding:16,marginBottom:16}}>
-            <div style={{fontSize:11,color:"#F5A623",letterSpacing:2,fontWeight:700,marginBottom:14}}>📡 LIVE TRADE TRACK</div>
+          <div style={{background:T.card,borderRadius:12,border:`1px solid ${T.border}`,padding:16,marginBottom:16}}>
+            <div style={{fontSize:11,color:T.accent,letterSpacing:2,fontWeight:700,marginBottom:14}}>📡 LIVE TRADE TRACK</div>
             {sortedTeams.map(team => {
               const released = getReleasedPlayers(team.id);
               if (released.length === 0) return null;
               const pairs = getTradedPairs(team.id);
               return (
-                <div key={team.id} style={{marginBottom:14,paddingBottom:14,borderBottom:"1px solid #1E2D45"}}>
-                  <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:14,fontWeight:700,color:team.color,letterSpacing:1,marginBottom:8}}>
+                <div key={team.id} style={{marginBottom:14,paddingBottom:14,borderBottom:`1px solid ${T.border}`}}>
+                  <div style={{fontFamily:fonts.display,fontSize:14,fontWeight:700,color:team.color,letterSpacing:1,marginBottom:8}}>
                     {team.name}
                   </div>
                   <div style={{display:"flex",flexDirection:"column",gap:6}}>
@@ -908,36 +909,36 @@ export default function TransferWindow({
                       return (
                         <div key={p.id} style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
                           {/* Released player */}
-                          <div style={{display:"flex",alignItems:"center",gap:5,background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:8,padding:"5px 10px"}}>
+                          <div style={{display:"flex",alignItems:"center",gap:5,background:T.dangerBg,border:`1px solid ${T.danger}33`,borderRadius:8,padding:"5px 10px"}}>
                             <span style={{fontSize:12}}>⬇️</span>
-                            <span style={{fontSize:12,color:"#FF3D5A",textDecoration:"line-through",fontWeight:700}}>{p.name}</span>
+                            <span style={{fontSize:12,color:T.danger,textDecoration:"line-through",fontWeight:700}}>{p.name}</span>
                             <TierBadge tier={p.tier} />
-                            <span style={{fontSize:10,color:"#4A5E78"}}>{p.role}</span>
+                            <span style={{fontSize:10,color:T.muted}}>{p.role}</span>
                           </div>
 
                           {/* Arrow + incoming or waiting */}
                           {incoming ? (
                             <>
-                              <span style={{color:"#4A5E78",fontSize:14}}>→</span>
-                              <div style={{display:"flex",alignItems:"center",gap:5,background:"#2ECC7111",border:"1px solid #2ECC7133",borderRadius:8,padding:"5px 10px"}}>
+                              <span style={{color:T.muted,fontSize:14}}>→</span>
+                              <div style={{display:"flex",alignItems:"center",gap:5,background:"#2ECC7111",border:`1px solid ${T.success}33`,borderRadius:8,padding:"5px 10px"}}>
                                 <span style={{fontSize:12}}>⬆️</span>
-                                <span style={{fontSize:12,color:"#2ECC71",fontWeight:700}}>{incoming.name}</span>
+                                <span style={{fontSize:12,color:T.success,fontWeight:700}}>{incoming.name}</span>
                                 <TierBadge tier={incoming.tier} />
-                                <span style={{fontSize:10,color:"#4A5E78"}}>{incoming.role}</span>
+                                <span style={{fontSize:10,color:T.muted}}>{incoming.role}</span>
                               </div>
                             </>
                           ) : isIneligible ? (
                             <>
-                              <span style={{color:"#4A5E78",fontSize:14}}>→</span>
+                              <span style={{color:T.muted,fontSize:14}}>→</span>
                               <div style={{background:"#4A5E7822",border:"1px solid #4A5E7844",borderRadius:8,padding:"5px 10px"}}>
-                                <span style={{fontSize:11,color:"#4A5E78"}}>↩️ returned (passed)</span>
+                                <span style={{fontSize:11,color:T.muted}}>↩️ returned (passed)</span>
                               </div>
                             </>
                           ) : (
                             <>
-                              <span style={{color:"#4A5E78",fontSize:14}}>→</span>
-                              <div style={{background:"#F5A62311",border:"1px solid #F5A62333",borderRadius:8,padding:"5px 10px"}}>
-                                <span style={{fontSize:11,color:"#F5A623",animation:"pulse 1.5s ease infinite"}}>⏳ waiting…</span>
+                              <span style={{color:T.muted,fontSize:14}}>→</span>
+                              <div style={{background:T.accentBg,border:`1px solid ${T.accentBorder}`,borderRadius:8,padding:"5px 10px"}}>
+                                <span style={{fontSize:11,color:T.accent,animation:"pulse 1.5s ease infinite"}}>⏳ waiting…</span>
                               </div>
                             </>
                           )}
@@ -954,12 +955,12 @@ export default function TransferWindow({
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
 
             {/* Unsold pool */}
-            <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #1E2D45",padding:14}}>
-              <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginBottom:10}}>
+            <div style={{background:T.card,borderRadius:12,border:`1px solid ${T.border}`,padding:14}}>
+              <div style={{fontSize:11,color:T.muted,letterSpacing:2,fontWeight:700,marginBottom:10}}>
                 POOL ({sortedPool.length})
               </div>
               {sortedPool.length === 0 ? (
-                <div style={{fontSize:12,color:"#4A5E78",textAlign:"center",padding:16}}>Pool empty</div>
+                <div style={{fontSize:12,color:T.muted,textAlign:"center",padding:16}}>Pool empty</div>
               ) : sortedPool.map(p => {
                 const canPickNow = (isMyTurn || unlocked) && phase==="trade" && !isPlayerSafe(p.id);
                 const pickAsTeam = isMyTurn ? myTeamId : currentPickTeamId;
@@ -980,14 +981,14 @@ export default function TransferWindow({
                   <div key={p.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",background:cardBg,borderRadius:8,border:"1px solid "+cardBorder,borderLeft:isNewlyReleased?"3px solid "+teamColor+"99":"1px solid "+cardBorder,marginBottom:6}}>
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{display:"flex",alignItems:"center",gap:5,flexWrap:"wrap"}}>
-                        <span style={{fontWeight:700,fontSize:12,color:"#E2EAF4"}}>{p.name}</span>
+                        <span style={{fontWeight:700,fontSize:12,color:T.text}}>{p.name}</span>
                         <TierBadge tier={p.tier} />
                         {isPlayerSafe(p.id) && (
-                          <span style={{fontSize:9,background:"#2ECC7111",color:"#2ECC71",border:"1px solid #2ECC7133",borderRadius:4,padding:"1px 5px",fontWeight:700}}>🛡 SAFE</span>
+                          <span style={{fontSize:9,background:"#2ECC7111",color:T.success,border:`1px solid ${T.success}33`,borderRadius:4,padding:"1px 5px",fontWeight:700}}>🛡 SAFE</span>
                         )}
                       </div>
                       <div style={{display:"flex",alignItems:"center",gap:6,marginTop:2,flexWrap:"wrap"}}>
-                        <span style={{fontSize:10,color:"#4A5E78"}}>{p.iplTeam} • {p.role}</span>
+                        <span style={{fontSize:10,color:T.muted}}>{p.iplTeam} • {p.role}</span>
                         {isNewlyReleased && releasedByTeam && (
                           <span style={{display:"flex",alignItems:"center",gap:3,fontSize:9,fontWeight:800,letterSpacing:0.5,color:teamColor,background:teamColor+"15",border:"1px solid "+teamColor+"44",borderRadius:4,padding:"1px 6px"}}>
                             <span style={{width:5,height:5,borderRadius:"50%",background:teamColor,display:"inline-block",flexShrink:0}} />
@@ -995,13 +996,13 @@ export default function TransferWindow({
                           </span>
                         )}
                         {!isNewlyReleased && (
-                          <span style={{fontSize:9,color:"#4A5E78",background:"#1E2D4555",border:"1px solid #1E2D4599",borderRadius:4,padding:"1px 6px",fontWeight:700}}>UNSOLD</span>
+                          <span style={{fontSize:9,color:T.muted,background:"#1E2D4555",border:"1px solid #1E2D4599",borderRadius:4,padding:"1px 6px",fontWeight:700}}>UNSOLD</span>
                         )}
                       </div>
                     </div>
                     {canPick && (
                       <button onClick={() => handlePickClick(p)}
-                        style={{background:"#2ECC71",border:"none",borderRadius:6,padding:"5px 10px",color:"#080C14",fontSize:11,fontWeight:800,cursor:"pointer",flexShrink:0,fontFamily:"Barlow Condensed,sans-serif",letterSpacing:0.5}}>
+                        style={{background:"#2ECC71",border:"none",borderRadius:6,padding:"5px 10px",color:T.bg,fontSize:11,fontWeight:800,cursor:"pointer",flexShrink:0,fontFamily:fonts.body,letterSpacing:0.5}}>
                         PICK
                       </button>
                     )}
@@ -1011,8 +1012,8 @@ export default function TransferWindow({
             </div>
 
             {/* My released players */}
-            <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #1E2D45",padding:14}}>
-              <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginBottom:10}}>
+            <div style={{background:T.card,borderRadius:12,border:`1px solid ${T.border}`,padding:14}}>
+              <div style={{fontSize:11,color:T.muted,letterSpacing:2,fontWeight:700,marginBottom:10}}>
                 {myTeamId ? "MY RELEASED" : "ALL RELEASES"}
               </div>
               {sortedTeams.map(team => {
@@ -1035,10 +1036,10 @@ export default function TransferWindow({
                               <span style={{fontWeight:700,fontSize:12,color:traded?"#2ECC71":ineligible?"#4A5E78":"#E2EAF4",textDecoration:traded?"line-through":"none"}}>{p.name}</span>
                               <TierBadge tier={p.tier} />
                             </div>
-                            <div style={{fontSize:10,color:"#4A5E78"}}>{p.role}</div>
+                            <div style={{fontSize:10,color:T.muted}}>{p.role}</div>
                           </div>
-                          {traded && <span style={{fontSize:10,color:"#2ECC71",fontWeight:700}}>TRADED</span>}
-                          {ineligible && !traded && <span style={{fontSize:10,color:"#4A5E78",fontWeight:700}}>RETURNED</span>}
+                          {traded && <span style={{fontSize:10,color:T.success,fontWeight:700}}>TRADED</span>}
+                          {ineligible && !traded && <span style={{fontSize:10,color:T.muted,fontWeight:700}}>RETURNED</span>}
                         </div>
                       );
                     })}
@@ -1050,27 +1051,27 @@ export default function TransferWindow({
 
           {/* My turn actions */}
           {(isMyTurn || unlocked) && phase === "trade" && currentPickTeam && (
-            <div style={{background:"#0E1521",borderRadius:12,border:"2px solid "+(myReversalAlert?"#FF3D5A44":"#F5A62344"),padding:16,marginBottom:16}}>
-              <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:18,fontWeight:700,color:myReversalAlert?"#FF3D5A":"#F5A623",marginBottom:6}}>{myReversalAlert?"⚠️ RE-PICK REQUIRED":"🎯 YOUR TURN"}</div>
+            <div style={{background:T.card,borderRadius:12,border:"2px solid "+(myReversalAlert?"#FF3D5A44":"#F5A62344"),padding:16,marginBottom:16}}>
+              <div style={{fontFamily:fonts.display,fontSize:18,fontWeight:700,color:myReversalAlert?"#FF3D5A":"#F5A623",marginBottom:6}}>{myReversalAlert?"⚠️ RE-PICK REQUIRED":"🎯 YOUR TURN"}</div>
               {myReversalAlert && (
-                <div style={{background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:8,padding:"8px 12px",marginBottom:10,fontSize:12,color:"#FF3D5A"}}>
+                <div style={{background:T.dangerBg,border:`1px solid ${T.danger}33`,borderRadius:8,padding:"8px 12px",marginBottom:10,fontSize:12,color:T.danger}}>
                   <strong>{myReversalAlert.returnedPlayerName}</strong> returned to {myReversalAlert.returnedToTeam}. Pick another player or pass.
                 </div>
               )}
-              <div style={{fontSize:12,color:"#4A5E78",marginBottom:12}}>
+              <div style={{fontSize:12,color:T.muted,marginBottom:12}}>
                 Pick a player from the pool (highlighted green). Must be same role and same/lower tier as a player you released.
               </div>
               {canPass(myTeamId || currentPickTeamId) ? (
                 <button onClick={handlePass}
-                  style={{width:"100%",background:"#4A5E7822",border:"1px solid #4A5E78",borderRadius:10,padding:12,color:"#E2EAF4",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:14,cursor:"pointer",letterSpacing:0.5}}>
+                  style={{width:"100%",background:"#4A5E7822",border:"1px solid #4A5E78",borderRadius:10,padding:12,color:T.text,fontFamily:fonts.body,fontWeight:800,fontSize:14,cursor:"pointer",letterSpacing:0.5}}>
                   PASS — No valid players in pool (released players will return)
                 </button>
               ) : (
-                <div style={{fontSize:11,color:"#4A5E78",textAlign:"center",padding:"8px 0"}}>
+                <div style={{fontSize:11,color:T.muted,textAlign:"center",padding:"8px 0"}}>
                   Valid picks exist in pool — PASS not allowed until pool is exhausted
                   {unlocked && (
                     <button onClick={handlePass}
-                      style={{display:"block",width:"100%",marginTop:8,background:"#FF3D5A11",border:"1px dashed #FF3D5A44",borderRadius:10,padding:10,color:"#FF3D5A",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:12,cursor:"pointer"}}>
+                      style={{display:"block",width:"100%",marginTop:8,background:T.dangerBg,border:"1px dashed #FF3D5A44",borderRadius:10,padding:10,color:T.danger,fontFamily:fonts.body,fontWeight:700,fontSize:12,cursor:"pointer"}}>
                       ⚠️ ADMIN: FORCE PASS
                     </button>
                   )}
@@ -1080,20 +1081,20 @@ export default function TransferWindow({
           )}
 
           {/* Trade summary */}
-          <div style={{background:"#0E1521",borderRadius:12,border:"1px solid #1E2D45",padding:14}}>
-            <div style={{fontSize:11,color:"#4A5E78",letterSpacing:2,fontWeight:700,marginBottom:10}}>TRADE ORDER</div>
+          <div style={{background:T.card,borderRadius:12,border:`1px solid ${T.border}`,padding:14}}>
+            <div style={{fontSize:11,color:T.muted,letterSpacing:2,fontWeight:700,marginBottom:10}}>TRADE ORDER</div>
             {pickOrder.map((team, idx) => {
               const released = getReleasedPlayers(team.id);
               const pairs = getTradedPairs(team.id);
               const isCurrent = team.id === currentPickTeamId;
               return (
                 <div key={team.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",background:isCurrent?team.color+"11":"transparent",borderRadius:8,marginBottom:4,border:isCurrent?"1px solid "+team.color+"33":"1px solid transparent"}}>
-                  <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:13,color:"#4A5E78",minWidth:20}}>{idx+1}</div>
+                  <div style={{fontFamily:fonts.display,fontSize:13,color:T.muted,minWidth:20}}>{idx+1}</div>
                   <div style={{flex:1}}>
-                    <span style={{fontWeight:700,fontSize:13,color:isCurrent?team.color:"#E2EAF4"}}>{team.name}</span>
+                    <span style={{fontWeight:700,fontSize:13,color:isCurrent?team.color:T.text}}>{team.name}</span>
                     {isCurrent && <span style={{fontSize:10,color:team.color,marginLeft:6,fontWeight:700}}>← PICKING NOW</span>}
                   </div>
-                  <div style={{fontSize:11,color:"#4A5E78"}}>{pairs.length}/{released.length} traded</div>
+                  <div style={{fontSize:11,color:T.muted}}>{pairs.length}/{released.length} traded</div>
                 </div>
               );
             })}
@@ -1104,17 +1105,17 @@ export default function TransferWindow({
       {/* AUTO-OPEN PROMPT */}
       {showAutoOpenPrompt && (
         <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.95)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:800,padding:16}}>
-          <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #F5A62344",padding:24,width:"100%",maxWidth:380}}>
+          <div style={{background:T.card,borderRadius:16,border:`1px solid ${T.accentBorder}`,padding:24,width:"100%",maxWidth:380}}>
             <div style={{fontSize:28,marginBottom:8}}>⏰</div>
-            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:"#F5A623",marginBottom:8}}>TIME TO OPEN THE WINDOW</div>
-            <div style={{fontSize:13,color:"#4A5E78",marginBottom:20}}>It's within the transfer window period (Sun 11:59 PM – Mon 11:00 AM IST). Do you want to open the release window now?</div>
+            <div style={{fontFamily:fonts.display,fontSize:20,fontWeight:700,color:T.accent,marginBottom:8}}>TIME TO OPEN THE WINDOW</div>
+            <div style={{fontSize:13,color:T.muted,marginBottom:20}}>It's within the transfer window period (Sun 11:59 PM – Mon 11:00 AM IST). Do you want to open the release window now?</div>
             <div style={{display:"flex",gap:8}}>
               <button onClick={()=>setShowAutoOpenPrompt(false)}
-                style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:11,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>
+                style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:8,padding:11,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>
                 NOT YET
               </button>
               <button onClick={()=>{openReleaseManually();setShowAutoOpenPrompt(false);}}
-                style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:11,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:15,cursor:"pointer"}}>
+                style={{flex:2,background:`linear-gradient(135deg,${T.accent},${T.accentDim})`,border:"none",borderRadius:8,padding:11,color:T.bg,fontFamily:fonts.body,fontWeight:800,fontSize:15,cursor:"pointer"}}>
                 📤 OPEN NOW
               </button>
             </div>
@@ -1125,20 +1126,20 @@ export default function TransferWindow({
       {/* REVERSAL ALERT MODAL */}
       {showReversalAlert && myReversalAlert && (
         <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:900,padding:16}}>
-          <div style={{background:"#141E2E",borderRadius:16,border:"2px solid #F5A62366",padding:24,width:"100%",maxWidth:400}}>
+          <div style={{background:T.card,borderRadius:16,border:"2px solid #F5A62366",padding:24,width:"100%",maxWidth:400}}>
             <div style={{fontSize:32,textAlign:"center",marginBottom:8}}>⚠️</div>
-            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:"#F5A623",textAlign:"center",letterSpacing:1,marginBottom:8}}>
+            <div style={{fontFamily:fonts.display,fontSize:20,fontWeight:700,color:T.accent,textAlign:"center",letterSpacing:1,marginBottom:8}}>
               TRADE REVERSED
             </div>
-            <div style={{background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:10,padding:"12px 16px",marginBottom:16,textAlign:"center"}}>
-              <div style={{fontWeight:700,fontSize:16,color:"#FF3D5A",marginBottom:4}}>
+            <div style={{background:T.dangerBg,border:`1px solid ${T.danger}33`,borderRadius:10,padding:"12px 16px",marginBottom:16,textAlign:"center"}}>
+              <div style={{fontWeight:700,fontSize:16,color:T.danger,marginBottom:4}}>
                 ⬇️ {myReversalAlert.returnedPlayerName}
               </div>
-              <div style={{fontSize:12,color:"#4A5E78"}}>
-                has returned to <strong style={{color:"#E2EAF4"}}>{myReversalAlert.returnedToTeam}</strong> — this player is no longer available.
+              <div style={{fontSize:12,color:T.muted}}>
+                has returned to <strong style={{color:T.text}}>{myReversalAlert.returnedToTeam}</strong> — this player is no longer available.
               </div>
             </div>
-            <div style={{fontSize:13,color:"#4A5E78",textAlign:"center",marginBottom:20}}>
+            <div style={{fontSize:13,color:T.muted,textAlign:"center",marginBottom:20}}>
               Please choose another eligible player from the pool, or press PASS if no valid options remain.
             </div>
             <button onClick={()=>{
@@ -1147,7 +1148,7 @@ export default function TransferWindow({
               const cleared = (transfers.reversalAlert||[]).filter(a=>a.teamId!==effectiveTeamId);
               onUpdateTransfers({...transfers, reversalAlert: cleared.length>0?cleared:null});
             }}
-              style={{width:"100%",background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:10,padding:13,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:16,cursor:"pointer",letterSpacing:0.5}}>
+              style={{width:"100%",background:`linear-gradient(135deg,${T.accent},${T.accentDim})`,border:"none",borderRadius:10,padding:13,color:T.bg,fontFamily:fonts.body,fontWeight:800,fontSize:16,cursor:"pointer",letterSpacing:0.5}}>
               GOT IT — LET ME RE-PICK
             </button>
           </div>
@@ -1157,16 +1158,16 @@ export default function TransferWindow({
       {/* CONFIRM MODAL */}
       {confirmModal && (
         <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.95)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:800,padding:16}}>
-          <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #FF3D5A44",padding:24,width:"100%",maxWidth:380}}>
+          <div style={{background:T.card,borderRadius:16,border:`1px solid ${T.danger}44`,padding:24,width:"100%",maxWidth:380}}>
             <div style={{fontSize:22,marginBottom:12}}>⚠️</div>
-            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:18,fontWeight:700,color:"#FF3D5A",marginBottom:12}}>{confirmModal.message}</div>
+            <div style={{fontFamily:fonts.display,fontSize:18,fontWeight:700,color:T.danger,marginBottom:12}}>{confirmModal.message}</div>
             <div style={{display:"flex",gap:8}}>
               <button onClick={()=>setConfirmModal(null)}
-                style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:11,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>
+                style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:8,padding:11,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>
                 CANCEL
               </button>
               <button onClick={()=>{confirmModal.onConfirm();setConfirmModal(null);}}
-                style={{flex:1,background:"#FF3D5A22",border:"1px solid #FF3D5A",borderRadius:8,padding:11,color:"#FF3D5A",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:14,cursor:"pointer"}}>
+                style={{flex:1,background:T.dangerBg,border:"1px solid #FF3D5A",borderRadius:8,padding:11,color:T.danger,fontFamily:fonts.body,fontWeight:800,fontSize:14,cursor:"pointer"}}>
                 CONFIRM
               </button>
             </div>
@@ -1177,37 +1178,37 @@ export default function TransferWindow({
       {/* PICK MODAL — choose which released player to swap */}
       {pickModal && (
         <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:500,padding:16}}>
-          <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #1E2D45",padding:24,width:"100%",maxWidth:440}}>
-            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:"#2ECC71",letterSpacing:2,marginBottom:4}}>PICK PLAYER</div>
-            <div style={{fontSize:12,color:"#4A5E78",marginBottom:6}}>
-              Incoming: <strong style={{color:"#E2EAF4"}}>{pickModal.poolPlayer.name}</strong>
+          <div style={{background:T.card,borderRadius:16,border:`1px solid ${T.border}`,padding:24,width:"100%",maxWidth:440}}>
+            <div style={{fontFamily:fonts.display,fontSize:20,fontWeight:700,color:T.success,letterSpacing:2,marginBottom:4}}>PICK PLAYER</div>
+            <div style={{fontSize:12,color:T.muted,marginBottom:6}}>
+              Incoming: <strong style={{color:T.text}}>{pickModal.poolPlayer.name}</strong>
             </div>
-            <div style={{display:"flex",alignItems:"center",gap:6,background:"#2ECC7111",border:"1px solid #2ECC7133",borderRadius:10,padding:"10px 14px",marginBottom:20}}>
+            <div style={{display:"flex",alignItems:"center",gap:6,background:"#2ECC7111",border:`1px solid ${T.success}33`,borderRadius:10,padding:"10px 14px",marginBottom:20}}>
               <span style={{fontSize:18}}>⬆️</span>
               <div>
                 <div style={{display:"flex",alignItems:"center",gap:6}}>
-                  <span style={{fontWeight:700,color:"#2ECC71",fontSize:14}}>{pickModal.poolPlayer.name}</span>
+                  <span style={{fontWeight:700,color:T.success,fontSize:14}}>{pickModal.poolPlayer.name}</span>
                   <TierBadge tier={pickModal.poolPlayer.tier} />
                 </div>
-                <div style={{fontSize:11,color:"#4A5E78"}}>{pickModal.poolPlayer.role} • points reset to 0 • earns from next match</div>
+                <div style={{fontSize:11,color:T.muted}}>{pickModal.poolPlayer.role} • points reset to 0 • earns from next match</div>
               </div>
             </div>
-            <div style={{fontSize:12,color:"#4A5E78",marginBottom:10}}>Select which of your released players goes out for them:</div>
+            <div style={{fontSize:12,color:T.muted,marginBottom:10}}>Select which of your released players goes out for them:</div>
             {pickModal.validMatches.map(rp => (
               <button key={rp.id} onClick={() => confirmTrade(pickModal.poolPlayer, rp)}
-                style={{width:"100%",background:"#FF3D5A11",border:"1px solid #FF3D5A44",borderRadius:10,padding:12,marginBottom:8,cursor:"pointer",display:"flex",alignItems:"center",gap:10,textAlign:"left",fontFamily:"Barlow Condensed,sans-serif"}}>
+                style={{width:"100%",background:T.dangerBg,border:`1px solid ${T.danger}44`,borderRadius:10,padding:12,marginBottom:8,cursor:"pointer",display:"flex",alignItems:"center",gap:10,textAlign:"left",fontFamily:fonts.body}}>
                 <span style={{fontSize:16}}>⬇️</span>
                 <div>
                   <div style={{display:"flex",alignItems:"center",gap:6}}>
-                    <span style={{fontWeight:700,fontSize:14,color:"#FF3D5A"}}>{rp.name}</span>
+                    <span style={{fontWeight:700,fontSize:14,color:T.danger}}>{rp.name}</span>
                     <TierBadge tier={rp.tier} />
                   </div>
-                  <div style={{fontSize:11,color:"#4A5E78"}}>{rp.role} • points frozen at current total</div>
+                  <div style={{fontSize:11,color:T.muted}}>{rp.role} • points frozen at current total</div>
                 </div>
               </button>
             ))}
             <button onClick={() => setPickModal(null)}
-              style={{width:"100%",background:"transparent",border:"1px solid #1E2D45",borderRadius:10,padding:10,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer",marginTop:4}}>
+              style={{width:"100%",background:"transparent",border:`1px solid ${T.border}`,borderRadius:10,padding:10,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer",marginTop:4}}>
               CANCEL
             </button>
           </div>
@@ -1217,42 +1218,42 @@ export default function TransferWindow({
       {/* FINAL CONFIRM MODAL */}
       {tradeConfirmModal && (
         <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:600,padding:16}}>
-          <div style={{background:"#141E2E",borderRadius:16,border:"1px solid #1E2D45",padding:24,width:"100%",maxWidth:400}}>
-            <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:"#F5A623",letterSpacing:2,marginBottom:16}}>CONFIRM TRADE</div>
+          <div style={{background:T.card,borderRadius:16,border:`1px solid ${T.border}`,padding:24,width:"100%",maxWidth:400}}>
+            <div style={{fontFamily:fonts.display,fontSize:20,fontWeight:700,color:T.accent,letterSpacing:2,marginBottom:16}}>CONFIRM TRADE</div>
 
-            <div style={{background:"#2ECC7111",border:"1px solid #2ECC7133",borderRadius:10,padding:14,marginBottom:10,display:"flex",alignItems:"center",gap:10}}>
+            <div style={{background:"#2ECC7111",border:`1px solid ${T.success}33`,borderRadius:10,padding:14,marginBottom:10,display:"flex",alignItems:"center",gap:10}}>
               <span style={{fontSize:20}}>⬆️</span>
               <div>
-                <div style={{fontSize:10,color:"#2ECC71",letterSpacing:1,marginBottom:2}}>JOINING YOUR SQUAD</div>
+                <div style={{fontSize:10,color:T.success,letterSpacing:1,marginBottom:2}}>JOINING YOUR SQUAD</div>
                 <div style={{display:"flex",alignItems:"center",gap:6}}>
-                  <span style={{fontWeight:700,color:"#2ECC71",fontSize:15}}>{tradeConfirmModal.poolPlayer.name}</span>
+                  <span style={{fontWeight:700,color:T.success,fontSize:15}}>{tradeConfirmModal.poolPlayer.name}</span>
                   <TierBadge tier={tradeConfirmModal.poolPlayer.tier} />
                 </div>
-                <div style={{fontSize:11,color:"#4A5E78"}}>{tradeConfirmModal.poolPlayer.role} • Points reset to 0 • earns from next match only</div>
+                <div style={{fontSize:11,color:T.muted}}>{tradeConfirmModal.poolPlayer.role} • Points reset to 0 • earns from next match only</div>
               </div>
             </div>
 
-            <div style={{background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:10,padding:14,marginBottom:16,display:"flex",alignItems:"center",gap:10}}>
+            <div style={{background:T.dangerBg,border:`1px solid ${T.danger}33`,borderRadius:10,padding:14,marginBottom:16,display:"flex",alignItems:"center",gap:10}}>
               <span style={{fontSize:20}}>⬇️</span>
               <div>
-                <div style={{fontSize:10,color:"#FF3D5A",letterSpacing:1,marginBottom:2}}>LEAVING YOUR SQUAD</div>
+                <div style={{fontSize:10,color:T.danger,letterSpacing:1,marginBottom:2}}>LEAVING YOUR SQUAD</div>
                 <div style={{display:"flex",alignItems:"center",gap:6}}>
-                  <span style={{fontWeight:700,color:"#FF3D5A",fontSize:15}}>{tradeConfirmModal.releasedPlayer.name}</span>
+                  <span style={{fontWeight:700,color:T.danger,fontSize:15}}>{tradeConfirmModal.releasedPlayer.name}</span>
                   <TierBadge tier={tradeConfirmModal.releasedPlayer.tier} />
                 </div>
-                <div style={{fontSize:11,color:"#4A5E78"}}>{tradeConfirmModal.releasedPlayer.role} • Points frozen at current total • stays visible with ⬇️</div>
+                <div style={{fontSize:11,color:T.muted}}>{tradeConfirmModal.releasedPlayer.role} • Points frozen at current total • stays visible with ⬇️</div>
               </div>
             </div>
 
-            <div style={{background:"#F5A62311",border:"1px solid #F5A62333",borderRadius:8,padding:"10px 14px",marginBottom:16,fontSize:12,color:"#F5A623",textAlign:"center",fontWeight:700}}>
+            <div style={{background:T.accentBg,border:`1px solid ${T.accentBorder}`,borderRadius:8,padding:"10px 14px",marginBottom:16,fontSize:12,color:T.accent,textAlign:"center",fontWeight:700}}>
               ⚠️ This trade is permanent and cannot be undone this window
             </div>
 
             <div style={{display:"flex",gap:8}}>
               <button onClick={() => setTradeConfirmModal(null)}
-                style={{flex:1,background:"transparent",border:"1px solid #1E2D45",borderRadius:8,padding:11,color:"#4A5E78",fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
+                style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:8,padding:11,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
               <button onClick={executeTrade}
-                style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:11,color:"#080C14",fontFamily:"Barlow Condensed,sans-serif",fontWeight:800,fontSize:15,cursor:"pointer",letterSpacing:0.5}}>
+                style={{flex:2,background:`linear-gradient(135deg,${T.accent},${T.accentDim})`,border:"none",borderRadius:8,padding:11,color:T.bg,fontFamily:fonts.body,fontWeight:800,fontSize:15,cursor:"pointer",letterSpacing:0.5}}>
                 ✅ CONFIRM TRADE
               </button>
             </div>
@@ -1273,10 +1274,10 @@ function TransferHistory({ transfers, players, teams }) {
 
   if (history.length === 0) {
     return (
-      <div style={{textAlign:"center",padding:"60px 20px",background:"#0E1521",borderRadius:12,border:"1px solid #1E2D45"}}>
+      <div style={{textAlign:"center",padding:"60px 20px",background:T.card,borderRadius:12,border:`1px solid ${T.border}`}}>
         <div style={{fontSize:48,marginBottom:12}}>📜</div>
-        <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:20,fontWeight:700,color:"#4A5E78",letterSpacing:2}}>NO HISTORY YET</div>
-        <div style={{fontSize:13,color:"#4A5E78",marginTop:6}}>Completed transfer windows will appear here.</div>
+        <div style={{fontFamily:fonts.display,fontSize:20,fontWeight:700,color:T.muted,letterSpacing:2}}>NO HISTORY YET</div>
+        <div style={{fontSize:13,color:T.muted,marginTop:6}}>Completed transfer windows will appear here.</div>
       </div>
     );
   }
@@ -1302,27 +1303,27 @@ function TransferHistory({ transfers, players, teams }) {
         });
 
         return (
-          <div key={wi} style={{background:"#0E1521",borderRadius:12,border:"1px solid #1E2D45",overflow:"hidden"}}>
+          <div key={wi} style={{background:T.card,borderRadius:12,border:`1px solid ${T.border}`,overflow:"hidden"}}>
             {/* Week header */}
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 18px",borderBottom:"1px solid #1E2D45",background:"#080C14"}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 18px",borderBottom:`1px solid ${T.border}`,background:T.bg}}>
               <div style={{display:"flex",alignItems:"center",gap:12}}>
-                <div style={{background:"#F5A62322",border:"1px solid #F5A62344",borderRadius:8,padding:"4px 12px",fontFamily:"Rajdhani,sans-serif",fontWeight:800,fontSize:18,color:"#F5A623"}}>
+                <div style={{background:T.accentBg,border:`1px solid ${T.accentBorder}`,borderRadius:8,padding:"4px 12px",fontFamily:fonts.display,fontWeight:800,fontSize:18,color:T.accent}}>
                   W{weekNum}
                 </div>
                 <div>
-                  <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:15,color:"#E2EAF4",letterSpacing:1}}>
+                  <div style={{fontFamily:fonts.display,fontWeight:700,fontSize:15,color:T.text,letterSpacing:1}}>
                     WEEK {weekNum} TRANSFERS
                   </div>
-                  {date && <div style={{fontSize:11,color:"#4A5E78"}}>{date}</div>}
+                  {date && <div style={{fontSize:11,color:T.muted}}>{date}</div>}
                 </div>
               </div>
-              <div style={{fontSize:12,color:"#4A5E78",fontWeight:700}}>
+              <div style={{fontSize:12,color:T.muted,fontWeight:700}}>
                 {pairs.length} trade{pairs.length!==1?"s":""}
               </div>
             </div>
 
             {!hadActivity && (
-              <div style={{padding:"16px 18px",fontSize:13,color:"#4A5E78"}}>No trades this window.</div>
+              <div style={{padding:"16px 18px",fontSize:13,color:T.muted}}>No trades this window.</div>
             )}
 
             {/* Per-team breakdown */}
@@ -1337,9 +1338,9 @@ function TransferHistory({ transfers, players, teams }) {
               if (teamPairs.length === 0 && returnedPids.length === 0) return null;
 
               return (
-                <div key={tid} style={{padding:"14px 18px",borderBottom:"1px solid #1E2D4533"}}>
+                <div key={tid} style={{padding:"14px 18px",borderBottom:`1px solid ${T.border}33`}}>
                   {/* Team name */}
-                  <div style={{fontFamily:"Rajdhani,sans-serif",fontWeight:700,fontSize:13,color:team.color,letterSpacing:1,marginBottom:10}}>
+                  <div style={{fontFamily:fonts.display,fontWeight:700,fontSize:13,color:team.color,letterSpacing:1,marginBottom:10}}>
                     {team.name}
                   </div>
 
@@ -1350,20 +1351,20 @@ function TransferHistory({ transfers, players, teams }) {
                     return (
                       <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,flexWrap:"wrap"}}>
                         {/* Player out */}
-                        <div style={{display:"flex",alignItems:"center",gap:6,background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:8,padding:"6px 12px",minWidth:0}}>
+                        <div style={{display:"flex",alignItems:"center",gap:6,background:T.dangerBg,border:`1px solid ${T.danger}33`,borderRadius:8,padding:"6px 12px",minWidth:0}}>
                           <span style={{fontSize:14}}>⬇️</span>
                           <div>
-                            <div style={{fontWeight:700,fontSize:13,color:"#FF3D5A",textDecoration:"line-through"}}>{out?.name||pr.releasedPid}</div>
-                            <div style={{fontSize:10,color:"#4A5E78"}}>{out?.role} • {out?.iplTeam}</div>
+                            <div style={{fontWeight:700,fontSize:13,color:T.danger,textDecoration:"line-through"}}>{out?.name||pr.releasedPid}</div>
+                            <div style={{fontSize:10,color:T.muted}}>{out?.role} • {out?.iplTeam}</div>
                           </div>
                         </div>
-                        <span style={{color:"#4A5E78",fontSize:18,fontWeight:300}}>→</span>
+                        <span style={{color:T.muted,fontSize:18,fontWeight:300}}>→</span>
                         {/* Player in */}
-                        <div style={{display:"flex",alignItems:"center",gap:6,background:"#2ECC7111",border:"1px solid #2ECC7133",borderRadius:8,padding:"6px 12px",minWidth:0}}>
+                        <div style={{display:"flex",alignItems:"center",gap:6,background:"#2ECC7111",border:`1px solid ${T.success}33`,borderRadius:8,padding:"6px 12px",minWidth:0}}>
                           <span style={{fontSize:14}}>⬆️</span>
                           <div>
-                            <div style={{fontWeight:700,fontSize:13,color:"#2ECC71"}}>{inn?.name||pr.pickedPid}</div>
-                            <div style={{fontSize:10,color:"#4A5E78"}}>{inn?.role} • {inn?.iplTeam}</div>
+                            <div style={{fontWeight:700,fontSize:13,color:T.success}}>{inn?.name||pr.pickedPid}</div>
+                            <div style={{fontSize:10,color:T.muted}}>{inn?.role} • {inn?.iplTeam}</div>
                           </div>
                         </div>
                       </div>
@@ -1376,10 +1377,10 @@ function TransferHistory({ transfers, players, teams }) {
                       {returnedPids.map(pid => {
                         const p = getPlayer(pid);
                         return (
-                          <div key={pid} style={{display:"flex",alignItems:"center",gap:5,background:"#F5A62311",border:"1px solid #F5A62333",borderRadius:8,padding:"4px 10px"}}>
+                          <div key={pid} style={{display:"flex",alignItems:"center",gap:5,background:T.accentBg,border:`1px solid ${T.accentBorder}`,borderRadius:8,padding:"4px 10px"}}>
                             <span style={{fontSize:11}}>↩️</span>
-                            <span style={{fontSize:12,color:"#F5A623",fontWeight:700}}>{p?.name||pid}</span>
-                            <span style={{fontSize:10,color:"#4A5E78"}}>returned</span>
+                            <span style={{fontSize:12,color:T.accent,fontWeight:700}}>{p?.name||pid}</span>
+                            <span style={{fontSize:10,color:T.muted}}>returned</span>
                           </div>
                         );
                       })}
@@ -1403,7 +1404,7 @@ function adminBtn(color) {
     borderRadius: 8,
     padding: "8px 16px",
     color,
-    fontFamily: "Barlow Condensed,sans-serif",
+    fontFamily: fonts.body,
     fontWeight: 700,
     fontSize: 13,
     cursor: "pointer",

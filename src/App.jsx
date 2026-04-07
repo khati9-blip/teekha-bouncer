@@ -403,7 +403,7 @@ function PasswordModal({ onSuccess, onClose, storedHash }) {
 
   const inp = {width:"100%",background:T.bg,border:`1px solid ${err?"#FF3D5A":"#1E2D45"}`,borderRadius:8,padding:"12px 16px",color:T.text,fontSize:16,fontFamily:fonts.body,outline:"none",marginBottom:err?8:20,boxSizing:"border-box"};
   const cancelBtn = {flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:8,padding:11,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"};
-  const primaryBtn = (col="#F5A623") => ({flex:2,background:`linear-gradient(135deg,${col},${col}bb)`,border:"none",borderRadius:8,padding:11,color:"#080C14",fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"});
+  const primaryBtn = (col="#F5A623") => ({flex:2,background:`linear-gradient(135deg,${col},${col}bb)`,border:"none",borderRadius:8,padding:11,color:T.bg,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"});
 
   const submit = async () => {
     if (!pw.trim()) { setErr("Enter a password"); return; }
@@ -513,7 +513,7 @@ const IPL_TEAMS = ["CSK","MI","RCB","KKR","SRH","RR","PBKS","DC","GT","LSG"];
 const css = `
   @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Barlow+Condensed:wght@400;600;700;800&display=swap');
   *{box-sizing:border-box;margin:0;padding:0;}
-  :root{--bg:#080C14;--surface:#0E1521;--card:#141E2E;--border:#1E2D45;--gold:#F5A623;--text:#E2EAF4;--muted:#4A5E78;--accent:#4F8EF7;}
+  :root{--bg:#0C0C0F;--surface:#111118;--card:#111118;--border:#222230;--gold:#C9A84C;--text:#E8E0CC;--muted:#3A3A52;--accent:#4F8EF7;}
   body{font-family:'Barlow Condensed',sans-serif;background:var(--bg);color:var(--text);}
   select,input{font-family:inherit;}
   ::-webkit-scrollbar{width:6px;}::-webkit-scrollbar-track{background:var(--surface);}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
@@ -529,11 +529,11 @@ const css = `
   }
 `;
 
-function Spinner() { return <div style={{width:24,height:24,border:"3px solid #1E2D45",borderTop:"3px solid #F5A623",borderRadius:"50%",animation:"spin 0.8s linear infinite",display:"inline-block"}} />; }
+function Spinner() { return <div style={{width:24,height:24,border:`3px solid ${T.border}`,borderTop:`3px solid ${T.accent}`,borderRadius:"50%",animation:"spin 0.8s linear infinite",display:"inline-block"}} />; }
 function Badge({ label, color="#4F8EF7" }) { return <span style={{background:color+"22",color,border:"1px solid "+color+"44",padding:"2px 8px",borderRadius:4,fontSize:11,fontWeight:600}}>{label}</span>; }
 function Btn({ children, onClick, variant="primary", disabled, style:sx={} }) {
   const base={fontFamily:fonts.body,fontWeight:700,fontSize:15,letterSpacing:1,textTransform:"uppercase",border:"none",borderRadius:8,padding:"10px 22px",cursor:disabled?"not-allowed":"pointer",opacity:disabled?0.5:1,...sx};
-  const v={primary:{background:"linear-gradient(135deg,#F5A623,#FF8C00)",color:"#080C14"},blue:{background:"linear-gradient(135deg,#4F8EF7,#1a5fb4)",color:"#fff"},ghost:{background:"transparent",color:T.muted,border:`1px solid ${T.border}`},danger:{background:"#FF3D5A22",color:T.danger,border:"1px solid #FF3D5A44"}};
+  const v={primary:{background:`linear-gradient(135deg,${T.accent},${T.accentDim})`,color:T.bg},blue:{background:"linear-gradient(135deg,#4F8EF7,#1a5fb4)",color:"#fff"},ghost:{background:"transparent",color:T.muted,border:`1px solid ${T.border}`},danger:{background:T.dangerBg,color:T.danger,border:`1px solid ${T.danger}44`}};
   return <button onClick={disabled?undefined:onClick} style={{...base,...v[variant],...sx}}>{children}</button>;
 }
 function Card({ children, style:sx={}, accent }) {
@@ -580,7 +580,7 @@ function EditPlayerModal({ player, onSave, onAdd, onClose }) {
         </div>
         <div style={{display:"flex",gap:10}}>
           <button onClick={onClose} style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:8,padding:11,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
-          <button onClick={submit} style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:11,color:"#080C14",fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>{isNew ? "ADD PLAYER" : "SAVE CHANGES"}</button>
+          <button onClick={submit} style={{flex:2,background:`linear-gradient(135deg,${T.accent},${T.accentDim})`,border:"none",borderRadius:8,padding:11,color:T.bg,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>{isNew ? "ADD PLAYER" : "SAVE CHANGES"}</button>
         </div>
       </div>
     </div>
@@ -928,7 +928,7 @@ Only include players who appear in the scorecard. Match names as closely as poss
   // Paste scorecard modal
   const PasteModal = () => !showPasteModal ? null : (
     <div style={{position:"fixed",inset:0,background:"rgba(5,8,16,0.95)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:400,padding:20}}>
-      <div style={{background:T.card,borderRadius:16,border:"1px solid #A855F744",width:"100%",maxWidth:500,display:"flex",flexDirection:"column",maxHeight:"85vh"}}>
+      <div style={{background:T.card,borderRadius:16,border:`1px solid ${T.purple}44`,width:"100%",maxWidth:500,display:"flex",flexDirection:"column",maxHeight:"85vh"}}>
         <div style={{padding:"18px 20px",borderBottom:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <div>
             <div style={{fontFamily:fonts.display,fontWeight:800,fontSize:18,color:T.purple,letterSpacing:2}}>📋 PASTE SCORECARD</div>
@@ -956,7 +956,7 @@ placeholder="Paste scorecard text here... (e.g. V Kohli c Maxwell b Bumrah 82 (5
   );
 
   const tabBtn = (tab, label) => (
-    <button onClick={()=>setActiveTab(tab)} style={{padding:"8px 16px",border:"none",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:13,letterSpacing:1,background:activeTab===tab?"#F5A623":"transparent",color:activeTab===tab?"#080C14":"#4A5E78",borderRadius:6}}>
+    <button onClick={()=>setActiveTab(tab)} style={{padding:"8px 16px",border:"none",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:13,letterSpacing:1,background:activeTab===tab?T.accent:"transparent",color:activeTab===tab?T.bg:T.muted,borderRadius:6}}>
       {label}
     </button>
   );
@@ -978,11 +978,11 @@ placeholder="Paste scorecard text here... (e.g. V Kohli c Maxwell b Bumrah 82 (5
               {fetching?"⏳ FETCHING…":"🟢 SYNC FROM CRICKETDATA"}
             </button>
             <button onClick={fetchFromCricbuzz} disabled={fetching}
-              style={{background:"transparent",border:"1px solid #4F8EF744",borderRadius:8,padding:"9px 14px",color:T.info,fontFamily:fonts.body,fontWeight:700,fontSize:12,cursor:fetching?"not-allowed":"pointer",opacity:fetching?0.6:1,letterSpacing:1}}>
+              style={{background:"transparent",border:`1px solid ${T.info}44`,borderRadius:8,padding:"9px 14px",color:T.info,fontFamily:fonts.body,fontWeight:700,fontSize:12,cursor:fetching?"not-allowed":"pointer",opacity:fetching?0.6:1,letterSpacing:1}}>
               🟠 CRICBUZZ
             </button>
             <button onClick={()=>setShowPasteModal(true)} disabled={fetching}
-              style={{background:"transparent",border:"1px solid #A855F744",borderRadius:8,padding:"9px 14px",color:T.purple,fontFamily:fonts.body,fontWeight:700,fontSize:12,cursor:"pointer",letterSpacing:1}}>
+              style={{background:"transparent",border:`1px solid ${T.purple}44`,borderRadius:8,padding:"9px 14px",color:T.purple,fontFamily:fonts.body,fontWeight:700,fontSize:12,cursor:"pointer",letterSpacing:1}}>
               📋 PASTE SCORECARD
             </button>
             {fetchStatus && <span style={{fontSize:12,color:fetchStatus.startsWith("✅")?"#2ECC71":fetchStatus.startsWith("❌")?"#FF3D5A":"#F5A623",marginTop:4,width:"100%"}}>{fetchStatus}</span>}
@@ -995,7 +995,7 @@ placeholder="Paste scorecard text here... (e.g. V Kohli c Maxwell b Bumrah 82 (5
             STEP 1 — MARK WHO PLAYED &nbsp;<span style={{color:T.success}}>({playingPlayers.length} selected)</span>
           </div>
           <input placeholder="Search…" value={search} onChange={e=>setSearch(e.target.value)}
-            style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"7px 12px",color:T.text,fontSize:13,fontFamily:"Barlow Condensed",marginBottom:8,boxSizing:"border-box"}} />
+            style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"7px 12px",color:T.text,fontSize:13,fontFamily:fonts.body,marginBottom:8,boxSizing:"border-box"}} />
           <div style={{maxHeight:100,overflowY:"auto",display:"flex",flexWrap:"wrap",gap:5}}>
             {filteredPlayers.map(p=>(
               <button key={p.id} onClick={()=>upd(p.id,"played",!stats[p.id]?.played)}
@@ -1041,7 +1041,7 @@ placeholder="Paste scorecard text here... (e.g. V Kohli c Maxwell b Bumrah 82 (5
                         <td style={{padding:"4px"}}><input type="number" min="0" value={stats[p.id]?.fours||0} onChange={e=>upd(p.id,"fours",e.target.value)} style={inp} /></td>
                         <td style={{padding:"4px"}}><input type="number" min="0" value={stats[p.id]?.sixes||0} onChange={e=>upd(p.id,"sixes",e.target.value)} style={inp} /></td>
                         <td style={{padding:"4px",textAlign:"center"}}><input type="checkbox" checked={!!stats[p.id]?.dismissed} onChange={e=>upd(p.id,"dismissed",e.target.checked)} style={{width:18,height:18,accentColor:"#FF3D5A"}} /></td>
-                        <td style={{padding:"4px",textAlign:"center"}}><input type="checkbox" checked={!!stats[p.id]?.longestSix} onChange={e=>upd(p.id,"longestSix",e.target.checked)} style={{width:18,height:18,accentColor:"#F5A623"}} /></td>
+                        <td style={{padding:"4px",textAlign:"center"}}><input type="checkbox" checked={!!stats[p.id]?.longestSix} onChange={e=>upd(p.id,"longestSix",e.target.checked)} style={{width:18,height:18,accentColor:T.accent}} /></td>
                       </tr>
                     ))}
                   </tbody>
@@ -1089,7 +1089,7 @@ placeholder="Paste scorecard text here... (e.g. V Kohli c Maxwell b Bumrah 82 (5
                         <td style={{padding:"4px"}}><input type="number" min="0" value={stats[p.id]?.catches||0} onChange={e=>upd(p.id,"catches",e.target.value)} style={inp} /></td>
                         <td style={{padding:"4px"}}><input type="number" min="0" value={stats[p.id]?.stumpings||0} onChange={e=>upd(p.id,"stumpings",e.target.value)} style={inp} /></td>
                         <td style={{padding:"4px"}}><input type="number" min="0" value={stats[p.id]?.runouts||0} onChange={e=>upd(p.id,"runouts",e.target.value)} style={inp} /></td>
-                        <td style={{padding:"4px",textAlign:"center"}}><input type="checkbox" checked={!!stats[p.id]?.mom} onChange={e=>upd(p.id,"mom",e.target.checked)} style={{width:18,height:18,accentColor:"#F5A623"}} /></td>
+                        <td style={{padding:"4px",textAlign:"center"}}><input type="checkbox" checked={!!stats[p.id]?.mom} onChange={e=>upd(p.id,"mom",e.target.checked)} style={{width:18,height:18,accentColor:T.accent}} /></td>
                         <td style={{padding:"4px",textAlign:"center"}}><input type="checkbox" checked={!!stats[p.id]?.playingXI} onChange={e=>upd(p.id,"playingXI",e.target.checked)} style={{width:18,height:18,accentColor:"#2ECC71"}} /></td>
                       </tr>
                     ))}
@@ -1123,7 +1123,7 @@ placeholder="Paste scorecard text here... (e.g. V Kohli c Maxwell b Bumrah 82 (5
         {/* Footer */}
         <div style={{padding:"14px 24px",borderTop:`1px solid ${T.border}`,display:"flex",gap:10,flexShrink:0}}>
           <button onClick={onClose} style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:8,padding:11,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
-          <button onClick={submit} style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:11,color:"#080C14",fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>✅ SAVE POINTS ({playingPlayers.length} players)</button>
+          <button onClick={submit} style={{flex:2,background:`linear-gradient(135deg,${T.accent},${T.accentDim})`,border:"none",borderRadius:8,padding:11,color:T.bg,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>✅ SAVE POINTS ({playingPlayers.length} players)</button>
         </div>
       </div>
     </div></>
@@ -1236,7 +1236,7 @@ function SplashScreen({ onLogin }) {
 
   if (mode === 'splash') return (
     <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#080C14 0%,#0E1521 50%,#080C14 100%)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"20px",fontFamily:fonts.body}}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Barlow+Condensed:wght@400;600;700;800&display=swap');*{box-sizing:border-box;margin:0;padding:0;}body{background:#080C14;}`}</style>
+      <style>{`*{box-sizing:border-box;margin:0;padding:0;}body{background:#0C0C0F;}`}</style>
 
       {/* Logo area */}
       <div style={{textAlign:"center",marginBottom:48}}>
@@ -1256,11 +1256,11 @@ function SplashScreen({ onLogin }) {
       {/* Buttons */}
       <div style={{width:"100%",maxWidth:320,display:"flex",flexDirection:"column",gap:12}}>
         <button onClick={() => setMode('signup')}
-          style={{background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:12,padding:"16px",color:"#080C14",fontFamily:fonts.body,fontWeight:800,fontSize:18,cursor:"pointer",letterSpacing:2}}>
+          style={{background:`linear-gradient(135deg,${T.accent},${T.accentDim})`,border:"none",borderRadius:12,padding:"16px",color:T.bg,fontFamily:fonts.body,fontWeight:800,fontSize:18,cursor:"pointer",letterSpacing:2}}>
           GET STARTED
         </button>
         <button onClick={() => setMode('login')}
-          style={{background:"transparent",border:"2px solid #1E2D45",borderRadius:12,padding:"14px",color:T.text,fontFamily:fonts.body,fontWeight:700,fontSize:16,cursor:"pointer",letterSpacing:1}}>
+          style={{background:"transparent",border:`2px solid ${T.border}`,borderRadius:12,padding:"14px",color:T.text,fontFamily:fonts.body,fontWeight:700,fontSize:16,cursor:"pointer",letterSpacing:1}}>
           I HAVE AN ACCOUNT
         </button>
       </div>
@@ -1294,7 +1294,7 @@ function SplashScreen({ onLogin }) {
           )}
           {err && <div style={{color:T.danger,fontSize:13,marginBottom:12,textAlign:"center"}}>{err}</div>}
           <button onClick={mode==='login' ? handleLogin : handleSignup} disabled={loading}
-            style={{width:"100%",background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:14,color:"#080C14",fontFamily:fonts.body,fontWeight:800,fontSize:16,cursor:loading?"not-allowed":"pointer",opacity:loading?0.7:1,letterSpacing:1}}>
+            style={{width:"100%",background:`linear-gradient(135deg,${T.accent},${T.accentDim})`,border:"none",borderRadius:8,padding:14,color:T.bg,fontFamily:fonts.body,fontWeight:800,fontSize:16,cursor:loading?"not-allowed":"pointer",opacity:loading?0.7:1,letterSpacing:1}}>
             {loading ? "PLEASE WAIT..." : mode==='login' ? "SIGN IN" : "CREATE ACCOUNT"}
           </button>
           {mode==='login' && (
@@ -1335,7 +1335,7 @@ class ErrorBoundary extends React.Component {
       <div style={{minHeight:"100vh",background:T.bg,padding:24,fontFamily:"monospace"}}>
         <div style={{color:T.danger,fontSize:18,marginBottom:16}}>💥 CRASH REPORT</div>
         <div style={{background:T.card,padding:16,borderRadius:8,color:T.text,fontSize:13,wordBreak:"break-all",whiteSpace:"pre-wrap"}}>{this.state.error}</div>
-        <button onClick={()=>{ localStorage.clear(); window.location.reload(); }} style={{marginTop:20,background:"#F5A623",border:"none",borderRadius:8,padding:"10px 20px",color:"#080C14",fontWeight:700,cursor:"pointer"}}>CLEAR & RELOAD</button>
+        <button onClick={()=>{ localStorage.clear(); window.location.reload(); }} style={{marginTop:20,background:"#F5A623",border:"none",borderRadius:8,padding:"10px 20px",color:T.bg,fontWeight:700,cursor:"pointer"}}>CLEAR & RELOAD</button>
       </div>
     );
     return this.props.children;
@@ -1746,7 +1746,7 @@ function TeamClaimScreen({ pitch, user, onClaimed, onBack, onGuest, onAdmin, gue
               placeholder="e.g. TBL-X7K2" autoFocus style={inp} />
             {err && <div style={{color:T.danger,fontSize:12,marginBottom:10}}>{err}</div>}
             <button onClick={submitTeamId} disabled={loading}
-              style={{width:"100%",background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:12,color:"#080C14",fontFamily:fonts.body,fontWeight:800,fontSize:15,cursor:"pointer"}}>
+              style={{width:"100%",background:`linear-gradient(135deg,${T.accent},${T.accentDim})`,border:"none",borderRadius:8,padding:12,color:T.bg,fontFamily:fonts.body,fontWeight:800,fontSize:15,cursor:"pointer"}}>
               {loading ? "CHECKING…" : "VERIFY TEAM ID →"}
             </button>
           </div>
@@ -1754,7 +1754,7 @@ function TeamClaimScreen({ pitch, user, onClaimed, onBack, onGuest, onAdmin, gue
 
         {mode === "teamid" && step === 2 && claimedTeamInfo && (
           <div>
-            <div style={{background:"#F5A62311",border:"1px solid #F5A62333",borderRadius:10,padding:"12px 16px",marginBottom:16,textAlign:"center"}}>
+            <div style={{background:T.accentBg,border:`1px solid ${T.accentBorder}`,borderRadius:10,padding:"12px 16px",marginBottom:16,textAlign:"center"}}>
               <div style={{fontSize:11,color:T.muted,letterSpacing:1,marginBottom:4}}>YOU ARE CLAIMING</div>
               <div style={{fontFamily:fonts.display,fontSize:22,fontWeight:700,color:claimedTeamInfo.color||"#F5A623"}}>{claimedTeamInfo.name}</div>
             </div>
@@ -1765,7 +1765,7 @@ function TeamClaimScreen({ pitch, user, onClaimed, onBack, onGuest, onAdmin, gue
               onKeyDown={e=>e.key==="Enter"&&submitPin()} placeholder="Confirm PIN" style={inp} />
             {err && <div style={{color:T.danger,fontSize:12,marginBottom:10}}>{err}</div>}
             <button onClick={submitPin} disabled={loading}
-              style={{width:"100%",background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:12,color:"#080C14",fontFamily:fonts.body,fontWeight:800,fontSize:15,cursor:"pointer"}}>
+              style={{width:"100%",background:`linear-gradient(135deg,${T.accent},${T.accentDim})`,border:"none",borderRadius:8,padding:12,color:T.bg,fontFamily:fonts.body,fontWeight:800,fontSize:15,cursor:"pointer"}}>
               {loading ? "SAVING…" : "CLAIM TEAM & ENTER →"}
             </button>
           </div>
@@ -1854,14 +1854,14 @@ function ChatWindow({ myTeam, teams, unlocked, withPassword, storeGet, storeSet,
       React.createElement('span',{style:{fontSize:22}},"💬"),
       unread>0 && React.createElement('span',{style:{position:"absolute",top:-2,right:-2,background:"#FF3D5A",borderRadius:"50%",width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"#fff"}},unread>9?"9+":unread)
     ),
-    open && React.createElement('div',{style:{width:maximized?"min(520px,90vw)":"min(320px,85vw)",height:maximized?"min(600px,80vh)":"min(420px,60vh)",background:T.card,borderRadius:16,border:"1px solid #4F8EF744",display:"flex",flexDirection:"column",boxShadow:"0 8px 32px rgba(0,0,0,0.6)",overflow:"hidden"}},
+    open && React.createElement('div',{style:{width:maximized?"min(520px,90vw)":"min(320px,85vw)",height:maximized?"min(600px,80vh)":"min(420px,60vh)",background:T.card,borderRadius:16,border:`1px solid ${T.info}44`,display:"flex",flexDirection:"column",boxShadow:"0 8px 32px rgba(0,0,0,0.6)",overflow:"hidden"}},
       React.createElement('div',{style:{background:"#4F8EF711",borderBottom:"1px solid #4F8EF733",padding:"10px 14px",display:"flex",alignItems:"center",gap:8}},
         React.createElement('span',{style:{fontSize:16}},"💬"),
         React.createElement('div',{style:{flex:1,fontFamily:fonts.display,fontWeight:700,fontSize:15,color:T.info,letterSpacing:1}},"PITCH CHAT"),
         React.createElement('button',{onClick:()=>setMaximized(v=>!v),style:{background:"transparent",border:"none",color:T.muted,cursor:"pointer",fontSize:14,padding:"2px 6px"}},maximized?"⊡":"⊞"),
         React.createElement('button',{onClick:()=>setOpen(false),style:{background:"transparent",border:"none",color:T.muted,cursor:"pointer",fontSize:16,padding:"2px 6px"}},"✕")
       ),
-      pinned && React.createElement('div',{style:{background:"#F5A62311",borderBottom:"1px solid #F5A62322",padding:"6px 14px",display:"flex",alignItems:"center",gap:6}},
+      pinned && React.createElement('div',{style:{background:T.accentBg,borderBottom:"1px solid #F5A62322",padding:"6px 14px",display:"flex",alignItems:"center",gap:6}},
         React.createElement('span',{style:{fontSize:11}},"📌"),
         React.createElement('div',{style:{flex:1,fontSize:11,color:T.accent,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}},pinned.senderName+": "+pinned.text),
         unlocked && React.createElement('button',{onClick:()=>pin(pinned),style:{background:"transparent",border:"none",color:T.muted,cursor:"pointer",fontSize:10}},"✕")
@@ -1951,7 +1951,7 @@ function CaptainModal({ match, teams, players, assignments, captains, myTeam, un
         </div>
         <div style={{fontSize:12,color:T.muted,marginBottom:isLocked?8:16}}>M{match.matchNum} — {match.team1} vs {match.team2}</div>
 
-        {isLocked && <div style={{background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:8,padding:"8px 12px",marginBottom:14,fontSize:12,color:T.danger}}>🔒 Captain/VC selections are locked.</div>}
+        {isLocked && <div style={{background:T.dangerBg,border:`1px solid ${T.danger}33`,borderRadius:8,padding:"8px 12px",marginBottom:14,fontSize:12,color:T.danger}}>🔒 Captain/VC selections are locked.</div>}
 
         {teams.map(team => {
           const cap = local[team.id] || {};
@@ -1998,18 +1998,18 @@ function CaptainModal({ match, teams, players, assignments, captains, myTeam, un
         <div style={{display:"flex",gap:8,marginTop:4}}>
           {!isLocked && unlocked && (
             <button onClick={()=>withPassword(()=>onSave({...captains,[match.id+"_locked"]:true}))}
-              style={{flex:1,background:"#FF3D5A22",border:"1px solid #FF3D5A44",borderRadius:10,padding:12,color:T.danger,fontFamily:fonts.body,fontWeight:800,fontSize:14,cursor:"pointer"}}>
+              style={{flex:1,background:T.dangerBg,border:`1px solid ${T.danger}44`,borderRadius:10,padding:12,color:T.danger,fontFamily:fonts.body,fontWeight:800,fontSize:14,cursor:"pointer"}}>
               🔒 LOCK
             </button>
           )}
           {isLocked && unlocked && (
             <button onClick={()=>withPassword(()=>{const u={...captains};delete u[match.id+"_locked"];onSave(u);})}
-              style={{flex:1,background:"#2ECC7122",border:"1px solid #2ECC7133",borderRadius:10,padding:12,color:T.success,fontFamily:fonts.body,fontWeight:800,fontSize:14,cursor:"pointer"}}>
+              style={{flex:1,background:T.successBg,border:`1px solid ${T.success}33`,borderRadius:10,padding:12,color:T.success,fontFamily:fonts.body,fontWeight:800,fontSize:14,cursor:"pointer"}}>
               🔓 UNLOCK
             </button>
           )}
           <button onClick={isLocked ? onClose : saveAndClose}
-            style={{flex:2,background:"#F5A623",border:"none",borderRadius:10,padding:12,color:"#080C14",fontFamily:fonts.body,fontWeight:800,fontSize:15,cursor:"pointer"}}>
+            style={{flex:2,background:"#F5A623",border:"none",borderRadius:10,padding:12,color:T.bg,fontFamily:fonts.body,fontWeight:800,fontSize:15,cursor:"pointer"}}>
             {isLocked?"CLOSE":"✅ SAVE & CLOSE"}
           </button>
         </div>
@@ -3451,7 +3451,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
               <span className="mob-only">{unlocked?"🔓":"🔒"}</span>
             </button>
             <button onClick={()=>withPassword(()=>{if(!confirm("Reset ALL data? This cannot be undone!"))return;["teams","players","assignments","matches","captains","points","page","pwhash"].forEach(k=>storeDel(k));window.location.reload();})} style={{background:"transparent",border:`1px solid ${T.border}`,color:T.muted,fontSize:13,borderRadius:6,padding:"6px 10px",cursor:"pointer"}}>⚙️</button>
-            <button onClick={onLogout} style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:T.danger,fontSize:13,borderRadius:6,padding:"6px 10px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700}}>
+            <button onClick={onLogout} style={{background:T.dangerBg,border:`1px solid ${T.danger}44`,color:T.danger,fontSize:13,borderRadius:6,padding:"6px 10px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700}}>
               <span className="desk-only">LOGOUT</span>
               <span className="mob-only" style={{fontSize:11}}>OUT</span>
             </button>
@@ -3486,7 +3486,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                 <div style={{fontWeight:700,color:T.muted,letterSpacing:2,fontSize:12,marginBottom:16}}>NUMBER OF TEAMS</div>
                 <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:12}}>
                   <span style={{fontSize:48,fontFamily:"Rajdhani",fontWeight:800,color:T.accent,minWidth:60}}>{numTeams}</span>
-                  <input type="range" min={2} max={10} value={numTeams} onChange={e=>{setNumTeams(+e.target.value);storeSet("numteams",+e.target.value);}} style={{flex:1,accentColor:"#F5A623",height:6}} />
+                  <input type="range" min={2} max={10} value={numTeams} onChange={e=>{setNumTeams(+e.target.value);storeSet("numteams",+e.target.value);}} style={{flex:1,accentColor:T.accent,height:6}} />
                 </div>
                 <div style={{display:"flex",justifyContent:"space-between",color:T.muted,fontSize:12}}><span>2 teams</span><span>10 teams</span></div>
               </Card>
@@ -3544,7 +3544,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                     <div style={{fontSize:13,color:T.muted}}>
                       Players in the unsold pool can be picked up during the transfer window.
                     </div>
-                    <span style={{background:"#F5A62322",color:T.accent,border:"1px solid #F5A62344",borderRadius:6,padding:"4px 10px",fontSize:12,fontWeight:700}}>{unsoldPool.length} players</span>
+                    <span style={{background:T.accentBg,color:T.accent,border:`1px solid ${T.accentBorder}`,borderRadius:6,padding:"4px 10px",fontSize:12,fontWeight:700}}>{unsoldPool.length} players</span>
                   </div>
 
                   {/* Add unassigned players to pool */}
@@ -3593,11 +3593,11 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                                 )}
                               </div>
                               <div style={{fontSize:11,color:T.muted}}>{p.iplTeam} • {p.role}{!releasedByTeam&&<span style={{marginLeft:6,fontSize:9,color:T.muted,background:"#1E2D4555",border:"1px solid #1E2D4599",borderRadius:3,padding:"0px 4px",fontWeight:700}}>UNSOLD</span>}</div>
-                              {myNotes[pid]&&editingNote!==pid&&<div style={{fontSize:11,color:T.accent,marginTop:4,fontStyle:"italic",background:"#F5A62311",borderRadius:4,padding:"3px 8px",display:"inline-block"}}>"{myNotes[pid]}"</div>}
+                              {myNotes[pid]&&editingNote!==pid&&<div style={{fontSize:11,color:T.accent,marginTop:4,fontStyle:"italic",background:T.accentBg,borderRadius:4,padding:"3px 8px",display:"inline-block"}}>"{myNotes[pid]}"</div>}
                               {editingNote===pid&&(
                                 <div style={{display:"flex",gap:6,marginTop:6}}>
-                                  <input autoFocus value={noteInput} onChange={e=>setNoteInput(e.target.value)} onKeyDown={async e=>{if(e.key==="Enter"){const u={...myNotes,[pid]:noteInput.trim()};if(!noteInput.trim())delete u[pid];await saveNotes(u);setEditingNote(null);}if(e.key==="Escape")setEditingNote(null);}} placeholder="Private note..." maxLength={100} style={{flex:1,background:T.bg,border:"1px solid #F5A62344",borderRadius:6,padding:"4px 8px",color:T.text,fontSize:12,fontFamily:fonts.body,outline:"none"}} />
-                                  <button onClick={async()=>{const u={...myNotes,[pid]:noteInput.trim()};if(!noteInput.trim())delete u[pid];await saveNotes(u);setEditingNote(null);}} style={{background:"#F5A623",border:"none",borderRadius:6,padding:"4px 10px",color:"#080C14",fontWeight:800,fontSize:12,cursor:"pointer"}}>SAVE</button>
+                                  <input autoFocus value={noteInput} onChange={e=>setNoteInput(e.target.value)} onKeyDown={async e=>{if(e.key==="Enter"){const u={...myNotes,[pid]:noteInput.trim()};if(!noteInput.trim())delete u[pid];await saveNotes(u);setEditingNote(null);}if(e.key==="Escape")setEditingNote(null);}} placeholder="Private note..." maxLength={100} style={{flex:1,background:T.bg,border:`1px solid ${T.accentBorder}`,borderRadius:6,padding:"4px 8px",color:T.text,fontSize:12,fontFamily:fonts.body,outline:"none"}} />
+                                  <button onClick={async()=>{const u={...myNotes,[pid]:noteInput.trim()};if(!noteInput.trim())delete u[pid];await saveNotes(u);setEditingNote(null);}} style={{background:"#F5A623",border:"none",borderRadius:6,padding:"4px 10px",color:T.bg,fontWeight:800,fontSize:12,cursor:"pointer"}}>SAVE</button>
                                   <button onClick={()=>setEditingNote(null)} style={{background:"transparent",border:`1px solid ${T.border}`,borderRadius:6,padding:"4px 8px",color:T.muted,fontSize:12,cursor:"pointer"}}>✕</button>
                                 </div>
                               )}
@@ -3607,7 +3607,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                                 {myHighlights[pid]?"⭐":"☆"}
                               </button>
                               <button onClick={()=>{setNoteInput(myNotes[pid]||"");setEditingNote(pid);}} style={{background:myNotes[pid]?"#4F8EF722":"transparent",border:"1px solid "+(myNotes[pid]?"#4F8EF744":"#1E2D45"),borderRadius:6,padding:"5px 8px",cursor:"pointer",fontSize:13}}>📝</button>
-                              {unlocked&&<button onClick={()=>removeFromUnsoldPool(pid)} style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:T.danger,borderRadius:6,padding:"5px 8px",cursor:"pointer",fontSize:11,fontFamily:fonts.body,fontWeight:700}}>✕</button>}
+                              {unlocked&&<button onClick={()=>removeFromUnsoldPool(pid)} style={{background:T.dangerBg,border:`1px solid ${T.danger}44`,color:T.danger,borderRadius:6,padding:"5px 8px",cursor:"pointer",fontSize:11,fontFamily:fonts.body,fontWeight:700}}>✕</button>}
                             </div>
                           </div>
                         );
@@ -3690,8 +3690,8 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                                         <span style={{fontSize:14,fontWeight:600,color:T.text}}>{p.name}</span>
                                         <span style={{fontSize:12,color:T.muted,marginLeft:8}}>{p.iplTeam}</span>
                                       </div>
-                                      <button onClick={()=>withPassword(()=>setEditPlayer(p))} style={{background:"#4F8EF722",border:"1px solid #4F8EF744",color:T.info,borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:12}}>✏️</button>
-                                      <button onClick={()=>removePlayer(p.id)} style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:T.danger,borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:12}}>✕</button>
+                                      <button onClick={()=>withPassword(()=>setEditPlayer(p))} style={{background:T.infoBg,border:`1px solid ${T.info}44`,color:T.info,borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:12}}>✏️</button>
+                                      <button onClick={()=>removePlayer(p.id)} style={{background:T.dangerBg,border:`1px solid ${T.danger}44`,color:T.danger,borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:12}}>✕</button>
                                     </div>
                                   ))}
                                 </div>
@@ -3711,11 +3711,11 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
               ):(
                 <>
                   <div style={{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap"}}>
-                    <input placeholder="Search name or franchise…" value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:180,background:T.card,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 14px",color:T.text,fontSize:14,fontFamily:"Barlow Condensed"}} />
-                    <select value={roleFilter} onChange={e=>setRoleFilter(e.target.value)} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 14px",color:T.text,fontSize:14,fontFamily:"Barlow Condensed"}}>
+                    <input placeholder="Search name or franchise…" value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:180,background:T.card,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 14px",color:T.text,fontSize:14,fontFamily:fonts.body}} />
+                    <select value={roleFilter} onChange={e=>setRoleFilter(e.target.value)} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 14px",color:T.text,fontSize:14,fontFamily:fonts.body}}>
                       {ROLES.map(r=><option key={r}>{r}</option>)}
                     </select>
-                    <select value={sortOrder} onChange={e=>setSortOrder(e.target.value)} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 14px",color:T.text,fontSize:14,fontFamily:"Barlow Condensed"}}>
+                    <select value={sortOrder} onChange={e=>setSortOrder(e.target.value)} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 14px",color:T.text,fontSize:14,fontFamily:fonts.body}}>
                       <option value="default">Default</option>
                       <option value="az">A → Z</option>
                       <option value="za">Z → A</option>
@@ -3726,7 +3726,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                       <img src={teamLogos[teamFilter]} style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:280,opacity:0.06,pointerEvents:"none",zIndex:0,objectFit:"contain"}} />
                     )}
                     {unlocked && selectedBulk.length > 0 && (
-                      <div style={{background:T.card,border:"1px solid #F5A62344",borderRadius:10,padding:"10px 14px",marginBottom:10,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                      <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:10,padding:"10px 14px",marginBottom:10,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
                         <div style={{fontSize:12,color:T.accent,fontWeight:700,minWidth:60}}>{selectedBulk.length} selected</div>
                         {[["platinum","PLATINUM","#B0BEC5","#4A5E7833","#4A5E7866"],["gold","GOLD","#F5A623","#F5A62322","#F5A62366"],["silver","SILVER","#94A3B8","#94A3B822","#94A3B855"],["bronze","BRONZE","#CD7F32","#CD7F3222","#CD7F3255"]].map(([t,label,col,bg,br])=>(
                           <button key={t} onClick={()=>{const updated=players.map(p=>selectedBulk.includes(p.id)?{...p,tier:t}:p);setPlayers(updated);storeSet("players",updated);setSelectedBulk([]);}} style={{background:bg,border:"1px solid "+br,borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:11,fontWeight:800,fontFamily:fonts.body,color:col,letterSpacing:1}}>{label}</button>
@@ -3743,23 +3743,23 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
                             <div style={{minWidth:0,flex:1}}>
                               <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-                                {unlocked&&<input type="checkbox" checked={selectedBulk.includes(p.id)} onChange={e=>setSelectedBulk(prev=>e.target.checked?[...prev,p.id]:prev.filter(x=>x!==p.id))} style={{width:14,height:14,cursor:"pointer",accentColor:"#F5A623",flexShrink:0}} />}
+                                {unlocked&&<input type="checkbox" checked={selectedBulk.includes(p.id)} onChange={e=>setSelectedBulk(prev=>e.target.checked?[...prev,p.id]:prev.filter(x=>x!==p.id))} style={{width:14,height:14,cursor:"pointer",accentColor:T.accent,flexShrink:0}} />}
                                 <span style={{fontWeight:700,fontSize:14,color:T.text}}>{p.name}</span>
                                 {p.tier&&<span style={{fontSize:9,fontWeight:800,letterSpacing:1,padding:"1px 5px",borderRadius:4,fontFamily:fonts.body,textTransform:"uppercase",background:p.tier==="platinum"?"#4A5E7833":p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":"#CD7F3222",border:"1px solid "+(p.tier==="platinum"?"#4A5E7866":p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":"#CD7F3255"),color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32"}}>{p.tier==="platinum"?"PLAT":p.tier==="gold"?"GOLD":p.tier==="silver"?"SILV":"BRNZ"}</span>}
-                                {isAssigned&&isPlayerSafeForTeam(assignments[p.id],p.id)&&<span style={{background:"#2ECC7122",color:T.success,border:"1px solid #2ECC7144",borderRadius:10,fontSize:9,padding:"1px 5px",fontWeight:700}}>🛡️</span>}
+                                {isAssigned&&isPlayerSafeForTeam(assignments[p.id],p.id)&&<span style={{background:T.successBg,color:T.success,border:`1px solid ${T.success}44`,borderRadius:10,fontSize:9,padding:"1px 5px",fontWeight:700}}>🛡️</span>}
                               </div>
                               <div style={{fontSize:11,color:T.muted,marginTop:2}}>{p.iplTeam} • <span style={{color:ROLE_COLORS[p.role]||"#94A3B8"}}>{p.role}</span>{isAssigned&&<span style={{marginLeft:6,color:aTeam?.color,fontWeight:700}}>{aTeam?.name}</span>}</div>
                             </div>
                           </div>
                           <div style={{display:"flex",alignItems:"center",gap:6}}>
-                            <select value={assignments[p.id]||""} onChange={e=>assignPlayer(p.id,e.target.value)} style={{flex:1,background:T.card,border:"1px solid "+(aTeam?aTeam.color+"66":"#1E2D45"),borderRadius:6,padding:"6px 8px",color:aTeam?aTeam.color:T.muted,fontSize:12,fontFamily:"Barlow Condensed",fontWeight:600,cursor:"pointer",minWidth:0}}>
+                            <select value={assignments[p.id]||""} onChange={e=>assignPlayer(p.id,e.target.value)} style={{flex:1,background:T.card,border:"1px solid "+(aTeam?aTeam.color+"66":"#1E2D45"),borderRadius:6,padding:"6px 8px",color:aTeam?aTeam.color:T.muted,fontSize:12,fontFamily:fonts.body,fontWeight:600,cursor:"pointer",minWidth:0}}>
                               <option value="">{isAssigned?"Move to…":"— Assign —"}</option>
                               {teams.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
                             </select>
-                            {isAssigned&&<button onClick={()=>removePlayer(p.id)} style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:T.danger,borderRadius:6,padding:"6px 8px",cursor:"pointer",fontSize:13,flexShrink:0}}>✕</button>}
-                            <button onClick={()=>withPassword(()=>setEditPlayer(p))} style={{background:"#4F8EF722",border:"1px solid #4F8EF744",color:T.info,borderRadius:6,padding:"6px 8px",cursor:"pointer",fontSize:13,flexShrink:0}}>✏️</button>
+                            {isAssigned&&<button onClick={()=>removePlayer(p.id)} style={{background:T.dangerBg,border:`1px solid ${T.danger}44`,color:T.danger,borderRadius:6,padding:"6px 8px",cursor:"pointer",fontSize:13,flexShrink:0}}>✕</button>}
+                            <button onClick={()=>withPassword(()=>setEditPlayer(p))} style={{background:T.infoBg,border:`1px solid ${T.info}44`,color:T.info,borderRadius:6,padding:"6px 8px",cursor:"pointer",fontSize:13,flexShrink:0}}>✏️</button>
                             {isAssigned&&<button onClick={()=>toggleSafePlayer(assignments[p.id],p.id)} style={{background:isPlayerSafeForTeam(assignments[p.id],p.id)?"#2ECC7133":"transparent",border:"1px solid "+(isPlayerSafeForTeam(assignments[p.id],p.id)?"#2ECC71":"#1E2D45"),color:isPlayerSafeForTeam(assignments[p.id],p.id)?"#2ECC71":"#4A5E78",borderRadius:6,padding:"6px 8px",cursor:"pointer",fontSize:13,flexShrink:0}}>🛡️</button>}
-                            <button onClick={()=>deletePlayer(p.id)} style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:T.danger,borderRadius:6,padding:"6px 8px",cursor:"pointer",fontSize:11,flexShrink:0}}>🗑️</button>
+                            <button onClick={()=>deletePlayer(p.id)} style={{background:T.dangerBg,border:`1px solid ${T.danger}44`,color:T.danger,borderRadius:6,padding:"6px 8px",cursor:"pointer",fontSize:11,flexShrink:0}}>🗑️</button>
                           </div>
                         </div>
                       );
@@ -3817,17 +3817,17 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                       <div style={{display:"flex",gap:4}}>
                         <div style={{position:"relative",display:"inline-block"}} className="tooltip-wrap">
                           <button onClick={e=>{e.stopPropagation();withPassword(()=>fetchMatchesForTournament(tournament.id,tournament.name,tournament.seriesId));}}
-                            style={{background:"#F5A62322",border:"1px solid #F5A62344",color:T.accent,borderRadius:6,padding:"4px 8px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:10}}
+                            style={{background:T.accentBg,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:6,padding:"4px 8px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:10}}
                             title="Cricbuzz — 100 req/month free. Resets monthly.">🟠 CB</button>
                         </div>
                         <div style={{position:"relative",display:"inline-block"}}>
                           <button onClick={e=>{e.stopPropagation();withPassword(()=>fetchFromCricketData(tournament.id,tournament.name));}}
-                            style={{background:"#2ECC7122",border:"1px solid #2ECC7144",color:T.success,borderRadius:6,padding:"4px 8px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:10}}
+                            style={{background:T.successBg,border:`1px solid ${T.success}44`,color:T.success,borderRadius:6,padding:"4px 8px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:10}}
                             title="CricketData — 100 req/day free. Resets daily.">🟢 CD</button>
                         </div>
                         <div style={{position:"relative",display:"inline-block"}}>
                           <button onClick={e=>{e.stopPropagation();withPassword(()=>setFetchPlayerModal({tournamentId:tournament.id,tournamentName:tournament.name}));}}
-                            style={{background:"#4F8EF722",border:"1px solid #4F8EF744",color:T.info,borderRadius:6,padding:"4px 8px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:10}}
+                            style={{background:T.infoBg,border:`1px solid ${T.info}44`,color:T.info,borderRadius:6,padding:"4px 8px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:10}}
                             title="Fetch players for this tournament">👥 PLAYERS</button>
                         </div>
                       </div>
@@ -3931,28 +3931,28 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                                         ) : (
                                           <div style={{textAlign:"right"}}>
                                             <span style={{fontSize:10,color:T.muted,fontWeight:700}}>UPCOMING</span>
-                                            {unlocked && <div><button onClick={e=>{e.stopPropagation();const upd=matches.map(m=>m.id===match.id?{...m,status:"live"}:m);updMatches(upd);}} style={{fontSize:9,color:T.danger,background:"transparent",border:"1px solid #FF3D5A44",borderRadius:4,padding:"2px 5px",cursor:"pointer",marginTop:2}}>🔴 Mark Live</button></div>}
+                                            {unlocked && <div><button onClick={e=>{e.stopPropagation();const upd=matches.map(m=>m.id===match.id?{...m,status:"live"}:m);updMatches(upd);}} style={{fontSize:9,color:T.danger,background:"transparent",border:`1px solid ${T.danger}44`,borderRadius:4,padding:"2px 5px",cursor:"pointer",marginTop:2}}>🔴 Mark Live</button></div>}
                                           </div>
                                         )}
                                     {/* Expandable actions for all matches */}
                                     {expandedMatchId===match.id && (
                                       <div style={{borderTop:`1px solid ${T.border}`,padding:"10px 14px",display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
                                         {!isGuest && <button onClick={()=>setCaptainMatch(match)}
-                                          style={{background:"#4F8EF722",border:"1px solid #4F8EF744",color:T.info,borderRadius:7,padding:"6px 12px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:12}}>
+                                          style={{background:T.infoBg,border:`1px solid ${T.info}44`,color:T.info,borderRadius:7,padding:"6px 12px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:12}}>
                                           {captains[match.id+"_locked"]?"🔒 C/VC":"👑 SET C/VC"}
                                         </button>}
                                         {completed && unlocked && (
                                           <button onClick={()=>withPassword(()=>setSmartStatsMatch(match))}
-                                            style={{background:"#F5A62322",border:"1px solid #F5A62344",color:T.accent,borderRadius:7,padding:"6px 12px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:12}}>
+                                            style={{background:T.accentBg,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,padding:"6px 12px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:12}}>
                                             📊 {isSynced?"EDIT STATS":"SYNC STATS"}
                                           </button>
                                         )}
                                         {unlocked && (
                                           <div style={{display:"flex",gap:6,marginLeft:"auto"}}>
                                             {match.status!=="live" && <button onClick={()=>{const upd=matches.map(m=>m.id===match.id?{...m,status:"live"}:m);updMatches(upd);}}
-                                              style={{background:"#FF3D5A22",border:"1px solid #FF3D5A44",color:T.danger,borderRadius:7,padding:"6px 10px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:11}}>🔴 LIVE</button>}
+                                              style={{background:T.dangerBg,border:`1px solid ${T.danger}44`,color:T.danger,borderRadius:7,padding:"6px 10px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:11}}>🔴 LIVE</button>}
                                             {match.status!=="completed" && <button onClick={()=>{const upd=matches.map(m=>m.id===match.id?{...m,status:"completed"}:m);updMatches(upd);}}
-                                              style={{background:"#2ECC7122",border:"1px solid #2ECC7144",color:T.success,borderRadius:7,padding:"6px 10px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:11}}>✓ DONE</button>}
+                                              style={{background:T.successBg,border:`1px solid ${T.success}44`,color:T.success,borderRadius:7,padding:"6px 10px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:11}}>✓ DONE</button>}
                                             {match.status!=="upcoming" && <button onClick={()=>{const upd=matches.map(m=>m.id===match.id?{...m,status:"upcoming"}:m);updMatches(upd);}}
                                               style={{background:"#4A5E7822",border:"1px solid #4A5E7844",color:T.muted,borderRadius:7,padding:"6px 10px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:11}}>↩ RESET</button>}
                                           </div>
@@ -3966,11 +3966,11 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                                     {expandedMatchId===match.id && completed && (
                                       <div style={{borderTop:`1px solid ${T.border}`,padding:"10px 14px",display:"flex",gap:8,flexWrap:"wrap"}}>
                                         <button onClick={()=>withPassword(()=>setSmartStatsMatch(match))}
-                                          style={{background:"#F5A62322",border:"1px solid #F5A62344",color:T.accent,borderRadius:7,padding:"6px 12px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:12}}>
+                                          style={{background:T.accentBg,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,padding:"6px 12px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:12}}>
                                           📊 {isSynced?"EDIT STATS":"SYNC STATS"}
                                         </button>
                                         {!isGuest && <button onClick={()=>setCaptainMatch(match)}
-                                          style={{background:"#4F8EF722",border:"1px solid #4F8EF744",color:T.info,borderRadius:7,padding:"6px 12px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:12}}>
+                                          style={{background:T.infoBg,border:`1px solid ${T.info}44`,color:T.info,borderRadius:7,padding:"6px 12px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:12}}>
                                           {captains[match.id+"_locked"]?"🔒 C/VC":"👑 SET C/VC"}
                                         </button>}
                                       </div>
@@ -4120,7 +4120,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                                       <div style={{flex:1,minWidth:0}}>
                                         <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
                                           <span style={{fontWeight:700,fontSize:14,color:p.tradedOut?"#4A5E78":"#E2EAF4",textDecoration:p.tradedOut?"line-through":"none"}}>{p.name}</span>
-                                          {p.tradedOut && <span style={{fontSize:9,color:T.danger,background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:4,padding:"1px 5px",fontWeight:700,letterSpacing:0.5}}>TRADED OUT</span>}
+                                          {p.tradedOut && <span style={{fontSize:9,color:T.danger,background:T.dangerBg,border:`1px solid ${T.danger}33`,borderRadius:4,padding:"1px 5px",fontWeight:700,letterSpacing:0.5}}>TRADED OUT</span>}
                                           {p.mult>1 && <span style={{background:p.mult===2?"#F5A62322":"#94A3B822",color:p.mult===2?"#F5A623":"#94A3B8",border:"1px solid "+(p.mult===2?"#F5A62344":"#94A3B844"),fontSize:10,padding:"1px 7px",borderRadius:10,fontWeight:700}}>
                                             {p.mult===2?"⭐ CAPTAIN 2×":"🥈 VC 1.5×"}
                                           </span>}
@@ -4314,7 +4314,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                   </div>
                 ))}
                 {(!ruleProposal || ruleProposal.status !== "pending") && (
-                  <button onClick={()=>withPassword(()=>setShowRulesPanel("points"))} style={{width:"100%",background:"#F5A62322",border:"1px solid #F5A62344",borderRadius:10,padding:10,color:T.accent,fontFamily:fonts.body,fontWeight:700,fontSize:13,cursor:"pointer"}}>
+                  <button onClick={()=>withPassword(()=>setShowRulesPanel("points"))} style={{width:"100%",background:T.accentBg,border:`1px solid ${T.accentBorder}`,borderRadius:10,padding:10,color:T.accent,fontFamily:fonts.body,fontWeight:700,fontSize:13,cursor:"pointer"}}>
                     ✏️ {(!tournamentStarted||!eligibleVoters.length)?"EDIT POINTS — Admin":"PROPOSE POINTS CHANGE — Needs Team Vote"}
                   </button>
                 )}
@@ -4338,7 +4338,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
 
               {/* Pending proposal */}
               {ruleProposal && ruleProposal.status === "pending" && (
-                <div style={{background:"#F5A62311",borderRadius:12,border:"1px solid #F5A62344",padding:20,marginBottom:16}}>
+                <div style={{background:T.accentBg,borderRadius:12,border:`1px solid ${T.accentBorder}`,padding:20,marginBottom:16}}>
                   <div style={{fontSize:11,color:T.accent,letterSpacing:2,fontWeight:700,marginBottom:4}}>⏳ PENDING PROPOSAL</div>
                   <div style={{fontSize:11,color:T.muted,marginBottom:12}}>Proposed by {teams.find(t=>t.id===ruleProposal.proposedBy)?.name || "Admin"} • {new Date(ruleProposal.proposedAt).toLocaleDateString()}</div>
                   {Object.entries(ruleProposal.changes).map(([key, val]) => (
@@ -4364,8 +4364,8 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                         style={{width:"100%",background:T.bg,border:"1px solid "+(votePinErr?"#FF3D5A":"#1E2D45"),borderRadius:8,padding:"10px 14px",color:T.text,fontSize:18,letterSpacing:4,textAlign:"center",fontFamily:fonts.display,outline:"none",marginBottom:votePinErr?6:12,boxSizing:"border-box"}} />
                       {votePinErr && <div style={{color:T.danger,fontSize:12,marginBottom:10,textAlign:"center"}}>{votePinErr}</div>}
                       <div style={{display:"flex",gap:8}}>
-                        <button onClick={()=>voteOnProposal(false)} style={{flex:1,background:"#FF3D5A22",border:"1px solid #FF3D5A44",borderRadius:8,padding:10,color:T.danger,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>✕ REJECT</button>
-                        <button onClick={()=>voteOnProposal(true)} style={{flex:1,background:"#2ECC7122",border:"1px solid #2ECC7144",borderRadius:8,padding:10,color:T.success,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>✓ APPROVE</button>
+                        <button onClick={()=>voteOnProposal(false)} style={{flex:1,background:T.dangerBg,border:`1px solid ${T.danger}44`,borderRadius:8,padding:10,color:T.danger,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>✕ REJECT</button>
+                        <button onClick={()=>voteOnProposal(true)} style={{flex:1,background:T.successBg,border:`1px solid ${T.success}44`,borderRadius:8,padding:10,color:T.success,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>✓ APPROVE</button>
                       </div>
                     </div>
                   )}
@@ -4417,13 +4417,13 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                   <div style={{fontSize:11,color:T.muted,letterSpacing:2,marginBottom:10}}>SELECT SOURCE</div>
                   <div style={{display:"flex",gap:10}}>
                     <button onClick={()=>{setAddTournamentSource('cb');fetchTournamentSeriesSuggestions('cb');}}
-                      style={{flex:1,background:"#F5A62322",border:"2px solid #F5A62344",borderRadius:10,padding:"14px 10px",cursor:"pointer",textAlign:"center"}}>
+                      style={{flex:1,background:T.accentBg,border:"2px solid #F5A62344",borderRadius:10,padding:"14px 10px",cursor:"pointer",textAlign:"center"}}>
                       <div style={{fontSize:20,marginBottom:4}}>🟠</div>
                       <div style={{fontWeight:700,fontSize:14,color:T.accent}}>Cricbuzz</div>
                       <div style={{fontSize:10,color:T.muted,marginTop:2}}>100 req/month</div>
                     </button>
                     <button onClick={()=>{setAddTournamentSource('cd');fetchTournamentSeriesSuggestions('cd');}}
-                      style={{flex:1,background:"#2ECC7122",border:"2px solid #2ECC7144",borderRadius:10,padding:"14px 10px",cursor:"pointer",textAlign:"center"}}>
+                      style={{flex:1,background:T.successBg,border:"2px solid #2ECC7144",borderRadius:10,padding:"14px 10px",cursor:"pointer",textAlign:"center"}}>
                       <div style={{fontSize:20,marginBottom:4}}>🟢</div>
                       <div style={{fontWeight:700,fontSize:14,color:T.success}}>CricketData</div>
                       <div style={{fontSize:10,color:T.muted,marginTop:2}}>100 req/day</div>
@@ -4463,7 +4463,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                     </div>
                   )}
                   {addTournamentSelected&&(
-                    <div style={{background:"#F5A62311",border:"1px solid #F5A62333",borderRadius:8,padding:"8px 12px",marginBottom:4,fontSize:12,color:T.accent}}>
+                    <div style={{background:T.accentBg,border:`1px solid ${T.accentBorder}`,borderRadius:8,padding:"8px 12px",marginBottom:4,fontSize:12,color:T.accent}}>
                       Selected: <strong>{addTournamentSelected.name}</strong>
                     </div>
                   )}
@@ -4475,7 +4475,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                   style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:8,padding:11,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
                 {addTournamentSelected&&(
                   <button onClick={confirmAddTournament}
-                    style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:11,color:"#080C14",fontFamily:fonts.body,fontWeight:800,fontSize:15,cursor:"pointer"}}>ADD TOURNAMENT</button>
+                    style={{flex:2,background:`linear-gradient(135deg,${T.accent},${T.accentDim})`,border:"none",borderRadius:8,padding:11,color:T.bg,fontFamily:fonts.body,fontWeight:800,fontSize:15,cursor:"pointer"}}>ADD TOURNAMENT</button>
                 )}
               </div>
             </div>
@@ -4522,12 +4522,12 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
         {/* GENERIC CONFIRM MODAL */}
         {confirmAction && (
           <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.95)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:500,padding:16,fontFamily:fonts.body}}>
-            <div style={{background:T.card,borderRadius:16,border:"1px solid #FF3D5A44",padding:24,width:"100%",maxWidth:380}}>
+            <div style={{background:T.card,borderRadius:16,border:`1px solid ${T.danger}44`,padding:24,width:"100%",maxWidth:380}}>
               <div style={{fontSize:22,marginBottom:12,textAlign:"center"}}>⚠️</div>
               <div style={{fontSize:14,color:T.text,marginBottom:20,textAlign:"center",lineHeight:1.5}}>{confirmAction.msg}</div>
               <div style={{display:"flex",gap:8}}>
                 <button onClick={()=>setConfirmAction(null)} style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:8,padding:11,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
-                <button onClick={()=>{confirmAction.fn();setConfirmAction(null);}} style={{flex:1,background:"#FF3D5A22",border:"1px solid #FF3D5A",borderRadius:8,padding:11,color:T.danger,fontFamily:fonts.body,fontWeight:800,fontSize:14,cursor:"pointer"}}>CONFIRM</button>
+                <button onClick={()=>{confirmAction.fn();setConfirmAction(null);}} style={{flex:1,background:T.dangerBg,border:"1px solid #FF3D5A",borderRadius:8,padding:11,color:T.danger,fontFamily:fonts.body,fontWeight:800,fontSize:14,cursor:"pointer"}}>CONFIRM</button>
               </div>
             </div>
           </div>
@@ -4563,7 +4563,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
           <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:400,padding:20,fontFamily:fonts.body}}>
             <div style={{background:T.card,borderRadius:16,border:`1px solid ${T.border}`,padding:24,width:"100%",maxWidth:360}}>
               <div style={{fontFamily:fonts.display,fontSize:20,fontWeight:700,color:T.success,marginBottom:4}}>CLAIM YOUR TEAM</div>
-              <div style={{background:"#2ECC7111",border:"1px solid #2ECC7133",borderRadius:8,padding:"10px 14px",marginBottom:16,textAlign:"center"}}>
+              <div style={{background:T.successBg,border:`1px solid ${T.success}33`,borderRadius:8,padding:"10px 14px",marginBottom:16,textAlign:"center"}}>
                 <div style={{fontSize:11,color:T.muted,marginBottom:2}}>Claiming as admin</div>
                 <div style={{fontFamily:fonts.display,fontSize:20,fontWeight:700,color:adminClaimTeam.color}}>{adminClaimTeam.name}</div>
               </div>
@@ -4608,7 +4608,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
         {/* SNATCH PIN MODAL */}
         {snatchPinModal && (
           <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.96)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,padding:24}}>
-            <div style={{background:T.card,borderRadius:16,border:"1px solid #A855F744",padding:32,width:"100%",maxWidth:340}}>
+            <div style={{background:T.card,borderRadius:16,border:`1px solid ${T.purple}44`,padding:32,width:"100%",maxWidth:340}}>
               <div style={{fontSize:32,textAlign:"center",marginBottom:8}}>⚡</div>
               <div style={{fontFamily:fonts.display,fontSize:22,fontWeight:700,color:T.purple,textAlign:"center",letterSpacing:2,marginBottom:4}}>CONFIRM SNATCH</div>
               <div style={{fontSize:13,color:T.danger,textAlign:"center",marginBottom:4,fontWeight:700}}>This action cannot be undone!</div>
@@ -4703,7 +4703,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                             <input value={broadcastInput} onChange={e=>setBroadcastInput(e.target.value)} placeholder="Broadcast message..."
                               onKeyDown={e=>e.key==="Enter"&&broadcastNotif()}
                               style={{flex:1,background:T.card,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 10px",color:T.text,fontSize:12,fontFamily:fonts.body,outline:"none"}} />
-                            <button onClick={broadcastNotif} style={{background:"#F5A62322",border:"1px solid #F5A62344",color:T.accent,borderRadius:6,padding:"5px 8px",cursor:"pointer",fontSize:12,fontFamily:fonts.body,fontWeight:700}}>📢</button>
+                            <button onClick={broadcastNotif} style={{background:T.accentBg,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:6,padding:"5px 8px",cursor:"pointer",fontSize:12,fontFamily:fonts.body,fontWeight:700}}>📢</button>
                           </div>
                           <button onClick={()=>withPassword(clearNotifications)} style={{width:"100%",background:"transparent",border:`1px solid ${T.border}`,borderRadius:6,padding:"5px",color:T.muted,fontSize:11,cursor:"pointer",fontFamily:fonts.body}}>Clear all notifications</button>
                         </div>
@@ -4734,13 +4734,13 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                               const updated = {...teamIdentity, [t.id]: {...ti, claimedBy:null, pinHash:null}};
                               setTeamIdentity(updated);
                               await storeSet("teamIdentity", updated);
-                            }} style={{background:"#FF3D5A11",border:"1px solid #FF3D5A33",color:T.danger,borderRadius:4,padding:"2px 5px",cursor:"pointer",fontSize:9,fontWeight:700}}>RESET</button>
+                            }} style={{background:T.dangerBg,border:`1px solid ${T.danger}33`,color:T.danger,borderRadius:4,padding:"2px 5px",cursor:"pointer",fontSize:9,fontWeight:700}}>RESET</button>
                           </div>
                         ) : ti.teamId ? (
                           <div style={{display:"flex",alignItems:"center",gap:4}}>
-                            <div style={{fontFamily:fonts.display,fontSize:14,fontWeight:800,color:T.accent,letterSpacing:2,background:"#F5A62322",padding:"3px 8px",borderRadius:6}}>{ti.teamId}</div>
+                            <div style={{fontFamily:fonts.display,fontSize:14,fontWeight:800,color:T.accent,letterSpacing:2,background:T.accentBg,padding:"3px 8px",borderRadius:6}}>{ti.teamId}</div>
                             <button onClick={()=>{setAdminClaimTeam(t);setAdminClaimModal(true);setAdminPin('');setAdminPinConfirm('');setAdminPinErr('');}}
-                              style={{background:"#2ECC7122",border:"1px solid #2ECC7144",color:T.success,borderRadius:4,padding:"2px 5px",cursor:"pointer",fontSize:9,fontWeight:700}}>CLAIM</button>
+                              style={{background:T.successBg,border:`1px solid ${T.success}44`,color:T.success,borderRadius:4,padding:"2px 5px",cursor:"pointer",fontSize:9,fontWeight:700}}>CLAIM</button>
                             <button onClick={()=>withPassword(async()=>{
                               if(!confirm("Reset this Team ID?")) return;
                               const newId = generateTeamId();
@@ -4756,9 +4756,9 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                               const updated = {...teamIdentity, [t.id]: {...ti, teamId: newId}};
                               setTeamIdentity(updated);
                               await storeSet("teamIdentity", updated);
-                            })} style={{background:"#F5A62322",border:"1px solid #F5A62344",color:T.accent,borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:11,fontFamily:fonts.body,fontWeight:700}}>GENERATE</button>
+                            })} style={{background:T.accentBg,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:11,fontFamily:fonts.body,fontWeight:700}}>GENERATE</button>
                             <button onClick={()=>{setAdminClaimTeam(t);setAdminClaimModal(true);setAdminPin('');setAdminPinConfirm('');setAdminPinErr('');}}
-                              style={{background:"#2ECC7122",border:"1px solid #2ECC7144",color:T.success,borderRadius:4,padding:"2px 5px",cursor:"pointer",fontSize:9,fontWeight:700}}>CLAIM</button>
+                              style={{background:T.successBg,border:`1px solid ${T.success}44`,color:T.success,borderRadius:4,padding:"2px 5px",cursor:"pointer",fontSize:9,fontWeight:700}}>CLAIM</button>
                           </div>
                         )}
                       </div>
@@ -4769,10 +4769,10 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
 
               {/* Pending vote notification */}
               {pendingVote && (
-                <div style={{margin:"0 8px 8px",background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:10,padding:"12px 14px"}}>
+                <div style={{margin:"0 8px 8px",background:T.dangerBg,border:`1px solid ${T.danger}33`,borderRadius:10,padding:"12px 14px"}}>
                   <div style={{fontSize:11,color:T.danger,fontWeight:700,letterSpacing:1,marginBottom:4}}>⚡ VOTE NEEDED</div>
                   <div style={{fontSize:11,color:T.text,marginBottom:8}}>A rule change has been proposed and needs your vote.</div>
-                  <button onClick={()=>{setShowRulesPanel(true);setDrawerOpen(false);}} style={{width:"100%",background:"#FF3D5A22",border:"1px solid #FF3D5A",borderRadius:6,padding:"7px",color:T.danger,fontFamily:fonts.body,fontWeight:700,fontSize:12,cursor:"pointer"}}>VIEW & VOTE →</button>
+                  <button onClick={()=>{setShowRulesPanel(true);setDrawerOpen(false);}} style={{width:"100%",background:T.dangerBg,border:"1px solid #FF3D5A",borderRadius:6,padding:"7px",color:T.danger,fontFamily:fonts.body,fontWeight:700,fontSize:12,cursor:"pointer"}}>VIEW & VOTE →</button>
                 </div>
               )}
 
@@ -4809,7 +4809,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                 </div>
               )}
               <div style={{padding:"16px",borderTop:`1px solid ${T.border}`}}>
-                <button onClick={onLogout} style={{width:"100%",background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:8,padding:"10px",color:T.danger,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>LOGOUT</button>
+                <button onClick={onLogout} style={{width:"100%",background:T.dangerBg,border:`1px solid ${T.danger}33`,borderRadius:8,padding:"10px",color:T.danger,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>LOGOUT</button>
               </div>
             </div>
           </div>
@@ -4890,7 +4890,7 @@ function AdminSetupScreen({ pitch, onDone, onBack, sbGet, sbSet, hashPw }) {
               if(h!==stored){setErr("Wrong password");setLoading(false);return;}
               onDone({...pitch,hash:h});setLoading(false);
             }} disabled={loading}
-              style={{width:"100%",background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:13,color:"#080C14",fontFamily:fonts.body,fontWeight:800,fontSize:16,cursor:"pointer",letterSpacing:1}}>
+              style={{width:"100%",background:`linear-gradient(135deg,${T.accent},${T.accentDim})`,border:"none",borderRadius:8,padding:13,color:T.bg,fontFamily:fonts.body,fontWeight:800,fontSize:16,cursor:"pointer",letterSpacing:1}}>
               {loading?"VERIFYING…":"ENTER AS ADMIN →"}
             </button>
           </div>
@@ -4900,7 +4900,7 @@ function AdminSetupScreen({ pitch, onDone, onBack, sbGet, sbSet, hashPw }) {
             <input type="password" value={pwConfirm} onChange={e=>{setPwConfirm(e.target.value);setErr("");}} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder="Confirm password…" style={inp} />
             {err && <div style={{color:T.danger,fontSize:12,marginBottom:10}}>{err}</div>}
             <button onClick={submit} disabled={loading}
-              style={{width:"100%",background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:13,color:"#080C14",fontFamily:fonts.body,fontWeight:800,fontSize:16,cursor:"pointer"}}>
+              style={{width:"100%",background:`linear-gradient(135deg,${T.accent},${T.accentDim})`,border:"none",borderRadius:8,padding:13,color:T.bg,fontFamily:fonts.body,fontWeight:800,fontSize:16,cursor:"pointer"}}>
               {loading?"SETTING UP…":"SET PASSWORD & ENTER →"}
             </button>
           </div>
@@ -5099,7 +5099,7 @@ function Root() {
     return <div style={{minHeight:"100vh",background:T.bg,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16,padding:24,fontFamily:fonts.body}}>
       <div style={{fontSize:48}}>⚠️</div>
       <div style={{fontFamily:fonts.display,fontSize:22,color:T.danger,fontWeight:700}}>CRASH: {e.message}</div>
-      <button onClick={()=>{localStorage.clear();window.location.reload();}} style={{background:"#F5A623",border:"none",borderRadius:8,padding:"10px 20px",color:"#080C14",fontWeight:700,fontFamily:fonts.body,fontSize:14,cursor:"pointer",marginTop:8}}>CLEAR AND RELOAD</button>
+      <button onClick={()=>{localStorage.clear();window.location.reload();}} style={{background:"#F5A623",border:"none",borderRadius:8,padding:"10px 20px",color:T.bg,fontWeight:700,fontFamily:fonts.body,fontSize:14,cursor:"pointer",marginTop:8}}>CLEAR AND RELOAD</button>
     </div>;
   }
 }
@@ -5117,7 +5117,7 @@ function EditPointsForm({ config, onSave, onCancel }) {
     </div>
   );
   return (
-    <div style={{background:T.card,borderRadius:12,border:"1px solid #F5A62344",padding:20,marginBottom:16}}>
+    <div style={{background:T.card,borderRadius:12,border:`1px solid ${T.accentBorder}`,padding:20,marginBottom:16}}>
       <div style={{fontFamily:fonts.display,fontSize:18,fontWeight:700,color:T.accent,letterSpacing:2,marginBottom:16}}>EDIT POINTS SYSTEM</div>
       <div style={{fontSize:11,color:T.muted,letterSpacing:1,marginBottom:8}}>BATTING</div>
       <div style={{fontSize:11,color:T.accent,letterSpacing:1,marginBottom:8}}>🏏 BATTING</div>
@@ -5138,7 +5138,7 @@ function EditPointsForm({ config, onSave, onCancel }) {
       {field("Captain mult","captainMult",0.5)}{field("VC mult","vcMult",0.5)}
       <div style={{display:"flex",gap:8,marginTop:16}}>
         <button onClick={onCancel} style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:8,padding:10,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
-        <button onClick={()=>onSave(cfg)} style={{flex:2,background:"linear-gradient(135deg,#F5A623,#FF8C00)",border:"none",borderRadius:8,padding:10,color:"#080C14",fontFamily:fonts.body,fontWeight:800,fontSize:14,cursor:"pointer"}}>SAVE POINTS</button>
+        <button onClick={()=>onSave(cfg)} style={{flex:2,background:`linear-gradient(135deg,${T.accent},${T.accentDim})`,border:"none",borderRadius:8,padding:10,color:T.bg,fontFamily:fonts.body,fontWeight:800,fontSize:14,cursor:"pointer"}}>SAVE POINTS</button>
       </div>
     </div>
   );
@@ -5159,7 +5159,7 @@ function ProposeRulesForm({ teams, eligibleVoters, onPropose, withPassword, tour
   const times = ["12:00 AM","1:00 AM","2:00 AM","3:00 AM","6:00 AM","9:00 AM","10:00 AM","11:00 AM","12:00 PM","1:00 PM","3:00 PM","6:00 PM","9:00 PM","10:00 PM","11:00 PM","11:58 PM"];
 
   if (!open) return (
-    <button onClick={()=>withPassword(()=>setOpen(true))} style={{width:"100%",background:"#F5A62322",border:"1px solid #F5A62344",borderRadius:12,padding:14,color:T.accent,fontFamily:fonts.body,fontWeight:700,fontSize:15,cursor:"pointer"}}>
+    <button onClick={()=>withPassword(()=>setOpen(true))} style={{width:"100%",background:T.accentBg,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:14,color:T.accent,fontFamily:fonts.body,fontWeight:700,fontSize:15,cursor:"pointer"}}>
       ✏️ PROPOSE TIMING CHANGE (Admin)
     </button>
   );
@@ -5174,7 +5174,7 @@ function ProposeRulesForm({ teams, eligibleVoters, onPropose, withPassword, tour
   );
 
   return (
-    <div style={{background:T.card,borderRadius:12,border:"1px solid #F5A62344",padding:20}}>
+    <div style={{background:T.card,borderRadius:12,border:`1px solid ${T.accentBorder}`,padding:20}}>
       <div style={{fontFamily:fonts.display,fontSize:18,fontWeight:700,color:T.accent,letterSpacing:2,marginBottom:4}}>PROPOSE RULE CHANGE</div>
       <div style={{fontSize:11,color:T.muted,marginBottom:16}}>All {eligibleVoters.length} claimed teams must approve for changes to take effect.</div>
       {sel("Transfer Window Start Day", transferDay, setTransferDay, days)}
@@ -5184,7 +5184,7 @@ function ProposeRulesForm({ teams, eligibleVoters, onPropose, withPassword, tour
       {sel("Snatch Return Time", snatchReturn, setSnatchReturn, days.map(d=>{const s="11:58 PM";return d+" "+s;}).concat(days.map(d=>{const s="11:00 PM";return d+" "+s;})))}
       <div style={{display:"flex",gap:8,marginTop:4}}>
         <button onClick={()=>setOpen(false)} style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:8,padding:10,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
-        <button onClick={()=>{onPropose({"Transfer Start":transferDay,"Transfer End":transferTime,"Snatch Window":snatchStart+" to "+snatchEnd,"Snatch Return":snatchReturn});setOpen(false);}} style={{flex:2,background:"#F5A623",border:"none",borderRadius:8,padding:10,color:"#080C14",fontFamily:fonts.body,fontWeight:800,fontSize:14,cursor:"pointer"}}>SUBMIT FOR VOTE</button>
+        <button onClick={()=>{onPropose({"Transfer Start":transferDay,"Transfer End":transferTime,"Snatch Window":snatchStart+" to "+snatchEnd,"Snatch Return":snatchReturn});setOpen(false);}} style={{flex:2,background:"#F5A623",border:"none",borderRadius:8,padding:10,color:T.bg,fontFamily:fonts.body,fontWeight:800,fontSize:14,cursor:"pointer"}}>SUBMIT FOR VOTE</button>
       </div>
     </div>
   );
