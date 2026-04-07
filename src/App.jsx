@@ -3374,7 +3374,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
     !ruleProposal.votes[myTeam.id];
 
   const navItems=[
-    {id:"draft",label:"Draft",icon:"📋",disabled:teams.length===0},
+    {id:"draft",label:"Draft",icon:"📋"},
     {id:"matches",label:"Matches",icon:"🏏"},
     {id:"transfer",label:"Transfer",icon:"🔄",disabled:teams.length===0},
     {id:"results",label:"Results",icon:"📊"},
