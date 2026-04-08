@@ -1,5 +1,20 @@
 import React, { useState, useEffect, useRef } from "react";
-import { T, fonts } from "./Theme";
+import { fonts } from "./Theme";
+
+const DARK = {
+  bg:"#0C0C0F", card:"#111118", border:"#222230", text:"#E8E0CC",
+  sub:"#8A8299", muted:"#9AA5B8", accent:"#C9A84C", accentBg:"#C9A84C12",
+  accentBorder:"#C9A84C33", accentDim:"#8B6914", danger:"#FF3D5A",
+  dangerBg:"#FF3D5A12", success:"#2ECC71", successBg:"#2ECC7112",
+  info:"#4F8EF7", purple:"#A855F7", purpleBg:"#A855F712",
+};
+const LIGHT = {
+  bg:"#F5F0E8", card:"#FFFDF8", border:"#DDD5C0", text:"#1A1410",
+  sub:"#5C4F3A", muted:"#7A6E5E", accent:"#9B6E00", accentBg:"#9B6E0012",
+  accentBorder:"#9B6E0033", accentDim:"#7A5500", danger:"#CC2233",
+  dangerBg:"#CC223312", success:"#1A9950", successBg:"#1A995012",
+  info:"#1A5FB4", purple:"#7C3AED", purpleBg:"#7C3AED12",
+};
 
 const SB_URL = "https://rmcxhorijitrhqyrvvkn.supabase.co/rest/v1/league_data";
 const SB_KEY = "sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm";
@@ -22,7 +37,7 @@ const TAGLINES = [
   "Pick smart. Score big. Rule the league.",
 ];
 
-function RotatingTagline() {
+function RotatingTagline({ T }) {
   const [idx, setIdx] = useState(0);
   const [fade, setFade] = useState(true);
   useEffect(() => {
@@ -39,7 +54,7 @@ function RotatingTagline() {
   );
 }
 
-function WelcomeBack({ user, leaderboard, myTeamId }) {
+function WelcomeBack({ user, leaderboard, myTeamId, T }) {
   if (!user?.email) return null;
   const username = user.email.split("@")[0];
   const myTeam = leaderboard.find(t => t.id === myTeamId);
@@ -66,7 +81,7 @@ function WelcomeBack({ user, leaderboard, myTeamId }) {
   );
 }
 
-function CountdownHero({ matches }) {
+function CountdownHero({ matches, T }) {
   const [now, setNow] = useState(Date.now());
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t); }, []);
   const live = matches.find(m => m.status === "live");
@@ -139,7 +154,7 @@ function CountdownHero({ matches }) {
   );
 }
 
-function MVPCard({ players, teams, assignments, points, matches }) {
+function MVPCard({ players, teams, assignments, points, matches, T }) {
   const weekAgo = new Date(Date.now() - 7 * 86400000).toISOString().split("T")[0];
   const recentMatchIds = new Set(matches.filter(m => m.status === "completed" && (m.date || "") >= weekAgo).map(m => m.id));
   let topPid = null, topPts = 0, topMatch = null;
@@ -176,7 +191,7 @@ function MVPCard({ players, teams, assignments, points, matches }) {
   );
 }
 
-function LeaderboardSnapshot({ leaderboard, totalMatches }) {
+function LeaderboardSnapshot({ leaderboard, totalMatches, T }) {
   const medals = ["🥇", "🥈", "🥉"];
   const max = leaderboard[0]?.total || 1;
   return (
@@ -207,7 +222,7 @@ function LeaderboardSnapshot({ leaderboard, totalMatches }) {
   );
 }
 
-function ActivityStrip({ activities }) {
+function ActivityStrip({ activities, T }) {
   const scrollRef = useRef(null);
   useEffect(() => {
     const el = scrollRef.current;
@@ -235,7 +250,7 @@ function ActivityStrip({ activities }) {
   );
 }
 
-function NotifBell({ notifications }) {
+function NotifBell({ notifications, T }) {
   const [open, setOpen] = useState(false);
   const unread = notifications.filter(n => !n.read).length;
   return (
@@ -271,6 +286,10 @@ function NotifBell({ notifications }) {
 }
 
 export default function HomeHub({ pitchId, user, savedTeamId }) {
+  const [darkMode, setDarkMode] = useState(() => {
+    try { return localStorage.getItem("tb_theme") !== "light"; } catch { return true; }
+  });
+  const T = darkMode ? DARK : LIGHT;
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(null);
@@ -348,7 +367,7 @@ export default function HomeHub({ pitchId, user, savedTeamId }) {
   const lastUpdatedStr = lastUpdated ? lastUpdated.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : null;
 
   return (
-    <div style={{ padding: "14px 0 8px" }}>
+    <div style={{ padding: "14px 0 8px", background: T.bg, borderRadius: 12, transition: "background 0.3s" }}>
       <style>{`@keyframes hbPulse{0%,100%{box-shadow:0 0 0 0 ${T.danger}44}50%{box-shadow:0 0 0 6px transparent}}`}</style>
 
       {/* Top bar */}
@@ -358,17 +377,21 @@ export default function HomeHub({ pitchId, user, savedTeamId }) {
           <button onClick={load} style={{ background: "none", border: "none", color: T.muted, fontSize: 12, cursor: "pointer", marginLeft: 4 }}>↻</button>
         </div>
         <div style={{ display: "flex", gap: 7, alignItems: "center" }}>
-          <NotifBell notifications={notifs} />
+          <NotifBell notifications={notifs} T={T} />
+          <button onClick={() => { const next = !darkMode; setDarkMode(next); try { localStorage.setItem("tb_theme", next ? "dark" : "light"); } catch {} }}
+            style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 9, padding: "6px 11px", cursor: "pointer", display: "flex", alignItems: "center", gap: 5, fontFamily: fonts.display, fontWeight: 700, fontSize: 10, color: T.sub, letterSpacing: 0.5 }}>
+            {darkMode ? "☀️ LIGHT" : "🌙 DARK"}
+          </button>
 
         </div>
       </div>
 
-      <RotatingTagline />
-      <WelcomeBack user={user} leaderboard={leaderboard} myTeamId={savedTeamId} />
-      {pills.length > 0 && <ActivityStrip activities={pills} />}
-      <CountdownHero matches={matches} />
-      <MVPCard players={players} teams={teams} assignments={assignments} points={points} matches={matches} />
-      <LeaderboardSnapshot leaderboard={leaderboard} totalMatches={completed.length} />
+      <RotatingTagline T={T} />
+      <WelcomeBack user={user} leaderboard={leaderboard} myTeamId={savedTeamId} T={T} />
+      {pills.length > 0 && <ActivityStrip activities={pills} T={T} />}
+      <CountdownHero matches={matches} T={T} />
+      <MVPCard players={players} teams={teams} assignments={assignments} points={points} matches={matches} T={T} />
+      <LeaderboardSnapshot leaderboard={leaderboard} totalMatches={completed.length} T={T} />
 
       {leaderboard.length > 0 && (
         <button onClick={shareLeaderboard} style={{ width: "100%", background: "#25D36614", border: "1px solid #25D36633", borderRadius: 11, padding: "10px", color: "#25D366", fontFamily: fonts.display, fontWeight: 700, fontSize: 12, cursor: "pointer", letterSpacing: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
