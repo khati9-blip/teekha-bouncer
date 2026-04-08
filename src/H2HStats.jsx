@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { T, fonts } from "./Theme";
 
 function H2HStats({ teams, matches, points, assignments, players, captains }) {
   const [teamA, setTeamA] = useState("");
@@ -25,10 +26,7 @@ function H2HStats({ teams, matches, points, assignments, players, captains }) {
     return { total, playerRows };
   };
 
-  const played = matches.filter(m =>
-    players.some(p => points[p.id]?.[m.id])
-  );
-
+  const played = matches.filter(m => players.some(p => points[p.id]?.[m.id]));
   const tA = teams.find(t => t.id === teamA);
   const tB = teams.find(t => t.id === teamB);
 
@@ -49,19 +47,17 @@ function H2HStats({ teams, matches, points, assignments, players, captains }) {
   const PlayerList = ({ playerRows, color }) => (
     <div style={{ flex: 1 }}>
       {playerRows.map(p => (
-        <div key={p.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px 0", borderBottom: "1px solid #1E2D4422" }}>
+        <div key={p.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px 0", borderBottom: `1px solid ${T.border}22` }}>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ fontSize: 12, color: "#E2EAF4", fontWeight: p.role ? 700 : 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            <div style={{ fontFamily: fonts.body, fontSize: 12, color: T.text, fontWeight: p.role ? 700 : 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {p.name}
-              {p.role && <span style={{ fontSize: 9, color: "#F5A623", background: "#F5A62333", borderRadius: 4, padding: "1px 4px", marginLeft: 4 }}>{p.role}</span>}
+              {p.role && <span style={{ fontFamily: fonts.display, fontSize: 9, color: T.accent, background: T.accentBg, borderRadius: 4, padding: "1px 4px", marginLeft: 4 }}>{p.role}</span>}
             </div>
-            <div style={{ fontSize: 10, color: "#4A5E78" }}>{p.role}</div>
+            <div style={{ fontFamily: fonts.body, fontSize: 10, color: T.muted }}>{p.role}</div>
           </div>
           <div style={{ textAlign: "right", flexShrink: 0, marginLeft: 8 }}>
-            <div style={{ fontFamily: "Rajdhani,sans-serif", fontSize: 15, fontWeight: 800, color }}>
-              {p.pts}
-            </div>
-            {p.mult > 1 && <div style={{ fontSize: 9, color: "#4A5E78" }}>{p.base}×{p.mult}</div>}
+            <div style={{ fontFamily: fonts.display, fontSize: 15, fontWeight: 800, color }}>{p.pts}</div>
+            {p.mult > 1 && <div style={{ fontFamily: fonts.body, fontSize: 9, color: T.muted }}>{p.base}×{p.mult}</div>}
           </div>
         </div>
       ))}
@@ -71,112 +67,106 @@ function H2HStats({ teams, matches, points, assignments, players, captains }) {
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-        <h2 style={{ fontFamily: "Rajdhani,sans-serif", fontSize: 28, color: "#F5A623", letterSpacing: 2 }}>HEAD TO HEAD</h2>
-        <div style={{ fontSize: 12, color: "#4A5E78" }}>{played.length} matches played</div>
+        <h2 style={{ fontFamily: fonts.display, fontSize: 26, color: T.accent, letterSpacing: 2, margin: 0 }}>HEAD TO HEAD</h2>
+        <div style={{ fontFamily: fonts.body, fontSize: 12, color: T.muted }}>{played.length} matches played</div>
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
         <select value={teamA} onChange={e => setTeamA(e.target.value)}
-          style={{ flex: 1, background: "#0E1521", border: "1px solid " + (tA ? tA.color : "#1E2D45"), borderRadius: 8, padding: "10px 12px", color: "#E2EAF4", fontSize: 14, fontFamily: "Barlow Condensed,sans-serif", fontWeight: 700, cursor: "pointer", outline: "none" }}>
+          style={{ flex: 1, background: T.card, border: `1px solid ${tA ? tA.color : T.border}`, borderRadius: 8, padding: "10px 12px", color: T.text, fontSize: 14, fontFamily: fonts.body, fontWeight: 600, cursor: "pointer", outline: "none" }}>
           <option value="">Select Team 1</option>
           {teams.filter(t => t.id !== teamB).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
         </select>
-        <div style={{ fontFamily: "Rajdhani,sans-serif", fontWeight: 800, fontSize: 18, color: "#4A5E78" }}>VS</div>
+        <div style={{ fontFamily: fonts.display, fontWeight: 800, fontSize: 16, color: T.muted }}>VS</div>
         <select value={teamB} onChange={e => setTeamB(e.target.value)}
-          style={{ flex: 1, background: "#0E1521", border: "1px solid " + (tB ? tB.color : "#1E2D45"), borderRadius: 8, padding: "10px 12px", color: "#E2EAF4", fontSize: 14, fontFamily: "Barlow Condensed,sans-serif", fontWeight: 700, cursor: "pointer", outline: "none" }}>
+          style={{ flex: 1, background: T.card, border: `1px solid ${tB ? tB.color : T.border}`, borderRadius: 8, padding: "10px 12px", color: T.text, fontSize: 14, fontFamily: fonts.body, fontWeight: 600, cursor: "pointer", outline: "none" }}>
           <option value="">Select Team 2</option>
           {teams.filter(t => t.id !== teamA).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
         </select>
       </div>
 
       {!ready && (
-        <div style={{ textAlign: "center", padding: 48, color: "#4A5E78" }}>
+        <div style={{ textAlign: "center", padding: 48, color: T.muted }}>
           <div style={{ fontSize: 48, marginBottom: 12 }}>⚔️</div>
-          <div style={{ fontSize: 15 }}>Select two teams to compare</div>
+          <div style={{ fontFamily: fonts.body, fontSize: 14 }}>Select two teams to compare</div>
         </div>
       )}
 
       {ready && played.length === 0 && (
-        <div style={{ textAlign: "center", padding: 48, color: "#4A5E78" }}>
+        <div style={{ textAlign: "center", padding: 48, color: T.muted }}>
           <div style={{ fontSize: 48, marginBottom: 12 }}>📊</div>
-          <div style={{ fontSize: 15 }}>No match data yet</div>
+          <div style={{ fontFamily: fonts.body, fontSize: 14 }}>No match data yet</div>
         </div>
       )}
 
       {ready && played.length > 0 && (
         <div>
-          {/* Summary */}
-          <div style={{ background: "#0E1521", borderRadius: 12, padding: "20px 16px", marginBottom: 20, border: "1px solid #1E2D45" }}>
+          <div style={{ background: T.card, borderRadius: 12, padding: "20px 16px", marginBottom: 20, border: `1px solid ${T.border}` }}>
             <div style={{ display: "flex", alignItems: "center" }}>
               <div style={{ flex: 1, textAlign: "center" }}>
-                <div style={{ fontFamily: "Rajdhani,sans-serif", fontWeight: 700, fontSize: 15, color: tA.color, marginBottom: 6 }}>{tA.name}</div>
-                <div style={{ fontFamily: "Rajdhani,sans-serif", fontSize: 52, fontWeight: 800, color: aWins > bWins ? tA.color : "#E2EAF4", lineHeight: 1 }}>{aWins}</div>
-                <div style={{ fontSize: 10, color: "#4A5E78", letterSpacing: 2, marginTop: 4 }}>WINS</div>
+                <div style={{ fontFamily: fonts.display, fontWeight: 700, fontSize: 14, color: tA.color, marginBottom: 6 }}>{tA.name}</div>
+                <div style={{ fontFamily: fonts.display, fontSize: 48, fontWeight: 900, color: aWins > bWins ? tA.color : T.text, lineHeight: 1 }}>{aWins}</div>
+                <div style={{ fontFamily: fonts.display, fontSize: 9, color: T.muted, letterSpacing: 2, marginTop: 4 }}>WINS</div>
               </div>
               <div style={{ textAlign: "center", padding: "0 12px" }}>
-                {draws > 0 && <div style={{ fontFamily: "Rajdhani,sans-serif", fontSize: 20, fontWeight: 800, color: "#4A5E78" }}>{draws}</div>}
-                {draws > 0 && <div style={{ fontSize: 9, color: "#4A5E78", letterSpacing: 1, marginBottom: 4 }}>DRAW</div>}
-                <div style={{ width: 1, height: 32, background: "#1E2D45", margin: "0 auto" }} />
+                {draws > 0 && <div style={{ fontFamily: fonts.display, fontSize: 18, fontWeight: 800, color: T.muted }}>{draws}</div>}
+                {draws > 0 && <div style={{ fontFamily: fonts.display, fontSize: 9, color: T.muted, letterSpacing: 1, marginBottom: 4 }}>DRAW</div>}
+                <div style={{ width: 1, height: 32, background: T.border, margin: "0 auto" }} />
               </div>
               <div style={{ flex: 1, textAlign: "center" }}>
-                <div style={{ fontFamily: "Rajdhani,sans-serif", fontWeight: 700, fontSize: 15, color: tB.color, marginBottom: 6 }}>{tB.name}</div>
-                <div style={{ fontFamily: "Rajdhani,sans-serif", fontSize: 52, fontWeight: 800, color: bWins > aWins ? tB.color : "#E2EAF4", lineHeight: 1 }}>{bWins}</div>
-                <div style={{ fontSize: 10, color: "#4A5E78", letterSpacing: 2, marginTop: 4 }}>WINS</div>
+                <div style={{ fontFamily: fonts.display, fontWeight: 700, fontSize: 14, color: tB.color, marginBottom: 6 }}>{tB.name}</div>
+                <div style={{ fontFamily: fonts.display, fontSize: 48, fontWeight: 900, color: bWins > aWins ? tB.color : T.text, lineHeight: 1 }}>{bWins}</div>
+                <div style={{ fontFamily: fonts.display, fontSize: 9, color: T.muted, letterSpacing: 2, marginTop: 4 }}>WINS</div>
               </div>
             </div>
-            <div style={{ display: "flex", marginTop: 16, paddingTop: 16, borderTop: "1px solid #1E2D45" }}>
+            <div style={{ display: "flex", marginTop: 16, paddingTop: 16, borderTop: `1px solid ${T.border}` }}>
               <div style={{ flex: 1, textAlign: "center" }}>
-                <div style={{ fontFamily: "Rajdhani,sans-serif", fontSize: 22, fontWeight: 700, color: aTot > bTot ? tA.color : "#E2EAF4" }}>{aTot}</div>
-                <div style={{ fontSize: 10, color: "#4A5E78", letterSpacing: 1 }}>TOTAL PTS</div>
+                <div style={{ fontFamily: fonts.display, fontSize: 20, fontWeight: 700, color: aTot > bTot ? tA.color : T.text }}>{aTot}</div>
+                <div style={{ fontFamily: fonts.display, fontSize: 9, color: T.muted, letterSpacing: 1 }}>TOTAL PTS</div>
               </div>
               <div style={{ flex: 1, textAlign: "center" }}>
-                <div style={{ fontFamily: "Rajdhani,sans-serif", fontSize: 22, fontWeight: 700, color: bTot > aTot ? tB.color : "#E2EAF4" }}>{bTot}</div>
-                <div style={{ fontSize: 10, color: "#4A5E78", letterSpacing: 1 }}>TOTAL PTS</div>
+                <div style={{ fontFamily: fonts.display, fontSize: 20, fontWeight: 700, color: bTot > aTot ? tB.color : T.text }}>{bTot}</div>
+                <div style={{ fontFamily: fonts.display, fontSize: 9, color: T.muted, letterSpacing: 1 }}>TOTAL PTS</div>
               </div>
             </div>
           </div>
 
-          {/* Per match breakdown */}
-          <div style={{ fontSize: 11, color: "#4A5E78", letterSpacing: 2, fontWeight: 700, marginBottom: 10 }}>MATCH BREAKDOWN</div>
+          <div style={{ fontFamily: fonts.display, fontSize: 9, color: T.muted, letterSpacing: 2, fontWeight: 700, marginBottom: 10 }}>MATCH BREAKDOWN</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {rows.map(r => {
               const open = expandedMatch === r.match.id;
               return (
-                <div key={r.match.id} style={{ background: "#0E1521", borderRadius: 10, border: "1px solid #1E2D45", overflow: "hidden" }}>
-                  {/* Match header */}
-                  <div onClick={() => setExpandedMatch(open ? null : r.match.id)}
-                    style={{ padding: "12px 16px", cursor: "pointer" }}>
-                    <div style={{ fontSize: 11, color: "#4A5E78", marginBottom: 8 }}>M{r.match.matchNum} — {r.match.team1} vs {r.match.team2}</div>
+                <div key={r.match.id} style={{ background: T.card, borderRadius: 10, border: `1px solid ${T.border}`, overflow: "hidden" }}>
+                  <div onClick={() => setExpandedMatch(open ? null : r.match.id)} style={{ padding: "12px 16px", cursor: "pointer" }}>
+                    <div style={{ fontFamily: fonts.body, fontSize: 11, color: T.muted, marginBottom: 8 }}>M{r.match.matchNum} — {r.match.team1} vs {r.match.team2}</div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <div style={{ flex: 1, textAlign: "center" }}>
-                        <div style={{ fontFamily: "Rajdhani,sans-serif", fontSize: 26, fontWeight: 800, color: r.winner === "a" ? tA.color : "#4A5E78" }}>{r.aScore}</div>
-                        <div style={{ fontSize: 9, color: "#4A5E78" }}>{tA.name}</div>
+                        <div style={{ fontFamily: fonts.display, fontSize: 24, fontWeight: 800, color: r.winner === "a" ? tA.color : T.muted }}>{r.aScore}</div>
+                        <div style={{ fontFamily: fonts.body, fontSize: 9, color: T.muted }}>{tA.name}</div>
                       </div>
-                      <div style={{ fontSize: 11, color: "#4A5E78", fontWeight: 700, textAlign: "center", minWidth: 50 }}>
+                      <div style={{ fontFamily: fonts.display, fontSize: 11, color: T.muted, fontWeight: 700, textAlign: "center", minWidth: 50 }}>
                         {r.winner === "a" ? "← WIN" : r.winner === "b" ? "WIN →" : "DRAW"}
-                        <div style={{ fontSize: 10, color: "#2D3E52", marginTop: 2 }}>{open ? "▲" : "▼"}</div>
+                        <div style={{ fontSize: 10, color: T.muted, marginTop: 2 }}>{open ? "▲" : "▼"}</div>
                       </div>
                       <div style={{ flex: 1, textAlign: "center" }}>
-                        <div style={{ fontFamily: "Rajdhani,sans-serif", fontSize: 26, fontWeight: 800, color: r.winner === "b" ? tB.color : "#4A5E78" }}>{r.bScore}</div>
-                        <div style={{ fontSize: 9, color: "#4A5E78" }}>{tB.name}</div>
+                        <div style={{ fontFamily: fonts.display, fontSize: 24, fontWeight: 800, color: r.winner === "b" ? tB.color : T.muted }}>{r.bScore}</div>
+                        <div style={{ fontFamily: fonts.body, fontSize: 9, color: T.muted }}>{tB.name}</div>
                       </div>
                     </div>
-                    <div style={{ marginTop: 8, height: 3, borderRadius: 2, background: "#1E2D45", overflow: "hidden" }}>
+                    <div style={{ marginTop: 8, height: 3, borderRadius: 2, background: T.border, overflow: "hidden" }}>
                       <div style={{ height: "100%", width: ((r.aScore / (r.aScore + r.bScore || 1)) * 100) + "%", background: tA.color, borderRadius: 2 }} />
                     </div>
                   </div>
-
-                  {/* Expanded player breakdown */}
                   {open && (
-                    <div style={{ borderTop: "1px solid #1E2D45", padding: "12px 16px" }}>
+                    <div style={{ borderTop: `1px solid ${T.border}`, padding: "12px 16px" }}>
                       <div style={{ display: "flex", gap: 16 }}>
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 10, color: tA.color, fontWeight: 700, letterSpacing: 1, marginBottom: 8 }}>{tA.name.toUpperCase()}</div>
+                          <div style={{ fontFamily: fonts.display, fontSize: 9, color: tA.color, fontWeight: 700, letterSpacing: 1, marginBottom: 8 }}>{tA.name.toUpperCase()}</div>
                           <PlayerList playerRows={r.aPlayers} color={tA.color} />
                         </div>
-                        <div style={{ width: 1, background: "#1E2D45" }} />
+                        <div style={{ width: 1, background: T.border }} />
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: 10, color: tB.color, fontWeight: 700, letterSpacing: 1, marginBottom: 8 }}>{tB.name.toUpperCase()}</div>
+                          <div style={{ fontFamily: fonts.display, fontSize: 9, color: tB.color, fontWeight: 700, letterSpacing: 1, marginBottom: 8 }}>{tB.name.toUpperCase()}</div>
                           <PlayerList playerRows={r.bPlayers} color={tB.color} />
                         </div>
                       </div>
