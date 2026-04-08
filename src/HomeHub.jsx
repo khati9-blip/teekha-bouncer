@@ -274,7 +274,6 @@ export default function HomeHub({ pitchId, user, savedTeamId }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(null);
-  const [darkMode, setDarkMode] = useState(true);
 
   const load = async () => {
     if (!pitchId) return;
@@ -360,9 +359,7 @@ export default function HomeHub({ pitchId, user, savedTeamId }) {
         </div>
         <div style={{ display: "flex", gap: 7, alignItems: "center" }}>
           <NotifBell notifications={notifs} />
-          <button onClick={() => setDarkMode(d => !d)} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 9, padding: "6px 11px", cursor: "pointer", display: "flex", alignItems: "center", gap: 5, fontFamily: fonts.display, fontWeight: 700, fontSize: 10, color: T.sub, letterSpacing: 0.5 }}>
-            {darkMode ? "☀️ LIGHT" : "🌙 DARK"}
-          </button>
+
         </div>
       </div>
 
