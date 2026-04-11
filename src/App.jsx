@@ -2191,7 +2191,9 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   const [fetchPlayerModal, setFetchPlayerModal] = useState(null);
   const [aiMatchModal, setAiMatchModal] = useState(null); // {tournamentId, tournamentName}
   const [aiMatchCount, setAiMatchCount] = useState(10);
-  const [aiMatchGenerating, setAiMatchGenerating] = useState(false); // null | { tournamentId, tournamentName }
+  const [aiMatchGenerating, setAiMatchGenerating] = useState(false);
+  const [aiMatchError, setAiMatchError] = useState("");
+  const [aiMatchSuccess, setAiMatchSuccess] = useState(""); // null | { tournamentId, tournamentName }
   const [addTournamentModal, setAddTournamentModal] = useState(false);
   const [addTournamentSource, setAddTournamentSource] = useState(null);
   const [addTournamentSeries, setAddTournamentSeries] = useState([]);
@@ -2994,10 +2996,22 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
       const prompt = `Today is ${today}. List the last ${aiMatchCount} completed matches of "${tournamentName}" from the most recent/current season (the season that is ongoing or just finished closest to today). Return ONLY a JSON array with no markdown:
 [{"matchNum":1,"team1":"CSK","team2":"MI","date":"YYYY-MM-DD","time":"7:30 PM IST","venue":"Venue Name, City","status":"completed","result":"CSK won by 5 wickets"}]
 Rules: Date format YYYY-MM-DD. Dates must be from the most recent season — not historical seasons from years ago. Teams must be short names (CSK, MI, RCB etc). Status must be "completed". Sort by date ascending (oldest first, most recent last).`;
-      const text = await callAI(prompt, "Cricket expert. Return ONLY valid JSON array of completed matches. No markdown, no explanation.");
+      const text = await callAI(prompt, "Cricket expert. Return ONLY valid JSON array of completed matches. No markdown, no explanation. If you don't have data, return an empty array [].");
       const clean = text.replace(/```json|```/g, "").trim();
-      const parsed = JSON.parse(clean);
-      if (!Array.isArray(parsed) || parsed.length === 0) { alert("AI couldn't generate matches. Try a different tournament name."); setAiMatchGenerating(false); return; }
+      // Check if AI returned text instead of JSON
+      if (!clean.startsWith("[")) {
+        setAiMatchError("AI couldn't find recent matches for "" + tournamentName + "". Try a more specific name e.g. "IPL 2026" or "BBL 2025-26".");
+        setAiMatchGenerating(false); return;
+      }
+      let parsed;
+      try { parsed = JSON.parse(clean); } catch(e) {
+        setAiMatchError("AI returned unexpected data. Please try again.");
+        setAiMatchGenerating(false); return;
+      }
+      if (!Array.isArray(parsed) || parsed.length === 0) {
+        setAiMatchError("No matches found for "" + tournamentName + "". Try a more specific tournament name.");
+        setAiMatchGenerating(false); return;
+      }
 
       const existingIds = new Set(matches.map(m => m.cricbuzzId).filter(Boolean));
       const updated = [...matches];
@@ -3022,10 +3036,9 @@ Rules: Date format YYYY-MM-DD. Dates must be from the most recent season — not
       });
 
       updMatches(updated);
-      setAiMatchModal(null);
-      alert(`✅ Added ${parsed.length} matches from AI. Now sync stats for each match using the scorecard paste.`);
+        setAiMatchSuccess(`✅ Added ${parsed.length} matches! Now sync stats for each match using the scorecard paste.`);
     } catch(e) {
-      alert("Error: " + e.message);
+      setAiMatchError("Error: " + e.message);
     }
     setAiMatchGenerating(false);
   };
@@ -4043,7 +4056,7 @@ Rules: Date format YYYY-MM-DD. Dates must be from the most recent season — not
                         {tMatches.some(m=>m.aiGenerated) && (
                           <div style={{position:"relative",display:"inline-block"}}>
                             <button onClick={e=>{e.stopPropagation();withPassword(()=>{
-                              if(!window.confirm("Delete all AI-generated matches for "+tournament.name+"?")) return;
+                              if(!window.confirm("Delete all AI-generated matches for "+tournament.name+"? This cannot be undone.")) return;
                               const updated = matches.filter(m=>!(m.tournamentId===tournament.id && m.aiGenerated));
                               updMatches(updated);
                             });}}
@@ -4765,15 +4778,27 @@ Rules: Date format YYYY-MM-DD. Dates must be from the most recent season — not
                 ))}
               </div>
 
+              {aiMatchError && (
+                <div style={{background:T.dangerBg,border:`1px solid ${T.danger}33`,borderRadius:8,padding:"10px 14px",marginBottom:12,fontFamily:fonts.body,fontSize:12,color:T.danger}}>
+                  ❌ {aiMatchError}
+                </div>
+              )}
+              {aiMatchSuccess && (
+                <div style={{background:T.successBg,border:`1px solid ${T.success}33`,borderRadius:8,padding:"10px 14px",marginBottom:12,fontFamily:fonts.body,fontSize:12,color:T.success}}>
+                  {aiMatchSuccess}
+                </div>
+              )}
               <div style={{display:"flex",gap:10}}>
-                <button onClick={()=>setAiMatchModal(null)}
+                <button onClick={()=>{setAiMatchModal(null);setAiMatchError("");setAiMatchSuccess("");}}
                   style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:10,padding:12,color:T.muted,fontFamily:fonts.display,fontWeight:700,fontSize:13,cursor:"pointer"}}>
-                  CANCEL
+                  {aiMatchSuccess ? "CLOSE" : "CANCEL"}
                 </button>
-                <button onClick={generateAiMatches} disabled={aiMatchGenerating}
-                  style={{flex:2,background:aiMatchGenerating?"#A855F733":`linear-gradient(135deg,${T.purple},#7C3AED)`,border:"none",borderRadius:10,padding:12,color:"#fff",fontFamily:fonts.display,fontWeight:800,fontSize:14,cursor:aiMatchGenerating?"not-allowed":"pointer",letterSpacing:0.5}}>
-                  {aiMatchGenerating ? "🤖 GENERATING…" : `🤖 GENERATE ${aiMatchCount} MATCHES`}
-                </button>
+                {!aiMatchSuccess && (
+                  <button onClick={()=>{setAiMatchError("");generateAiMatches();}} disabled={aiMatchGenerating}
+                    style={{flex:2,background:aiMatchGenerating?"#A855F733":`linear-gradient(135deg,${T.purple},#7C3AED)`,border:"none",borderRadius:10,padding:12,color:"#fff",fontFamily:fonts.display,fontWeight:800,fontSize:14,cursor:aiMatchGenerating?"not-allowed":"pointer",letterSpacing:0.5}}>
+                    {aiMatchGenerating ? "🤖 GENERATING…" : `🤖 GENERATE ${aiMatchCount} MATCHES`}
+                  </button>
+                )}
               </div>
             </div>
           </div>
