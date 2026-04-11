@@ -3366,7 +3366,8 @@ ${aiMatchText.slice(0, 3000)}`;
     const active = players.filter(p=>
       inSquadNow.has(p.id) &&
       !netTradedInPids.has(p.id) &&
-      !returnedPids.has(p.id)
+      !returnedPids.has(p.id) &&
+      !(snatch.active?.pid === p.id && snatch.active?.byTeamId === teamId)
     ).map(p=>{
       const tot = getPtsForTeam(p.id, teamId);
       const isSnatched = snatch.active?.pid===p.id && snatch.active?.fromTeamId===teamId;
