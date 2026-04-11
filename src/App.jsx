@@ -3178,7 +3178,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
       setSnatch(updated);
       storeSet("snatch", updated);
     }
-  },[snatch.active?.pid, points, captains]);
+  },[snatch.active?.pid, snatch.active?.pointsAtSnatch, points, captains]);
 
   const getTeamTotal=(teamId)=>{
     let total=0;
@@ -3194,8 +3194,11 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
       const periods = (ownershipLog[pid]||[]).filter(o=>o.teamId===teamId);
 
       // If this player is currently snatched AWAY from this team — freeze at pointsAtSnatch
-      if(snatch.active?.pid===pid && snatch.active?.fromTeamId===teamId) {
-        total += snatch.active.pointsAtSnatch;
+      const isSnatchedAway = snatch.active?.pid===pid && 
+        (snatch.active?.fromTeamId===teamId || 
+         (assignments[pid]===teamId && snatch.active?.byTeamId!==teamId));
+      if(isSnatchedAway) {
+        total += snatch.active.pointsAtSnatch || 0;
         continue;
       }
 
