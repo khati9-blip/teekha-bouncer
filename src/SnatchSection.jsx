@@ -153,12 +153,12 @@ export default function SnatchSection({
     const fromTeamId = assignments[pid];
     const playerTotalPts = Object.values(points[pid] || {}).reduce((s, d) => s + (d?.base || 0), 0);
     const active = { pid, byTeamId: actingTeamId, fromTeamId, pointsAtSnatch: playerTotalPts, startDate: new Date().toISOString() };
-    const newAssignments = { ...assignments, [pid]: myTeamId };
+    const newAssignments = { ...assignments, [pid]: actingTeamId };
     const now = new Date().toISOString().split("T")[0];
     const newLog = { ...ownershipLog };
     if (!newLog[pid]) newLog[pid] = [];
     newLog[pid] = newLog[pid].map(o => o.teamId === fromTeamId && !o.to ? { ...o, to: now } : o);
-    newLog[pid] = [...newLog[pid], { teamId: myTeamId, from: now, to: null }];
+    newLog[pid] = [...newLog[pid], { teamId: actingTeamId, from: now, to: null }];
     onUpdateSnatch({ ...snatch, active });
     onUpdateAssignments(newAssignments);
     onUpdateOwnershipLog(newLog);
