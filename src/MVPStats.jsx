@@ -6,6 +6,83 @@ const TIER_COLORS = { platinum:"#B0BEC5", gold:"#F5A623", silver:"#94A3B8", bron
 const TIER_BG    = { platinum:"#4A5E7833", gold:"#F5A62322", silver:"#94A3B822", bronze:"#CD7F3222" };
 const TIER_BORDER= { platinum:"#4A5E7866", gold:"#F5A62366", silver:"#94A3B855", bronze:"#CD7F3255" };
 
+// ── Snatch helpers ────────────────────────────────────────────────────────────
+
+function getSnatchStatus(pid, teamId, snatch) {
+  const a = snatch?.active, h = snatch?.history || [];
+  if (a?.pid === pid && a?.fromTeamId === teamId) return "away";
+  if (a?.pid === pid && a?.byTeamId   === teamId) return "in";
+  if (h.find(x => x.pid === pid && x.fromTeamId === teamId)) return "hist-away";
+  if (h.find(x => x.pid === pid && x.byTeamId   === teamId)) return "hist-in";
+  return null;
+}
+
+// All pids that belong to this team including snatch history
+function getTeamPids(teamId, players, assignments, snatch) {
+  const set = new Set(players.filter(p => assignments[p.id] === teamId).map(p => p.id));
+  const a = snatch?.active;
+  if (a?.fromTeamId === teamId) set.add(a.pid);
+  for (const h of (snatch?.history || [])) {
+    if (h.fromTeamId === teamId) set.add(h.pid);
+    if (h.byTeamId   === teamId) set.add(h.pid);
+  }
+  return [...set];
+}
+
+// Base pts for a player attributed to a team, respecting snatch windows
+function getSnatchPts(pid, teamId, points, matches, snatch, filterMatchIds) {
+  const a = snatch?.active, h = snatch?.history || [];
+  const allPts = points[pid] || {};
+
+  const sum = (dateOk) =>
+    Object.entries(allPts).reduce((s, [mid, d]) => {
+      if (filterMatchIds && !filterMatchIds.has(mid)) return s;
+      const m = matches.find(x => x.id === mid);
+      return m && dateOk(m.date) ? s + (d?.base || 0) : s;
+    }, 0);
+
+  if (a?.pid === pid && a?.fromTeamId === teamId) {
+    const sd = a.startDate?.split("T")[0] || "9999";
+    return sum(date => date < sd);
+  }
+  if (a?.pid === pid && a?.byTeamId === teamId) {
+    const sd = a.startDate?.split("T")[0] || "0000";
+    return sum(date => date >= sd);
+  }
+  const ha = h.find(x => x.pid === pid && x.fromTeamId === teamId);
+  if (ha) {
+    const s = ha.startDate?.split("T")[0]  || "9999";
+    const e = ha.returnDate?.split("T")[0] || "9999";
+    return sum(date => date < s || date > e);
+  }
+  const hi = h.find(x => x.pid === pid && x.byTeamId === teamId);
+  if (hi) {
+    const s = hi.startDate?.split("T")[0]  || "0000";
+    const e = hi.returnDate?.split("T")[0] || "9999";
+    return sum(date => date >= s && date <= e);
+  }
+  return sum(() => true);
+}
+
+// Which team "owns" a player's points for a given match date?
+function getOwningTeam(pid, matchDate, assignments, snatch, teams) {
+  const a = snatch?.active, h = snatch?.history || [];
+  if (a?.pid === pid) {
+    const sd = a.startDate?.split("T")[0] || "9999";
+    if (matchDate >= sd) return teams.find(t => t.id === a.byTeamId);
+    return teams.find(t => t.id === a.fromTeamId);
+  }
+  for (const hh of h) {
+    if (hh.pid !== pid) continue;
+    const s = hh.startDate?.split("T")[0]  || "9999";
+    const e = hh.returnDate?.split("T")[0] || "9999";
+    if (matchDate >= s && matchDate <= e) return teams.find(t => t.id === hh.byTeamId);
+  }
+  return teams.find(t => t.id === assignments[pid]);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 function TierBadge({ tier }) {
   if (!tier) return null;
   return (
@@ -35,7 +112,7 @@ function medalColor(rank) {
   return T.muted;
 }
 
-export default function MVPStats({ players, teams, assignments, points, captains, matches, onClose }) {
+export default function MVPStats({ players, teams, assignments, points, captains, matches, snatch, onClose }) {
   const [view, setView] = useState("weekly");
   const [weekOffset, setWeekOffset] = useState(0);
   const week = useMemo(() => getWeekBounds(weekOffset), [weekOffset]);
@@ -56,36 +133,43 @@ export default function MVPStats({ players, teams, assignments, points, captains
       for (const player of players) {
         const d = points[player.id]?.[match.id];
         if (!d || !d.base) continue;
-        const team = teams.find(t => t.id === assignments[player.id]);
+        // Use the team that owns this player's points for THIS match date
+        const team = getOwningTeam(player.id, match.date, assignments, snatch, teams);
         if (!team) continue;
         rows.push({ player, team, match, pts: d.base, matchLabel: match.team1 + " vs " + match.team2, matchDate: match.date });
       }
     }
     return rows.sort((a, b) => b.pts - a.pts);
-  }, [weekMatches, players, points, teams, assignments]);
+  }, [weekMatches, players, points, teams, assignments, snatch]);
 
   const allTimeRows = useMemo(() => {
     const rows = [];
-    for (const player of players) {
-      const team = teams.find(t => t.id === assignments[player.id]);
-      if (!team) continue;
-      const total = Object.values(points[player.id] || {}).reduce((sum, d) => sum + (d?.base || 0), 0);
-      if (total > 0) rows.push({ player, team, total });
+    for (const team of teams) {
+      for (const pid of getTeamPids(team.id, players, assignments, snatch)) {
+        const player = players.find(p => p.id === pid);
+        if (!player) continue;
+        const total  = getSnatchPts(pid, team.id, points, matches, snatch, null);
+        const status = getSnatchStatus(pid, team.id, snatch);
+        if (total > 0 || status) rows.push({ player, team, total, status });
+      }
     }
     return rows.sort((a, b) => b.total - a.total);
-  }, [players, teams, assignments, points]);
+  }, [players, teams, assignments, points, matches, snatch]);
 
   const teamPerformance = useMemo(() => {
+    const weekMatchIds = new Set(weekMatches.map(m => m.id));
     return teams.map(team => {
       let total = 0, best = { name: "—", pts: 0 };
-      for (const player of players.filter(p => assignments[p.id] === team.id)) {
-        let playerTotal = weekMatches.reduce((s, m) => s + (points[player.id]?.[m.id]?.base || 0), 0);
+      for (const pid of getTeamPids(team.id, players, assignments, snatch)) {
+        const player = players.find(p => p.id === pid);
+        if (!player) continue;
+        const playerTotal = getSnatchPts(pid, team.id, points, matches, snatch, weekMatchIds);
         total += playerTotal;
         if (playerTotal > best.pts) best = { name: player.name, pts: playerTotal };
       }
       return { team, total, best };
     }).sort((a, b) => b.total - a.total);
-  }, [teams, players, assignments, points, weekMatches]);
+  }, [teams, players, assignments, points, matches, snatch, weekMatches]);
 
   const maxTeamPts = teamPerformance[0]?.total || 1;
 
@@ -172,7 +256,7 @@ export default function MVPStats({ players, teams, assignments, points, captains
           <div>
             <div style={{ fontFamily: fonts.display, fontSize: 9, color: T.muted, letterSpacing: 2, marginBottom: 12 }}>ALL TIME BASE POINTS</div>
             {allTimeRows.length === 0 ? emptyMsg : allTimeRows.map((row, idx) => (
-              <div key={row.player.id} style={{ background: T.card, borderRadius: 10, border: `1px solid ${row.team.color}33`, padding: "10px 14px", marginBottom: 6, display: "flex", alignItems: "center", gap: 10 }}>
+              <div key={row.player.id + row.team.id} style={{ background: T.card, borderRadius: 10, border: `1px solid ${row.team.color}33`, padding: "10px 14px", marginBottom: 6, display: "flex", alignItems: "center", gap: 10 }}>
                 <div style={{ fontFamily: fonts.display, fontSize: 16, fontWeight: 700, color: medalColor(idx + 1), minWidth: 24, textAlign: "center" }}>{idx + 1}</div>
                 <div style={{ width: 8, height: 8, borderRadius: "50%", background: row.team.color, flexShrink: 0 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -180,6 +264,10 @@ export default function MVPStats({ players, teams, assignments, points, captains
                     <span style={{ fontFamily: fonts.body, fontWeight: 700, fontSize: 14, color: T.text }}>{row.player.name}</span>
                     <TierBadge tier={row.player.tier} />
                     <span style={{ fontFamily: fonts.display, fontSize: 10, color: row.team.color, fontWeight: 700 }}>{row.team.name}</span>
+                    {row.status === "away" && <span style={{ fontFamily: fonts.display, fontSize: 8, fontWeight: 700, color: T.purple, background: T.purpleBg, border: `1px solid ${T.purple}33`, borderRadius: 4, padding: "1px 5px" }}>⚡ SNATCHED</span>}
+                    {row.status === "in"   && <span style={{ fontFamily: fonts.display, fontSize: 8, fontWeight: 700, color: T.success, background: T.successBg, border: `1px solid ${T.success}33`, borderRadius: 4, padding: "1px 5px" }}>⚡ ON LOAN</span>}
+                    {row.status === "hist-away" && <span style={{ fontFamily: fonts.display, fontSize: 8, fontWeight: 700, color: T.muted, background: T.border, borderRadius: 4, padding: "1px 5px" }}>↩ RETURNED</span>}
+                    {row.status === "hist-in"   && <span style={{ fontFamily: fonts.display, fontSize: 8, fontWeight: 700, color: T.muted, background: T.border, borderRadius: 4, padding: "1px 5px" }}>↩ LOAN ENDED</span>}
                   </div>
                   <div style={{ fontFamily: fonts.body, fontSize: 11, color: T.muted, marginTop: 1 }}>
                     <span style={{ color: ROLE_COLORS[row.player.role] || T.muted }}>{row.player.role}</span>
@@ -188,7 +276,10 @@ export default function MVPStats({ players, teams, assignments, points, captains
                   </div>
                 </div>
                 <div style={{ fontFamily: fonts.display, fontSize: 22, fontWeight: 900, color: medalColor(idx + 1), minWidth: 48, textAlign: "right" }}>
-                  {row.total}<span style={{ fontFamily: fonts.body, fontSize: 10, color: T.muted, fontWeight: 400, marginLeft: 2 }}>pts</span>
+                  {row.total}
+                  <span style={{ fontFamily: fonts.body, fontSize: 10, color: T.muted, fontWeight: 400, marginLeft: 2 }}>
+                    {row.status === "away" ? "pre-snatch" : row.status === "in" || row.status === "hist-in" ? "loan" : "pts"}
+                  </span>
                 </div>
               </div>
             ))}

@@ -4918,6 +4918,7 @@ ${aiMatchText.slice(0, 3000)}`;
             points={points}
             captains={captains}
             matches={matches}
+            snatch={snatch}
             onClose={()=>setShowMVP(false)}
           />
         )}
@@ -4928,6 +4929,8 @@ ${aiMatchText.slice(0, 3000)}`;
             players={players}
             assignments={assignments}
             points={points}
+            matches={matches}
+            snatch={snatch}
             onClose={()=>setShowAllTimeXI(false)}
           />
         )}
