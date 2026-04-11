@@ -3189,6 +3189,8 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
 
     // Add snatched-in player (currently on loan to this team)
     if (snatch.active?.byTeamId===teamId) allPids.add(snatch.active.pid);
+    // Add snatched-away player to original team so freeze logic runs
+    if (snatch.active?.fromTeamId===teamId) allPids.add(snatch.active.pid);
 
     for(const pid of allPids){
       const periods = (ownershipLog[pid]||[]).filter(o=>o.teamId===teamId);
