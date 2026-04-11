@@ -264,7 +264,7 @@ export default function SnatchSection({
             <div>
               <div style={{fontSize:11,color:"#4A5E78",marginBottom:10}}>Select a team to snatch from:</div>
               <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
-                {teams.filter(t => t.id !== myTeamId).map(t => (
+                {teams.filter(t => t.id !== (myTeamId || eligibility?.team?.id)).map(t => (
                   <button key={t.id} onClick={()=>setSelectedVictimTeam(t.id === selectedVictimTeam ? null : t.id)}
                     style={{background:selectedVictimTeam===t.id?t.color+"33":"transparent",border:"1px solid "+(selectedVictimTeam===t.id?t.color:t.color+"44"),borderRadius:8,padding:"6px 14px",color:t.color,fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:12,cursor:"pointer"}}>
                     {t.name}
