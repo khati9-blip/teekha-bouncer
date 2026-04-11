@@ -130,10 +130,13 @@ export default function SnatchSection({
     newLog[pid] = newLog[pid].map(o => o.teamId === byTeamId && !o.to ? { ...o, to: now } : o);
     newLog[pid] = [...newLog[pid], { teamId: fromTeamId, from: now, to: null }];
 
-    // Mark player permanently safe after returning from snatch
-    const existingSafe = Array.isArray(safePlayers) ? safePlayers : [];
-    const newSafe = [...new Set([...existingSafe, pid])];
-    onUpdateSafePlayers(newSafe);
+    // Mark player permanently safe — using same object format as App.jsx {teamId: [pids]}
+    const safeObj = (Array.isArray(safePlayers) || !safePlayers) ? {} : {...safePlayers};
+    const teamSafe = safeObj[fromTeamId] || [];
+    if (!teamSafe.includes(pid)) {
+      safeObj[fromTeamId] = [...teamSafe, pid];
+    }
+    onUpdateSafePlayers(safeObj);
 
     onUpdateSnatch({ ...snatch, active: null, history: newHistory, weekNum: (snatch.weekNum || 1) + 1 });
     onUpdateAssignments(newAssignments);
@@ -281,7 +284,8 @@ export default function SnatchSection({
                 <div>
                   <div style={{fontSize:11,color:"#4A5E78",marginBottom:8}}>Select player to snatch:</div>
                   {players.filter(p => assignments[p.id] === selectedVictimTeam).map(p => {
-                    const isSafe = Array.isArray(safePlayers) && safePlayers.includes(p.id);
+                    const safeArr = Array.isArray(safePlayers) ? safePlayers : Object.values(safePlayers||{}).flat();
+                    const isSafe = safeArr.includes(p.id);
                     return (
                     <div key={p.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:"#080C14",borderRadius:8,border:"1px solid "+(isSafe?"#4A5E7844":"#1E2D45"),marginBottom:6,opacity:isSafe?0.6:1}}>
                       <div style={{flex:1}}>

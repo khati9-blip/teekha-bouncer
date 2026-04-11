@@ -3455,8 +3455,9 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   useEffect(() => {
     if (!snatch.active) return;
     const check = () => {
-      const now = new Date();
-      const ist = new Date(now.getTime() + (5.5 * 60 * 60 * 1000));
+      // Correct IST: neutralise local timezone first, then add IST offset
+      const IST_OFFSET = 5.5 * 60 * 60 * 1000;
+      const ist = new Date(Date.now() + IST_OFFSET);
       const day = ist.getUTCDay(); // 5 = Friday
       const hour = ist.getUTCHours();
       const min = ist.getUTCMinutes();
