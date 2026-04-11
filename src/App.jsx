@@ -4506,7 +4506,7 @@ ${aiMatchText.slice(0, 3000)}`;
                 <button onClick={()=>nav("leaderboard")} style={{background:"transparent",border:"none",color:T.muted,fontSize:22,cursor:"pointer",lineHeight:1,padding:"0 4px"}}>←</button>
                 <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:T.accent,letterSpacing:2}}>PLAYER FORM</h2>
               </div>
-              <FormChart players={players} assignments={assignments} points={points} teams={teams} />
+              <FormChart players={players} assignments={assignments} points={points} teams={teams} matches={matches} snatch={snatch} />
             </div>
           )}
 
