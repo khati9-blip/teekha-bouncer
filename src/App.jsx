@@ -3302,13 +3302,17 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
     const snatchedIn = snatch.active?.byTeamId===teamId ? (() => {
       const p = players.find(x=>x.id===snatch.active.pid);
       if(!p) return null;
-      const snatchDate = snatch.active.startDate;
+      const snatchDate = snatch.active.startDate.split('T')[0];
       let tot=0;
       for(const[mid,d]of Object.entries(points[p.id]||{})){
         const m = matches.find(x=>x.id===mid);
-        if(m && new Date(m.date) >= new Date(snatchDate)) tot+=d.base;
+        if(!m || m.date < snatchDate) continue;
+        const cap=captains[`${mid}_${teamId}`]||{};
+        let pts=d.base;
+        if(cap.captain===p.id)pts*=2;else if(cap.vc===p.id)pts*=1.5;
+        tot+=Math.round(pts);
       }
-      return p?{...p,total:Math.round(tot),status:"snatched-in",frozenAt:Math.round(tot)}:null;
+      return p?{...p,total:tot,status:"snatched-in",frozenAt:tot}:null;
     })() : null;
 
     // Players currently snatched AWAY from this team (show struck-through, frozen pts)
@@ -3318,12 +3322,14 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
       return {...p, total: snatch.active.pointsAtSnatch, status:"snatched-out", frozenAt: snatch.active.pointsAtSnatch};
     })() : null;
 
-    // Historical: players returned after snatch (show in B's pool struck-through)
+    // Historical: players returned after snatch
     const snatchHistoryForTeam = (snatch.history||[]).map(h => {
       const p = players.find(x=>x.id===h.pid);
       if(!p) return null;
-      // If this team snatched the player — show them struck-through with snatch week pts
+      // Snatching team — show their loan pts
       if(h.byTeamId===teamId) return {...p, total: h.snatchWeekPts||0, status:"snatch-returned-in", frozenAt: h.snatchWeekPts||0};
+      // Original team — show player with their total (all pts minus snatch period, handled by getPtsForTeam via ownershipLog)
+      if(h.fromTeamId===teamId && assignments[p.id]===teamId) return null; // already in active list
       return null;
     }).filter(Boolean);
 
@@ -4218,6 +4224,17 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                           const periods = (ownershipLog[p.id]||[]).filter(o=>o.teamId===team.id);
                           if (periods.length > 0) {
                             return periods.some(o => (!o.from || o.from <= matchDateStr+"Z") && (!o.to || o.to >= matchDateStr));
+                          }
+                          // If player snatched away from this team — include for pre-snatch matches
+                          if (snatch.active?.pid===p.id && snatch.active?.fromTeamId===team.id) {
+                            return matchDateStr < snatch.active.startDate.split('T')[0];
+                          }
+                          // If player was snatched away historically — include for pre-snatch & post-return matches
+                          const histAway = (snatch.history||[]).find(h=>h.pid===p.id && h.fromTeamId===team.id);
+                          if (histAway) {
+                            const snatchStart = histAway.startDate.split('T')[0];
+                            const snatchEnd = histAway.returnDate ? histAway.returnDate.split('T')[0] : '2099-01-01';
+                            return matchDateStr < snatchStart || matchDateStr > snatchEnd;
                           }
                           // Fallback: current assignment
                           return assignments[p.id] === team.id;
