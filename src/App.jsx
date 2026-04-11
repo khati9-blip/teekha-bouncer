@@ -348,15 +348,16 @@ function generateTeamId() {
 // Snatch window: Saturday 12:00 AM IST to Saturday 12:00 PM IST
 function getSnatchWindowStatus() {
   const now = new Date();
-  // Convert to IST using UTC offset (UTC+5:30) — avoids double-adding on IST machines
-  const utcMs = now.getTime() + now.getTimezoneOffset() * 60000; // get true UTC
-  const ist = new Date(utcMs + (5.5 * 60 * 60 * 1000));
-  const day = ist.getDay(); // 0=Sun, 6=Sat
-  const hour = ist.getHours();
-  const min = ist.getMinutes();
+  // IST offset in ms
+  const IST_OFFSET = 5.5 * 60 * 60 * 1000;
+  const istMs = now.getTime() + now.getTimezoneOffset() * 60000 + IST_OFFSET;
+  const ist = new Date(istMs);
+  const day = ist.getUTCDay(); // 0=Sun,6=Sat in UTC mode on IST-adjusted date
+  const hour = ist.getUTCHours();
+  const min = ist.getUTCMinutes();
   const totalMins = hour * 60 + min;
 
-  // Open: Saturday (day=6), 0:00 to 11:59
+  // Open: Saturday (day=6), 0:00–11:59 IST
   if (day === 6 && totalMins < 720) {
     const minsLeft = 720 - totalMins;
     const h = Math.floor(minsLeft / 60);
@@ -364,21 +365,25 @@ function getSnatchWindowStatus() {
     return { open: true, label: "WINDOW OPEN", timeLeft: h + "h " + m + "m left" };
   }
 
-  // Closed — calculate time until next Saturday 12:00 AM IST
+  // Find next Saturday midnight IST in ms
   let daysUntilSat = (6 - day + 7) % 7;
-  if (day === 6 && totalMins >= 720) daysUntilSat = 7; // past noon Saturday, next week
+  if (daysUntilSat === 0) daysUntilSat = 7; // today is Sat but window closed — next week
 
-  const minsUntilMidnight = (24 * 60) - totalMins;
-  const totalMinsUntil = Math.max(0, daysUntilSat === 0 ? 0 : (daysUntilSat - 1) * 24 * 60 + minsUntilMidnight);
-  const daysLeft = Math.floor(totalMinsUntil / (24 * 60));
-  const hoursLeft = Math.floor((totalMinsUntil % (24 * 60)) / 60);
-  const minsLeft = totalMinsUntil % 60;
+  // Next Saturday midnight IST = today midnight IST + daysUntilSat days
+  const todayMidnightIst = istMs - totalMins * 60000;
+  const nextSatMidnightMs = todayMidnightIst + daysUntilSat * 24 * 60 * 60 * 1000;
+  const diffMs = Math.max(0, nextSatMidnightMs - istMs);
+  const diffMins = Math.floor(diffMs / 60000);
+
+  const daysLeft = Math.floor(diffMins / 1440);
+  const hoursLeft = Math.floor((diffMins % 1440) / 60);
+  const minsLeft = diffMins % 60;
 
   let countdown = "";
   if (daysLeft > 0) countdown = daysLeft + "d " + hoursLeft + "h";
   else if (hoursLeft > 0) countdown = hoursLeft + "h " + minsLeft + "m";
   else if (minsLeft > 0) countdown = minsLeft + "m";
-  else countdown = "soon";
+  else countdown = "opening soon";
 
   return { open: false, label: "WINDOW CLOSED", countdown: "Opens Sat 12:00 AM IST · " + countdown + " away" };
 }
@@ -4192,10 +4197,12 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                   user={user}
                   pitch={pitch}
                   ownershipLog={ownershipLog}
+                  safePlayers={safePlayers}
                   pushNotif={pushNotif}
                   onUpdateSnatch={(val)=>{setSnatch(val);storeSet("snatch",val);}}
                   onUpdateAssignments={updAssign}
                   onUpdateOwnershipLog={(val)=>{setOwnershipLog(val);storeSet("ownershipLog",val);}}
+                  onUpdateSafePlayers={(val)=>{setSafePlayers(val);storeSet("safePlayers",val);}}
                 />
               )}
             </div>
