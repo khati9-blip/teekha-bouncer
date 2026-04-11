@@ -2,19 +2,23 @@ import React, { useState } from "react";
 import { T, fonts, FONT_URL } from "./Theme";
 
 function getWeekRange(offset = 0) {
-  const now = new Date();
-  const day = now.getDay();
-  const diffToMonday = day === 0 ? -6 : 1 - day;
-  const monday = new Date(now);
-  monday.setDate(now.getDate() + diffToMonday + offset * 7);
-  monday.setHours(0, 0, 0, 0);
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-  sunday.setHours(23, 59, 59, 999);
+  // Weeks run Saturday 12:00 AM IST → Friday 11:58 PM IST,
+  // matching the snatch window cycle. All calculations in IST.
+  const IST_OFFSET = 5.5 * 60 * 60 * 1000;
+  const nowIST = new Date(Date.now() + new Date().getTimezoneOffset() * 60000 + IST_OFFSET);
+  const day = nowIST.getUTCDay(); // 0=Sun, 6=Sat
+  // Days since last Saturday (0 if today is Saturday)
+  const daysSinceSat = day === 6 ? 0 : day + 1;
+  const sat = new Date(nowIST);
+  sat.setUTCDate(nowIST.getUTCDate() - daysSinceSat - offset * 7);
+  const fri = new Date(sat);
+  fri.setUTCDate(sat.getUTCDate() + 6);
+  const fmt = d => d.toISOString().split("T")[0];
+  const fmtLabel = d => new Date(fmt(d)).toLocaleDateString("en-IN", { day: "numeric", month: "short" });
   return {
-    startStr: monday.toISOString().split("T")[0],
-    endStr: sunday.toISOString().split("T")[0],
-    label: monday.toLocaleDateString("en-IN", { day: "numeric", month: "short" }) + " – " + sunday.toLocaleDateString("en-IN", { day: "numeric", month: "short" }),
+    startStr: fmt(sat),
+    endStr: fmt(fri),
+    label: fmtLabel(sat) + " – " + fmtLabel(fri),
   };
 }
 
