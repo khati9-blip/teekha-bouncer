@@ -6,6 +6,7 @@ import TransferWindowComponent from "./TransferWindow";
 import SnatchSection from "./SnatchSection";
 import FetchPlayers from "./FetchPlayers";
 import WeeklyReport from "./WeeklyReport";
+import AllTimeXI from "./AllTimeXI";
 import HomeHub from "./HomeHub";
 import RulesSheet from "./RulesSheet";
 import { T, fonts, GlobalStyles } from "./Theme";
@@ -2241,6 +2242,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   const [smartStatsMatch, setSmartStatsMatch] = useState(null);
   const [squadView, setSquadView] = useState(false);
   const [showMVP, setShowMVP] = useState(false);
+  const [showAllTimeXI, setShowAllTimeXI] = useState(false);
   const [showWeeklyReport, setShowWeeklyReport] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null); // {msg, fn}
   const [selectedBulk, setSelectedBulk] = useState([]); // toggle squad view
@@ -4919,6 +4921,16 @@ ${aiMatchText.slice(0, 3000)}`;
           />
         )}
 
+        {showAllTimeXI && (
+          <AllTimeXI
+            teams={teams}
+            players={players}
+            assignments={assignments}
+            points={points}
+            onClose={()=>setShowAllTimeXI(false)}
+          />
+        )}
+
         {/* ADMIN CLAIM TEAM MODAL */}
         {adminClaimModal && adminClaimTeam && (
           <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:400,padding:20,fontFamily:fonts.body}}>
@@ -4996,6 +5008,13 @@ ${aiMatchText.slice(0, 3000)}`;
                   <div style={{flex:1}}>
                     <div style={{fontFamily:fonts.body,fontWeight:600,fontSize:14,color:T.text,fontFamily:fonts.body}}>MVP Stats</div>
                     <div style={{fontSize:11,color:T.muted}}>Weekly player performance</div>
+                  </div>
+                </button>
+                <button onClick={()=>{setShowAllTimeXI(true);setDrawerOpen(false);}} style={{width:"100%",background:"transparent",border:"none",padding:"10px 14px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12}}>
+                  <span style={{fontSize:20}}>🏏</span>
+                  <div style={{flex:1}}>
+                    <div style={{fontFamily:fonts.body,fontWeight:600,fontSize:14,color:T.text}}>All Time XI</div>
+                    <div style={{fontSize:11,color:T.muted}}>Top 11 per team by base points</div>
                   </div>
                 </button>
                 <button onClick={()=>{setShowWeeklyReport(true);setDrawerOpen(false);}} style={{width:"100%",background:showWeeklyReport?"#2ECC7122":"transparent",border:"1px solid "+(showWeeklyReport?"#2ECC7144":"transparent"),borderRadius:10,padding:"10px 14px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12,marginBottom:4}}>

@@ -1,6 +1,13 @@
 import React, { useState, useMemo } from "react";
 import { T, fonts, FONT_URL } from "./Theme";
-import { getOwnershipPts, getAllTeamPids, getSnatchStatus } from "./pointsUtils";
+
+function getPlayerBasePts(pid, points) {
+  return Object.values(points[pid] || {}).reduce((s, d) => s + (d?.base || 0), 0);
+}
+
+function getMatchCount(pid, points) {
+  return Object.keys(points[pid] || {}).length;
+}
 
 const ROLE_COLOR = {
   "Batsman":       "#4F8EF7",
@@ -41,7 +48,7 @@ const ROLE_SHORT = {
 };
 
 
-export default function AllTimeXI({ teams, players, assignments, points, matches, ownershipLog, snatch, onClose }) {
+export default function AllTimeXI({ teams, players, assignments, points, onClose }) {
   const [selectedTeamId, setSelectedTeamId] = useState(teams[0]?.id || "");
   const [showBench, setShowBench] = useState(false);
 
@@ -49,20 +56,15 @@ export default function AllTimeXI({ teams, players, assignments, points, matches
 
   const ranked = useMemo(() => {
     if (!selectedTeamId) return [];
-    const pids = getAllTeamPids(selectedTeamId, players, assignments, ownershipLog, snatch);
-    return pids
-      .map(pid => {
-        const p = players.find(x => x.id === pid);
-        if (!p) return null;
-        const basePts    = getOwnershipPts(pid, selectedTeamId, points, {}, matches, ownershipLog, snatch, null, false);
-        const matchCount = Object.keys(points[pid] || {}).length;
-        const snatchStatus = getSnatchStatus(pid, selectedTeamId, snatch);
-        return { ...p, basePts, matchCount, snatchStatus };
-      })
-      .filter(Boolean)
-      .filter(p => p.basePts > 0 || p.snatchStatus)
+    return players
+      .filter(p => assignments[p.id] === selectedTeamId)
+      .map(p => ({
+        ...p,
+        basePts:    getPlayerBasePts(p.id, points),
+        matchCount: getMatchCount(p.id, points),
+      }))
       .sort((a, b) => b.basePts - a.basePts);
-  }, [selectedTeamId, players, assignments, points, matches, ownershipLog, snatch]);
+  }, [selectedTeamId, players, assignments, points]);
 
   const xi    = ranked.slice(0, 11);
   const bench = ranked.slice(11);
@@ -233,18 +235,6 @@ export default function AllTimeXI({ teams, players, assignments, points, matches
                               · {p.matchCount} match{p.matchCount !== 1 ? "es" : ""}
                             </span>
                           )}
-                          {p.snatchStatus === "active-away" && (
-                            <span style={{ fontFamily: fonts.display, fontSize: 8, fontWeight: 700, color: T.purple, background: T.purpleBg, border: `1px solid ${T.purple}33`, borderRadius: 4, padding: "1px 5px", letterSpacing: 0.5 }}>⚡ SNATCHED</span>
-                          )}
-                          {p.snatchStatus === "active-in" && (
-                            <span style={{ fontFamily: fonts.display, fontSize: 8, fontWeight: 700, color: T.success, background: T.successBg, border: `1px solid ${T.success}33`, borderRadius: 4, padding: "1px 5px", letterSpacing: 0.5 }}>⚡ ON LOAN</span>
-                          )}
-                          {p.snatchStatus === "hist-away" && (
-                            <span style={{ fontFamily: fonts.display, fontSize: 8, fontWeight: 700, color: T.muted, background: T.border, borderRadius: 4, padding: "1px 5px", letterSpacing: 0.5 }}>↩ RETURNED</span>
-                          )}
-                          {p.snatchStatus === "hist-in" && (
-                            <span style={{ fontFamily: fonts.display, fontSize: 8, fontWeight: 700, color: T.muted, background: T.border, borderRadius: 4, padding: "1px 5px", letterSpacing: 0.5 }}>↩ LOAN ENDED</span>
-                          )}
                         </div>
                       </div>
 
@@ -252,18 +242,12 @@ export default function AllTimeXI({ teams, players, assignments, points, matches
                       <div style={{ textAlign: "right", flexShrink: 0 }}>
                         <div style={{
                           fontFamily: fonts.display, fontWeight: 900, fontSize: 22,
-                          color: p.snatchStatus === "active-away" ? T.purple
-                               : p.snatchStatus === "active-in"   ? T.success
-                               : i === 0 ? (team?.color || T.accent) : T.text,
-                          lineHeight: 1,
+                          color: i === 0 ? (team?.color || T.accent) : T.text, lineHeight: 1,
                         }}>
                           {p.basePts}
                         </div>
                         <div style={{ fontFamily: fonts.display, fontSize: 8, color: T.muted, letterSpacing: 1, marginTop: 2 }}>
-                          {p.snatchStatus === "active-away" ? "FROZEN PTS"
-                         : p.snatchStatus === "active-in"   ? "LOAN PTS"
-                         : p.snatchStatus === "hist-in"      ? "LOAN PTS"
-                         : "BASE PTS"}
+                          BASE PTS
                         </div>
                       </div>
                     </div>
