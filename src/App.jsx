@@ -4778,7 +4778,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
           </div>
         )}
 
-        {drawerOpen && (        {drawerOpen && (
+        {drawerOpen && (
           <div onClick={()=>setDrawerOpen(false)} style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,0.6)",display:"flex"}}>
             <div onClick={e=>e.stopPropagation()} style={{width:260,background:T.card,borderRight:`1px solid ${T.border}`,display:"flex",flexDirection:"column",height:"100%"}}>
               <div style={{padding:"20px 16px",borderBottom:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
