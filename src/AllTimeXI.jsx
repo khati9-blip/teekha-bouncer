@@ -8,6 +8,30 @@ const ROLE_COLOR = {
   "Wicket-Keeper": "#C9A84C",
 };
 
+function PlayerImage({ player, size = 36, borderRadius = 9, teamColor }) {
+  const roleColor = ROLE_COLOR[player?.role] || T.accent;
+  const ringColor = teamColor || roleColor;
+  const fontSize  = Math.round(size * 0.38);
+  const initials  = (player?.name || "?")
+    .split(" ").slice(0, 2)
+    .map(w => w.charAt(0).toUpperCase()).join("");
+  return (
+    <div style={{
+      width: size, height: size, borderRadius, flexShrink: 0,
+      background: `linear-gradient(135deg, ${roleColor}28 0%, ${ringColor}14 100%)`,
+      border: `2px solid ${ringColor}55`,
+      boxShadow: `0 0 0 1px ${ringColor}22`,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      fontFamily: fonts.display, fontWeight: 800,
+      fontSize, color: roleColor, letterSpacing: -0.5,
+      position: "relative", overflow: "hidden",
+    }}>
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: "45%", background: "rgba(255,255,255,0.06)", borderRadius: `${borderRadius}px ${borderRadius}px 0 0`, pointerEvents: "none" }} />
+      {initials}
+    </div>
+  );
+}
+
 const ROLE_SHORT = {
   "Batsman":       "BAT",
   "Bowler":        "BOWL",
@@ -180,14 +204,7 @@ export default function AllTimeXI({ teams, players, assignments, points, onClose
                       </div>
 
                       {/* Avatar */}
-                      <div style={{
-                        width: 36, height: 36, borderRadius: 9, flexShrink: 0,
-                        background: roleColor + "18", border: `1px solid ${roleColor}44`,
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        fontFamily: fonts.display, fontWeight: 800, fontSize: 15, color: roleColor,
-                      }}>
-                        {p.name.charAt(0)}
-                      </div>
+                      <PlayerImage player={p} size={36} borderRadius={9} teamColor={team?.color} />
 
                       {/* Name + meta */}
                       <div style={{ flex: 1, minWidth: 0 }}>

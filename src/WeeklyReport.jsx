@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { T, fonts, FONT_URL } from "./Theme";
 
 const ROLE_COLOR = {
@@ -8,58 +8,33 @@ const ROLE_COLOR = {
   "Wicket-Keeper": "#C9A84C",
 };
 
-// ── In-memory image cache (survives re-renders, cleared on page refresh) ────
-const _imgCache = {};
-
-function PlayerImage({ player, size = 44, borderRadius = 11 }) {
+// Polished letter avatar — role-coloured ring + gradient background
+function PlayerImage({ player, size = 44, borderRadius = 11, teamColor }) {
   const roleColor = ROLE_COLOR[player?.role] || T.accent;
-  const cid = player?.cricbuzzId;
+  const ringColor = teamColor || roleColor;
+  const fontSize  = Math.round(size * 0.38);
+  const initials  = (player?.name || "?")
+    .split(" ").slice(0, 2)
+    .map(w => w.charAt(0).toUpperCase()).join("");
 
-  const [imgUrl,  setImgUrl]  = useState(() => (_imgCache[cid] && _imgCache[cid] !== "FAIL") ? _imgCache[cid] : null);
-  const [failed,  setFailed]  = useState(() => _imgCache[cid] === "FAIL");
-
-  useEffect(() => {
-    if (!cid || imgUrl || failed) return;
-    if (_imgCache[cid] === "FAIL") { setFailed(true); return; }
-    if (_imgCache[cid])            { setImgUrl(_imgCache[cid]); return; }
-
-    fetch(`/api/cricbuzz?path=${encodeURIComponent(`player/v1/${cid}`)}`)
-      .then(r => r.json())
-      .then(data => {
-        // Cricbuzz returns image inside playerInfo or top-level
-        const url = data?.playerInfo?.image || data?.image || null;
-        if (url) { _imgCache[cid] = url; setImgUrl(url); }
-        else      { _imgCache[cid] = "FAIL"; setFailed(true); }
-      })
-      .catch(() => { _imgCache[cid] = "FAIL"; setFailed(true); });
-  }, [cid]);
-
-  if (imgUrl && !failed) {
-    return (
-      <img
-        src={imgUrl}
-        alt={player.name}
-        onError={() => { setFailed(true); setImgUrl(null); }}
-        style={{
-          width: size, height: size, borderRadius,
-          objectFit: "cover", objectPosition: "top",
-          border: `1px solid ${roleColor}44`,
-          flexShrink: 0, display: "block",
-        }}
-      />
-    );
-  }
-
-  // Fallback — letter avatar
   return (
     <div style={{
       width: size, height: size, borderRadius, flexShrink: 0,
-      background: roleColor + "18", border: `1px solid ${roleColor}44`,
+      background: `linear-gradient(135deg, ${roleColor}28 0%, ${ringColor}14 100%)`,
+      border: `2px solid ${ringColor}55`,
+      boxShadow: `0 0 0 1px ${ringColor}22`,
       display: "flex", alignItems: "center", justifyContent: "center",
       fontFamily: fonts.display, fontWeight: 800,
-      fontSize: Math.round(size * 0.38), color: roleColor,
+      fontSize, color: roleColor, letterSpacing: -0.5,
+      position: "relative", overflow: "hidden",
     }}>
-      {player?.name?.charAt(0) || "?"}
+      {/* Subtle sheen */}
+      <div style={{
+        position: "absolute", top: 0, left: 0, right: 0, height: "45%",
+        background: "rgba(255,255,255,0.06)", borderRadius: `${borderRadius}px ${borderRadius}px 0 0`,
+        pointerEvents: "none",
+      }} />
+      {initials}
     </div>
   );
 }
@@ -203,7 +178,7 @@ function PlayerBreakdownDrawer({ player, weekMatches, points, captains, teams, a
             <div style={{ width: 36, height: 4, borderRadius: 2, background: T.border }} />
           </div>
           <div style={{ padding: "10px 20px 14px", display: "flex", alignItems: "center", gap: 12, borderBottom: `1px solid ${T.border}` }}>
-            <PlayerImage player={player} size={46} borderRadius={12} />
+            <PlayerImage player={player} size={46} borderRadius={12} teamColor={team?.color} />
             <div style={{ flex: 1 }}>
               <div style={{ fontFamily: fonts.display, fontWeight: 700, fontSize: 16, color: T.text }}>{player.name}</div>
               <div style={{ fontFamily: fonts.body, fontSize: 11, color: T.muted, marginTop: 1 }}>
@@ -370,7 +345,7 @@ function WeekCard({ week, weekMatches, teams, players, assignments, points, capt
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               {topScorer && (
                 <div onClick={() => setSelectedPlayer(topScorer)} style={{ gridColumn: "1 / -1", background: T.accentBg, border: `1px solid ${T.accentBorder}`, borderRadius: 10, padding: "11px 14px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
-                  <PlayerImage player={topScorer} size={44} borderRadius={11} />
+                  <PlayerImage player={topScorer} size={44} borderRadius={11} teamColor={topScorerTeam?.color} />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontFamily: fonts.display, fontSize: 9, fontWeight: 700, color: T.accent, letterSpacing: 1.5, marginBottom: 2 }}>⭐ TOP SCORER</div>
                     <div style={{ fontFamily: fonts.display, fontWeight: 700, fontSize: 14, color: T.text }}>{topScorer.name}</div>
