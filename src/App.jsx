@@ -4810,7 +4810,7 @@ Rules: Date format YYYY-MM-DD. Dates must be from the most recent season — not
                 {!aiMatchSuccess && (
                   <button onClick={()=>{setAiMatchError("");generateAiMatches();}} disabled={aiMatchGenerating}
                     style={{flex:2,background:aiMatchGenerating?"#A855F733":`linear-gradient(135deg,${T.purple},#7C3AED)`,border:"none",borderRadius:10,padding:12,color:"#fff",fontFamily:fonts.display,fontWeight:800,fontSize:14,cursor:aiMatchGenerating?"not-allowed":"pointer",letterSpacing:0.5}}>
-                    {aiMatchGenerating ? "🤖 EXTRACTING…" : "🤖 EXTRACT MATCHES"}
+                    {aiMatchGenerating ? "⏳ PARSING…" : "📋 PARSE SCHEDULE"}
                   </button>
                 )}
               </div>
