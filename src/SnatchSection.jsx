@@ -68,13 +68,14 @@ export default function SnatchSection({
   leaderboard, myTeam, isAdmin, unlocked, withPassword,
   teamIdentity, user, pitch,
   onUpdateSnatch, onUpdateAssignments, onUpdateOwnershipLog, ownershipLog,
-  pushNotif
+  safePlayers, pushNotif
 }) {
   const [windowStatus, setWindowStatus] = useState(getSnatchWindowStatus());
   const [pinInput, setPinInput] = useState("");
   const [pinErr, setPinErr] = useState("");
   const [selectingPlayer, setSelectingPlayer] = useState(false);
   const [selectedVictimTeam, setSelectedVictimTeam] = useState(null);
+  const [pinModal, setPinModal] = useState(null); // player object to confirm snatch
 
   useEffect(() => {
     const t = setInterval(() => setWindowStatus(getSnatchWindowStatus()), 30000);
@@ -121,7 +122,6 @@ export default function SnatchSection({
   };
 
   const confirmSnatch = async (pid) => {
-    // Admin bypass — no PIN needed; regular team needs PIN
     const actingTeamId = myTeamId || eligibility?.team?.id;
     if (!unlocked) {
       const myIdentity = Object.values(teamIdentity || {}).find(t => t.claimedBy === user?.email);
@@ -144,7 +144,7 @@ export default function SnatchSection({
     onUpdateOwnershipLog(newLog);
     const actingTeam = teams.find(t => t.id === actingTeamId);
     pushNotif("snatch", (actingTeam?.name || "A team") + " snatched " + (players.find(p => p.id === pid)?.name || "a player"), "⚡");
-    setSelectingPlayer(false); setSelectedVictimTeam(null); setPinInput(""); setPinErr("");
+    setSelectingPlayer(false); setSelectedVictimTeam(null); setPinInput(""); setPinErr(""); setPinModal(null);
   };
 
   const formatMins = (mins) => {
@@ -239,7 +239,7 @@ export default function SnatchSection({
             </div>
           )}
           {!selectingPlayer ? (
-            <button onClick={()=>setSelectingPlayer(true)} style={{...sBtn("#A855F7","#A855F722"),width:"100%",marginBottom:8}}>⚡ ACTIVATE SNATCH</button>
+            <button onClick={()=>setSelectingPlayer(true)} style={{...sBtn("#A855F7","#A855F722"),width:"100%",marginBottom:8,cursor:"pointer",pointerEvents:"all"}}>⚡ ACTIVATE SNATCH</button>
           ) : (
             <div>
               <div style={{fontSize:11,color:"#4A5E78",marginBottom:10}}>Select a team to snatch from:</div>
@@ -254,24 +254,27 @@ export default function SnatchSection({
               {selectedVictimTeam && (
                 <div>
                   <div style={{fontSize:11,color:"#4A5E78",marginBottom:8}}>Select player to snatch:</div>
-                  {players.filter(p => assignments[p.id] === selectedVictimTeam).map(p => (
-                    <div key={p.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:"#080C14",borderRadius:8,border:"1px solid #1E2D45",marginBottom:6}}>
+                  {players.filter(p => assignments[p.id] === selectedVictimTeam).map(p => {
+                    const isSafe = (safePlayers||[]).includes(p.id);
+                    return (
+                    <div key={p.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:"#080C14",borderRadius:8,border:"1px solid "+(isSafe?"#4A5E7844":"#1E2D45"),marginBottom:6,opacity:isSafe?0.6:1}}>
                       <div style={{flex:1}}>
-                        <div style={{fontWeight:700,fontSize:13,color:"#E2EAF4"}}>{p.name}</div>
+                        <div style={{fontWeight:700,fontSize:13,color:"#E2EAF4",display:"flex",alignItems:"center",gap:6}}>
+                          {p.name}
+                          {isSafe && <span style={{fontSize:10,background:"#4A5E7833",border:"1px solid #4A5E7866",borderRadius:4,padding:"1px 6px",color:"#94A3B8",fontWeight:700}}>🛡 SAFE</span>}
+                        </div>
                         <div style={{fontSize:11,color:"#4A5E78"}}>{p.iplTeam} • {p.role}</div>
                       </div>
-                      <button onClick={()=>{ if (!pinInput) { setPinErr("Enter your PIN first"); return; } confirmSnatch(p.id); }}
-                        style={{...sBtn("#A855F7"),fontSize:11,padding:"4px 12px"}}>SNATCH</button>
+                      {isSafe ? (
+                        <div style={{fontSize:11,color:"#4A5E78",padding:"4px 12px"}}>🛡 Protected</div>
+                      ) : (
+                        <button onClick={()=>{ if (unlocked) { confirmSnatch(p.id); } else { setPinModal(p); setPinInput(""); setPinErr(""); } }}
+                          style={{...sBtn("#A855F7"),fontSize:11,padding:"4px 12px",cursor:"pointer"}}>SNATCH</button>
+                      )}
                     </div>
-                  ))}
-                  <div style={{marginTop:12}}>
-                    <div style={{fontSize:11,color:"#4A5E78",marginBottom:6}}>Enter your team PIN to confirm:</div>
-                    <input type="password" inputMode="numeric" value={pinInput}
-                      onChange={e=>{setPinInput(e.target.value);setPinErr("");}}
-                      placeholder="Your PIN"
-                      style={{width:"100%",background:"#080C14",border:"1px solid "+(pinErr?"#FF3D5A":"#1E2D45"),borderRadius:8,padding:"8px 12px",color:"#E2EAF4",fontSize:14,fontFamily:"Barlow Condensed,sans-serif",outline:"none",boxSizing:"border-box",marginBottom:4}} />
-                    {pinErr && <div style={{fontSize:11,color:"#FF3D5A",marginBottom:6}}>{pinErr}</div>}
-                  </div>
+                    );
+                  })}
+
                 </div>
               )}
               <button onClick={()=>{setSelectingPlayer(false);setSelectedVictimTeam(null);setPinInput("");setPinErr("");}}
@@ -289,6 +292,46 @@ export default function SnatchSection({
 
       {!hasActivSnatch && !windowStatus.open && (
         <div style={{fontSize:12,color:"#4A5E78",textAlign:"center",padding:"8px 0"}}>Window opens Saturday 12:00 AM IST</div>
+      )}
+
+      {/* PIN Confirmation Modal */}
+      {pinModal && (
+        <div style={{position:"fixed",inset:0,background:"rgba(5,8,16,0.9)",zIndex:999,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+          <div style={{background:"#111118",borderRadius:18,border:"1px solid #A855F744",padding:28,width:"100%",maxWidth:360,boxShadow:"0 24px 80px rgba(0,0,0,0.7)"}}>
+            <div style={{textAlign:"center",marginBottom:20}}>
+              <div style={{fontSize:32,marginBottom:8}}>⚡</div>
+              <div style={{fontFamily:"'Exo 2',sans-serif",fontSize:18,fontWeight:800,color:"#A855F7",letterSpacing:1,marginBottom:4}}>CONFIRM SNATCH</div>
+              <div style={{fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:13,color:"#9AA5B8"}}>
+                You are snatching <span style={{color:"#E8E0CC",fontWeight:700}}>{pinModal.name}</span>
+              </div>
+              <div style={{fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:12,color:"#9AA5B8",marginTop:4}}>
+                {pinModal.iplTeam} · {pinModal.role}
+              </div>
+            </div>
+            <div style={{fontFamily:"'Exo 2',sans-serif",fontSize:10,fontWeight:700,color:"#9AA5B8",letterSpacing:2,marginBottom:8}}>ENTER YOUR TEAM PIN</div>
+            <input
+              type="password"
+              inputMode="numeric"
+              value={pinInput}
+              onChange={e=>{setPinInput(e.target.value);setPinErr("");}}
+              onKeyDown={e=>e.key==="Enter"&&confirmSnatch(pinModal.id)}
+              placeholder="••••"
+              autoFocus
+              style={{width:"100%",background:"#0C0C0F",border:`1px solid ${pinErr?"#FF3D5A":"#222230"}`,borderRadius:10,padding:"14px 16px",color:"#E8E0CC",fontSize:20,fontFamily:"monospace",outline:"none",marginBottom:8,boxSizing:"border-box",textAlign:"center",letterSpacing:8}}
+            />
+            {pinErr && <div style={{fontFamily:"'Plus Jakarta Sans',sans-serif",fontSize:12,color:"#FF3D5A",textAlign:"center",marginBottom:8}}>{pinErr}</div>}
+            <div style={{display:"flex",gap:10,marginTop:12}}>
+              <button onClick={()=>{setPinModal(null);setPinInput("");setPinErr("");}}
+                style={{flex:1,background:"transparent",border:"1px solid #222230",borderRadius:10,padding:12,color:"#9AA5B8",fontFamily:"'Exo 2',sans-serif",fontWeight:700,fontSize:13,cursor:"pointer"}}>
+                CANCEL
+              </button>
+              <button onClick={()=>confirmSnatch(pinModal.id)} disabled={!pinInput.trim()}
+                style={{flex:2,background:pinInput.trim()?"linear-gradient(135deg,#A855F7,#7C3AED)":"#A855F733",border:"none",borderRadius:10,padding:12,color:"#fff",fontFamily:"'Exo 2',sans-serif",fontWeight:800,fontSize:14,cursor:pinInput.trim()?"pointer":"not-allowed",letterSpacing:0.5}}>
+                ⚡ CONFIRM SNATCH
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Snatch history */}
