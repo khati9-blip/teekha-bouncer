@@ -3014,30 +3014,41 @@ Rules: Date format YYYY-MM-DD. Dates must be from the most recent season — not
         setAiMatchGenerating(false); return;
       }
 
-      const existingIds = new Set(matches.map(m => m.cricbuzzId).filter(Boolean));
       const updated = [...matches];
-      let nextNum = Math.max(...matches.filter(m=>m.tournamentId===tournamentId).map(m=>m.matchNum||0), 0) + 1;
+      const tournamentMatches = matches.filter(m => m.tournamentId === tournamentId);
+      let nextNum = Math.max(...tournamentMatches.map(m => m.matchNum || 0), 0) + 1;
+      let added = 0, skipped = 0;
 
       parsed.forEach(m => {
+        // Skip if match with same teams + date already exists
+        const isDuplicate = tournamentMatches.some(ex => {
+          const sameDate = ex.date === m.date;
+          const sameTeams = (ex.team1 === m.team1 && ex.team2 === m.team2) ||
+                            (ex.team1 === m.team2 && ex.team2 === m.team1);
+          return sameDate && sameTeams;
+        });
+        if (isDuplicate) { skipped++; return; }
+
         const id = "ai_" + tournamentId + "_" + (m.matchNum || nextNum) + "_" + Date.now();
         updated.push({
           id,
           tournamentId,
-          matchNum: m.matchNum || nextNum++,
+          matchNum: m.matchNum || nextNum,
           team1: m.team1 || "",
           team2: m.team2 || "",
           date: m.date || "",
           time: m.time || "7:30 PM",
           venue: m.venue || "",
-          status: "completed",
+          status: m.status || "completed",
           result: m.result || "",
           aiGenerated: true,
         });
         nextNum++;
+        added++;
       });
 
       updMatches(updated);
-        setAiMatchSuccess(`✅ Added ${parsed.length} matches! Now sync stats for each match using the scorecard paste.`);
+        setAiMatchSuccess(`✅ Added ${added} matches${skipped > 0 ? ` (${skipped} skipped — already exist)` : ""}. Sync stats for each completed match using scorecard paste.`);
     } catch(e) {
           setAiMatchError('Error generating matches: ' + e.message);
     }
