@@ -1,5 +1,68 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { T, fonts, FONT_URL } from "./Theme";
+
+const ROLE_COLOR = {
+  "Batsman":       "#4F8EF7",
+  "Bowler":        "#FF3D5A",
+  "All-Rounder":   "#2ECC71",
+  "Wicket-Keeper": "#C9A84C",
+};
+
+// ── In-memory image cache (survives re-renders, cleared on page refresh) ────
+const _imgCache = {};
+
+function PlayerImage({ player, size = 44, borderRadius = 11 }) {
+  const roleColor = ROLE_COLOR[player?.role] || T.accent;
+  const cid = player?.cricbuzzId;
+
+  const [imgUrl,  setImgUrl]  = useState(() => (_imgCache[cid] && _imgCache[cid] !== "FAIL") ? _imgCache[cid] : null);
+  const [failed,  setFailed]  = useState(() => _imgCache[cid] === "FAIL");
+
+  useEffect(() => {
+    if (!cid || imgUrl || failed) return;
+    if (_imgCache[cid] === "FAIL") { setFailed(true); return; }
+    if (_imgCache[cid])            { setImgUrl(_imgCache[cid]); return; }
+
+    fetch(`/api/cricbuzz?path=${encodeURIComponent(`player/v1/${cid}`)}`)
+      .then(r => r.json())
+      .then(data => {
+        // Cricbuzz returns image inside playerInfo or top-level
+        const url = data?.playerInfo?.image || data?.image || null;
+        if (url) { _imgCache[cid] = url; setImgUrl(url); }
+        else      { _imgCache[cid] = "FAIL"; setFailed(true); }
+      })
+      .catch(() => { _imgCache[cid] = "FAIL"; setFailed(true); });
+  }, [cid]);
+
+  if (imgUrl && !failed) {
+    return (
+      <img
+        src={imgUrl}
+        alt={player.name}
+        onError={() => { setFailed(true); setImgUrl(null); }}
+        style={{
+          width: size, height: size, borderRadius,
+          objectFit: "cover", objectPosition: "top",
+          border: `1px solid ${roleColor}44`,
+          flexShrink: 0, display: "block",
+        }}
+      />
+    );
+  }
+
+  // Fallback — letter avatar
+  return (
+    <div style={{
+      width: size, height: size, borderRadius, flexShrink: 0,
+      background: roleColor + "18", border: `1px solid ${roleColor}44`,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      fontFamily: fonts.display, fontWeight: 800,
+      fontSize: Math.round(size * 0.38), color: roleColor,
+    }}>
+      {player?.name?.charAt(0) || "?"}
+    </div>
+  );
+}
 
 function getWeekRange(offset = 0) {
   // Weeks run Saturday 12:00 AM IST → Friday 11:58 PM IST,
@@ -140,9 +203,7 @@ function PlayerBreakdownDrawer({ player, weekMatches, points, captains, teams, a
             <div style={{ width: 36, height: 4, borderRadius: 2, background: T.border }} />
           </div>
           <div style={{ padding: "10px 20px 14px", display: "flex", alignItems: "center", gap: 12, borderBottom: `1px solid ${T.border}` }}>
-            <div style={{ width: 42, height: 42, borderRadius: 11, background: team ? team.color + "20" : T.accentBg, border: `1px solid ${team ? team.color + "44" : T.accentBorder}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: fonts.display, fontWeight: 800, fontSize: 17, color: team?.color || T.accent, flexShrink: 0 }}>
-              {player.name.charAt(0)}
-            </div>
+            <PlayerImage player={player} size={46} borderRadius={12} />
             <div style={{ flex: 1 }}>
               <div style={{ fontFamily: fonts.display, fontWeight: 700, fontSize: 16, color: T.text }}>{player.name}</div>
               <div style={{ fontFamily: fonts.body, fontSize: 11, color: T.muted, marginTop: 1 }}>
@@ -193,12 +254,15 @@ function PlayerBreakdownDrawer({ player, weekMatches, points, captains, teams, a
   );
 }
 
-function StatPill({ emoji, label, name, value, unit, color, onClick }) {
+function StatPill({ emoji, label, name, value, unit, color, onClick, player }) {
   return (
     <div onClick={onClick} style={{ background: color + "12", border: `1px solid ${color}33`, borderRadius: 10, padding: "10px 12px", cursor: onClick ? "pointer" : "default" }}>
-      <div style={{ fontFamily: fonts.display, fontSize: 9, fontWeight: 700, color, letterSpacing: 1.5, marginBottom: 5 }}>{emoji} {label}</div>
-      <div style={{ fontFamily: fonts.display, fontWeight: 700, fontSize: 13, color: T.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginTop: 2 }}>
+      <div style={{ fontFamily: fonts.display, fontSize: 9, fontWeight: 700, color, letterSpacing: 1.5, marginBottom: 7 }}>{emoji} {label}</div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
+        {player && <PlayerImage player={player} size={32} borderRadius={8} />}
+        <div style={{ fontFamily: fonts.display, fontWeight: 700, fontSize: 13, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</div>
+      </div>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
         <div style={{ fontFamily: fonts.display, fontWeight: 800, fontSize: 18, color }}>
           {value} <span style={{ fontSize: 10, fontWeight: 400, color: T.muted }}>{unit}</span>
         </div>
@@ -306,9 +370,7 @@ function WeekCard({ week, weekMatches, teams, players, assignments, points, capt
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               {topScorer && (
                 <div onClick={() => setSelectedPlayer(topScorer)} style={{ gridColumn: "1 / -1", background: T.accentBg, border: `1px solid ${T.accentBorder}`, borderRadius: 10, padding: "11px 14px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 9, background: topScorerTeam ? topScorerTeam.color + "20" : T.accentBg, border: `1px solid ${topScorerTeam ? topScorerTeam.color + "44" : T.accentBorder}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: fonts.display, fontWeight: 800, fontSize: 15, color: topScorerTeam?.color || T.accent, flexShrink: 0 }}>
-                    {topScorer.name.charAt(0)}
-                  </div>
+                  <PlayerImage player={topScorer} size={44} borderRadius={11} />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontFamily: fonts.display, fontSize: 9, fontWeight: 700, color: T.accent, letterSpacing: 1.5, marginBottom: 2 }}>⭐ TOP SCORER</div>
                     <div style={{ fontFamily: fonts.display, fontWeight: 700, fontSize: 14, color: T.text }}>{topScorer.name}</div>
@@ -320,10 +382,10 @@ function WeekCard({ week, weekMatches, teams, players, assignments, points, capt
                   </div>
                 </div>
               )}
-              {topSixes.player && topSixes.count > 0 && <StatPill emoji="💥" label="MOST SIXES" name={topSixes.player.name} value={topSixes.count} unit="6s" color="#F97316" onClick={() => setSelectedPlayer(topSixes.player)} />}
-              {topWickets.player && topWickets.count > 0 && <StatPill emoji="🎳" label="MOST WICKETS" name={topWickets.player.name} value={topWickets.count} unit="wkts" color={T.info} onClick={() => setSelectedPlayer(topWickets.player)} />}
-              {bestEco.player && bestEco.eco < 999 && <StatPill emoji="📐" label="BEST ECONOMY" name={bestEco.player.name} value={bestEco.eco} unit="eco" color={T.success} onClick={() => setSelectedPlayer(bestEco.player)} />}
-              {longestSix.player && <StatPill emoji="🚀" label="LONGEST SIX" name={longestSix.player.name} value="🏆" unit="" color={T.purple} onClick={() => setSelectedPlayer(longestSix.player)} />}
+              {topSixes.player && topSixes.count > 0 && <StatPill emoji="💥" label="MOST SIXES" name={topSixes.player.name} value={topSixes.count} unit="6s" color="#F97316" player={topSixes.player} onClick={() => setSelectedPlayer(topSixes.player)} />}
+              {topWickets.player && topWickets.count > 0 && <StatPill emoji="🎳" label="MOST WICKETS" name={topWickets.player.name} value={topWickets.count} unit="wkts" color={T.info} player={topWickets.player} onClick={() => setSelectedPlayer(topWickets.player)} />}
+              {bestEco.player && bestEco.eco < 999 && <StatPill emoji="📐" label="BEST ECONOMY" name={bestEco.player.name} value={bestEco.eco} unit="eco" color={T.success} player={bestEco.player} onClick={() => setSelectedPlayer(bestEco.player)} />}
+              {longestSix.player && <StatPill emoji="🚀" label="LONGEST SIX" name={longestSix.player.name} value="🏆" unit="" color={T.purple} player={longestSix.player} onClick={() => setSelectedPlayer(longestSix.player)} />}
             </div>
           </div>
 
