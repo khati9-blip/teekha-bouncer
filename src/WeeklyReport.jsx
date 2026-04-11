@@ -86,8 +86,9 @@ function StatPill({ emoji, label, name, value, unit, color }) {
   );
 }
 
-function WeekCard({ week, weekMatches, teams, players, assignments, points, captains, ownershipLog, isCurrentWeek }) {
+function WeekCard({ week, weekMatches, teams, players, assignments, points, captains, ownershipLog, isCurrentWeek, weekOffset }) {
   const [expanded, setExpanded] = useState(isCurrentWeek);
+  const weekLabel = isCurrentWeek ? "📅 THIS WEEK" : weekOffset === 1 ? "📋 LAST WEEK" : `📋 ${weekOffset} WEEKS AGO`;
   const weekTeams = teams.map(t => ({ ...t, weekPts: getTeamWeekPts(t.id, weekMatches, points, captains, players, assignments, ownershipLog) })).sort((a, b) => b.weekPts - a.weekPts);
   const totalLeaguePts = weekTeams.reduce((s, t) => s + t.weekPts, 0);
   const { topSixes, topWickets, bestEco, longestSix } = getStatLeaders(weekMatches, points, players);
@@ -107,7 +108,7 @@ function WeekCard({ week, weekMatches, teams, players, assignments, points, capt
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
             <div style={{ fontFamily: fonts.display, fontWeight: 800, fontSize: 16, color: isCurrentWeek ? T.accent : T.text, letterSpacing: 0.5 }}>
-              {isCurrentWeek ? "📅 THIS WEEK" : "📋 LAST WEEK"}
+              {weekLabel}
             </div>
             {isCurrentWeek && <span style={{ fontFamily: fonts.display, fontSize: 8, fontWeight: 700, letterSpacing: 1, background: T.successBg, border: `1px solid ${T.success}33`, color: T.success, borderRadius: 4, padding: "2px 6px" }}>IN PROGRESS</span>}
           </div>
@@ -220,9 +221,18 @@ function WeekCard({ week, weekMatches, teams, players, assignments, points, capt
 }
 
 export default function WeeklyReport({ teams, players, assignments, points, captains, matches, ownershipLog, onClose }) {
-  const currentWeek = getWeekRange(0);
-  const lastWeek = getWeekRange(-1);
   const sharedProps = { teams, players, assignments, points, captains, ownershipLog };
+
+  // Build list of weeks: current + all past weeks that have completed matches.
+  // offset=0 → this Sat–Fri week, offset=1 → last week, offset=2 → week before, etc.
+  const weeks = [];
+  for (let offset = 0; offset <= 12; offset++) {
+    const week = getWeekRange(offset);
+    const wm = getWeekMatches(matches, week);
+    if (offset === 0 || wm.length > 0) {
+      weeks.push({ week, weekMatches: wm, isCurrentWeek: offset === 0 });
+    }
+  }
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(5,8,16,0.97)", zIndex: 400, display: "flex", flexDirection: "column", fontFamily: fonts.body }}>
@@ -230,13 +240,14 @@ export default function WeeklyReport({ teams, players, assignments, points, capt
       <div style={{ padding: "16px 20px", borderBottom: `1px solid ${T.border}`, display: "flex", alignItems: "center", justifyContent: "space-between", background: T.card, flexShrink: 0 }}>
         <div>
           <div style={{ fontFamily: fonts.display, fontWeight: 800, fontSize: 20, color: T.accent, letterSpacing: 1 }}>📋 WEEKLY REPORT</div>
-          <div style={{ fontFamily: fonts.body, fontSize: 11, color: T.muted, marginTop: 2 }}>League summary week by week</div>
+          <div style={{ fontFamily: fonts.body, fontSize: 11, color: T.muted, marginTop: 2 }}>League summary · Sat–Fri IST</div>
         </div>
         <button onClick={onClose} style={{ background: T.border, border: "none", borderRadius: 8, width: 30, height: 30, color: T.sub, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
       </div>
       <div style={{ flex: 1, overflowY: "auto", padding: "14px 18px" }}>
-        <WeekCard week={currentWeek} weekMatches={getWeekMatches(matches, currentWeek)} isCurrentWeek={true} {...sharedProps} />
-        <WeekCard week={lastWeek} weekMatches={getWeekMatches(matches, lastWeek)} isCurrentWeek={false} {...sharedProps} />
+        {weeks.map(({ week, weekMatches, isCurrentWeek }, idx) => (
+          <WeekCard key={week.startStr} week={week} weekMatches={weekMatches} isCurrentWeek={isCurrentWeek} weekOffset={idx} {...sharedProps} />
+        ))}
       </div>
     </div>
   );
