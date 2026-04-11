@@ -2193,7 +2193,8 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   const [aiMatchCount, setAiMatchCount] = useState(10);
   const [aiMatchGenerating, setAiMatchGenerating] = useState(false);
   const [aiMatchError, setAiMatchError] = useState("");
-  const [aiMatchSuccess, setAiMatchSuccess] = useState(""); // null | { tournamentId, tournamentName }
+  const [aiMatchSuccess, setAiMatchSuccess] = useState("");
+  const [aiMatchText, setAiMatchText] = useState(""); // null | { tournamentId, tournamentName }
   const [addTournamentModal, setAddTournamentModal] = useState(false);
   const [addTournamentSource, setAddTournamentSource] = useState(null);
   const [addTournamentSeries, setAddTournamentSeries] = useState([]);
@@ -4760,7 +4761,7 @@ Rules: Date format YYYY-MM-DD. Dates must be from the most recent season — not
                 <div style={{fontSize:36,marginBottom:8}}>🤖</div>
                 <div style={{fontFamily:fonts.display,fontWeight:800,fontSize:20,color:T.purple,letterSpacing:1,marginBottom:4}}>AI MATCH GENERATOR</div>
                 <div style={{fontFamily:fonts.body,fontSize:13,color:T.muted}}>
-                  Generating matches for <span style={{color:T.text,fontWeight:600}}>{aiMatchModal.tournamentName}</span>
+                  Extracting matches for <span style={{color:T.text,fontWeight:600}}>{aiMatchModal.tournamentName}</span>
                 </div>
               </div>
 
@@ -4768,15 +4769,17 @@ Rules: Date format YYYY-MM-DD. Dates must be from the most recent season — not
                 <div style={{fontFamily:fonts.body,fontSize:12,color:T.muted,marginBottom:4}}>ℹ️ AI will generate match fixtures with dates, teams and venues. You'll still need to sync stats manually for each match.</div>
               </div>
 
-              <div style={{fontFamily:fonts.display,fontSize:10,fontWeight:700,color:T.muted,letterSpacing:2,marginBottom:8}}>HOW MANY PAST MATCHES TO GENERATE?</div>
-              <div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap"}}>
-                {[5,10,15,20,30].map(n=>(
-                  <button key={n} onClick={()=>setAiMatchCount(n)}
-                    style={{padding:"8px 16px",borderRadius:8,border:`1px solid ${aiMatchCount===n?T.purple:T.border}`,background:aiMatchCount===n?T.purpleBg:"transparent",color:aiMatchCount===n?T.purple:T.muted,fontFamily:fonts.display,fontWeight:700,fontSize:13,cursor:"pointer"}}>
-                    {n}
-                  </button>
-                ))}
+              <div style={{fontFamily:fonts.display,fontSize:10,fontWeight:700,color:T.muted,letterSpacing:2,marginBottom:8}}>PASTE SCHEDULE FROM CRICBUZZ</div>
+              <div style={{fontFamily:fonts.body,fontSize:11,color:T.muted,marginBottom:8}}>
+                Go to Cricbuzz → your tournament → Schedule tab → select all text → paste below
               </div>
+              <textarea
+                value={aiMatchText}
+                onChange={e=>setAiMatchText(e.target.value)}
+                placeholder="Paste schedule text from Cricbuzz here..."
+                rows={8}
+                style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:9,padding:"10px 14px",color:T.text,fontSize:12,fontFamily:fonts.body,outline:"none",resize:"vertical",boxSizing:"border-box",marginBottom:16,lineHeight:1.5}}
+              />
 
               {aiMatchError && (
                 <div style={{background:T.dangerBg,border:`1px solid ${T.danger}33`,borderRadius:8,padding:"10px 14px",marginBottom:12,fontFamily:fonts.body,fontSize:12,color:T.danger}}>
@@ -4789,14 +4792,14 @@ Rules: Date format YYYY-MM-DD. Dates must be from the most recent season — not
                 </div>
               )}
               <div style={{display:"flex",gap:10}}>
-                <button onClick={()=>{setAiMatchModal(null);setAiMatchError("");setAiMatchSuccess("");}}
+                <button onClick={()=>{setAiMatchModal(null);setAiMatchError("");setAiMatchSuccess("");setAiMatchText("");}}
                   style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:10,padding:12,color:T.muted,fontFamily:fonts.display,fontWeight:700,fontSize:13,cursor:"pointer"}}>
                   {aiMatchSuccess ? "CLOSE" : "CANCEL"}
                 </button>
                 {!aiMatchSuccess && (
                   <button onClick={()=>{setAiMatchError("");generateAiMatches();}} disabled={aiMatchGenerating}
                     style={{flex:2,background:aiMatchGenerating?"#A855F733":`linear-gradient(135deg,${T.purple},#7C3AED)`,border:"none",borderRadius:10,padding:12,color:"#fff",fontFamily:fonts.display,fontWeight:800,fontSize:14,cursor:aiMatchGenerating?"not-allowed":"pointer",letterSpacing:0.5}}>
-                    {aiMatchGenerating ? "🤖 GENERATING…" : `🤖 GENERATE ${aiMatchCount} MATCHES`}
+                    {aiMatchGenerating ? "🤖 EXTRACTING…" : "🤖 EXTRACT MATCHES"}
                   </button>
                 )}
               </div>
