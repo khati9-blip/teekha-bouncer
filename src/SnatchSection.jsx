@@ -119,14 +119,18 @@ export default function SnatchSection({
   };
 
   const confirmSnatch = async (pid) => {
-    const myIdentity = Object.values(teamIdentity || {}).find(t => t.claimedBy === user?.email);
-    if (!myIdentity?.pinHash) { setPinErr("No PIN set for your team"); return; }
-    const hashBuf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(pinInput));
-    const h = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, "0")).join("");
-    if (h !== myIdentity.pinHash) { setPinErr("Wrong PIN"); setPinInput(""); return; }
+    // Admin bypass — no PIN needed; regular team needs PIN
+    const actingTeamId = myTeamId || eligibility?.team?.id;
+    if (!unlocked) {
+      const myIdentity = Object.values(teamIdentity || {}).find(t => t.claimedBy === user?.email);
+      if (!myIdentity?.pinHash) { setPinErr("No PIN set for your team"); return; }
+      const hashBuf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(pinInput));
+      const h = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, "0")).join("");
+      if (h !== myIdentity.pinHash) { setPinErr("Wrong PIN"); setPinInput(""); return; }
+    }
     const fromTeamId = assignments[pid];
     const playerTotalPts = Object.values(points[pid] || {}).reduce((s, d) => s + (d?.base || 0), 0);
-    const active = { pid, byTeamId: myTeamId, fromTeamId, pointsAtSnatch: playerTotalPts, startDate: new Date().toISOString() };
+    const active = { pid, byTeamId: actingTeamId, fromTeamId, pointsAtSnatch: playerTotalPts, startDate: new Date().toISOString() };
     const newAssignments = { ...assignments, [pid]: myTeamId };
     const now = new Date().toISOString().split("T")[0];
     const newLog = { ...ownershipLog };
@@ -136,7 +140,8 @@ export default function SnatchSection({
     onUpdateSnatch({ ...snatch, active });
     onUpdateAssignments(newAssignments);
     onUpdateOwnershipLog(newLog);
-    pushNotif("snatch", (myTeam?.name || "A team") + " snatched " + (players.find(p => p.id === pid)?.name || "a player"), "⚡");
+    const actingTeam = teams.find(t => t.id === actingTeamId);
+    pushNotif("snatch", (actingTeam?.name || "A team") + " snatched " + (players.find(p => p.id === pid)?.name || "a player"), "⚡");
     setSelectingPlayer(false); setSelectedVictimTeam(null); setPinInput(""); setPinErr("");
   };
 
@@ -223,9 +228,14 @@ export default function SnatchSection({
         </div>
       )}
 
-      {/* Snatch action */}
-      {!hasActivSnatch && windowStatus.open && isEligible && (
+      {/* Snatch action — only for eligible team OR admin override */}
+      {!hasActivSnatch && windowStatus.open && (isEligible || unlocked) && (
         <div>
+          {unlocked && !isEligible && eligibility && (
+            <div style={{background:"#F5A62311",border:"1px solid #F5A62333",borderRadius:8,padding:"8px 12px",marginBottom:8,fontSize:11,color:"#F5A623"}}>
+              🔑 Admin override — eligible team is <strong>{eligibility.team?.name}</strong>
+            </div>
+          )}
           {!selectingPlayer ? (
             <button onClick={()=>setSelectingPlayer(true)} style={{...sBtn("#A855F7","#A855F722"),width:"100%",marginBottom:8}}>⚡ ACTIVATE SNATCH</button>
           ) : (
@@ -269,7 +279,7 @@ export default function SnatchSection({
         </div>
       )}
 
-      {!hasActivSnatch && windowStatus.open && !isEligible && eligibility && (
+      {!hasActivSnatch && windowStatus.open && !isEligible && !unlocked && eligibility && (
         <div style={{fontSize:12,color:"#4A5E78",textAlign:"center",padding:"10px 0"}}>
           Only <span style={{color:eligibility.team?.color,fontWeight:700}}>{eligibility.team?.name}</span> can snatch this week
         </div>
