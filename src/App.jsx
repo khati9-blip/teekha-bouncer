@@ -1982,10 +1982,65 @@ function ChatWindow({ myTeam, teams, unlocked, withPassword, storeGet, storeSet,
     return React.createElement('span',{key:i},(i>0?' ':'')+w);
   });
 
-  return React.createElement('div', {style:{position:"fixed",bottom:"calc(env(safe-area-inset-bottom) + 72px)",left:8,zIndex:500,fontFamily:fonts.body}},
-    !open && React.createElement('button',{onClick:()=>setOpen(true),style:{width:52,height:52,borderRadius:"50%",background:"linear-gradient(135deg,#4F8EF7,#1a5fb4)",border:"none",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 4px 16px rgba(79,142,247,0.4)",position:"relative"}},
-      React.createElement('span',{style:{fontSize:22}},"💬"),
-      unread>0 && React.createElement('span',{style:{position:"absolute",top:-2,right:-2,background:"#FF3D5A",borderRadius:"50%",width:18,height:18,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:700,color:"#fff"}},unread>9?"9+":unread)
+  const [pos, setPos] = React.useState(() => {
+    try { const s = localStorage.getItem('tb_chatPos'); return s ? JSON.parse(s) : null; } catch { return null; }
+  });
+  const [dragging, setDragging] = React.useState(false);
+  const dragRef = React.useRef(null);
+  const startRef = React.useRef(null);
+
+  const onDragStart = (e) => {
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    startRef.current = {
+      mx: clientX,
+      my: clientY,
+      px: pos ? pos.x : 8,
+      py: pos ? pos.y : window.innerHeight - 130,
+    };
+    setDragging(true);
+    e.preventDefault();
+  };
+
+  React.useEffect(() => {
+    if (!dragging) return;
+    const onMove = (e) => {
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const dx = clientX - startRef.current.mx;
+      const dy = clientY - startRef.current.my;
+      const nx = Math.max(8, Math.min(window.innerWidth - 60, startRef.current.px + dx));
+      const ny = Math.max(8, Math.min(window.innerHeight - 130, startRef.current.py + dy));
+      const newPos = { x: nx, y: ny };
+      setPos(newPos);
+      try { localStorage.setItem('tb_chatPos', JSON.stringify(newPos)); } catch {}
+    };
+    const onUp = () => setDragging(false);
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('touchmove', onMove, { passive: false });
+    window.addEventListener('mouseup', onUp);
+    window.addEventListener('touchend', onUp);
+    return () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('touchmove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('touchend', onUp);
+    };
+  }, [dragging]);
+
+  const floatStyle = pos
+    ? { position: "fixed", left: pos.x, top: pos.y, zIndex: 500, fontFamily: fonts.body }
+    : { position: "fixed", bottom: "calc(env(safe-area-inset-bottom) + 72px)", left: 8, zIndex: 500, fontFamily: fonts.body };
+
+  return React.createElement('div', { ref: dragRef, style: floatStyle },
+    !open && React.createElement('button', {
+      onClick: () => setOpen(true),
+      onMouseDown: onDragStart,
+      onTouchStart: onDragStart,
+      style: { width: 52, height: 52, borderRadius: "50%", background: "linear-gradient(135deg,#4F8EF7,#1a5fb4)", border: "none", cursor: dragging ? "grabbing" : "grab", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 16px rgba(79,142,247,0.4)", position: "relative", userSelect: "none", touchAction: "none" }
+    },
+      React.createElement('span', { style: { fontSize: 22 } }, "💬"),
+      unread > 0 && React.createElement('span', { style: { position: "absolute", top: -2, right: -2, background: "#FF3D5A", borderRadius: "50%", width: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#fff" } }, unread > 9 ? "9+" : unread)
     ),
     open && React.createElement('div',{style:{width:maximized?"min(520px,90vw)":"min(320px,85vw)",height:maximized?"min(600px,80vh)":"min(420px,60vh)",background:T.card,borderRadius:16,border:`1px solid ${T.info}44`,display:"flex",flexDirection:"column",boxShadow:"0 8px 32px rgba(0,0,0,0.6)",overflow:"hidden"}},
       React.createElement('div',{style:{background:"#4F8EF711",borderBottom:"1px solid #4F8EF733",padding:"10px 14px",display:"flex",alignItems:"center",gap:8}},
