@@ -4247,8 +4247,12 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                           if(cap.captain===p.id){pts*=2;mult=2;}
                           else if(cap.vc===p.id){pts*=1.5;mult=1.5;}
                           // Is this player still on the team?
-                          const tradedOut = assignments[p.id] !== team.id;
-                          return {...p, base:d.base, pts:Math.round(pts), mult, stats:d.stats, breakdown:calcBreakdown(d.stats), tradedOut};
+                          const isSnatchedAway = snatch.active?.pid===p.id && snatch.active?.fromTeamId===team.id;
+                          const wasSnatchedAway = (snatch.history||[]).some(h=>h.pid===p.id && h.fromTeamId===team.id);
+                          const tradedOut = assignments[p.id] !== team.id && !isSnatchedAway && !wasSnatchedAway;
+                          const snatchedOut = isSnatchedAway;
+                          const snatchReturned = wasSnatchedAway && assignments[p.id]===team.id;
+                          return {...p, base:d.base, pts:Math.round(pts), mult, stats:d.stats, breakdown:calcBreakdown(d.stats), tradedOut, snatchedOut, snatchReturned};
                         }).sort((a,b)=>b.pts-a.pts);
                       const total = teamPts.reduce((s,p)=>s+p.pts,0);
                       return {team, players:teamPts, total};
@@ -4288,11 +4292,13 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                                   <div style={{padding:"12px 16px",color:T.muted,fontSize:13}}>No players scored in this match</div>
                                 ) : (
                                   tb.players.map(p=>(
-                                    <div key={p.id} style={{padding:"10px 16px",borderBottom:"1px solid #1E2D4522",display:"flex",alignItems:"flex-start",gap:12,opacity:p.tradedOut?0.6:1}}>
+                                    <div key={p.id} style={{padding:"10px 16px",borderBottom:"1px solid #1E2D4522",display:"flex",alignItems:"flex-start",gap:12,opacity:p.tradedOut||p.snatchedOut?0.6:1,background:p.snatchReturned?T.purple+"0A":"transparent"}}>
                                       <div style={{flex:1,minWidth:0}}>
                                         <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-                                          <span style={{fontWeight:700,fontSize:14,color:p.tradedOut?"#4A5E78":"#E2EAF4",textDecoration:p.tradedOut?"line-through":"none"}}>{p.name}</span>
+                                          <span style={{fontWeight:700,fontSize:14,color:p.tradedOut?T.muted:p.snatchedOut?T.purple:p.snatchReturned?T.purple:T.text,textDecoration:p.tradedOut||p.snatchedOut?"line-through":"none"}}>{p.name}</span>
                                           {p.tradedOut && <span style={{fontSize:9,color:T.danger,background:T.dangerBg,border:`1px solid ${T.danger}33`,borderRadius:4,padding:"1px 5px",fontWeight:700,letterSpacing:0.5}}>TRADED OUT</span>}
+                                          {p.snatchedOut && <span style={{fontSize:9,color:T.purple,background:T.purpleBg,border:`1px solid ${T.purple}33`,borderRadius:4,padding:"1px 5px",fontWeight:700,letterSpacing:0.5}}>⚡ SNATCHED</span>}
+                                          {p.snatchReturned && <span style={{fontSize:9,color:T.purple,background:T.purpleBg,border:`1px solid ${T.purple}33`,borderRadius:4,padding:"1px 5px",fontWeight:700,letterSpacing:0.5}}>↩️ RETURNED</span>}
                                           {p.mult>1 && <span style={{background:p.mult===2?"#F5A62322":"#94A3B822",color:p.mult===2?"#F5A623":"#94A3B8",border:"1px solid "+(p.mult===2?"#F5A62344":"#94A3B844"),fontSize:10,padding:"1px 7px",borderRadius:10,fontWeight:700}}>
                                             {p.mult===2?"⭐ CAPTAIN 2×":"🥈 VC 1.5×"}
                                           </span>}
