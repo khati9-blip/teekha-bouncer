@@ -2989,80 +2989,114 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   });
 
   // ── CRICBUZZ fetch ────────────────────────────────────────────────────────
-  const generateAiMatches = async () => {
+  const generateAiMatches = () => {
     if (!aiMatchModal) return;
     const { tournamentId, tournamentName } = aiMatchModal;
+    if (!aiMatchText.trim()) { setAiMatchError("Please paste the schedule text first."); return; }
     setAiMatchGenerating(true);
     try {
-      const today = new Date().toISOString().split("T")[0];
-      const prompt = `Today is ${today}. List the last ${aiMatchCount} completed matches of "${tournamentName}" from the most recent/current season (the season that is ongoing or just finished closest to today). Return ONLY a JSON array with no markdown:
-[{"matchNum":1,"team1":"CSK","team2":"MI","date":"YYYY-MM-DD","time":"7:30 PM IST","venue":"Venue Name, City","status":"completed","result":"CSK won by 5 wickets"}]
-Rules: Date format YYYY-MM-DD. Dates must be from the most recent season — not historical seasons from years ago. Teams must be short names (CSK, MI, RCB etc). Status must be "completed". Sort by date ascending (oldest first, most recent last).`;
-      const text = await callAI(prompt, "Cricket expert. Return ONLY valid JSON array of completed matches. No markdown, no explanation. If you don't have data, return an empty array [].");
-      const clean = text.replace(/```json|```/g, "").trim();
-      // Check if AI returned text instead of JSON
-      if (!clean.startsWith("[")) {
-        setAiMatchError(`AI couldn't find recent matches for "${tournamentName}". Try a specific name e.g. IPL 2026 or BBL 2025-26.`);
-        setAiMatchGenerating(false); return;
+      const TEAM_MAP = {
+        "Sunrisers Hyderabad":"SRH","Royal Challengers Bengaluru":"RCB","Royal Challengers Bangalore":"RCB",
+        "Kolkata Knight Riders":"KKR","Mumbai Indians":"MI","Chennai Super Kings":"CSK",
+        "Rajasthan Royals":"RR","Gujarat Titans":"GT","Punjab Kings":"PBKS",
+        "Delhi Capitals":"DC","Lucknow Super Giants":"LSG","Lucknow Supergiants":"LSG"
+      };
+      const toShort = (name) => {
+        for (const [full, abbr] of Object.entries(TEAM_MAP)) {
+          if (name.toLowerCase().includes(full.toLowerCase())) return abbr;
+        }
+        // Already short?
+        const upName = name.trim().toUpperCase();
+        const knownAbbr = ["SRH","RCB","KKR","MI","CSK","RR","GT","PBKS","DC","LSG"];
+        if (knownAbbr.includes(upName)) return upName;
+        return name.trim().split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,4);
+      };
+      const MONTHS = {Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12};
+      const toDate = (str) => {
+        const m = str.match(/(\w+)\s+(\d+)\s+(\d{4})/);
+        if (!m) return null;
+        const mon = MONTHS[m[1]]; if (!mon) return null;
+        return m[3]+"-"+String(mon).padStart(2,"0")+"-"+String(m[2]).padStart(2,"0");
+      };
+
+      const lines = aiMatchText.split("
+").map(l=>l.trim()).filter(Boolean);
+      const parsed = [];
+      let currentDate = null;
+      let i = 0;
+
+      while (i < lines.length) {
+        const line = lines[i];
+        // Date line: "Sat, Mar 28 2026"
+        if (/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun),/.test(line)) {
+          currentDate = toDate(line);
+          i++; continue;
+        }
+        // Match header: "1st Match • City, Venue..."
+        const mh = line.match(/^(\d+)\w*\s+[Mm]atch\s*[•·]/);
+        if (mh && currentDate) {
+          const matchNum = parseInt(mh[1]);
+          const venuePart = line.replace(/^\d+\w*\s+[Mm]atch\s*[•·]\s*/, "").replace(/\d+\w*\s*[Mm]atch\s*$/, "").trim();
+          i++;
+          const team1raw = lines[i]||""; i++;
+          const score1 = (lines[i]||"").match(/^\d+/) ? lines[i++] : "";
+          const team2raw = lines[i]||""; i++;
+          const score2 = (lines[i]||"").match(/^\d+/) ? lines[i++] : "";
+          const resultLine = lines[i]||"";
+          const hasResult = /won|tied|no result|abandoned/i.test(resultLine);
+          const result = hasResult ? resultLine : "";
+          if (hasResult) i++;
+          const status = (score1||result) ? "completed" : "upcoming";
+          parsed.push({
+            matchNum, team1: toShort(team1raw), team2: toShort(team2raw),
+            date: currentDate, time: "7:30 PM", venue: venuePart, status, result
+          });
+          continue;
+        }
+        i++;
       }
-      let parsed;
-      try { parsed = JSON.parse(clean); } catch(e) {
-        setAiMatchError("AI returned unexpected data. Please try again.");
-        setAiMatchGenerating(false); return;
-      }
-      if (!Array.isArray(parsed) || parsed.length === 0) {
-          setAiMatchError(`No matches found for "${tournamentName}". Try a more specific tournament name.`);
+
+      if (parsed.length === 0) {
+        setAiMatchError("No matches found. Paste the full schedule text from Cricbuzz Schedule tab.");
         setAiMatchGenerating(false); return;
       }
 
-      // If replace mode, remove all existing tournament matches first
-      const base = aiMatchReplace
-        ? matches.filter(m => m.tournamentId !== tournamentId)
-        : [...matches];
+      const base = aiMatchReplace ? matches.filter(m=>m.tournamentId!==tournamentId) : [...matches];
+      const tournamentMatches = aiMatchReplace ? [] : matches.filter(m=>m.tournamentId===tournamentId);
       const updated = base;
-      const tournamentMatches = aiMatchReplace ? [] : matches.filter(m => m.tournamentId === tournamentId);
       let nextNum = 1;
       let added = 0, skipped = 0;
 
       parsed.forEach(m => {
-        // Skip duplicates only in add mode
         if (!aiMatchReplace) {
-          const isDuplicate = tournamentMatches.some(ex => {
-            const sameDate = ex.date === m.date;
-            const sameTeams = (ex.team1 === m.team1 && ex.team2 === m.team2) ||
-                              (ex.team1 === m.team2 && ex.team2 === m.team1);
-            return sameDate && sameTeams;
-          });
-          if (isDuplicate) { skipped++; return; }
+          const isDup = tournamentMatches.some(ex =>
+            ex.date===m.date && (
+              (ex.team1===m.team1 && ex.team2===m.team2) ||
+              (ex.team1===m.team2 && ex.team2===m.team1)
+            )
+          );
+          if (isDup) { skipped++; return; }
         }
-
-        const id = "ai_" + tournamentId + "_" + (m.matchNum || nextNum) + "_" + Date.now();
         updated.push({
-          id,
-          tournamentId,
-          matchNum: m.matchNum || nextNum,
-          team1: m.team1 || "",
-          team2: m.team2 || "",
-          date: m.date || "",
-          time: m.time || "7:30 PM",
-          venue: m.venue || "",
-          status: m.status || "completed",
-          result: m.result || "",
+          id: "ai_"+tournamentId+"_"+m.matchNum+"_"+Date.now(),
+          tournamentId, matchNum: m.matchNum||nextNum,
+          team1: m.team1, team2: m.team2, date: m.date,
+          time: m.time||"7:30 PM", venue: m.venue,
+          status: m.status||"completed", result: m.result||"",
           aiGenerated: true,
         });
-        nextNum++;
-        added++;
+        nextNum++; added++;
       });
 
       updMatches(updated);
-        setAiMatchSuccess(`✅ Added ${added} matches${skipped > 0 ? ` (${skipped} skipped — already exist)` : ""}. Sync stats for each completed match using scorecard paste.`);
+      setAiMatchSuccess("Added "+added+" matches"+(skipped>0?" ("+skipped+" skipped — already exist)":"")+". Sync stats for completed matches via scorecard paste.");
     } catch(e) {
-          setAiMatchError('Error generating matches: ' + e.message);
+      setAiMatchError("Error parsing schedule: "+e.message);
     }
     setAiMatchGenerating(false);
   };
 
-  const fetchMatchesForTournament = async (tournamentId, tournamentName) => {
+    const fetchMatchesForTournament = async (tournamentId, tournamentName) => {
     setLoading("Fetching from Cricbuzz for " + tournamentName + "…");
     try {
       const extractForTournament = (data) => {
