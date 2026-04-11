@@ -2989,109 +2989,87 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   });
 
   // ── CRICBUZZ fetch ────────────────────────────────────────────────────────
-  const generateAiMatches = () => {
+  const generateAiMatches = async () => {
     if (!aiMatchModal) return;
     const { tournamentId, tournamentName } = aiMatchModal;
     if (!aiMatchText.trim()) { setAiMatchError("Please paste the schedule text first."); return; }
     setAiMatchGenerating(true);
+    setAiMatchError("");
     try {
-      const TEAM_MAP = {
-        "sunrisers hyderabad":"SRH","royal challengers bengaluru":"RCB","royal challengers bangalore":"RCB",
-        "kolkata knight riders":"KKR","mumbai indians":"MI","chennai super kings":"CSK",
-        "rajasthan royals":"RR","gujarat titans":"GT","punjab kings":"PBKS",
-        "delhi capitals":"DC","lucknow super giants":"LSG","lucknow supergiants":"LSG"
-      };
-      const KNOWN = ["SRH","RCB","KKR","MI","CSK","RR","GT","PBKS","DC","LSG"];
-      const toShort = (name) => {
-        const low = name.toLowerCase().trim();
-        for (const [full, abbr] of Object.entries(TEAM_MAP)) {
-          if (low.includes(full)) return abbr;
-        }
-        if (KNOWN.includes(name.trim().toUpperCase())) return name.trim().toUpperCase();
-        return name.trim().split(" ").filter(Boolean).map(w=>w[0]).join("").toUpperCase().slice(0,4);
-      };
-      const MONTHS = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
-      const toDate = (str) => {
-        const m = str.match(/([A-Za-z]+)\s+(\d+)\s+(\d{4})/);
-        if (!m) return null;
-        const mon = MONTHS[m[1].toLowerCase()];
-        if (!mon) return null;
-        return m[3]+"-"+String(mon).padStart(2,"0")+"-"+String(parseInt(m[2])).padStart(2,"0");
-      };
-      const isScore = (s) => /^\d+[\-\/]/.test(s) || /^\d+\s*\(/.test(s);
-      const isResult = (s) => /won|tied|no result|abandoned/i.test(s);
-      const isDate = (s) => /^(Mon|Tue|Wed|Thu|Fri|Sat|Sun),/.test(s);
-      const isMatchHeader = (s) => /^\d+(?:st|nd|rd|th)?\s+Match/i.test(s);
+      const prompt = `Extract ALL cricket matches from this Cricbuzz schedule text. Return ONLY a JSON array, nothing else.
 
-      const rawLines = aiMatchText.split("\n").map(l=>l.trim()).filter(Boolean);
-      const parsed = [];
-      let currentDate = null;
-      let i = 0;
+Each match object must have exactly these fields:
+- matchNum: integer match number
+- team1: short code like SRH, RCB, MI, CSK, KKR, RR, GT, PBKS, DC, LSG
+- team2: short code
+- date: YYYY-MM-DD format
+- venue: stadium name and city
+- status: "completed" if scores/result shown, "upcoming" if not
+- result: result string if available, else empty string
 
-      while (i < rawLines.length) {
-        const line = rawLines[i];
-        if (isDate(line)) { currentDate = toDate(line); i++; continue; }
-        if (isMatchHeader(line) && currentDate) {
-          const matchNum = parseInt(line.match(/^(\d+)/)[1]);
-          const venuePart = line.replace(/^\d+(?:st|nd|rd|th)?\s+Match\s*[\u2022•·]?\s*/i, "").replace(/\s*\d+(?:st|nd|rd|th)?\s+Match\s*$/i, "").trim();
-          i++;
-          // team1 — skip if it looks like a score or result
-          const t1raw = (i < rawLines.length && !isScore(rawLines[i]) && !isResult(rawLines[i]) && !isDate(rawLines[i]) && !isMatchHeader(rawLines[i])) ? rawLines[i++] : "";
-          // score1
-          if (i < rawLines.length && isScore(rawLines[i])) i++;
-          // team2
-          const t2raw = (i < rawLines.length && !isScore(rawLines[i]) && !isResult(rawLines[i]) && !isDate(rawLines[i]) && !isMatchHeader(rawLines[i])) ? rawLines[i++] : "";
-          // score2
-          if (i < rawLines.length && isScore(rawLines[i])) i++;
-          // result
-          const result = (i < rawLines.length && isResult(rawLines[i])) ? rawLines[i++] : "";
-          const status = (result || (!t1raw && !t2raw)) ? (result ? "completed" : "upcoming") : (t1raw && t2raw && !result ? "upcoming" : "completed");
-          const finalStatus = result ? "completed" : "upcoming";
-          parsed.push({
-            matchNum, team1: toShort(t1raw), team2: toShort(t2raw),
-            date: currentDate, time: "7:30 PM", venue: venuePart,
-            status: finalStatus, result
-          });
-          continue;
-        }
-        i++;
+Team name mappings:
+Sunrisers Hyderabad=SRH, Royal Challengers Bengaluru=RCB, Royal Challengers Bangalore=RCB,
+Mumbai Indians=MI, Kolkata Knight Riders=KKR, Chennai Super Kings=CSK,
+Rajasthan Royals=RR, Gujarat Titans=GT, Punjab Kings=PBKS,
+Delhi Capitals=DC, Lucknow Super Giants=LSG
+
+IMPORTANT: Extract ONLY what is in the text. Do not invent matches.
+
+Schedule text:
+${aiMatchText.slice(0, 3000)}`;
+
+      const text = await callAI(prompt, "You extract cricket match data from text. Return ONLY a valid JSON array. No markdown fences. No explanation. No extra text.");
+      const clean = text.replace(/\`\`\`json|\`\`\`/g, "").trim();
+      const jsonStart = clean.indexOf("[");
+      const jsonEnd = clean.lastIndexOf("]");
+      if (jsonStart === -1 || jsonEnd === -1) {
+        setAiMatchError("Could not parse schedule. Try pasting a smaller portion of the text.");
+        setAiMatchGenerating(false); return;
       }
-
-      if (parsed.length === 0) {
-        setAiMatchError("No matches found. Make sure you paste the full schedule text from Cricbuzz.");
+      const parsed = JSON.parse(clean.slice(jsonStart, jsonEnd + 1));
+      if (!Array.isArray(parsed) || parsed.length === 0) {
+        setAiMatchError("No matches found in the pasted text.");
         setAiMatchGenerating(false); return;
       }
 
-      const base = aiMatchReplace ? matches.filter(m=>m.tournamentId!==tournamentId) : [...matches];
-      const existing = aiMatchReplace ? [] : matches.filter(m=>m.tournamentId===tournamentId);
-      let nextNum = 1;
+      const base = aiMatchReplace ? matches.filter(m => m.tournamentId !== tournamentId) : [...matches];
+      const existing = aiMatchReplace ? [] : matches.filter(m => m.tournamentId === tournamentId);
+      let nextNum = Math.max(...(existing.map(m => m.matchNum || 0)), 0) + 1;
       let added = 0, skipped = 0;
 
       parsed.forEach(m => {
+        if (!m.team1 || !m.team2 || !m.date) return;
         if (!aiMatchReplace) {
           const isDup = existing.some(ex =>
-            ex.date===m.date && ((ex.team1===m.team1&&ex.team2===m.team2)||(ex.team1===m.team2&&ex.team2===m.team1))
+            ex.date === m.date &&
+            ((ex.team1 === m.team1 && ex.team2 === m.team2) ||
+             (ex.team1 === m.team2 && ex.team2 === m.team1))
           );
           if (isDup) { skipped++; return; }
         }
         base.push({
-          id: "ai_"+tournamentId+"_"+m.matchNum+"_"+Date.now()+"_"+Math.random().toString(36).slice(2),
-          tournamentId, matchNum: m.matchNum||nextNum,
-          team1: m.team1, team2: m.team2, date: m.date,
-          time: "7:30 PM", venue: m.venue,
-          status: m.status, result: m.result||"", aiGenerated: true,
+          id: "ai_" + tournamentId + "_" + (m.matchNum || nextNum) + "_" + Date.now() + "_" + Math.random().toString(36).slice(2),
+          tournamentId,
+          matchNum: m.matchNum || nextNum,
+          team1: m.team1, team2: m.team2,
+          date: m.date, time: "7:30 PM",
+          venue: m.venue || "",
+          status: m.status || "upcoming",
+          result: m.result || "",
+          aiGenerated: true,
         });
         nextNum++; added++;
       });
 
       updMatches(base);
-      setAiMatchSuccess("Added "+added+" matches"+(skipped>0?" ("+skipped+" skipped)":"")+". Sync stats for completed matches via scorecard paste.");
+      setAiMatchSuccess("Added " + added + " matches" + (skipped > 0 ? " (" + skipped + " skipped — already exist)" : "") + ". Sync stats for completed matches via scorecard paste.");
     } catch(e) {
-      setAiMatchError("Error parsing: "+e.message);
+      setAiMatchError("Error: " + e.message);
     }
     setAiMatchGenerating(false);
   };
 
+  
     const fetchMatchesForTournament = async (tournamentId, tournamentName) => {
     setLoading("Fetching from Cricbuzz for " + tournamentName + "…");
     try {
