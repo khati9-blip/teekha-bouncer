@@ -47,8 +47,8 @@ function getSnatchWindowStatus() {
 }
 
 // ── Who has snatch rights this week ────────────────────────────────────────
-function getSnatchEligibleTeam(matches, points, players, teams, assignments) {
-  const week = getWeekBounds(0);
+function getSnatchEligibleTeam(matches, points, players, teams, assignments, weekOffset = 0) {
+  const week = getWeekBounds(weekOffset);
   const weekMatches = matches.filter(m => m.date >= week.satStr && m.date <= week.friStr);
   if (weekMatches.length === 0) return null;
   let bestPts = 0, bestTeamId = null;
@@ -81,10 +81,12 @@ export default function SnatchSection({
     return () => clearInterval(t);
   }, []);
 
-  const eligibility = useMemo(() =>
-    getSnatchEligibleTeam(matches, points, players, teams, assignments),
-    [matches, points, players, teams, assignments]
-  );
+  const eligibility = useMemo(() => {
+    // When snatch window is open (Saturday), look at previous week's matches
+    // because the current week just started today (Saturday) with no matches yet
+    const weekOffset = windowStatus.open ? 1 : 0;
+    return getSnatchEligibleTeam(matches, points, players, teams, assignments, weekOffset);
+  }, [matches, points, players, teams, assignments, windowStatus.open]);
 
   const myTeamId = myTeam?.id;
   const isEligible = eligibility?.team?.id === myTeamId;
