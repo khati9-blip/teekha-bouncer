@@ -3151,6 +3151,23 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
     updCaptains({...captains,[key]:{...(captains[key]||{}),[type]:pid}});
   };
 
+  // Fix active snatch pointsAtSnatch to include C/VC multipliers
+  useEffect(()=>{
+    if(!snatch.active) return;
+    const {pid, fromTeamId} = snatch.active;
+    const correctPts = Object.entries(points[pid]||{}).reduce((s,[mid,d])=>{
+      const cap = captains[mid+"_"+fromTeamId]||{};
+      let pts = d.base||0;
+      if(cap.captain===pid) pts*=2; else if(cap.vc===pid) pts*=1.5;
+      return s + Math.round(pts);
+    },0);
+    if(correctPts !== snatch.active.pointsAtSnatch) {
+      const updated = {...snatch, active:{...snatch.active, pointsAtSnatch: correctPts}};
+      setSnatch(updated);
+      storeSet("snatch", updated);
+    }
+  },[snatch.active?.pid, points, captains]);
+
   const getTeamTotal=(teamId)=>{
     let total=0;
     const allPids = new Set([
