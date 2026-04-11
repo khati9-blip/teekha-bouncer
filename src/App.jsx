@@ -2990,9 +2990,10 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
     const { tournamentId, tournamentName } = aiMatchModal;
     setAiMatchGenerating(true);
     try {
-      const prompt = `List the last ${aiMatchCount} completed matches of "${tournamentName}". Return ONLY a JSON array with no markdown:
-[{"matchNum":1,"team1":"CSK","team2":"MI","date":"YYYY-MM-DD","time":"7:30 PM","venue":"Venue Name, City","status":"completed","result":"CSK won by 5 wickets"}]
-Use real match data. Date format must be YYYY-MM-DD. Teams must be short names (CSK, MI, RCB etc). Status must be "completed".`;
+      const today = new Date().toISOString().split("T")[0];
+      const prompt = `Today is ${today}. List the last ${aiMatchCount} completed matches of "${tournamentName}" from the CURRENT 2026 season only. Do NOT use data from 2024 or 2025. Return ONLY a JSON array with no markdown:
+[{"matchNum":1,"team1":"CSK","team2":"MI","date":"YYYY-MM-DD","time":"7:30 PM IST","venue":"Venue Name, City","status":"completed","result":"CSK won by 5 wickets"}]
+Rules: Date format YYYY-MM-DD. All dates must be in 2026. Teams must be short names (CSK, MI, RCB etc). Status must be "completed". Sort by date ascending (oldest first).`;
       const text = await callAI(prompt, "Cricket expert. Return ONLY valid JSON array of completed matches. No markdown, no explanation.");
       const clean = text.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(clean);
@@ -4039,6 +4040,17 @@ Use real match data. Date format must be YYYY-MM-DD. Teams must be short names (
                             style={{background:T.purpleBg,border:`1px solid ${T.purple}44`,color:T.purple,borderRadius:6,padding:"4px 8px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:10}}
                             title="Generate past matches using AI">🤖 AI MATCHES</button>
                         </div>
+                        {tMatches.some(m=>m.aiGenerated) && (
+                          <div style={{position:"relative",display:"inline-block"}}>
+                            <button onClick={e=>{e.stopPropagation();withPassword(()=>{
+                              if(!window.confirm("Delete all AI-generated matches for "+tournament.name+"?")) return;
+                              const updated = matches.filter(m=>!(m.tournamentId===tournament.id && m.aiGenerated));
+                              updMatches(updated);
+                            });}}
+                              style={{background:T.dangerBg,border:`1px solid ${T.danger}44`,color:T.danger,borderRadius:6,padding:"4px 8px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:10}}
+                              title="Delete all AI-generated matches">🗑 AI</button>
+                          </div>
+                        )}
                       </div>
                       {/* Trade & Snatch toggle */}
                       {(() => {
