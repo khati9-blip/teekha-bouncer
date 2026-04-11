@@ -85,13 +85,124 @@ function generateHeadline(weekTeams, weekMatches, isCurrentWeek) {
   return `${top.name} led the week with ${top.weekPts} pts while ${bottom.name} had a quieter outing at ${bottom.weekPts}.`;
 }
 
-function StatPill({ emoji, label, name, value, unit, color }) {
+// ── calcBreakdown helper ─────────────────────────────────────────────────────
+function calcBreakdown(s) {
+  if (!s) return [];
+  const runs   = +s.runs      || 0;
+  const fours  = +s.fours     || 0;
+  const sixes  = +s.sixes     || 0;
+  const wkts   = +s.wickets   || 0;
+  const eco    = s.economy !== "" && s.economy != null ? +s.economy : null;
+  const ovs    = +s.overs     || 0;
+  const catches= +s.catches   || 0;
+  const stump  = +s.stumpings || 0;
+  const ro     = +s.runouts   || 0;
+  const items  = [];
+  if (runs)    items.push(`${runs} runs +${runs}`);
+  if (fours)   items.push(`${fours}×4 +${fours * 8}`);
+  if (sixes)   items.push(`${sixes}×6 +${sixes * 12}`);
+  if (runs >= 100) items.push("Century +20");
+  else if (runs >= 50) items.push("50+ bonus +10");
+  if (wkts)    items.push(`${wkts} wkt${wkts > 1 ? "s" : ""} +${wkts * 25}`);
+  if (wkts >= 5) items.push("5-wkt haul +15");
+  else if (wkts >= 4) items.push("4-wkt haul +8");
+  if (ovs >= 2 && eco !== null && eco < 6) items.push("Eco <6 +10");
+  if (catches) items.push(`${catches} catch${catches > 1 ? "es" : ""} +${catches * 8}`);
+  if (stump)   items.push(`${stump} stumping${stump > 1 ? "s" : ""} +${stump * 12}`);
+  if (ro)      items.push(`${ro} run-out${ro > 1 ? "s" : ""} +${ro * 12}`);
+  if (runs >= 30 && wkts >= 2) items.push("All-round bonus +15");
+  if (s.longestSix) items.push("Longest six +50");
+  return items;
+}
+
+// ── Player breakdown drawer ───────────────────────────────────────────────────
+function PlayerBreakdownDrawer({ player, weekMatches, points, captains, teams, assignments, onClose }) {
+  if (!player) return null;
+  const team = teams.find(t => t.id === assignments[player.id]);
+  const matchRows = weekMatches.map(m => {
+    const d = points[player.id]?.[m.id];
+    if (!d) return null;
+    const cap = captains[m.id + "_" + (assignments[player.id] || "")] || {};
+    let pts = d.base, mult = 1, role = "";
+    if (cap.captain === player.id) { pts = Math.round(d.base * 2); mult = 2; role = "C"; }
+    else if (cap.vc === player.id) { pts = Math.round(d.base * 1.5); mult = 1.5; role = "VC"; }
+    return { match: m, base: d.base, pts, mult, role, breakdown: calcBreakdown(d.stats) };
+  }).filter(Boolean);
+  const totalPts = matchRows.reduce((s, r) => s + r.pts, 0);
+
   return (
-    <div style={{ background: color + "12", border: `1px solid ${color}33`, borderRadius: 10, padding: "10px 12px" }}>
+    <>
+      <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(5,8,16,0.7)", zIndex: 600, backdropFilter: "blur(3px)" }} />
+      <div style={{ position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 700, background: T.card, borderRadius: "18px 18px 0 0", border: `1px solid ${T.border}`, maxHeight: "75vh", display: "flex", flexDirection: "column", animation: "wrSlideUp 0.28s cubic-bezier(0.25,0.46,0.45,0.94) both" }}>
+        <style>{`@keyframes wrSlideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}`}</style>
+        <div style={{ flexShrink: 0 }}>
+          <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 4px" }}>
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: T.border }} />
+          </div>
+          <div style={{ padding: "10px 20px 14px", display: "flex", alignItems: "center", gap: 12, borderBottom: `1px solid ${T.border}` }}>
+            <div style={{ width: 42, height: 42, borderRadius: 11, background: team ? team.color + "20" : T.accentBg, border: `1px solid ${team ? team.color + "44" : T.accentBorder}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: fonts.display, fontWeight: 800, fontSize: 17, color: team?.color || T.accent, flexShrink: 0 }}>
+              {player.name.charAt(0)}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: fonts.display, fontWeight: 700, fontSize: 16, color: T.text }}>{player.name}</div>
+              <div style={{ fontFamily: fonts.body, fontSize: 11, color: T.muted, marginTop: 1 }}>
+                {player.role}{team && <span style={{ color: team.color }}> · {team.name}</span>}
+              </div>
+            </div>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ fontFamily: fonts.display, fontWeight: 900, fontSize: 24, color: T.accent }}>{totalPts}</div>
+              <div style={{ fontFamily: fonts.display, fontSize: 8, color: T.muted, letterSpacing: 1 }}>WEEK TOTAL</div>
+            </div>
+            <button onClick={onClose} style={{ background: T.border, border: "none", borderRadius: 8, width: 28, height: 28, color: T.sub, fontSize: 13, cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+          </div>
+        </div>
+        <div style={{ overflowY: "auto", flex: 1, padding: "10px 20px 24px" }}>
+          {matchRows.length === 0 ? (
+            <div style={{ textAlign: "center", padding: 32, color: T.muted, fontFamily: fonts.body, fontSize: 13 }}>No stats recorded for this player this week.</div>
+          ) : matchRows.map(r => (
+            <div key={r.match.id} style={{ background: T.bg, borderRadius: 10, border: `1px solid ${T.border}`, padding: "12px 14px", marginBottom: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                <div>
+                  <div style={{ fontFamily: fonts.body, fontWeight: 700, fontSize: 13, color: T.text }}>{r.match.team1} vs {r.match.team2}</div>
+                  <div style={{ fontFamily: fonts.body, fontSize: 10, color: T.muted, marginTop: 1 }}>M{r.match.matchNum} · {r.match.date}</div>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontFamily: fonts.display, fontWeight: 900, fontSize: 22, color: r.pts > 0 ? T.accent : T.muted }}>{r.pts}</div>
+                  {r.mult > 1 && <div style={{ fontFamily: fonts.display, fontSize: 9, color: r.mult === 2 ? T.accent : "#94A3B8", letterSpacing: 0.5 }}>{r.role} · base {r.base} ×{r.mult}</div>}
+                </div>
+              </div>
+              {r.role && (
+                <div style={{ display: "inline-block", background: r.mult === 2 ? T.accentBg : "#94A3B822", border: `1px solid ${r.mult === 2 ? T.accentBorder : "#94A3B844"}`, borderRadius: 6, padding: "2px 8px", fontFamily: fonts.display, fontSize: 9, fontWeight: 700, color: r.mult === 2 ? T.accent : "#94A3B8", letterSpacing: 1, marginBottom: 8 }}>
+                  {r.mult === 2 ? "⭐ CAPTAIN 2×" : "🥈 VICE CAPTAIN 1.5×"}
+                </div>
+              )}
+              {r.breakdown.length > 0 ? (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                  {r.breakdown.map((item, j) => (
+                    <div key={j} style={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 6, padding: "3px 8px", fontFamily: fonts.body, fontSize: 11, color: T.sub }}>{item}</div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ fontFamily: fonts.body, fontSize: 11, color: T.muted, fontStyle: "italic" }}>No contributions recorded</div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
+function StatPill({ emoji, label, name, value, unit, color, onClick }) {
+  return (
+    <div onClick={onClick} style={{ background: color + "12", border: `1px solid ${color}33`, borderRadius: 10, padding: "10px 12px", cursor: onClick ? "pointer" : "default" }}>
       <div style={{ fontFamily: fonts.display, fontSize: 9, fontWeight: 700, color, letterSpacing: 1.5, marginBottom: 5 }}>{emoji} {label}</div>
       <div style={{ fontFamily: fonts.display, fontWeight: 700, fontSize: 13, color: T.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{name}</div>
-      <div style={{ fontFamily: fonts.display, fontWeight: 800, fontSize: 18, color }}>
-        {value} <span style={{ fontSize: 10, fontWeight: 400, color: T.muted }}>{unit}</span>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginTop: 2 }}>
+        <div style={{ fontFamily: fonts.display, fontWeight: 800, fontSize: 18, color }}>
+          {value} <span style={{ fontSize: 10, fontWeight: 400, color: T.muted }}>{unit}</span>
+        </div>
+        {onClick && <div style={{ fontFamily: fonts.display, fontSize: 8, color, opacity: 0.6, letterSpacing: 0.5 }}>TAP ▸</div>}
       </div>
     </div>
   );
@@ -99,6 +210,7 @@ function StatPill({ emoji, label, name, value, unit, color }) {
 
 function WeekCard({ week, weekMatches, teams, players, assignments, points, captains, ownershipLog, isCurrentWeek, weekOffset }) {
   const [expanded, setExpanded] = useState(isCurrentWeek);
+  const [selectedPlayer, setSelectedPlayer] = useState(null);
   const weekLabel = isCurrentWeek ? "📅 THIS WEEK" : weekOffset === 1 ? "📋 LAST WEEK" : `📋 ${weekOffset} WEEKS AGO`;
   const weekTeams = teams.map(t => ({ ...t, weekPts: getTeamWeekPts(t.id, weekMatches, points, captains, players, assignments, ownershipLog) })).sort((a, b) => b.weekPts - a.weekPts);
   const totalLeaguePts = weekTeams.reduce((s, t) => s + t.weekPts, 0);
@@ -115,6 +227,17 @@ function WeekCard({ week, weekMatches, teams, players, assignments, points, capt
 
   return (
     <div style={{ background: T.card, borderRadius: 14, border: `1px solid ${isCurrentWeek ? T.accentBorder : T.border}`, overflow: "hidden", marginBottom: 14 }}>
+      {selectedPlayer && (
+        <PlayerBreakdownDrawer
+          player={selectedPlayer}
+          weekMatches={weekMatches}
+          points={points}
+          captains={captains}
+          teams={teams}
+          assignments={assignments}
+          onClose={() => setSelectedPlayer(null)}
+        />
+      )}
       <div onClick={() => setExpanded(e => !e)} style={{ padding: "14px 18px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", background: isCurrentWeek ? T.accentBg : "transparent" }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
@@ -182,7 +305,7 @@ function WeekCard({ week, weekMatches, teams, players, assignments, points, capt
             <div style={{ fontFamily: fonts.display, fontSize: 9, color: T.muted, letterSpacing: 2, fontWeight: 700, marginBottom: 10 }}>PLAYER HIGHLIGHTS</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               {topScorer && (
-                <div style={{ gridColumn: "1 / -1", background: T.accentBg, border: `1px solid ${T.accentBorder}`, borderRadius: 10, padding: "11px 14px", display: "flex", alignItems: "center", gap: 12 }}>
+                <div onClick={() => setSelectedPlayer(topScorer)} style={{ gridColumn: "1 / -1", background: T.accentBg, border: `1px solid ${T.accentBorder}`, borderRadius: 10, padding: "11px 14px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
                   <div style={{ width: 36, height: 36, borderRadius: 9, background: topScorerTeam ? topScorerTeam.color + "20" : T.accentBg, border: `1px solid ${topScorerTeam ? topScorerTeam.color + "44" : T.accentBorder}`, display: "flex", alignItems: "center", justifyContent: "center", fontFamily: fonts.display, fontWeight: 800, fontSize: 15, color: topScorerTeam?.color || T.accent, flexShrink: 0 }}>
                     {topScorer.name.charAt(0)}
                   </div>
@@ -197,10 +320,10 @@ function WeekCard({ week, weekMatches, teams, players, assignments, points, capt
                   </div>
                 </div>
               )}
-              {topSixes.player && topSixes.count > 0 && <StatPill emoji="💥" label="MOST SIXES" name={topSixes.player.name} value={topSixes.count} unit="6s" color="#F97316" />}
-              {topWickets.player && topWickets.count > 0 && <StatPill emoji="🎳" label="MOST WICKETS" name={topWickets.player.name} value={topWickets.count} unit="wkts" color={T.info} />}
-              {bestEco.player && bestEco.eco < 999 && <StatPill emoji="📐" label="BEST ECONOMY" name={bestEco.player.name} value={bestEco.eco} unit="eco" color={T.success} />}
-              {longestSix.player && <StatPill emoji="🚀" label="LONGEST SIX" name={longestSix.player.name} value="🏆" unit="" color={T.purple} />}
+              {topSixes.player && topSixes.count > 0 && <StatPill emoji="💥" label="MOST SIXES" name={topSixes.player.name} value={topSixes.count} unit="6s" color="#F97316" onClick={() => setSelectedPlayer(topSixes.player)} />}
+              {topWickets.player && topWickets.count > 0 && <StatPill emoji="🎳" label="MOST WICKETS" name={topWickets.player.name} value={topWickets.count} unit="wkts" color={T.info} onClick={() => setSelectedPlayer(topWickets.player)} />}
+              {bestEco.player && bestEco.eco < 999 && <StatPill emoji="📐" label="BEST ECONOMY" name={bestEco.player.name} value={bestEco.eco} unit="eco" color={T.success} onClick={() => setSelectedPlayer(bestEco.player)} />}
+              {longestSix.player && <StatPill emoji="🚀" label="LONGEST SIX" name={longestSix.player.name} value="🏆" unit="" color={T.purple} onClick={() => setSelectedPlayer(longestSix.player)} />}
             </div>
           </div>
 
