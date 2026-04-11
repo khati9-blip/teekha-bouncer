@@ -3019,8 +3019,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
         return m[3]+"-"+String(mon).padStart(2,"0")+"-"+String(m[2]).padStart(2,"0");
       };
 
-      const lines = aiMatchText.split("
-").map(l=>l.trim()).filter(Boolean);
+        const lines = aiMatchText.split("\n").map(l=>l.trim()).filter(Boolean);
       const parsed = [];
       let currentDate = null;
       let i = 0;
