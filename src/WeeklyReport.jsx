@@ -50,16 +50,27 @@ function getStatLeaders(weekMatches, points, players) {
   let bestEco = { player: null, eco: 999 }, longestSix = { player: null, found: false };
   for (const [pid, matchPts] of Object.entries(points)) {
     const p = players.find(x => x.id === pid); if (!p) continue;
-    let sixes = 0, wickets = 0, runs = 0, overs = 0, hasLongest = false;
+    let sixes = 0, wickets = 0, totalOvers = 0, hasLongest = false;
+    // For economy: track weighted average across matches (runs conceded / overs)
+    let totalRunsConceded = 0;
     for (const m of weekMatches) {
       const d = matchPts[m.id]; if (!d?.stats) continue;
-      sixes += +d.stats.sixes || 0; wickets += +d.stats.wickets || 0;
-      runs += +d.stats.runs || 0; overs += +d.stats.overs || 0;
+      sixes   += +d.stats.sixes   || 0;
+      wickets += +d.stats.wickets || 0;
+      const ovs = +d.stats.overs  || 0;
+      totalOvers += ovs;
+      // economy is stored directly (runs conceded per over) — use it to back-calculate runs conceded
+      const eco = d.stats.economy !== "" && d.stats.economy != null ? +d.stats.economy : null;
+      if (eco !== null && ovs > 0) totalRunsConceded += eco * ovs;
       if (d.stats.longestSix) hasLongest = true;
     }
     if (sixes > topSixes.count) topSixes = { player: p, count: sixes };
     if (wickets > topWickets.count) topWickets = { player: p, count: wickets };
-    if (overs >= 2 && runs / overs < bestEco.eco) bestEco = { player: p, eco: Math.round((runs / overs) * 100) / 100 };
+    // Only qualify if bowled at least 2 overs across the week
+    if (totalOvers >= 2) {
+      const weekEco = Math.round((totalRunsConceded / totalOvers) * 100) / 100;
+      if (weekEco < bestEco.eco) bestEco = { player: p, eco: weekEco };
+    }
     if (hasLongest && !longestSix.found) longestSix = { player: p, found: true };
   }
   return { topSixes, topWickets, bestEco, longestSix };
