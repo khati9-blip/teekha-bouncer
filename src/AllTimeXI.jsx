@@ -118,7 +118,6 @@ export default function AllTimeXI({ teams, players, assignments, points, matches
         return { ...p, basePts, matchCount, status };
       })
       .filter(Boolean)
-      .filter(p => p.basePts > 0 || p.status)
       .sort((a, b) => b.basePts - a.basePts);
   }, [selectedTeamId, players, assignments, points, matches, snatch]);
 
