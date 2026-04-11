@@ -2795,7 +2795,13 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
     if (!window.confirm("FINAL WARNING: This action CANNOT be undone until Friday 11:58 PM. Are you sure?")) {
       setSnatchPinModal(null); return;
     }
-    const pointsAtSnatch = Object.values(points[pid]||{}).reduce((s,d)=>s+d.base,0);
+    // Calculate pointsAtSnatch WITH C/VC multipliers to match getTeamTotal logic
+    const pointsAtSnatch = Object.entries(points[pid]||{}).reduce((s,[mid,d])=>{
+      const cap = captains[mid+"_"+fromTeamId]||{};
+      let pts = d.base||0;
+      if(cap.captain===pid) pts*=2; else if(cap.vc===pid) pts*=1.5;
+      return s + Math.round(pts);
+    },0);
     const active = { byTeamId, pid, fromTeamId, pointsAtSnatch, startDate: new Date().toISOString() };
     const a = {...assignments, [pid]: byTeamId};
     updAssign(a);
@@ -4188,6 +4194,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                   snatch={snatch}
                   points={points}
                   matches={matches}
+                  captains={captains}
                   leaderboard={leaderboard}
                   myTeam={myTeam}
                   isAdmin={isAdmin}

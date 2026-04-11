@@ -64,7 +64,7 @@ function getSnatchEligibleTeam(matches, points, players, teams, assignments, wee
 }
 
 export default function SnatchSection({
-  teams, players, assignments, snatch, points, matches,
+  teams, players, assignments, snatch, points, matches, captains,
   leaderboard, myTeam, isAdmin, unlocked, withPassword,
   teamIdentity, user, pitch,
   onUpdateSnatch, onUpdateAssignments, onUpdateOwnershipLog, ownershipLog,
@@ -151,7 +151,13 @@ export default function SnatchSection({
       if (h !== myIdentity.pinHash) { setPinErr("Wrong PIN"); setPinInput(""); return; }
     }
     const fromTeamId = assignments[pid];
-    const playerTotalPts = Object.values(points[pid] || {}).reduce((s, d) => s + (d?.base || 0), 0);
+    // Calculate pointsAtSnatch WITH C/VC multipliers to match getTeamTotal logic
+    const playerTotalPts = Object.entries(points[pid]||{}).reduce((s,[mid,d])=>{
+      const cap = (captains||{})[mid+"_"+fromTeamId]||{};
+      let pts = d?.base||0;
+      if(cap.captain===pid) pts*=2; else if(cap.vc===pid) pts*=1.5;
+      return s + Math.round(pts);
+    },0);
     const active = { pid, byTeamId: actingTeamId, fromTeamId, pointsAtSnatch: playerTotalPts, startDate: new Date().toISOString() };
     const newAssignments = { ...assignments, [pid]: actingTeamId };
     const now = new Date().toISOString().split("T")[0];
