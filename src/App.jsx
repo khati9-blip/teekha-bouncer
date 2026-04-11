@@ -2188,7 +2188,10 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   const [appReady, setAppReady] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [teamIdentity, setTeamIdentity] = useState({});
-  const [fetchPlayerModal, setFetchPlayerModal] = useState(null); // null | { tournamentId, tournamentName }
+  const [fetchPlayerModal, setFetchPlayerModal] = useState(null);
+  const [aiMatchModal, setAiMatchModal] = useState(null); // {tournamentId, tournamentName}
+  const [aiMatchCount, setAiMatchCount] = useState(10);
+  const [aiMatchGenerating, setAiMatchGenerating] = useState(false); // null | { tournamentId, tournamentName }
   const [addTournamentModal, setAddTournamentModal] = useState(false);
   const [addTournamentSource, setAddTournamentSource] = useState(null);
   const [addTournamentSeries, setAddTournamentSeries] = useState([]);
@@ -2982,6 +2985,50 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   });
 
   // ── CRICBUZZ fetch ────────────────────────────────────────────────────────
+  const generateAiMatches = async () => {
+    if (!aiMatchModal) return;
+    const { tournamentId, tournamentName } = aiMatchModal;
+    setAiMatchGenerating(true);
+    try {
+      const prompt = `List the last ${aiMatchCount} completed matches of "${tournamentName}". Return ONLY a JSON array with no markdown:
+[{"matchNum":1,"team1":"CSK","team2":"MI","date":"YYYY-MM-DD","time":"7:30 PM","venue":"Venue Name, City","status":"completed","result":"CSK won by 5 wickets"}]
+Use real match data. Date format must be YYYY-MM-DD. Teams must be short names (CSK, MI, RCB etc). Status must be "completed".`;
+      const text = await callAI(prompt, "Cricket expert. Return ONLY valid JSON array of completed matches. No markdown, no explanation.");
+      const clean = text.replace(/```json|```/g, "").trim();
+      const parsed = JSON.parse(clean);
+      if (!Array.isArray(parsed) || parsed.length === 0) { alert("AI couldn't generate matches. Try a different tournament name."); setAiMatchGenerating(false); return; }
+
+      const existingIds = new Set(matches.map(m => m.cricbuzzId).filter(Boolean));
+      const updated = [...matches];
+      let nextNum = Math.max(...matches.filter(m=>m.tournamentId===tournamentId).map(m=>m.matchNum||0), 0) + 1;
+
+      parsed.forEach(m => {
+        const id = "ai_" + tournamentId + "_" + (m.matchNum || nextNum) + "_" + Date.now();
+        updated.push({
+          id,
+          tournamentId,
+          matchNum: m.matchNum || nextNum++,
+          team1: m.team1 || "",
+          team2: m.team2 || "",
+          date: m.date || "",
+          time: m.time || "7:30 PM",
+          venue: m.venue || "",
+          status: "completed",
+          result: m.result || "",
+          aiGenerated: true,
+        });
+        nextNum++;
+      });
+
+      updMatches(updated);
+      setAiMatchModal(null);
+      alert(`✅ Added ${parsed.length} matches from AI. Now sync stats for each match using the scorecard paste.`);
+    } catch(e) {
+      alert("Error: " + e.message);
+    }
+    setAiMatchGenerating(false);
+  };
+
   const fetchMatchesForTournament = async (tournamentId, tournamentName) => {
     setLoading("Fetching from Cricbuzz for " + tournamentName + "…");
     try {
@@ -3987,6 +4034,11 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
                             style={{background:T.infoBg,border:`1px solid ${T.info}44`,color:T.info,borderRadius:6,padding:"4px 8px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:10}}
                             title="Fetch players for this tournament">👥 PLAYERS</button>
                         </div>
+                        <div style={{position:"relative",display:"inline-block"}}>
+                          <button onClick={e=>{e.stopPropagation();withPassword(()=>setAiMatchModal({tournamentId:tournament.id,tournamentName:tournament.name}));}}
+                            style={{background:T.purpleBg,border:`1px solid ${T.purple}44`,color:T.purple,borderRadius:6,padding:"4px 8px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:10}}
+                            title="Generate past matches using AI">🤖 AI MATCHES</button>
+                        </div>
                       </div>
                       {/* Trade & Snatch toggle */}
                       {(() => {
@@ -4675,6 +4727,46 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
         )}
 
         {/* FETCH PLAYERS MODAL */}
+        {/* AI Match Generator Modal */}
+        {aiMatchModal && (
+          <div style={{position:"fixed",inset:0,background:"rgba(5,8,16,0.95)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,padding:20}}>
+            <div style={{background:T.card,borderRadius:18,border:`1px solid ${T.purple}44`,padding:28,width:"100%",maxWidth:420,boxShadow:"0 24px 80px rgba(0,0,0,0.7)"}}>
+              <div style={{textAlign:"center",marginBottom:20}}>
+                <div style={{fontSize:36,marginBottom:8}}>🤖</div>
+                <div style={{fontFamily:fonts.display,fontWeight:800,fontSize:20,color:T.purple,letterSpacing:1,marginBottom:4}}>AI MATCH GENERATOR</div>
+                <div style={{fontFamily:fonts.body,fontSize:13,color:T.muted}}>
+                  Generating matches for <span style={{color:T.text,fontWeight:600}}>{aiMatchModal.tournamentName}</span>
+                </div>
+              </div>
+
+              <div style={{background:T.bg,borderRadius:10,padding:"12px 14px",marginBottom:20,border:`1px solid ${T.border}`}}>
+                <div style={{fontFamily:fonts.body,fontSize:12,color:T.muted,marginBottom:4}}>ℹ️ AI will generate match fixtures with dates, teams and venues. You'll still need to sync stats manually for each match.</div>
+              </div>
+
+              <div style={{fontFamily:fonts.display,fontSize:10,fontWeight:700,color:T.muted,letterSpacing:2,marginBottom:8}}>HOW MANY PAST MATCHES TO GENERATE?</div>
+              <div style={{display:"flex",gap:8,marginBottom:20,flexWrap:"wrap"}}>
+                {[5,10,15,20,30].map(n=>(
+                  <button key={n} onClick={()=>setAiMatchCount(n)}
+                    style={{padding:"8px 16px",borderRadius:8,border:`1px solid ${aiMatchCount===n?T.purple:T.border}`,background:aiMatchCount===n?T.purpleBg:"transparent",color:aiMatchCount===n?T.purple:T.muted,fontFamily:fonts.display,fontWeight:700,fontSize:13,cursor:"pointer"}}>
+                    {n}
+                  </button>
+                ))}
+              </div>
+
+              <div style={{display:"flex",gap:10}}>
+                <button onClick={()=>setAiMatchModal(null)}
+                  style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:10,padding:12,color:T.muted,fontFamily:fonts.display,fontWeight:700,fontSize:13,cursor:"pointer"}}>
+                  CANCEL
+                </button>
+                <button onClick={generateAiMatches} disabled={aiMatchGenerating}
+                  style={{flex:2,background:aiMatchGenerating?"#A855F733":`linear-gradient(135deg,${T.purple},#7C3AED)`,border:"none",borderRadius:10,padding:12,color:"#fff",fontFamily:fonts.display,fontWeight:800,fontSize:14,cursor:aiMatchGenerating?"not-allowed":"pointer",letterSpacing:0.5}}>
+                  {aiMatchGenerating ? "🤖 GENERATING…" : `🤖 GENERATE ${aiMatchCount} MATCHES`}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {fetchPlayerModal && (
           <FetchPlayers
             existingPlayers={players}
