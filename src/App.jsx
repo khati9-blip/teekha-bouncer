@@ -2194,7 +2194,8 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   const [aiMatchGenerating, setAiMatchGenerating] = useState(false);
   const [aiMatchError, setAiMatchError] = useState("");
   const [aiMatchSuccess, setAiMatchSuccess] = useState("");
-  const [aiMatchText, setAiMatchText] = useState(""); // null | { tournamentId, tournamentName }
+  const [aiMatchText, setAiMatchText] = useState("");
+  const [aiMatchReplace, setAiMatchReplace] = useState(false); // null | { tournamentId, tournamentName }
   const [addTournamentModal, setAddTournamentModal] = useState(false);
   const [addTournamentSource, setAddTournamentSource] = useState(null);
   const [addTournamentSeries, setAddTournamentSeries] = useState([]);
@@ -3014,20 +3015,26 @@ Rules: Date format YYYY-MM-DD. Dates must be from the most recent season — not
         setAiMatchGenerating(false); return;
       }
 
-      const updated = [...matches];
-      const tournamentMatches = matches.filter(m => m.tournamentId === tournamentId);
-      let nextNum = Math.max(...tournamentMatches.map(m => m.matchNum || 0), 0) + 1;
+      // If replace mode, remove all existing tournament matches first
+      const base = aiMatchReplace
+        ? matches.filter(m => m.tournamentId !== tournamentId)
+        : [...matches];
+      const updated = base;
+      const tournamentMatches = aiMatchReplace ? [] : matches.filter(m => m.tournamentId === tournamentId);
+      let nextNum = 1;
       let added = 0, skipped = 0;
 
       parsed.forEach(m => {
-        // Skip if match with same teams + date already exists
-        const isDuplicate = tournamentMatches.some(ex => {
-          const sameDate = ex.date === m.date;
-          const sameTeams = (ex.team1 === m.team1 && ex.team2 === m.team2) ||
-                            (ex.team1 === m.team2 && ex.team2 === m.team1);
-          return sameDate && sameTeams;
-        });
-        if (isDuplicate) { skipped++; return; }
+        // Skip duplicates only in add mode
+        if (!aiMatchReplace) {
+          const isDuplicate = tournamentMatches.some(ex => {
+            const sameDate = ex.date === m.date;
+            const sameTeams = (ex.team1 === m.team1 && ex.team2 === m.team2) ||
+                              (ex.team1 === m.team2 && ex.team2 === m.team1);
+            return sameDate && sameTeams;
+          });
+          if (isDuplicate) { skipped++; return; }
+        }
 
         const id = "ai_" + tournamentId + "_" + (m.matchNum || nextNum) + "_" + Date.now();
         updated.push({
@@ -4780,6 +4787,16 @@ Rules: Date format YYYY-MM-DD. Dates must be from the most recent season — not
                 <div style={{fontFamily:fonts.body,fontSize:12,color:T.muted,marginBottom:4}}>ℹ️ AI will generate match fixtures with dates, teams and venues. You'll still need to sync stats manually for each match.</div>
               </div>
 
+              <div style={{display:"flex",gap:8,marginBottom:16}}>
+                <button onClick={()=>setAiMatchReplace(false)}
+                  style={{flex:1,padding:"8px",borderRadius:8,border:`1px solid ${!aiMatchReplace?T.success:T.border}`,background:!aiMatchReplace?T.successBg:"transparent",color:!aiMatchReplace?T.success:T.muted,fontFamily:fonts.display,fontWeight:700,fontSize:11,cursor:"pointer"}}>
+                  ➕ ADD NEW ONLY
+                </button>
+                <button onClick={()=>setAiMatchReplace(true)}
+                  style={{flex:1,padding:"8px",borderRadius:8,border:`1px solid ${aiMatchReplace?T.danger:T.border}`,background:aiMatchReplace?T.dangerBg:"transparent",color:aiMatchReplace?T.danger:T.muted,fontFamily:fonts.display,fontWeight:700,fontSize:11,cursor:"pointer"}}>
+                  🗑 CLEAR & REPLACE ALL
+                </button>
+              </div>
               <div style={{fontFamily:fonts.display,fontSize:10,fontWeight:700,color:T.muted,letterSpacing:2,marginBottom:8}}>PASTE SCHEDULE FROM CRICBUZZ</div>
               <div style={{fontFamily:fonts.body,fontSize:11,color:T.muted,marginBottom:8}}>
                 Go to Cricbuzz → your tournament → Schedule tab → select all text → paste below
@@ -4803,7 +4820,7 @@ Rules: Date format YYYY-MM-DD. Dates must be from the most recent season — not
                 </div>
               )}
               <div style={{display:"flex",gap:10}}>
-                <button onClick={()=>{setAiMatchModal(null);setAiMatchError("");setAiMatchSuccess("");setAiMatchText("");}}
+                <button onClick={()=>{setAiMatchModal(null);setAiMatchError("");setAiMatchSuccess("");setAiMatchText("");setAiMatchReplace(false);}}
                   style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:10,padding:12,color:T.muted,fontFamily:fonts.display,fontWeight:700,fontSize:13,cursor:"pointer"}}>
                   {aiMatchSuccess ? "CLOSE" : "CANCEL"}
                 </button>
