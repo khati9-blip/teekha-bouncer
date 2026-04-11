@@ -51,7 +51,12 @@ function getNextSundayIST() {
   const istOffset = 5.5 * 60 * 60 * 1000;
   const istNow = new Date(now.getTime() + istOffset);
   const day = istNow.getUTCDay(); // 0=Sun
-  const daysUntilSunday = day === 0 ? 7 : 7 - day;
+  const h = istNow.getUTCHours();
+  const m = istNow.getUTCMinutes();
+  // If today IS Sunday and 11:59 PM hasn't passed yet → target today
+  // If today IS Sunday and 11:59 PM has already passed → jump to next Sunday
+  const sundayPassed = day === 0 && (h > 23 || (h === 23 && m >= 59));
+  const daysUntilSunday = sundayPassed ? 7 : (day === 0 ? 0 : 7 - day);
   const nextSunday = new Date(istNow);
   nextSunday.setUTCDate(istNow.getUTCDate() + daysUntilSunday);
   nextSunday.setUTCHours(18, 29, 0, 0); // 23:59 IST = 18:29 UTC
