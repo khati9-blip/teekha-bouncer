@@ -4,8 +4,8 @@ const IST_OFFSET = 5.5 * 60 * 60 * 1000;
 
 // Get true IST regardless of machine timezone
 function nowIST() {
-  const utcMs = Date.now() + new Date().getTimezoneOffset() * 60000;
-  return new Date(utcMs + IST_OFFSET);
+  // Date.now() always returns UTC ms — just add IST offset
+  return new Date(Date.now() + IST_OFFSET);
 }
 
 // ── Week bounds (Sat 12:00 AM → Fri 11:59 PM IST) ─────────────────────────
