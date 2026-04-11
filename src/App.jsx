@@ -2816,11 +2816,23 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
 
   const returnSnatched = () => withPassword(() => {
     if (!snatch.active) { alert("No active snatch"); return; }
-    const {pid, fromTeamId} = snatch.active;
+    const {pid, fromTeamId, byTeamId} = snatch.active;
+    const snatchDate = snatch.active.startDate.split('T')[0];
+    // Calculate snatchWeekPts with C/VC for the snatching team
+    let snatchWeekPts = 0;
+    Object.entries(points[pid]||{}).forEach(([mid,d])=>{
+      const match = matches.find(m=>m.id===mid);
+      if(match && match.date >= snatchDate) {
+        const cap = captains[mid+"_"+byTeamId]||{};
+        let pts = d.base;
+        if(cap.captain===pid) pts*=2; else if(cap.vc===pid) pts*=1.5;
+        snatchWeekPts += Math.round(pts);
+      }
+    });
     // Return player to original team
     const newAssign = {...assignments, [pid]: fromTeamId};
     updAssign(newAssign);
-    const newHistory = [...(snatch.history||[]), {...snatch.active, returnDate: new Date().toISOString()}];
+    const newHistory = [...(snatch.history||[]), {...snatch.active, returnDate: new Date().toISOString(), snatchWeekPts}];
     updSnatch({...snatch, active: null, history: newHistory, weekNum: snatch.weekNum+1});
     // Mark returned player as SAFE — can never be snatched again
     const currentSafe = safePlayers[fromTeamId] || [];
@@ -3187,12 +3199,16 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
         continue;
       }
 
-      // If this player is currently snatched IN to this team — only count post-snatch points
+      // If this player is currently snatched IN to this team — only count post-snatch points with C/VC
       if(snatch.active?.pid===pid && snatch.active?.byTeamId===teamId) {
         const snatchDate = snatch.active.startDate.split('T')[0];
         for(const[mid,d] of Object.entries(points[pid]||{})){
           const m = matches.find(x=>x.id===mid);
-          if(m && m.date >= snatchDate) total+=d.base;
+          if(!m || m.date < snatchDate) continue;
+          const cap=captains[mid+"_"+teamId]||{};
+          let pts=d.base;
+          if(cap.captain===pid) pts*=2; else if(cap.vc===pid) pts*=1.5;
+          total+=Math.round(pts);
         }
         continue;
       }
@@ -3448,7 +3464,10 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
         Object.entries(points[pid] || {}).forEach(([mid, d]) => {
           const match = matches.find(m => m.id === mid);
           if (match && match.date >= snatchDate.split('T')[0]) {
-            snatchWeekPts += d.base;
+            const cap = captains[mid+"_"+byTeamId]||{};
+            let pts = d.base;
+            if(cap.captain===pid) pts*=2; else if(cap.vc===pid) pts*=1.5;
+            snatchWeekPts += Math.round(pts);
           }
         });
         const newHistory = [...(snatch.history || []), {
