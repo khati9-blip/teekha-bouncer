@@ -3000,7 +3000,7 @@ Rules: Date format YYYY-MM-DD. Dates must be from the most recent season — not
       const clean = text.replace(/```json|```/g, "").trim();
       // Check if AI returned text instead of JSON
       if (!clean.startsWith("[")) {
-        setAiMatchError("AI couldn't find recent matches for "" + tournamentName + "". Try a more specific name e.g. "IPL 2026" or "BBL 2025-26".");
+        setAiMatchError(`AI couldn't find recent matches for "${tournamentName}". Try a specific name e.g. IPL 2026 or BBL 2025-26.`);
         setAiMatchGenerating(false); return;
       }
       let parsed;
