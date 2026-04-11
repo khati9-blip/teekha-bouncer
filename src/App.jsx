@@ -3009,7 +3009,7 @@ Rules: Date format YYYY-MM-DD. Dates must be from the most recent season — not
         setAiMatchGenerating(false); return;
       }
       if (!Array.isArray(parsed) || parsed.length === 0) {
-        setAiMatchError("No matches found for "" + tournamentName + "". Try a more specific tournament name.");
+          setAiMatchError(`No matches found for "${tournamentName}". Try a more specific tournament name.`);
         setAiMatchGenerating(false); return;
       }
 
@@ -3038,7 +3038,7 @@ Rules: Date format YYYY-MM-DD. Dates must be from the most recent season — not
       updMatches(updated);
         setAiMatchSuccess(`✅ Added ${parsed.length} matches! Now sync stats for each match using the scorecard paste.`);
     } catch(e) {
-      setAiMatchError("Error: " + e.message);
+          setAiMatchError('Error generating matches: ' + e.message);
     }
     setAiMatchGenerating(false);
   };
