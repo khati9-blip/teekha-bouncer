@@ -2342,9 +2342,10 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
         const timer = setTimeout(()=>controller.abort(), ms);
         return fetch(url, {signal:controller.signal}).then(r=>r.json()).catch(()=>({})).finally(()=>clearTimeout(timer));
       };
-      const [scheduleRes, liveRes] = await Promise.all([
+      const [scheduleRes, liveRes, resultsRes] = await Promise.all([
         fetchWithTimeout("/api/cricketdata?path=cricket-schedule"),
         fetchWithTimeout("/api/cricketdata?path=currentMatches"),
+        fetchWithTimeout("/api/cricketdata?path=cricket-results"),
       ]);
       const seriesRes = {};
 
@@ -2391,6 +2392,19 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
             found.push({ info: m, live });
           });
         });
+      });
+
+      // Add completed matches from results endpoint
+      const resultsList = resultsRes?.response || [];
+      const completedMatches = Array.isArray(resultsList) ? resultsList : [];
+      completedMatches.forEach(m => {
+        const seriesName = m?.seriesName || m?.series || m?.name || "";
+        if (!seriesName.toLowerCase().includes(tournamentName.toLowerCase())) return;
+        const matchId = m?.matchId || m?.id;
+        if (!matchId) return;
+        if (!found.some(f => String(f.info?.matchId) === String(matchId))) {
+          found.push({ info: { ...m, matchId }, live: { ...m, matchStatus: "complete", status: "Complete" } });
+        }
       });
 
       if (found.length === 0) {
