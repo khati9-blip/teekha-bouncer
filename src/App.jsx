@@ -2991,9 +2991,9 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
     setAiMatchGenerating(true);
     try {
       const today = new Date().toISOString().split("T")[0];
-      const prompt = `Today is ${today}. List the last ${aiMatchCount} completed matches of "${tournamentName}" from the CURRENT 2026 season only. Do NOT use data from 2024 or 2025. Return ONLY a JSON array with no markdown:
+      const prompt = `Today is ${today}. List the last ${aiMatchCount} completed matches of "${tournamentName}" from the most recent/current season (the season that is ongoing or just finished closest to today). Return ONLY a JSON array with no markdown:
 [{"matchNum":1,"team1":"CSK","team2":"MI","date":"YYYY-MM-DD","time":"7:30 PM IST","venue":"Venue Name, City","status":"completed","result":"CSK won by 5 wickets"}]
-Rules: Date format YYYY-MM-DD. All dates must be in 2026. Teams must be short names (CSK, MI, RCB etc). Status must be "completed". Sort by date ascending (oldest first).`;
+Rules: Date format YYYY-MM-DD. Dates must be from the most recent season — not historical seasons from years ago. Teams must be short names (CSK, MI, RCB etc). Status must be "completed". Sort by date ascending (oldest first, most recent last).`;
       const text = await callAI(prompt, "Cricket expert. Return ONLY valid JSON array of completed matches. No markdown, no explanation.");
       const clean = text.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(clean);
