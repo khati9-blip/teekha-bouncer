@@ -2188,7 +2188,6 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   const [appReady, setAppReady] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [teamIdentity, setTeamIdentity] = useState({});
-  const [snatchPinModal, setSnatchPinModal] = useState(null);
   const [fetchPlayerModal, setFetchPlayerModal] = useState(null); // null | { tournamentId, tournamentName }
   const [addTournamentModal, setAddTournamentModal] = useState(false);
   const [addTournamentSource, setAddTournamentSource] = useState(null);
@@ -2225,8 +2224,6 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   const [broadcastInput, setBroadcastInput] = useState('');
   const [votePin, setVotePin] = useState('');
   const [votePinErr, setVotePinErr] = useState(''); // {pid, fromTeamId}
-  const [snatchPin, setSnatchPin] = useState('');
-  const [snatchPinErr, setSnatchPinErr] = useState('');
   const [snatchWindowStatus, setSnatchWindowStatus] = useState(getSnatchWindowStatus());
   const [liveScores, setLiveScores] = useState({});
   const pollRef = React.useRef(null);
@@ -2775,73 +2772,11 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   });
 
   // ── SNATCH HELPERS ───────────────────────────────────────────────────────
-  const initiateSnatch = (pid, fromTeamId) => {
-    if (!snatchWindowStatus.open) { alert("Snatch window is closed! Opens Saturday 12AM IST."); return; }
-    if (isPlayerSafe(pid)) { alert("Safe players cannot be snatched!"); return; }
-    if (snatch.active) { alert("You have already used your snatch this week."); return; }
-    setSnatchPinModal({ pid, fromTeamId });
-    setSnatchPin(''); setSnatchPinErr('');
-  };
 
-  const confirmSnatch = async () => {
-    if (!snatchPinModal) return;
-    const { pid, fromTeamId } = snatchPinModal;
-    const byTeamId = leaderboard[0]?.id;
-    if (!byTeamId) return;
-    const ti = teamIdentity[byTeamId];
-    if (!ti?.pinHash) { setSnatchPinErr("No PIN set for your team. Contact admin."); return; }
-    const h = await hashPw(snatchPin);
-    if (h !== ti.pinHash) { setSnatchPinErr("Wrong PIN. Try again."); setSnatchPin(''); return; }
-    if (!window.confirm("FINAL WARNING: This action CANNOT be undone until Friday 11:58 PM. Are you sure?")) {
-      setSnatchPinModal(null); return;
-    }
-    // Calculate pointsAtSnatch WITH C/VC multipliers to match getTeamTotal logic
-    const pointsAtSnatch = Object.entries(points[pid]||{}).reduce((s,[mid,d])=>{
-      const cap = captains[mid+"_"+fromTeamId]||{};
-      let pts = d.base||0;
-      if(cap.captain===pid) pts*=2; else if(cap.vc===pid) pts*=1.5;
-      return s + Math.round(pts);
-    },0);
-    const active = { byTeamId, pid, fromTeamId, pointsAtSnatch, startDate: new Date().toISOString() };
-    const a = {...assignments, [pid]: byTeamId};
-    updAssign(a);
-    updSnatch({...snatch, active, weekNum: snatch.weekNum});
-    setSnatchPinModal(null);
-    alert("Snatch activated! Player moves to " + (teams.find(t=>t.id===byTeamId)?.name) + " until Friday 11:58 PM.");
-    const sp = players.find(x=>x.id===pid);
-    const bt = teams.find(t=>t.id===byTeamId);
-    const ft = teams.find(t=>t.id===fromTeamId);
-    pushNotif('snatch', (bt?.name||'A team') + ' snatched ' + (sp?.name||'a player') + ' from ' + (ft?.name||''), '⚡');
-  };
 
-  const returnSnatched = () => withPassword(() => {
-    if (!snatch.active) { alert("No active snatch"); return; }
-    const {pid, fromTeamId, byTeamId} = snatch.active;
-    const snatchDate = snatch.active.startDate.split('T')[0];
-    // Calculate snatchWeekPts with C/VC for the snatching team
-    let snatchWeekPts = 0;
-    Object.entries(points[pid]||{}).forEach(([mid,d])=>{
-      const match = matches.find(m=>m.id===mid);
-      if(match && match.date >= snatchDate) {
-        const cap = captains[mid+"_"+byTeamId]||{};
-        let pts = d.base;
-        if(cap.captain===pid) pts*=2; else if(cap.vc===pid) pts*=1.5;
-        snatchWeekPts += Math.round(pts);
-      }
-    });
-    // Return player to original team
-    const newAssign = {...assignments, [pid]: fromTeamId};
-    updAssign(newAssign);
-    const newHistory = [...(snatch.history||[]), {...snatch.active, returnDate: new Date().toISOString(), snatchWeekPts}];
-    updSnatch({...snatch, active: null, history: newHistory, weekNum: snatch.weekNum+1});
-    // Mark returned player as SAFE — can never be snatched again
-    const currentSafe = safePlayers[fromTeamId] || [];
-    if (!currentSafe.includes(pid)) {
-      const newSafe = {...safePlayers, [fromTeamId]: [...currentSafe, pid]};
-      setSafePlayers(newSafe); storeSet("safePlayers", newSafe);
-    }
-    alert("✅ Player returned to their original team and marked 🛡 SAFE.");
-  });
+
+
+
 
   const uploadTeamLogo=(teamId, file)=>{
     const reader = new FileReader();
@@ -4826,34 +4761,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
           </div>
         )}
 
-        {/* SNATCH PIN MODAL */}
-        {snatchPinModal && (
-          <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.96)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,padding:24}}>
-            <div style={{background:T.card,borderRadius:16,border:`1px solid ${T.purple}44`,padding:32,width:"100%",maxWidth:340}}>
-              <div style={{fontSize:32,textAlign:"center",marginBottom:8}}>⚡</div>
-              <div style={{fontFamily:fonts.display,fontSize:22,fontWeight:700,color:T.purple,textAlign:"center",letterSpacing:2,marginBottom:4}}>CONFIRM SNATCH</div>
-              <div style={{fontSize:13,color:T.danger,textAlign:"center",marginBottom:4,fontWeight:700}}>This action cannot be undone!</div>
-              <div style={{fontSize:12,color:T.muted,textAlign:"center",marginBottom:16}}>Player returns Friday 11:58 PM. Enter your team PIN to confirm.</div>
-              <div style={{background:T.bg,borderRadius:8,padding:"10px 14px",marginBottom:16,textAlign:"center"}}>
-                <div style={{fontWeight:700,fontSize:15,color:T.text}}>{players.find(x=>x.id===snatchPinModal.pid)?.name}</div>
-                <div style={{fontSize:12,color:teams.find(t=>t.id===snatchPinModal.fromTeamId)?.color,marginTop:2}}>from {teams.find(t=>t.id===snatchPinModal.fromTeamId)?.name}</div>
-              </div>
-              <input type="password" value={snatchPin} onChange={e=>{setSnatchPin(e.target.value);setSnatchPinErr('');}}
-                onKeyDown={e=>e.key==="Enter"&&confirmSnatch()}
-                placeholder="Your team PIN" autoFocus maxLength={6}
-                style={{width:"100%",background:T.bg,border:"1px solid "+(snatchPinErr?"#FF3D5A":"#A855F744"),borderRadius:8,padding:"12px 16px",color:T.text,fontSize:20,letterSpacing:6,textAlign:"center",fontFamily:fonts.display,outline:"none",marginBottom:snatchPinErr?8:16,boxSizing:"border-box"}} />
-              {snatchPinErr && <div style={{color:T.danger,fontSize:13,marginBottom:16,textAlign:"center"}}>{snatchPinErr}</div>}
-              <div style={{display:"flex",gap:10}}>
-                <button onClick={()=>{setSnatchPinModal(null);setSnatchPin('');setSnatchPinErr('');}}
-                  style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:8,padding:12,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
-                <button onClick={confirmSnatch}
-                  style={{flex:2,background:"linear-gradient(135deg,#A855F7,#7C3AED)",border:"none",borderRadius:8,padding:12,color:"#fff",fontFamily:fonts.body,fontWeight:800,fontSize:15,cursor:"pointer"}}>CONFIRM SNATCH</button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {drawerOpen && (
+        {drawerOpen && (        {drawerOpen && (
           <div onClick={()=>setDrawerOpen(false)} style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,0.6)",display:"flex"}}>
             <div onClick={e=>e.stopPropagation()} style={{width:260,background:T.card,borderRight:`1px solid ${T.border}`,display:"flex",flexDirection:"column",height:"100%"}}>
               <div style={{padding:"20px 16px",borderBottom:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
