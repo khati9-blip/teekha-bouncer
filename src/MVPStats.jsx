@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { T, fonts, FONT_URL } from "./Theme";
+import { getOwnershipPts, getAllTeamPids, getSnatchStatus } from "./pointsUtils";
 
 const ROLE_COLORS = { Batsman: T.accent, Bowler: T.info, "All-Rounder": T.success, "Wicket-Keeper": T.purple };
 const TIER_COLORS = { platinum:"#B0BEC5", gold:"#F5A623", silver:"#94A3B8", bronze:"#CD7F32" };
@@ -35,7 +36,7 @@ function medalColor(rank) {
   return T.muted;
 }
 
-export default function MVPStats({ players, teams, assignments, points, captains, matches, onClose }) {
+export default function MVPStats({ players, teams, assignments, points, captains, matches, ownershipLog, snatch, onClose }) {
   const [view, setView] = useState("weekly");
   const [weekOffset, setWeekOffset] = useState(0);
   const week = useMemo(() => getWeekBounds(weekOffset), [weekOffset]);
@@ -66,26 +67,36 @@ export default function MVPStats({ players, teams, assignments, points, captains
 
   const allTimeRows = useMemo(() => {
     const rows = [];
-    for (const player of players) {
-      const team = teams.find(t => t.id === assignments[player.id]);
-      if (!team) continue;
-      const total = Object.values(points[player.id] || {}).reduce((sum, d) => sum + (d?.base || 0), 0);
-      if (total > 0) rows.push({ player, team, total });
+    for (const team of teams) {
+      const pids = getAllTeamPids(team.id, players, assignments, ownershipLog, snatch);
+      for (const pid of pids) {
+        const player = players.find(p => p.id === pid);
+        if (!player) continue;
+        const total = getOwnershipPts(pid, team.id, points, captains, matches, ownershipLog, snatch, null, false);
+        if (total > 0) {
+          const snatchStatus = getSnatchStatus(pid, team.id, snatch);
+          rows.push({ player, team, total, snatchStatus });
+        }
+      }
     }
     return rows.sort((a, b) => b.total - a.total);
-  }, [players, teams, assignments, points]);
+  }, [players, teams, assignments, points, captains, matches, ownershipLog, snatch]);
 
   const teamPerformance = useMemo(() => {
     return teams.map(team => {
+      const weekMatchIds = weekMatches.map(m => m.id);
+      const pids = getAllTeamPids(team.id, players, assignments, ownershipLog, snatch);
       let total = 0, best = { name: "—", pts: 0 };
-      for (const player of players.filter(p => assignments[p.id] === team.id)) {
-        let playerTotal = weekMatches.reduce((s, m) => s + (points[player.id]?.[m.id]?.base || 0), 0);
+      for (const pid of pids) {
+        const player = players.find(p => p.id === pid);
+        if (!player) continue;
+        const playerTotal = getOwnershipPts(pid, team.id, points, captains, matches, ownershipLog, snatch, weekMatchIds, false);
         total += playerTotal;
         if (playerTotal > best.pts) best = { name: player.name, pts: playerTotal };
       }
       return { team, total, best };
     }).sort((a, b) => b.total - a.total);
-  }, [teams, players, assignments, points, weekMatches]);
+  }, [teams, players, assignments, points, captains, matches, ownershipLog, snatch, weekMatches]);
 
   const maxTeamPts = teamPerformance[0]?.total || 1;
 
@@ -172,7 +183,7 @@ export default function MVPStats({ players, teams, assignments, points, captains
           <div>
             <div style={{ fontFamily: fonts.display, fontSize: 9, color: T.muted, letterSpacing: 2, marginBottom: 12 }}>ALL TIME BASE POINTS</div>
             {allTimeRows.length === 0 ? emptyMsg : allTimeRows.map((row, idx) => (
-              <div key={row.player.id} style={{ background: T.card, borderRadius: 10, border: `1px solid ${row.team.color}33`, padding: "10px 14px", marginBottom: 6, display: "flex", alignItems: "center", gap: 10 }}>
+              <div key={row.player.id + row.team.id} style={{ background: T.card, borderRadius: 10, border: `1px solid ${row.team.color}33`, padding: "10px 14px", marginBottom: 6, display: "flex", alignItems: "center", gap: 10 }}>
                 <div style={{ fontFamily: fonts.display, fontSize: 16, fontWeight: 700, color: medalColor(idx + 1), minWidth: 24, textAlign: "center" }}>{idx + 1}</div>
                 <div style={{ width: 8, height: 8, borderRadius: "50%", background: row.team.color, flexShrink: 0 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -180,6 +191,10 @@ export default function MVPStats({ players, teams, assignments, points, captains
                     <span style={{ fontFamily: fonts.body, fontWeight: 700, fontSize: 14, color: T.text }}>{row.player.name}</span>
                     <TierBadge tier={row.player.tier} />
                     <span style={{ fontFamily: fonts.display, fontSize: 10, color: row.team.color, fontWeight: 700 }}>{row.team.name}</span>
+                    {row.snatchStatus === "active-away" && <span style={{ fontFamily: fonts.display, fontSize: 8, fontWeight: 700, color: T.purple, background: T.purpleBg, border: `1px solid ${T.purple}33`, borderRadius: 4, padding: "1px 5px" }}>⚡ SNATCHED</span>}
+                    {row.snatchStatus === "active-in"   && <span style={{ fontFamily: fonts.display, fontSize: 8, fontWeight: 700, color: T.success, background: T.successBg, border: `1px solid ${T.success}33`, borderRadius: 4, padding: "1px 5px" }}>⚡ ON LOAN</span>}
+                    {row.snatchStatus === "hist-away"   && <span style={{ fontFamily: fonts.display, fontSize: 8, fontWeight: 700, color: T.muted, background: T.border, borderRadius: 4, padding: "1px 5px" }}>↩ RETURNED</span>}
+                    {row.snatchStatus === "hist-in"     && <span style={{ fontFamily: fonts.display, fontSize: 8, fontWeight: 700, color: T.muted, background: T.border, borderRadius: 4, padding: "1px 5px" }}>↩ LOAN ENDED</span>}
                   </div>
                   <div style={{ fontFamily: fonts.body, fontSize: 11, color: T.muted, marginTop: 1 }}>
                     <span style={{ color: ROLE_COLORS[row.player.role] || T.muted }}>{row.player.role}</span>

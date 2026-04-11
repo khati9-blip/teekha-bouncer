@@ -4905,6 +4905,7 @@ ${aiMatchText.slice(0, 3000)}`;
             captains={captains}
             matches={matches}
             ownershipLog={ownershipLog}
+            snatch={snatch}
             onClose={()=>setShowWeeklyReport(false)}
           />
         )}
@@ -4917,6 +4918,8 @@ ${aiMatchText.slice(0, 3000)}`;
             points={points}
             captains={captains}
             matches={matches}
+            ownershipLog={ownershipLog}
+            snatch={snatch}
             onClose={()=>setShowMVP(false)}
           />
         )}
@@ -4927,6 +4930,9 @@ ${aiMatchText.slice(0, 3000)}`;
             players={players}
             assignments={assignments}
             points={points}
+            matches={matches}
+            ownershipLog={ownershipLog}
+            snatch={snatch}
             onClose={()=>setShowAllTimeXI(false)}
           />
         )}
