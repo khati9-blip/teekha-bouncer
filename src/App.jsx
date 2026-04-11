@@ -2996,59 +2996,61 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
     setAiMatchGenerating(true);
     try {
       const TEAM_MAP = {
-        "Sunrisers Hyderabad":"SRH","Royal Challengers Bengaluru":"RCB","Royal Challengers Bangalore":"RCB",
-        "Kolkata Knight Riders":"KKR","Mumbai Indians":"MI","Chennai Super Kings":"CSK",
-        "Rajasthan Royals":"RR","Gujarat Titans":"GT","Punjab Kings":"PBKS",
-        "Delhi Capitals":"DC","Lucknow Super Giants":"LSG","Lucknow Supergiants":"LSG"
+        "sunrisers hyderabad":"SRH","royal challengers bengaluru":"RCB","royal challengers bangalore":"RCB",
+        "kolkata knight riders":"KKR","mumbai indians":"MI","chennai super kings":"CSK",
+        "rajasthan royals":"RR","gujarat titans":"GT","punjab kings":"PBKS",
+        "delhi capitals":"DC","lucknow super giants":"LSG","lucknow supergiants":"LSG"
       };
+      const KNOWN = ["SRH","RCB","KKR","MI","CSK","RR","GT","PBKS","DC","LSG"];
       const toShort = (name) => {
+        const low = name.toLowerCase().trim();
         for (const [full, abbr] of Object.entries(TEAM_MAP)) {
-          if (name.toLowerCase().includes(full.toLowerCase())) return abbr;
+          if (low.includes(full)) return abbr;
         }
-        // Already short?
-        const upName = name.trim().toUpperCase();
-        const knownAbbr = ["SRH","RCB","KKR","MI","CSK","RR","GT","PBKS","DC","LSG"];
-        if (knownAbbr.includes(upName)) return upName;
-        return name.trim().split(" ").map(w=>w[0]).join("").toUpperCase().slice(0,4);
+        if (KNOWN.includes(name.trim().toUpperCase())) return name.trim().toUpperCase();
+        return name.trim().split(" ").filter(Boolean).map(w=>w[0]).join("").toUpperCase().slice(0,4);
       };
-      const MONTHS = {Jan:1,Feb:2,Mar:3,Apr:4,May:5,Jun:6,Jul:7,Aug:8,Sep:9,Oct:10,Nov:11,Dec:12};
+      const MONTHS = {jan:1,feb:2,mar:3,apr:4,may:5,jun:6,jul:7,aug:8,sep:9,oct:10,nov:11,dec:12};
       const toDate = (str) => {
-        const m = str.match(/(\w+)\s+(\d+)\s+(\d{4})/);
+        const m = str.match(/([A-Za-z]+)\s+(\d+)\s+(\d{4})/);
         if (!m) return null;
-        const mon = MONTHS[m[1]]; if (!mon) return null;
-        return m[3]+"-"+String(mon).padStart(2,"0")+"-"+String(m[2]).padStart(2,"0");
+        const mon = MONTHS[m[1].toLowerCase()];
+        if (!mon) return null;
+        return m[3]+"-"+String(mon).padStart(2,"0")+"-"+String(parseInt(m[2])).padStart(2,"0");
       };
+      const isScore = (s) => /^\d+[\-\/]/.test(s) || /^\d+\s*\(/.test(s);
+      const isResult = (s) => /won|tied|no result|abandoned/i.test(s);
+      const isDate = (s) => /^(Mon|Tue|Wed|Thu|Fri|Sat|Sun),/.test(s);
+      const isMatchHeader = (s) => /^\d+(?:st|nd|rd|th)?\s+Match/i.test(s);
 
-        const lines = aiMatchText.split("\n").map(l=>l.trim()).filter(Boolean);
+      const rawLines = aiMatchText.split("\n").map(l=>l.trim()).filter(Boolean);
       const parsed = [];
       let currentDate = null;
       let i = 0;
 
-      while (i < lines.length) {
-        const line = lines[i];
-        // Date line: "Sat, Mar 28 2026"
-        if (/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun),/.test(line)) {
-          currentDate = toDate(line);
-          i++; continue;
-        }
-        // Match header: "1st Match • City, Venue..."
-        const mh = line.match(/^(\d+)\w*\s+[Mm]atch\s*[•·]/);
-        if (mh && currentDate) {
-          const matchNum = parseInt(mh[1]);
-          const venuePart = line.replace(/^\d+\w*\s+[Mm]atch\s*[•·]\s*/, "").replace(/\d+\w*\s*[Mm]atch\s*$/, "").trim();
+      while (i < rawLines.length) {
+        const line = rawLines[i];
+        if (isDate(line)) { currentDate = toDate(line); i++; continue; }
+        if (isMatchHeader(line) && currentDate) {
+          const matchNum = parseInt(line.match(/^(\d+)/)[1]);
+          const venuePart = line.replace(/^\d+(?:st|nd|rd|th)?\s+Match\s*[\u2022•·]?\s*/i, "").replace(/\s*\d+(?:st|nd|rd|th)?\s+Match\s*$/i, "").trim();
           i++;
-          const team1raw = lines[i]||""; i++;
-          const score1 = (lines[i]||"").match(/^\d+/) ? lines[i++] : "";
-          const team2raw = lines[i]||""; i++;
-          const score2 = (lines[i]||"").match(/^\d+/) ? lines[i++] : "";
-          const resultLine = lines[i]||"";
-          const hasResult = /won|tied|no result|abandoned/i.test(resultLine);
-          const result = hasResult ? resultLine : "";
-          if (hasResult) i++;
-          const status = (score1||result) ? "completed" : "upcoming";
+          // team1 — skip if it looks like a score or result
+          const t1raw = (i < rawLines.length && !isScore(rawLines[i]) && !isResult(rawLines[i]) && !isDate(rawLines[i]) && !isMatchHeader(rawLines[i])) ? rawLines[i++] : "";
+          // score1
+          if (i < rawLines.length && isScore(rawLines[i])) i++;
+          // team2
+          const t2raw = (i < rawLines.length && !isScore(rawLines[i]) && !isResult(rawLines[i]) && !isDate(rawLines[i]) && !isMatchHeader(rawLines[i])) ? rawLines[i++] : "";
+          // score2
+          if (i < rawLines.length && isScore(rawLines[i])) i++;
+          // result
+          const result = (i < rawLines.length && isResult(rawLines[i])) ? rawLines[i++] : "";
+          const status = (result || (!t1raw && !t2raw)) ? (result ? "completed" : "upcoming") : (t1raw && t2raw && !result ? "upcoming" : "completed");
+          const finalStatus = result ? "completed" : "upcoming";
           parsed.push({
-            matchNum, team1: toShort(team1raw), team2: toShort(team2raw),
-            date: currentDate, time: "7:30 PM", venue: venuePart, status, result
+            matchNum, team1: toShort(t1raw), team2: toShort(t2raw),
+            date: currentDate, time: "7:30 PM", venue: venuePart,
+            status: finalStatus, result
           });
           continue;
         }
@@ -3056,41 +3058,36 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
       }
 
       if (parsed.length === 0) {
-        setAiMatchError("No matches found. Paste the full schedule text from Cricbuzz Schedule tab.");
+        setAiMatchError("No matches found. Make sure you paste the full schedule text from Cricbuzz.");
         setAiMatchGenerating(false); return;
       }
 
       const base = aiMatchReplace ? matches.filter(m=>m.tournamentId!==tournamentId) : [...matches];
-      const tournamentMatches = aiMatchReplace ? [] : matches.filter(m=>m.tournamentId===tournamentId);
-      const updated = base;
+      const existing = aiMatchReplace ? [] : matches.filter(m=>m.tournamentId===tournamentId);
       let nextNum = 1;
       let added = 0, skipped = 0;
 
       parsed.forEach(m => {
         if (!aiMatchReplace) {
-          const isDup = tournamentMatches.some(ex =>
-            ex.date===m.date && (
-              (ex.team1===m.team1 && ex.team2===m.team2) ||
-              (ex.team1===m.team2 && ex.team2===m.team1)
-            )
+          const isDup = existing.some(ex =>
+            ex.date===m.date && ((ex.team1===m.team1&&ex.team2===m.team2)||(ex.team1===m.team2&&ex.team2===m.team1))
           );
           if (isDup) { skipped++; return; }
         }
-        updated.push({
-          id: "ai_"+tournamentId+"_"+m.matchNum+"_"+Date.now(),
+        base.push({
+          id: "ai_"+tournamentId+"_"+m.matchNum+"_"+Date.now()+"_"+Math.random().toString(36).slice(2),
           tournamentId, matchNum: m.matchNum||nextNum,
           team1: m.team1, team2: m.team2, date: m.date,
-          time: m.time||"7:30 PM", venue: m.venue,
-          status: m.status||"completed", result: m.result||"",
-          aiGenerated: true,
+          time: "7:30 PM", venue: m.venue,
+          status: m.status, result: m.result||"", aiGenerated: true,
         });
         nextNum++; added++;
       });
 
-      updMatches(updated);
-      setAiMatchSuccess("Added "+added+" matches"+(skipped>0?" ("+skipped+" skipped — already exist)":"")+". Sync stats for completed matches via scorecard paste.");
+      updMatches(base);
+      setAiMatchSuccess("Added "+added+" matches"+(skipped>0?" ("+skipped+" skipped)":"")+". Sync stats for completed matches via scorecard paste.");
     } catch(e) {
-      setAiMatchError("Error parsing schedule: "+e.message);
+      setAiMatchError("Error parsing: "+e.message);
     }
     setAiMatchGenerating(false);
   };
