@@ -2530,6 +2530,26 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
     }
   }, [appReady, isAdmin, teams.length]);
 
+  // ── AUTO-OPEN TRANSFER WINDOW ─────────────────────────────────────────────
+  // Fires for everyone (not just admin) — silently opens release window if
+  // it's within the Sun 11:59 PM → Mon 11:00 AM IST window and still closed.
+  useEffect(() => {
+    if (!appReady) return;
+    if (transfers.phase !== 'closed') return; // already open or in pick phase
+    // Check if within release window
+    const now = new Date();
+    const ist = new Date(now.getTime() + now.getTimezoneOffset() * 60000 + 5.5 * 3600000);
+    const day = ist.getUTCDay(), h = ist.getUTCHours(), m = ist.getUTCMinutes();
+    const inWindow =
+      (day === 0 && (h > 23 || (h === 23 && m >= 59))) || // Sun 11:59 PM+
+      (day === 1 && (h < 5 || (h === 5 && m < 30)));       // Mon before 11 AM IST
+    if (!inWindow) return;
+    // Auto-open silently — no password needed, no alert
+    const updated = { ...transfers, phase: 'release', weekNum: transfers.weekNum };
+    updTransfers(updated);
+    pushNotif('transfer', 'Transfer window is now open — release your players!', '📤');
+  }, [appReady, transfers.phase]);
+
   // ── LOAD USER-SPECIFIC NOTES & HIGHLIGHTS ────────────────────────────────
   useEffect(() => {
     if (!user?.email) return;
