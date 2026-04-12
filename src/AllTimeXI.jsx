@@ -96,10 +96,10 @@ export default function AllTimeXI({ teams, players, assignments, points, snatch,
     pick(byRole("Batsman"),       4);
     pick(byRole("Bowler"),        3);
     pick(byRole("Wicket-Keeper"), 1);
-    pick(byRole("All-Rounder"),   1);
+    pick(byRole("All-Rounder"),   2);
 
-    // 2 flex spots — best remaining players regardless of role
-    pick(ranked, 2);
+    // 1 flex spot — best remaining player regardless of role
+    pick(ranked, 1);
 
     // Sort XI by pts descending
     xiList.sort((a, b) => b.basePts - a.basePts);
@@ -120,7 +120,7 @@ export default function AllTimeXI({ teams, players, assignments, points, snatch,
       <div style={{ background: T.card, borderBottom: `1px solid ${T.border}`, padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
         <div>
           <div style={{ fontFamily: fonts.display, fontWeight: 800, fontSize: 20, color: T.accent, letterSpacing: 2 }}>🏏 ALL TIME XI</div>
-          <div style={{ fontFamily: fonts.body, fontSize: 11, color: T.muted, marginTop: 2 }}>Top 11 by base points · min 4 BAT, 3 BOWL, 1 AR, 1 WK · no captain multiplier</div>
+          <div style={{ fontFamily: fonts.body, fontSize: 11, color: T.muted, marginTop: 2 }}>Top 11 by base points · min 4 BAT, 3 BOWL, 2 AR, 1 WK · no captain multiplier</div>
         </div>
         <button onClick={onClose} style={{ background: T.border, border: "none", borderRadius: 8, width: 30, height: 30, color: T.sub, fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
       </div>
@@ -166,7 +166,7 @@ export default function AllTimeXI({ teams, players, assignments, points, snatch,
               {[
                 { role: "Batsman",       short: "BAT", color: "#4F8EF7", min: 4 },
                 { role: "Bowler",        short: "BOWL", color: "#FF3D5A", min: 3 },
-                { role: "All-Rounder",   short: "AR",  color: "#2ECC71", min: 1 },
+                { role: "All-Rounder",   short: "AR",  color: "#2ECC71", min: 2 },
                 { role: "Wicket-Keeper", short: "WK",  color: "#C9A84C", min: 1 },
               ].map(r => {
                 const count = xi.filter(p => p.role === r.role).length;
