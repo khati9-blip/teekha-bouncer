@@ -54,30 +54,53 @@ function getTrueTeamId(pid, assignments, snatch) {
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function AllTimeXI({ teams, players, assignments, points, snatch, onClose }) {
-  const [selectedTeamId, setSelectedTeamId] = useState(teams[0]?.id || "");
+  const [selectedTeamId, setSelectedTeamId] = useState("best");
   const [showBench, setShowBench] = useState(false);
 
+  const isBestOfLeague = selectedTeamId === "best";
   const team = teams.find(t => t.id === selectedTeamId);
 
+  // ── Per-team ranked list ──────────────────────────────────────────────────
   const ranked = useMemo(() => {
-    if (!selectedTeamId) return [];
+    if (isBestOfLeague) return [];
     return players
       .filter(p => getTrueTeamId(p.id, assignments, snatch) === selectedTeamId)
       .map(p => ({
         ...p,
         basePts:    getAllBasePts(p.id, points),
         matchCount: Object.keys(points[p.id] || {}).length,
-        status:     null,
+        teamColor:  team?.color,
+        teamName:   team?.name,
       }))
       .sort((a, b) => b.basePts - a.basePts);
-  }, [selectedTeamId, players, assignments, points, snatch]);
+  }, [selectedTeamId, isBestOfLeague, players, assignments, points, snatch]);
+
+  // ── League-wide ranked list (Best of League) ──────────────────────────────
+  const leagueRanked = useMemo(() => {
+    if (!isBestOfLeague) return [];
+    return players
+      .filter(p => getTrueTeamId(p.id, assignments, snatch))
+      .map(p => {
+        const trueTeamId = getTrueTeamId(p.id, assignments, snatch);
+        const t = teams.find(x => x.id === trueTeamId);
+        return {
+          ...p,
+          basePts:    getAllBasePts(p.id, points),
+          matchCount: Object.keys(points[p.id] || {}).length,
+          teamColor:  t?.color || T.muted,
+          teamName:   t?.name  || "",
+        };
+      })
+      .sort((a, b) => b.basePts - a.basePts);
+  }, [isBestOfLeague, players, assignments, points, teams, snatch]);
+
+  const activePool = isBestOfLeague ? leagueRanked : ranked;
 
   // ── Balanced XI selection ─────────────────────────────────────────────────
-  // Rules: min 4 Batters, 1 All-Rounder, 1 Wicket-Keeper, 3 Bowlers, 2 flex
   const { xi, bench } = useMemo(() => {
-    if (ranked.length === 0) return { xi: [], bench: [] };
+    if (activePool.length === 0) return { xi: [], bench: [] };
 
-    const byRole = (role) => ranked.filter(p => p.role === role);
+    const byRole = (role) => activePool.filter(p => p.role === role);
     const selected = new Set();
     const xiList = [];
 
@@ -92,25 +115,21 @@ export default function AllTimeXI({ teams, players, assignments, points, snatch,
       }
     };
 
-    // Mandatory slots — best available per role
     pick(byRole("Batsman"),       4);
     pick(byRole("Bowler"),        3);
     pick(byRole("Wicket-Keeper"), 1);
     pick(byRole("All-Rounder"),   2);
+    pick(activePool,              1); // 1 flex
 
-    // 1 flex spot — best remaining player regardless of role
-    pick(ranked, 1);
-
-    // Sort XI by pts descending
     xiList.sort((a, b) => b.basePts - a.basePts);
-
-    const benchList = ranked.filter(p => !selected.has(p.id));
+    const benchList = activePool.filter(p => !selected.has(p.id));
     return { xi: xiList, bench: benchList };
-  }, [ranked]);
+  }, [activePool]);
 
   const xiPts = xi.reduce((s, p) => s + p.basePts, 0);
   const maxPts = xi[0]?.basePts || 1;
   const medals = ["🥇", "🥈", "🥉"];
+  const accentColor = isBestOfLeague ? T.accent : (team?.color || T.accent);
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(5,8,16,0.97)", zIndex: 500, display: "flex", flexDirection: "column", fontFamily: fonts.body }}>
@@ -127,6 +146,13 @@ export default function AllTimeXI({ teams, players, assignments, points, snatch,
 
       {/* Team tabs */}
       <div style={{ display: "flex", gap: 6, padding: "12px 16px", overflowX: "auto", flexShrink: 0, background: T.bg, borderBottom: `1px solid ${T.border}` }}>
+        {/* Best of League tab */}
+        <button onClick={() => { setSelectedTeamId("best"); setShowBench(false); }}
+          style={{ flexShrink: 0, padding: "7px 16px", borderRadius: 20, border: `1px solid ${isBestOfLeague ? T.accent : T.border}`, background: isBestOfLeague ? T.accentBg : "transparent", color: isBestOfLeague ? T.accent : T.muted, fontFamily: fonts.display, fontWeight: 700, fontSize: 12, cursor: "pointer", letterSpacing: 0.5, whiteSpace: "nowrap", transition: "all 0.15s" }}>
+          🏆 BEST OF LEAGUE
+        </button>
+        {/* Divider */}
+        <div style={{ width: 1, background: T.border, flexShrink: 0, margin: "6px 0" }} />
         {teams.map(t => {
           const active = t.id === selectedTeamId;
           return (
@@ -140,19 +166,21 @@ export default function AllTimeXI({ teams, players, assignments, points, snatch,
 
       {/* Content */}
       <div style={{ flex: 1, overflowY: "auto", padding: "14px 16px" }}>
-        {ranked.length === 0 ? (
+        {activePool.length === 0 && xi.length === 0 ? (
           <div style={{ textAlign: "center", padding: 60, color: T.muted }}>
             <div style={{ fontSize: 48, marginBottom: 12 }}>🏏</div>
-            <div style={{ fontFamily: fonts.body, fontSize: 14 }}>No players assigned to this team yet.</div>
+            <div style={{ fontFamily: fonts.body, fontSize: 14 }}>
+              {isBestOfLeague ? "No player data yet across the league." : "No players assigned to this team yet."}
+            </div>
           </div>
         ) : (
           <>
             {/* Summary */}
             <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
               {[
-                { label: "XI TOTAL PTS", value: xiPts.toLocaleString(), color: team?.color || T.accent },
-                { label: "SQUAD SIZE",   value: ranked.length,           color: T.info },
-                { label: "ON BENCH",     value: bench.length,            color: T.muted },
+                { label: "XI TOTAL PTS", value: xiPts.toLocaleString(), color: accentColor },
+                { label: isBestOfLeague ? "LEAGUE PLAYERS" : "SQUAD SIZE", value: activePool.length, color: T.info },
+                { label: isBestOfLeague ? "NOT SELECTED" : "ON BENCH", value: bench.length, color: T.muted },
               ].map(s => (
                 <div key={s.label} style={{ flex: 1, background: T.card, borderRadius: 10, border: `1px solid ${T.border}`, padding: "10px 8px", textAlign: "center" }}>
                   <div style={{ fontFamily: fonts.display, fontWeight: 800, fontSize: 20, color: s.color }}>{s.value}</div>
@@ -164,10 +192,10 @@ export default function AllTimeXI({ teams, players, assignments, points, snatch,
             {/* Role composition pills */}
             <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
               {[
-                { role: "Batsman",       short: "BAT", color: "#4F8EF7", min: 4 },
+                { role: "Batsman",       short: "BAT",  color: "#4F8EF7", min: 4 },
                 { role: "Bowler",        short: "BOWL", color: "#FF3D5A", min: 3 },
-                { role: "All-Rounder",   short: "AR",  color: "#2ECC71", min: 2 },
-                { role: "Wicket-Keeper", short: "WK",  color: "#C9A84C", min: 1 },
+                { role: "All-Rounder",   short: "AR",   color: "#2ECC71", min: 2 },
+                { role: "Wicket-Keeper", short: "WK",   color: "#C9A84C", min: 1 },
               ].map(r => {
                 const count = xi.filter(p => p.role === r.role).length;
                 return (
@@ -180,10 +208,10 @@ export default function AllTimeXI({ teams, players, assignments, points, snatch,
             </div>
 
             {/* Divider */}
-            <div style={{ fontFamily: fonts.display, fontSize: 9, letterSpacing: 2, fontWeight: 700, color: team?.color || T.accent, marginBottom: 10, display: "flex", alignItems: "center", gap: 8 }}>
-              <div style={{ flex: 1, height: 1, background: (team?.color || T.accent) + "33" }} />
-              PLAYING XI
-              <div style={{ flex: 1, height: 1, background: (team?.color || T.accent) + "33" }} />
+            <div style={{ fontFamily: fonts.display, fontSize: 9, letterSpacing: 2, fontWeight: 700, color: accentColor, marginBottom: 10, display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ flex: 1, height: 1, background: accentColor + "33" }} />
+              {isBestOfLeague ? "🏆 BEST OF LEAGUE XI" : "PLAYING XI"}
+              <div style={{ flex: 1, height: 1, background: accentColor + "33" }} />
             </div>
 
             {/* XI rows */}
@@ -192,18 +220,23 @@ export default function AllTimeXI({ teams, players, assignments, points, snatch,
                 const barPct    = maxPts > 0 ? (p.basePts / maxPts) * 100 : 0;
                 const roleColor = ROLE_COLOR[p.role] || T.muted;
                 const rankColor = i === 0 ? T.accent : i === 1 ? "#94A3B8" : i === 2 ? "#CD7F32" : T.muted;
+                const cardColor = isBestOfLeague ? (p.teamColor || T.accent) : (team?.color || T.accent);
 
                 return (
-                  <div key={p.id} style={{ background: T.card, borderRadius: 10, overflow: "hidden", border: `1px solid ${i === 0 ? (team?.color || T.accentBorder) : T.border}`, position: "relative" }}>
-                    <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: barPct + "%", background: (team?.color || T.accent) + "0D", borderRight: `1px solid ${(team?.color || T.accent) + "15"}`, pointerEvents: "none" }} />
+                  <div key={p.id} style={{ background: T.card, borderRadius: 10, overflow: "hidden", border: `1px solid ${i === 0 ? cardColor + "66" : T.border}`, position: "relative" }}>
+                    <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: barPct + "%", background: cardColor + "0D", borderRight: `1px solid ${cardColor + "15"}`, pointerEvents: "none" }} />
                     <div style={{ position: "relative", display: "flex", alignItems: "center", padding: "11px 14px", gap: 12 }}>
                       <div style={{ fontFamily: fonts.display, fontWeight: 700, fontSize: i < 3 ? 18 : 13, color: rankColor, minWidth: 28, textAlign: "center", flexShrink: 0 }}>
                         {medals[i] || `#${i + 1}`}
                       </div>
-                      <PlayerImage player={p} size={36} borderRadius={9} teamColor={team?.color} />
+                      <PlayerImage player={p} size={36} borderRadius={9} teamColor={cardColor} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                           <span style={{ fontFamily: fonts.body, fontWeight: 700, fontSize: 14, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
+                          {/* Show team badge in Best of League view */}
+                          {isBestOfLeague && p.teamName && (
+                            <span style={{ fontFamily: fonts.display, fontSize: 9, fontWeight: 700, color: p.teamColor, background: p.teamColor + "18", border: `1px solid ${p.teamColor}33`, borderRadius: 10, padding: "1px 7px" }}>{p.teamName}</span>
+                          )}
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3, flexWrap: "wrap" }}>
                           <span style={{ fontFamily: fonts.display, fontSize: 9, fontWeight: 700, color: roleColor, background: roleColor + "18", border: `1px solid ${roleColor}33`, borderRadius: 4, padding: "1px 5px" }}>{ROLE_SHORT[p.role] || p.role}</span>
@@ -212,7 +245,7 @@ export default function AllTimeXI({ teams, players, assignments, points, snatch,
                         </div>
                       </div>
                       <div style={{ textAlign: "right", flexShrink: 0 }}>
-                        <div style={{ fontFamily: fonts.display, fontWeight: 900, fontSize: 22, color: i === 0 ? (team?.color || T.accent) : T.text, lineHeight: 1 }}>
+                        <div style={{ fontFamily: fonts.display, fontWeight: 900, fontSize: 22, color: i === 0 ? cardColor : T.text, lineHeight: 1 }}>
                           {p.basePts}
                         </div>
                         <div style={{ fontFamily: fonts.display, fontSize: 8, color: T.muted, letterSpacing: 1, marginTop: 2 }}>BASE PTS</div>
