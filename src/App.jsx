@@ -2390,42 +2390,65 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   useEffect(() => {
     (async () => {
       try {
-        const keys = ["teams","players","assignments","matches","captains","points","page","tnames","numteams","pwhash","recoveryHash","teamLogos","safePlayers","unsoldPool","transfers","snatch","ownershipLog","teamIdentity","ruleProposal","pointsConfig","tournaments"];
-        // Single HTTP request for all keys instead of 21 separate requests
-        const rawKeys = keys.map(k => _pitchId + "_" + k);
-        const results = await sbGetMany(rawKeys);
-        const [t,p,a,m,c,pts,pg,tn,nt,ph,rh,tl,sp,up,tr,sn,ol,ti] = results;
+        // ── Instant load from localStorage cache ──────────────────────────
+        try {
+          const cached = localStorage.getItem('tb_appdata_' + _pitchId);
+          if (cached) {
+            const d = JSON.parse(cached);
+            if(d.teams)       setTeams(d.teams);
+            if(d.players)     setPlayers(d.players);
+            if(d.assignments) setAssignments(d.assignments);
+            if(d.matches)     setMatches(d.matches);
+            if(d.captains)    setCaptains(d.captains);
+            if(d.transfers && typeof d.transfers === 'object') setTransfers(d.transfers);
+            if(d.snatch && typeof d.snatch === 'object')       setSnatch(d.snatch);
+            if(d.tournaments && Array.isArray(d.tournaments))  { setTournaments(d.tournaments); const exp={}; d.tournaments.forEach(t=>exp[t.id]=true); setExpandedTournaments(exp); }
+            setAppReady(true); // show UI immediately from cache
+          }
+        } catch {}
+
+        // ── Pass 1: Critical keys from Supabase ───────────────────────────
+        const criticalKeys = ["teams","assignments","matches","captains","tnames","numteams","pwhash","transfers","snatch","teamIdentity","pointsConfig","tournaments","safePlayers"];
+        const rawCritical = criticalKeys.map(k => _pitchId + "_" + k);
+        const critResults = await sbGetMany(rawCritical);
+        const [t,a,m,c,tn,nt,ph,tr,sn,ti,pc,tv,sp] = critResults;
         if(t) setTeams(t);
-        if(p) setPlayers(p);
         if(a) setAssignments(a);
         if(m) setMatches(m);
         if(c) setCaptains(c);
-        if(pts) setPoints(pts);
         if(tn) setTNames(tn);
         if(nt) setNumTeams(nt);
         if(ph) setPwHash(ph);
-        else {
-          // Fallback: try adminHash for new-style pitches
-          const ah = await sbGet(_pitchId + "_adminHash");
-          if(ah) { setPwHash(ah); storeSet("pwhash", ah); }
-        }
-        if(rh) setRecoveryHash(rh);
-        if(tl) setTeamLogos(tl);
-        if(sp) setSafePlayers(sp);
-        if(up) setUnsoldPool(up);
+        else { const ah = await sbGet(_pitchId + "_adminHash"); if(ah) { setPwHash(ah); storeSet("pwhash", ah); } }
         if(tr && typeof tr === 'object') setTransfers(tr);
         if(sn && typeof sn === 'object') setSnatch(sn);
-        if(ol && typeof ol === 'object') setOwnershipLog(ol);
         if(ti && typeof ti === 'object') setTeamIdentity(ti);
-        const rp = results[keys.indexOf("ruleProposal")];
-        if(rp && typeof rp === 'object') setRuleProposal(rp);
-        const pc = results[keys.indexOf('pointsConfig')];
         if(pc && typeof pc === 'object') setPointsConfig(prev=>({...prev,...pc}));
-        const tv = results[keys.indexOf('tournaments')];
         if(tv && Array.isArray(tv)) { setTournaments(tv); const exp={}; tv.forEach(t=>exp[t.id]=true); setExpandedTournaments(exp); }
+        if(sp) setSafePlayers(sp);
+        setAppReady(true);
+
+        // ── Pass 2: Heavy keys in background ─────────────────────────────
+        const heavyKeys = ["players","points","ownershipLog","recoveryHash","teamLogos","unsoldPool","ruleProposal"];
+        const rawHeavy = heavyKeys.map(k => _pitchId + "_" + k);
+        const heavyResults = await sbGetMany(rawHeavy);
+        const [p,pts,ol,rh,tl,up,rp] = heavyResults;
+        if(p) setPlayers(p);
+        if(pts) setPoints(pts);
+        if(ol && typeof ol === 'object') setOwnershipLog(ol);
+        if(rh) setRecoveryHash(rh);
+        if(tl) setTeamLogos(tl);
+        if(up) setUnsoldPool(up);
+        if(rp && typeof rp === 'object') setRuleProposal(rp);
+
+        // ── Save fresh data to localStorage for next instant load ─────────
+        try {
+          const toCache = { teams: t, players: p, assignments: a, matches: m, captains: c, transfers: tr, snatch: sn, tournaments: tv };
+          localStorage.setItem('tb_appdata_' + _pitchId, JSON.stringify(toCache));
+        } catch {}
+
       } catch(e) {
         console.error("Load error:", e.message);
-      } finally {
         setAppReady(true);
       }
     })();
