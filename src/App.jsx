@@ -2082,6 +2082,16 @@ function ChatWindow({ myTeam, teams, unlocked, withPassword, storeGet, storeSet,
       React.createElement('div',{style:{flex:1,overflowY:"auto",padding:"10px 12px",display:"flex",flexDirection:"column",gap:8}},
         messages.length===0 && React.createElement('div',{style:{textAlign:"center",color:"#2D3E52",fontSize:13,marginTop:40}},"No messages yet. Say hello! 👋"),
         messages.map(msg => {
+          // ── System notification (C/VC announcements) ──────────────────
+          if (msg.type === "system") {
+            return React.createElement('div', { key: msg.id, style: { display: "flex", flexDirection: "column", alignItems: "center", margin: "4px 0" } },
+              React.createElement('div', { style: { background: "#F5A62311", border: "1px solid #F5A62333", borderRadius: 10, padding: "7px 14px", maxWidth: "90%", textAlign: "center" } },
+                React.createElement('div', { style: { fontSize: 12, color: "#F5A623", fontWeight: 600, fontFamily: fonts.body, lineHeight: 1.4 } }, msg.text),
+                React.createElement('div', { style: { fontSize: 9, color: T.muted, marginTop: 3 } }, new Date(msg.ts).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", day: "numeric", month: "short" }))
+              )
+            );
+          }
+          // ── Regular chat message ──────────────────────────────────────
           const isMe = msg.senderId === myTeam?.id;
           return React.createElement('div',{key:msg.id,style:{display:"flex",flexDirection:"column",alignItems:isMe?"flex-end":"flex-start"}},
             React.createElement('div',{style:{maxWidth:"80%",background:isMe?"#4F8EF722":"#141E2E",border:"1px solid "+(isMe?"#4F8EF744":"#1E2D45"),borderRadius:isMe?"12px 12px 4px 12px":"12px 12px 12px 4px",padding:"7px 10px"}},
@@ -2119,6 +2129,32 @@ function ChatWindow({ myTeam, teams, unlocked, withPassword, storeGet, storeSet,
 
 
 
+// ── Push a system notification into pitch chat ────────────────────────────────
+async function pushCaptainNotification(text) {
+  try {
+    const chatKey = _pitchId + "_chat";
+    const res = await fetch(
+      SUPABASE_URL + "/rest/v1/league_data?key=eq." + encodeURIComponent(chatKey) + "&select=value",
+      { headers: SB_HEADERS }
+    );
+    const rows = await res.json();
+    const chat = rows?.[0]?.value || { messages: [] };
+    const msg = {
+      id:       Date.now().toString(),
+      type:     "system",
+      text,
+      ts:       Date.now(),
+      reactions: {},
+    };
+    chat.messages = [...(chat.messages || []), msg];
+    await fetch(SUPABASE_URL + "/rest/v1/league_data", {
+      method:  "POST",
+      headers: { ...SB_HEADERS, "Prefer": "resolution=merge-duplicates" },
+      body:    JSON.stringify({ key: chatKey, value: chat, updated_at: new Date().toISOString() }),
+    });
+  } catch(e) { console.warn("Captain notification failed:", e.message); }
+}
+
 function CaptainModal({ match, teams, players, assignments, captains, points, myTeam, unlocked, isGuest, withPassword, onSave, onClose }) {
   const isLocked = !!captains[match.id+"_locked"];
 
@@ -2143,9 +2179,33 @@ function CaptainModal({ match, teams, players, assignments, captains, points, my
     }));
   };
 
+  const buildNotifications = (teamsToCheck, latestCaptains) => {
+    const msgs = [];
+    for (const t of teamsToCheck) {
+      const oldCap = latestCaptains[match.id + "_" + t.id] || {};
+      const newCap = local[t.id] || {};
+      const getName = (pid) => players.find(p => p.id === pid)?.name || "—";
+
+      const capChanged = newCap.captain && newCap.captain !== oldCap.captain;
+      const vcChanged  = newCap.vc && newCap.vc !== oldCap.vc;
+      const isNew = !oldCap.captain && !oldCap.vc;
+
+      if (!capChanged && !vcChanged) continue;
+
+      if (isNew || (capChanged && vcChanged)) {
+        msgs.push(`👑 ${t.name} set ${getName(newCap.captain)} as Captain & ${getName(newCap.vc)} as VC — M${match.matchNum}`);
+      } else if (capChanged) {
+        const from = oldCap.captain ? `${getName(oldCap.captain)} → ` : "";
+        msgs.push(`🔄 ${t.name} changed Captain: ${from}${getName(newCap.captain)} — M${match.matchNum}`);
+      } else if (vcChanged) {
+        const from = oldCap.vc ? `${getName(oldCap.vc)} → ` : "";
+        msgs.push(`🔄 ${t.name} changed VC: ${from}${getName(newCap.vc)} — M${match.matchNum}`);
+      }
+    }
+    return msgs;
+  };
+
   const saveAndClose = async () => {
-    // Re-check lock status from Supabase before saving — prevents race condition
-    // where admin locks while team manager's modal is still open
     try {
       const res = await fetch(
         `https://rmcxhorijitrhqyrvvkn.supabase.co/rest/v1/league_data?key=eq.${encodeURIComponent(_pitchId + "_captains")}&select=value`,
@@ -2158,19 +2218,19 @@ function CaptainModal({ match, teams, players, assignments, captains, points, my
         onClose();
         return;
       }
-      // Safe to save — build update preserving all other teams' picks and the lock key
       const updated = { ...latestCaptains };
+      const teamsToCheck = unlocked ? teams : (myTeam ? [myTeam] : []);
       if (unlocked) {
-        // Admin can update all teams
         teams.forEach(t => { updated[match.id + "_" + t.id] = local[t.id]; });
       } else if (myTeam) {
-        // Team manager can only update their own team
         updated[match.id + "_" + myTeam.id] = local[myTeam.id];
       }
       onSave(updated);
+      // Push notifications for each team that changed C/VC
+      const notifications = buildNotifications(teamsToCheck, latestCaptains);
+      for (const msg of notifications) await pushCaptainNotification(msg);
       onClose();
     } catch (e) {
-      // Fallback if fetch fails — use local state but preserve lock
       const updated = { ...captains };
       if (updated[match.id + "_locked"]) {
         alert("🔒 C/VC is locked. Your changes were not saved.");
