@@ -2118,14 +2118,48 @@ function CaptainModal({ match, teams, players, assignments, captains, points, my
     }));
   };
 
-  const saveAndClose = () => {
-    // Build updated captains object
-    const updated = { ...captains };
-    teams.forEach(t => {
-      updated[match.id+"_"+t.id] = local[t.id];
-    });
-    onSave(updated);
-    onClose();
+  const saveAndClose = async () => {
+    // Re-check lock status from Supabase before saving — prevents race condition
+    // where admin locks while team manager's modal is still open
+    try {
+      const res = await fetch(
+        `https://rmcxhorijitrhqyrvvkn.supabase.co/rest/v1/league_data?key=eq.${encodeURIComponent(_pitchId + "_captains")}&select=value`,
+        { headers: { apikey: "sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm", Authorization: "Bearer sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm" } }
+      );
+      const data = await res.json();
+      const latestCaptains = data?.[0]?.value || {};
+      if (latestCaptains[match.id + "_locked"]) {
+        alert("🔒 Admin has locked C/VC selections for this match. Your changes were not saved.");
+        onClose();
+        return;
+      }
+      // Safe to save — build update preserving all other teams' picks and the lock key
+      const updated = { ...latestCaptains };
+      if (unlocked) {
+        // Admin can update all teams
+        teams.forEach(t => { updated[match.id + "_" + t.id] = local[t.id]; });
+      } else if (myTeam) {
+        // Team manager can only update their own team
+        updated[match.id + "_" + myTeam.id] = local[myTeam.id];
+      }
+      onSave(updated);
+      onClose();
+    } catch (e) {
+      // Fallback if fetch fails — use local state but preserve lock
+      const updated = { ...captains };
+      if (updated[match.id + "_locked"]) {
+        alert("🔒 C/VC is locked. Your changes were not saved.");
+        onClose();
+        return;
+      }
+      if (unlocked) {
+        teams.forEach(t => { updated[match.id + "_" + t.id] = local[t.id]; });
+      } else if (myTeam) {
+        updated[match.id + "_" + myTeam.id] = local[myTeam.id];
+      }
+      onSave(updated);
+      onClose();
+    }
   };
 
   return (
