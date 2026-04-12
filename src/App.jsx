@@ -5471,19 +5471,23 @@ function Root() {
     try {
       const userEmail = currentUser?.email;
       if (userEmail) {
-        // Check if admin by email
-        const adminEmail = await sbGet(pitch.id + "_adminEmail");
+        // Fetch adminEmail, teamIdentity and teams in ONE request
+        const [adminEmail, identity, teams] = await sbGetMany([
+          pitch.id + "_adminEmail",
+          pitch.id + "_teamIdentity",
+          pitch.id + "_teams",
+        ]);
+
         if (adminEmail === userEmail) {
           try { localStorage.setItem('tb_admin_' + pitch.id, '1'); } catch {}
           setIsAdmin(true); setIsGuest(false); setMyTeam(null); setScreenAndSave('app'); return;
         }
-        // Check teamIdentity for claimed team
-        const identity = await sbGet(pitch.id + "_teamIdentity") || {};
-        const entry = Object.values(identity).find(t => t.claimedBy === userEmail);
+
+        const identityObj = identity || {};
+        const entry = Object.values(identityObj).find(t => t.claimedBy === userEmail);
         if (entry) {
-          // Find team details
-          const teams = await sbGet(pitch.id + "_teams") || [];
-          const team = teams.find(t => t.id === entry.teamRef) || teams.find((t,i) => "t"+i === Object.keys(identity).find(k=>identity[k].claimedBy===userEmail));
+          const teamsArr = teams || [];
+          const team = teamsArr.find(t => t.id === entry.teamRef) || teamsArr.find((t,i) => "t"+i === Object.keys(identityObj).find(k=>identityObj[k].claimedBy===userEmail));
           if (team) {
             const teamData = {...team, teamId: entry.teamId};
             try { localStorage.setItem('tb_myteam_' + pitch.id, JSON.stringify(teamData)); if(entry.pinHash) localStorage.setItem('tb_pinHash_' + pitch.id, entry.pinHash); } catch {}
