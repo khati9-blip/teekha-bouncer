@@ -121,8 +121,42 @@ export default function AllTimeXI({ teams, players, assignments, points, matches
       .sort((a, b) => b.basePts - a.basePts);
   }, [selectedTeamId, players, assignments, points, matches, snatch]);
 
-  const xi    = ranked.slice(0, 11);
-  const bench = ranked.slice(11);
+  // ── Balanced XI selection ─────────────────────────────────────────────────
+  // Rules: min 4 Batters, 1 All-Rounder, 1 Wicket-Keeper, 3 Bowlers, 2 flex
+  const { xi, bench } = useMemo(() => {
+    if (ranked.length === 0) return { xi: [], bench: [] };
+
+    const byRole = (role) => ranked.filter(p => p.role === role);
+    const selected = new Set();
+    const xiList = [];
+
+    const pick = (pool, count) => {
+      let picked = 0;
+      for (const p of pool) {
+        if (picked >= count) break;
+        if (selected.has(p.id)) continue;
+        xiList.push({ ...p, xiSlot: true });
+        selected.add(p.id);
+        picked++;
+      }
+    };
+
+    // Mandatory slots — best available per role
+    pick(byRole("Batsman"),       4);
+    pick(byRole("Bowler"),        3);
+    pick(byRole("Wicket-Keeper"), 1);
+    pick(byRole("All-Rounder"),   1);
+
+    // 2 flex spots — best remaining players regardless of role
+    pick(ranked, 2);
+
+    // Sort XI by pts descending
+    xiList.sort((a, b) => b.basePts - a.basePts);
+
+    const benchList = ranked.filter(p => !selected.has(p.id));
+    return { xi: xiList, bench: benchList };
+  }, [ranked]);
+
   const xiPts = xi.reduce((s, p) => s + p.basePts, 0);
   const maxPts = xi[0]?.basePts || 1;
   const medals = ["🥇", "🥈", "🥉"];
@@ -198,6 +232,24 @@ export default function AllTimeXI({ teams, players, assignments, points, matches
                   <div style={{ fontFamily: fonts.display, fontSize: 7, color: T.muted, letterSpacing: 1.5, marginTop: 2 }}>{s.label}</div>
                 </div>
               ))}
+            </div>
+
+            {/* Role composition pills */}
+            <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
+              {[
+                { role: "Batsman",       short: "BAT", color: "#4F8EF7", min: 4 },
+                { role: "Bowler",        short: "BOWL", color: "#FF3D5A", min: 3 },
+                { role: "All-Rounder",   short: "AR",  color: "#2ECC71", min: 1 },
+                { role: "Wicket-Keeper", short: "WK",  color: "#C9A84C", min: 1 },
+              ].map(r => {
+                const count = xi.filter(p => p.role === r.role).length;
+                return (
+                  <div key={r.role} style={{ display: "flex", alignItems: "center", gap: 5, background: r.color + "14", border: `1px solid ${r.color}33`, borderRadius: 8, padding: "4px 10px" }}>
+                    <span style={{ fontFamily: fonts.display, fontSize: 11, fontWeight: 800, color: r.color }}>{count}</span>
+                    <span style={{ fontFamily: fonts.display, fontSize: 9, color: r.color, letterSpacing: 0.5 }}>{r.short}</span>
+                  </div>
+                );
+              })}
             </div>
 
             {/* Divider */}
