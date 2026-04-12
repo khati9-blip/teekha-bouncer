@@ -2057,6 +2057,14 @@ function ChatWindow({ myTeam, teams, unlocked, withPassword, storeGet, storeSet,
     ? { position: "fixed", left: pos.x, top: pos.y, zIndex: 500, fontFamily: fonts.body }
     : { position: "fixed", bottom: "calc(env(safe-area-inset-bottom) + 72px)", left: 8, zIndex: 500, fontFamily: fonts.body };
 
+  // Chat window always opens upward from button position
+  const chatW = maximized ? Math.min(520, window.innerWidth * 0.9) : Math.min(320, window.innerWidth * 0.85);
+  const chatH = maximized ? Math.min(600, window.innerHeight * 0.8) : Math.min(420, window.innerHeight * 0.6);
+  const btnX  = pos ? pos.x : 8;
+  const btnY  = pos ? pos.y : window.innerHeight - 130;
+  const chatLeft = Math.min(btnX, window.innerWidth - chatW - 8);
+  const chatTop  = Math.max(8, btnY - chatH - 12);
+
   return React.createElement('div', { ref: dragRef, style: floatStyle },
     !open && React.createElement('button', {
       onClick: () => setOpen(true),
@@ -2067,7 +2075,7 @@ function ChatWindow({ myTeam, teams, unlocked, withPassword, storeGet, storeSet,
       React.createElement('span', { style: { fontSize: 22 } }, "💬"),
       unread > 0 && React.createElement('span', { style: { position: "absolute", top: -2, right: -2, background: "#FF3D5A", borderRadius: "50%", width: 18, height: 18, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 700, color: "#fff" } }, unread > 9 ? "9+" : unread)
     ),
-    open && React.createElement('div',{style:{width:maximized?"min(520px,90vw)":"min(320px,85vw)",height:maximized?"min(600px,80vh)":"min(420px,60vh)",background:T.card,borderRadius:16,border:`1px solid ${T.info}44`,display:"flex",flexDirection:"column",boxShadow:"0 8px 32px rgba(0,0,0,0.6)",overflow:"hidden"}},
+    open && React.createElement('div',{style:{position:"fixed",left:chatLeft,top:chatTop,width:chatW,height:chatH,background:T.card,borderRadius:16,border:`1px solid ${T.info}44`,display:"flex",flexDirection:"column",boxShadow:"0 8px 32px rgba(0,0,0,0.6)",overflow:"hidden",zIndex:501}},
       React.createElement('div',{style:{background:"#4F8EF711",borderBottom:"1px solid #4F8EF733",padding:"10px 14px",display:"flex",alignItems:"center",gap:8}},
         React.createElement('span',{style:{fontSize:16}},"💬"),
         React.createElement('div',{style:{flex:1,fontFamily:fonts.display,fontWeight:700,fontSize:15,color:T.info,letterSpacing:1}},"PITCH CHAT"),
