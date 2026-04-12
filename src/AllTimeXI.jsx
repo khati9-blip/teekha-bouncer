@@ -42,9 +42,18 @@ function getAllBasePts(pid, points) {
   return Object.values(points[pid] || {}).reduce((s, d) => s + (d?.base || 0), 0);
 }
 
+// Returns the TRUE home team of a player — original owner even if currently snatched
+function getTrueTeamId(pid, assignments, snatch) {
+  const a = snatch?.active;
+  // If currently snatched away, their true team is fromTeamId not current assignment
+  if (a?.pid === pid) return a.fromTeamId;
+  // Check history — if they were snatched and returned, assignment is already back correct
+  return assignments[pid];
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function AllTimeXI({ teams, players, assignments, points, onClose }) {
+export default function AllTimeXI({ teams, players, assignments, points, snatch, onClose }) {
   const [selectedTeamId, setSelectedTeamId] = useState(teams[0]?.id || "");
   const [showBench, setShowBench] = useState(false);
 
@@ -53,7 +62,7 @@ export default function AllTimeXI({ teams, players, assignments, points, onClose
   const ranked = useMemo(() => {
     if (!selectedTeamId) return [];
     return players
-      .filter(p => assignments[p.id] === selectedTeamId)
+      .filter(p => getTrueTeamId(p.id, assignments, snatch) === selectedTeamId)
       .map(p => ({
         ...p,
         basePts:    getAllBasePts(p.id, points),
@@ -61,7 +70,7 @@ export default function AllTimeXI({ teams, players, assignments, points, onClose
         status:     null,
       }))
       .sort((a, b) => b.basePts - a.basePts);
-  }, [selectedTeamId, players, assignments, points]);
+  }, [selectedTeamId, players, assignments, points, snatch]);
 
   // ── Balanced XI selection ─────────────────────────────────────────────────
   // Rules: min 4 Batters, 1 All-Rounder, 1 Wicket-Keeper, 3 Bowlers, 2 flex
