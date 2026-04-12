@@ -301,7 +301,7 @@ const localCache = {};
 async function sbGet(rawKey) {
   if (localCache[rawKey] !== undefined) return localCache[rawKey];
   try {
-    const res = await fetch(SUPABASE_URL + "/rest/v1/league_data?key=eq." + encodeURIComponent(rawKey) + "&select=value", {
+    const res = await fetch(SUPABASE_URL + "/rest/v1/league_data?key=eq." + encodeURIComponent(rawKey) + "&select=key,value", {
       headers: SB_HEADERS,
     });
     const data = await res.json();
@@ -309,6 +309,31 @@ async function sbGet(rawKey) {
     localCache[rawKey] = val;
     return val;
   } catch { return null; }
+}
+
+// Batch fetch — single HTTP request for multiple keys
+async function sbGetMany(rawKeys) {
+  // Check cache first — only fetch uncached keys
+  const uncached = rawKeys.filter(k => localCache[k] === undefined);
+  if (uncached.length > 0) {
+    try {
+      const inClause = uncached.map(k => `"${k}"`).join(",");
+      const res = await fetch(
+        SUPABASE_URL + "/rest/v1/league_data?key=in.(" + encodeURIComponent(inClause) + ")&select=key,value",
+        { headers: SB_HEADERS }
+      );
+      const rows = await res.json();
+      // Cache all returned rows
+      if (Array.isArray(rows)) {
+        rows.forEach(row => { localCache[row.key] = row.value; });
+      }
+      // Cache nulls for keys not returned
+      uncached.forEach(k => { if (localCache[k] === undefined) localCache[k] = null; });
+    } catch {
+      uncached.forEach(k => { if (localCache[k] === undefined) localCache[k] = null; });
+    }
+  }
+  return rawKeys.map(k => localCache[k] ?? null);
 }
 
 async function sbSet(rawKey, val) {
@@ -2366,7 +2391,9 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
     (async () => {
       try {
         const keys = ["teams","players","assignments","matches","captains","points","page","tnames","numteams","pwhash","recoveryHash","teamLogos","safePlayers","unsoldPool","transfers","snatch","ownershipLog","teamIdentity","ruleProposal","pointsConfig","tournaments"];
-        const results = await Promise.all(keys.map(k => storeGet(k)));
+        // Single HTTP request for all keys instead of 21 separate requests
+        const rawKeys = keys.map(k => _pitchId + "_" + k);
+        const results = await sbGetMany(rawKeys);
         const [t,p,a,m,c,pts,pg,tn,nt,ph,rh,tl,sp,up,tr,sn,ol,ti] = results;
         if(t) setTeams(t);
         if(p) setPlayers(p);
@@ -2374,14 +2401,12 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
         if(m) setMatches(m);
         if(c) setCaptains(c);
         if(pts) setPoints(pts);
-        // Page is persisted in localStorage, not Supabase
-        // if(pg && typeof pg === 'string') setPage(pg);
         if(tn) setTNames(tn);
         if(nt) setNumTeams(nt);
         if(ph) setPwHash(ph);
         else {
           // Fallback: try adminHash for new-style pitches
-          const ah = await storeGet("adminHash");
+          const ah = await sbGet(_pitchId + "_adminHash");
           if(ah) { setPwHash(ah); storeSet("pwhash", ah); }
         }
         if(rh) setRecoveryHash(rh);
@@ -2420,10 +2445,9 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
     (async () => {
       try {
         const emailKey = user.email.replace(/[@.]/g, "_");
-        const [hl, notes] = await Promise.all([
-          storeGet("hl_" + emailKey),
-          storeGet("notes_" + emailKey),
-        ]);
+        const hlKey    = _pitchId + "_hl_" + emailKey;
+        const notesKey = _pitchId + "_notes_" + emailKey;
+        const [hl, notes] = await sbGetMany([hlKey, notesKey]);
         if (hl && typeof hl === "object") setMyHighlights(hl);
         if (notes && typeof notes === "object") setMyNotes(notes);
       } catch {}
