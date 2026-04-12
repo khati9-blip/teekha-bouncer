@@ -36,71 +36,15 @@ function PlayerImage({ player, size = 36, borderRadius = 9, teamColor }) {
   );
 }
 
-// ── Snatch helpers ────────────────────────────────────────────────────────────
+// ── Simple point helpers ──────────────────────────────────────────────────────
 
-function snatchStatus(pid, teamId, snatch) {
-  const a = snatch?.active, h = snatch?.history || [];
-  if (a?.pid === pid && a?.fromTeamId === teamId) return "away";
-  if (a?.pid === pid && a?.byTeamId   === teamId) return "in";
-  if (h.find(x => x.pid === pid && x.fromTeamId === teamId)) return "hist-away";
-  if (h.find(x => x.pid === pid && x.byTeamId   === teamId)) return "hist-in";
-  return null;
-}
-
-// All player IDs that belong to a team (current + snatch history)
-function teamPids(teamId, players, assignments, snatch) {
-  const set = new Set(players.filter(p => assignments[p.id] === teamId).map(p => p.id));
-  const a = snatch?.active;
-  if (a?.fromTeamId === teamId) set.add(a.pid); // snatched away — still theirs
-  for (const h of (snatch?.history || [])) {
-    if (h.fromTeamId === teamId) set.add(h.pid); // historically snatched away
-    if (h.byTeamId   === teamId) set.add(h.pid); // historically loaned in
-  }
-  return [...set];
-}
-
-// Base pts for a player attributed to a specific team, snatch-aware
-function snatchPts(pid, teamId, points, matches, snatch) {
-  const a = snatch?.active, h = snatch?.history || [];
-  const allPts = points[pid] || {};
-
-  const sumMatches = (filter) =>
-    Object.entries(allPts).reduce((s, [mid, d]) => {
-      const m = matches.find(x => x.id === mid);
-      return m && filter(m.date) ? s + (d?.base || 0) : s;
-    }, 0);
-
-  // Currently snatched away from this team → only pre-snatch pts
-  if (a?.pid === pid && a?.fromTeamId === teamId) {
-    const sd = a.startDate?.split("T")[0] || "9999";
-    return sumMatches(date => date < sd);
-  }
-  // Currently loaned into this team → only loan-period pts
-  if (a?.pid === pid && a?.byTeamId === teamId) {
-    const sd = a.startDate?.split("T")[0] || "0000";
-    return sumMatches(date => date >= sd);
-  }
-  // Historically snatched away → all pts except snatch window
-  const ha = h.find(x => x.pid === pid && x.fromTeamId === teamId);
-  if (ha) {
-    const s = ha.startDate?.split("T")[0]  || "9999";
-    const e = ha.returnDate?.split("T")[0] || "9999";
-    return sumMatches(date => date < s || date > e);
-  }
-  // Historically loaned in → only loan-window pts
-  const hi = h.find(x => x.pid === pid && x.byTeamId === teamId);
-  if (hi) {
-    const s = hi.startDate?.split("T")[0]  || "0000";
-    const e = hi.returnDate?.split("T")[0] || "9999";
-    return sumMatches(date => date >= s && date <= e);
-  }
-  // Normal → all pts
-  return sumMatches(() => true);
+function getAllBasePts(pid, points) {
+  return Object.values(points[pid] || {}).reduce((s, d) => s + (d?.base || 0), 0);
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export default function AllTimeXI({ teams, players, assignments, points, matches, snatch, onClose }) {
+export default function AllTimeXI({ teams, players, assignments, points, onClose }) {
   const [selectedTeamId, setSelectedTeamId] = useState(teams[0]?.id || "");
   const [showBench, setShowBench] = useState(false);
 
@@ -108,18 +52,16 @@ export default function AllTimeXI({ teams, players, assignments, points, matches
 
   const ranked = useMemo(() => {
     if (!selectedTeamId) return [];
-    return teamPids(selectedTeamId, players, assignments, snatch)
-      .map(pid => {
-        const p = players.find(x => x.id === pid);
-        if (!p) return null;
-        const status     = snatchStatus(pid, selectedTeamId, snatch);
-        const basePts    = snatchPts(pid, selectedTeamId, points, matches, snatch);
-        const matchCount = Object.keys(points[pid] || {}).length;
-        return { ...p, basePts, matchCount, status };
-      })
-      .filter(Boolean)
+    return players
+      .filter(p => assignments[p.id] === selectedTeamId)
+      .map(p => ({
+        ...p,
+        basePts:    getAllBasePts(p.id, points),
+        matchCount: Object.keys(points[p.id] || {}).length,
+        status:     null,
+      }))
       .sort((a, b) => b.basePts - a.basePts);
-  }, [selectedTeamId, players, assignments, points, matches, snatch]);
+  }, [selectedTeamId, players, assignments, points]);
 
   // ── Balanced XI selection ─────────────────────────────────────────────────
   // Rules: min 4 Batters, 1 All-Rounder, 1 Wicket-Keeper, 3 Bowlers, 2 flex
@@ -160,30 +102,6 @@ export default function AllTimeXI({ teams, players, assignments, points, matches
   const xiPts = xi.reduce((s, p) => s + p.basePts, 0);
   const maxPts = xi[0]?.basePts || 1;
   const medals = ["🥇", "🥈", "🥉"];
-
-  const SnatchBadge = ({ status }) => {
-    if (!status) return null;
-    const map = {
-      "away":      { label: "⚡ SNATCHED",   color: T.purple,  bg: T.purpleBg  },
-      "in":        { label: "⚡ ON LOAN",     color: T.success, bg: T.successBg },
-      "hist-away": { label: "↩ RETURNED",    color: T.muted,   bg: T.border    },
-      "hist-in":   { label: "↩ LOAN ENDED",  color: T.muted,   bg: T.border    },
-    };
-    const b = map[status]; if (!b) return null;
-    return (
-      <span style={{ fontFamily: fonts.display, fontSize: 8, fontWeight: 700, color: b.color, background: b.bg, border: `1px solid ${b.color}33`, borderRadius: 4, padding: "1px 5px", letterSpacing: 0.5 }}>
-        {b.label}
-      </span>
-    );
-  };
-
-  const ptsLabel = (status) => {
-    if (status === "away")      return "PRE-SNATCH";
-    if (status === "in")        return "LOAN PTS";
-    if (status === "hist-away") return "BASE PTS";
-    if (status === "hist-in")   return "LOAN PTS";
-    return "BASE PTS";
-  };
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(5,8,16,0.97)", zIndex: 500, display: "flex", flexDirection: "column", fontFamily: fonts.body }}>
@@ -265,10 +183,9 @@ export default function AllTimeXI({ teams, players, assignments, points, matches
                 const barPct    = maxPts > 0 ? (p.basePts / maxPts) * 100 : 0;
                 const roleColor = ROLE_COLOR[p.role] || T.muted;
                 const rankColor = i === 0 ? T.accent : i === 1 ? "#94A3B8" : i === 2 ? "#CD7F32" : T.muted;
-                const isSnatched = p.status === "away" || p.status === "in";
 
                 return (
-                  <div key={p.id + (p.status || "")} style={{ background: T.card, borderRadius: 10, overflow: "hidden", border: `1px solid ${isSnatched ? T.purple + "44" : i === 0 ? (team?.color || T.accentBorder) : T.border}`, position: "relative", opacity: p.status === "away" ? 0.85 : 1 }}>
+                  <div key={p.id} style={{ background: T.card, borderRadius: 10, overflow: "hidden", border: `1px solid ${i === 0 ? (team?.color || T.accentBorder) : T.border}`, position: "relative" }}>
                     <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: barPct + "%", background: (team?.color || T.accent) + "0D", borderRight: `1px solid ${(team?.color || T.accent) + "15"}`, pointerEvents: "none" }} />
                     <div style={{ position: "relative", display: "flex", alignItems: "center", padding: "11px 14px", gap: 12 }}>
                       <div style={{ fontFamily: fonts.display, fontWeight: 700, fontSize: i < 3 ? 18 : 13, color: rankColor, minWidth: 28, textAlign: "center", flexShrink: 0 }}>
@@ -278,7 +195,6 @@ export default function AllTimeXI({ teams, players, assignments, points, matches
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                           <span style={{ fontFamily: fonts.body, fontWeight: 700, fontSize: 14, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
-                          <SnatchBadge status={p.status} />
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 3, flexWrap: "wrap" }}>
                           <span style={{ fontFamily: fonts.display, fontSize: 9, fontWeight: 700, color: roleColor, background: roleColor + "18", border: `1px solid ${roleColor}33`, borderRadius: 4, padding: "1px 5px" }}>{ROLE_SHORT[p.role] || p.role}</span>
@@ -287,10 +203,10 @@ export default function AllTimeXI({ teams, players, assignments, points, matches
                         </div>
                       </div>
                       <div style={{ textAlign: "right", flexShrink: 0 }}>
-                        <div style={{ fontFamily: fonts.display, fontWeight: 900, fontSize: 22, color: p.status === "away" ? T.purple : p.status === "in" ? T.success : i === 0 ? (team?.color || T.accent) : T.text, lineHeight: 1 }}>
+                        <div style={{ fontFamily: fonts.display, fontWeight: 900, fontSize: 22, color: i === 0 ? (team?.color || T.accent) : T.text, lineHeight: 1 }}>
                           {p.basePts}
                         </div>
-                        <div style={{ fontFamily: fonts.display, fontSize: 8, color: T.muted, letterSpacing: 1, marginTop: 2 }}>{ptsLabel(p.status)}</div>
+                        <div style={{ fontFamily: fonts.display, fontSize: 8, color: T.muted, letterSpacing: 1, marginTop: 2 }}>BASE PTS</div>
                       </div>
                     </div>
                   </div>

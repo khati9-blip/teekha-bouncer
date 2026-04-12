@@ -4984,8 +4984,6 @@ ${aiMatchText.slice(0, 3000)}`;
             players={players}
             assignments={assignments}
             points={points}
-            matches={matches}
-            snatch={snatch}
             onClose={()=>setShowAllTimeXI(false)}
           />
         )}
