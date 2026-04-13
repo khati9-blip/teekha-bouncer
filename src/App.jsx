@@ -2530,7 +2530,160 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
     }
   }, [appReady, isAdmin, teams.length]);
 
-  // ── AUTO-OPEN TRANSFER WINDOW ─────────────────────────────────────────────
+  // ── Refs to prevent double-firing of auto actions ────────────────────────
+  const autoReleaseRanRef = React.useRef(false);
+  const autoPickRanRef    = React.useRef(null); // stores last pickDeadline processed
+
+  // ── AUTO-RELEASE & AUTO-START TRADE ──────────────────────────────────────
+  useEffect(() => {
+    if (!appReady) return;
+
+    // ── Helper: IST date string ───────────────────────────────────────────
+    const istNow = () => new Date(Date.now() + new Date().getTimezoneOffset()*60000 + 5.5*3600000);
+
+    // ── Helper: find next match start time ───────────────────────────────
+    const getNextMatchTime = () => {
+      if (transfers.matchStartTime) return new Date(transfers.matchStartTime);
+      const now = istNow();
+      const todayStr = now.toISOString().split("T")[0]; // IST date
+      const upcoming = [...matches]
+        .filter(m => m.status !== "completed" && m.date >= todayStr)
+        .sort((a, b) => {
+          const da = a.date + (a.time ? " " + a.time : " 20:00");
+          const db = b.date + (b.time ? " " + b.time : " 20:00");
+          return da.localeCompare(db);
+        });
+      if (upcoming.length > 0) {
+        const m = upcoming[0];
+        const timeStr = m.time || "20:00";
+        const dt = new Date(`${m.date}T${timeStr}:00+05:30`);
+        if (dt > Date.now()) return dt;
+      }
+      return new Date(Date.now() + 8 * 3600000); // fallback
+    };
+
+    // ── Auto-release: when release deadline passes ────────────────────────
+    if (transfers.phase === 'release') {
+      const deadline = transfers.releaseDeadline ? new Date(transfers.releaseDeadline) : null;
+      const isAfterNoon = istNow().getUTCHours() >= 12;
+
+      // Only auto-release if: deadline passed AND past noon AND haven't run yet this session
+      if (deadline && Date.now() > deadline.getTime() && isAfterNoon && !autoReleaseRanRef.current) {
+        autoReleaseRanRef.current = true; // prevent double-fire in this session
+
+        const newReleases = { ...transfers.releases };
+        const newAssign = { ...assignments };
+        const newPool = [...unsoldPool];
+        const notifications = [];
+
+        for (const team of teams) {
+          const released = [...(newReleases[team.id] || [])];
+          if (released.length >= 3) { newReleases[team.id] = released; continue; }
+          const eligible = players.filter(p =>
+            assignments[p.id] === team.id &&
+            !released.includes(p.id) &&
+            !Object.values(safePlayers || {}).flat().includes(p.id)
+          );
+          const shuffled = [...eligible].sort(() => Math.random() - 0.5);
+          const toRelease = shuffled.slice(0, 3 - released.length);
+          for (const p of toRelease) {
+            delete newAssign[p.id];
+            if (!newPool.includes(p.id)) newPool.push(p.id);
+            released.push(p.id);
+          }
+          newReleases[team.id] = released;
+          if (toRelease.length > 0) {
+            notifications.push(`⚠️ System auto-released ${toRelease.map(p=>p.name).join(", ")} for ${team.name} (missed deadline)`);
+          }
+        }
+
+        // Save auto-released players
+        updAssign(newAssign);
+        setUnsoldPool(newPool); storeSet("unsoldPool", newPool);
+        for (const msg of notifications) pushNotif('transfer', msg, '🤖');
+
+        // Auto-start trade phase immediately
+        const matchTime = getNextMatchTime();
+        const totalPicks = Object.values(newReleases).reduce((s, arr) => s + arr.length, 0);
+        const msAvail = Math.max(0, matchTime.getTime() - Date.now() - 30 * 60000);
+        const msPerPick = totalPicks > 0 ? Math.max(15 * 60000, Math.floor(msAvail / totalPicks)) : 45 * 60000;
+        const minPerPick = Math.round(msPerPick / 60000);
+        const firstTeam = [...teams].sort((a,b) =>
+          players.filter(p => newAssign[p.id] === a.id).length -
+          players.filter(p => newAssign[p.id] === b.id).length
+        )[0]?.id;
+        updTransfers({
+          ...transfers,
+          phase: 'trade',
+          releases: newReleases,
+          currentPickTeam: firstTeam,
+          pickDeadline: new Date(Date.now() + msPerPick).toISOString(),
+          matchStartTime: matchTime.toISOString(),
+          msPerPick,
+          tradedPairs: [],
+          ineligible: [],
+        });
+        pushNotif('transfer', `🏁 Trade phase auto-started! ⏱ ${minPerPick} min per pick · Match at ${matchTime.toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"})} IST`, '🏁');
+      }
+    }
+
+    // ── Auto-pick: when pick deadline expires ─────────────────────────────
+    // Guard: only fire once per unique pickDeadline value
+    if (
+      transfers.phase === 'trade' &&
+      transfers.pickDeadline &&
+      transfers.currentPickTeam &&
+      autoPickRanRef.current !== transfers.pickDeadline && // not already processed
+      Date.now() > new Date(transfers.pickDeadline).getTime()
+    ) {
+      autoPickRanRef.current = transfers.pickDeadline; // mark as processed
+
+      const currentTeamId = transfers.currentPickTeam;
+      const released = (transfers.releases[currentTeamId] || []);
+      const traded = (transfers.tradedPairs || []).filter(p => p.teamId === currentTeamId).map(p => p.releasedPid);
+      const releasedPid = released.find(pid => !traded.includes(pid));
+
+      if (releasedPid && unsoldPool.length > 0) {
+        const available = unsoldPool
+          .map(pid => players.find(p => p.id === pid))
+          .filter(Boolean)
+          .sort((a, b) => {
+            const pA = Object.values(points[a.id]||{}).reduce((s,d)=>s+(d?.base||0),0);
+            const pB = Object.values(points[b.id]||{}).reduce((s,d)=>s+(d?.base||0),0);
+            return pB - pA;
+          });
+        const pick = available[0];
+        if (pick) {
+          const newAssign2 = { ...assignments, [pick.id]: currentTeamId };
+          const newPool2 = unsoldPool.filter(x => x !== pick.id);
+          const newLog = recordOwnership(pick.id, currentTeamId, ownershipLog);
+          updAssign(newAssign2);
+          setUnsoldPool(newPool2); storeSet("unsoldPool", newPool2);
+          updOwnership(newLog);
+          const newPairs = [...(transfers.tradedPairs||[]), { teamId: currentTeamId, pickedPid: pick.id, releasedPid, timestamp: new Date().toISOString(), autoPicked: true }];
+          const msPerPick = transfers.msPerPick || 45*60000;
+          const getNext = () => {
+            const order = [...teams].sort((a,b) =>
+              players.filter(p=>newAssign2[p.id]===a.id).length -
+              players.filter(p=>newAssign2[p.id]===b.id).length
+            ).map(t=>t.id);
+            const idx = order.indexOf(currentTeamId);
+            for (let i = 1; i <= order.length; i++) {
+              const tid = order[(idx+i)%order.length];
+              const rel = (transfers.releases[tid]||[]);
+              const trd = newPairs.filter(p=>p.teamId===tid).map(p=>p.releasedPid);
+              if (rel.filter(pid=>!trd.includes(pid)).length > 0) return tid;
+            }
+            return null;
+          };
+          const nextTeam = getNext();
+          const newPhase = nextTeam ? 'trade' : 'done';
+          updTransfers({ ...transfers, tradedPairs: newPairs, currentPickTeam: nextTeam, pickDeadline: nextTeam ? new Date(Date.now()+msPerPick).toISOString() : null, phase: newPhase });
+          pushNotif('transfer', `🤖 System auto-picked ${pick.name} for ${teams.find(t=>t.id===currentTeamId)?.name} (time expired)`, '🤖');
+        }
+      }
+    }
+  }, [appReady, transfers.phase, transfers.pickDeadline, transfers.releaseDeadline]);
   // Fires for everyone (not just admin) — silently opens release window if
   // it's within the Sun 11:59 PM → Mon 11:00 AM IST window and still closed.
   useEffect(() => {
@@ -3512,18 +3665,26 @@ ${aiMatchText.slice(0, 3000)}`;
         const m = matches.find(x=>x.id===mid);
         if(!m) continue;
         const matchDate = new Date(m.date);
-        const owned = periods.length === 0
-          ? assignments[pid]===teamId
-          : periods.some(o=>{
-              const from = new Date(o.from);
-              const to = o.to ? new Date(o.to) : new Date('2099-01-01');
-              return matchDate >= from && matchDate <= to;
-            });
+        // If no ownership log periods, player must be currently assigned to this team
+        if(periods.length === 0) {
+          if(assignments[pid] !== teamId) continue; // not their player — skip
+          // Currently assigned, count all points
+          const cap=captains[mid+"_"+teamId]||{};
+          let pts=d.base;
+          if(cap.captain===pid)pts*=2;else if(cap.vc===pid)pts*=1.5;
+          total+=Math.round(pts);
+          continue;
+        }
+        const owned = periods.some(o=>{
+          const from = new Date(o.from);
+          const to = o.to ? new Date(o.to) : new Date('2099-01-01');
+          return matchDate >= from && matchDate <= to;
+        });
         if(!owned) continue;
         const cap=captains[mid+"_"+teamId]||{};
         let pts=d.base;
         if(cap.captain===pid)pts*=2;else if(cap.vc===pid)pts*=1.5;
-        total+=Math.round(pts); // round per player, then sum
+        total+=Math.round(pts);
       }
     }
     return total; // already summed from rounded values
