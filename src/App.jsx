@@ -734,7 +734,7 @@ function SmartStatsModal({ match, players, assignments, existingStats, onSave, o
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
+          model: "claude-sonnet-4-6",
           max_tokens: 4000,
           system: "You are a cricket scorecard parser. Extract player stats from the scorecard text and return ONLY a valid JSON array. No markdown, no explanation.",
           messages: [{ role: "user", content: `Parse this cricket scorecard and extract stats for these players: ${playerList}.
