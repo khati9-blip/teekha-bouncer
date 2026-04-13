@@ -2172,7 +2172,6 @@ function FixOwnershipModal({ players, teams, ownershipLog, onSave, onClose }) {
 
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(8,12,20,0.97)", zIndex: 600, display: "flex", flexDirection: "column", fontFamily: fonts.body }}>
-      <style>{`@import url('${FONT_URL}');`}</style>
 
       {/* Header */}
       <div style={{ background: T.card, borderBottom: `1px solid ${T.border}`, padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", flexShrink: 0 }}>
