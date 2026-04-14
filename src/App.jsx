@@ -3828,8 +3828,6 @@ ${aiMatchText.slice(0, 3000)}`;
     return total;
   };
 
-  const leaderboard=[...teams].map(t=>({...t,total:getTeamTotal(t.id)})).sort((a,b)=>b.total-a.total);
-  const getPlayerBreakdown=(teamId)=>{
     // Helper: get points for player during team's ownership period(s)
     const getPtsForTeam = (pid, tid) => {
       const periods = (ownershipLog[pid]||[]).filter(o=>o.teamId===tid);
