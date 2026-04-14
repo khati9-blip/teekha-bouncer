@@ -3802,7 +3802,6 @@ ${aiMatchText.slice(0, 3000)}`;
       for(const[mid,d] of Object.entries(points[pid]||{})){
         const m = matches.find(x=>x.id===mid);
         if(!m) continue;
-        const matchDate = new Date(m.date);
         // If no ownership log periods, player must be currently assigned to this team
         if(periods.length === 0) {
           if(assignments[pid] !== teamId) continue; // not their player — skip
@@ -3814,9 +3813,10 @@ ${aiMatchText.slice(0, 3000)}`;
           continue;
         }
         const owned = periods.some(o=>{
-          const from = new Date(o.from);
-          const to = o.to ? new Date(o.to) : new Date('2099-01-01');
-          return matchDate >= from && matchDate <= to;
+          const fromDate = (o.from||"").split("T")[0];
+          const toDate   = o.to ? o.to.split("T")[0] : "2099-01-01";
+          const mDate    = m.date; // already a date string "YYYY-MM-DD"
+          return mDate >= fromDate && mDate <= toDate;
         });
         if(!owned) continue;
         const cap=captains[mid+"_"+teamId]||{};
@@ -5928,7 +5928,16 @@ function Root() {
       }
     } catch(e) { console.error("Email check error:", e); }
 
-    // First time - show join screen
+    // First time - fetch fresh pitch data to check guestAllowed, then show join screen
+    try {
+      const pitches = await sbGet("pitches") || [];
+      const freshPitch = pitches.find(p => p.id === pitch.id);
+      if (freshPitch) setCurrentPitch(freshPitch);
+      if (freshPitch?.guestAllowed === false) {
+        // Guest access is off — only show claim/admin options, not guest entry
+        setCurrentPitch({ ...freshPitch });
+      }
+    } catch {}
     setScreenAndSave('join');
   };
 
