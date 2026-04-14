@@ -3767,7 +3767,7 @@ ${aiMatchText.slice(0, 3000)}`;
           const cap=captains[mid+"_"+teamId]||{};
           let pts=d.base;
           if(cap.captain===pid) pts*=2; else if(cap.vc===pid) pts*=1.5;
-          total+=pts;
+          total+=Math.round(pts);
         }
         continue;
       }
@@ -3808,27 +3808,31 @@ ${aiMatchText.slice(0, 3000)}`;
           // Currently assigned, count all points
           const cap=captains[mid+"_"+teamId]||{};
           let pts=d.base;
-          if(cap.captain===pid) pts*=2; else if(cap.vc===pid) pts*=1.5;
-          total+=pts;
+          if(cap.captain===pid)pts*=2;else if(cap.vc===pid)pts*=1.5;
+          total+=Math.round(pts);
           continue;
         }
         const owned = periods.some(o=>{
           const fromDate = (o.from||"").split("T")[0];
           const toDate   = o.to ? o.to.split("T")[0] : "2099-01-01";
-          const mDate    = m.date; // already a date string "YYYY-MM-DD"
+          const mDate    = m.date;
           return mDate >= fromDate && mDate <= toDate;
         });
         if(!owned) continue;
         const cap=captains[mid+"_"+teamId]||{};
         let pts=d.base;
         if(cap.captain===pid)pts*=2;else if(cap.vc===pid)pts*=1.5;
-        total+=pts;
+        total+=Math.round(pts);
       }
     }
-    return Math.round(total);
+    return total;
   };
 
-  const leaderboard=[...teams].map(t=>({...t,total:getTeamTotal(t.id)})).sort((a,b)=>b.total-a.total);
+  const leaderboard=[...teams].map(t=>{
+    const breakdown = getPlayerBreakdown(t.id);
+    const total = breakdown.reduce((s, p) => s + (p.total || 0), 0);
+    return {...t, total};
+  }).sort((a,b)=>b.total-a.total);
   const getPlayerBreakdown=(teamId)=>{
     // Helper: get points for player during team's ownership period(s)
     const getPtsForTeam = (pid, tid) => {
@@ -3849,9 +3853,9 @@ ${aiMatchText.slice(0, 3000)}`;
         const cap=captains[`${mid}_${tid}`]||{};
         let pts=d.base;
         if(cap.captain===pid)pts*=2;else if(cap.vc===pid)pts*=1.5;
-        tot+=pts;
+        tot+=Math.round(pts);
       }
-      return Math.round(tot);
+      return tot;
     };
 
     // Collect ALL traded-out/in pids across ALL history + current window
@@ -3937,9 +3941,9 @@ ${aiMatchText.slice(0, 3000)}`;
         const cap=captains[`${mid}_${teamId}`]||{};
         let pts=d.base;
         if(cap.captain===p.id)pts*=2;else if(cap.vc===p.id)pts*=1.5;
-        tot+=pts;
+        tot+=Math.round(pts);
       }
-      return p?{...p,total:Math.round(tot),status:"snatched-in",frozenAt:Math.round(tot)}:null;
+      return p?{...p,total:tot,status:"snatched-in",frozenAt:tot}:null;
     })() : null;
 
     // Players currently snatched AWAY from this team (show struck-through, frozen pts)
