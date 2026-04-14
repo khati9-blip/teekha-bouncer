@@ -3837,14 +3837,13 @@ ${aiMatchText.slice(0, 3000)}`;
       for(const[mid,d] of Object.entries(points[pid]||{})){
         const m = matches.find(x=>x.id===mid);
         if(!m) continue;
-        const matchDate = new Date(m.date);
         // Check if match falls within any ownership period for this team
         const owned = periods.length === 0
           ? true // no log = original owner, count all
           : periods.some(o => {
-              const from = new Date(o.from);
-              const to = o.to ? new Date(o.to) : new Date('2099-01-01');
-              return matchDate >= from && matchDate <= to;
+              const fromDate = (o.from||"").split("T")[0];
+              const toDate   = o.to ? o.to.split("T")[0] : "2099-01-01";
+              return m.date >= fromDate && m.date <= toDate;
             });
         if(!owned) continue;
         const cap=captains[`${mid}_${tid}`]||{};
