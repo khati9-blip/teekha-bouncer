@@ -3828,7 +3828,7 @@ ${aiMatchText.slice(0, 3000)}`;
     return total;
   };
 
-
+  const getPlayerBreakdown=(teamId)=>{
     // Helper: get points for player during team's ownership period(s)
     const getPtsForTeam = (pid, tid) => {
       const periods = (ownershipLog[pid]||[]).filter(o=>o.teamId===tid);
