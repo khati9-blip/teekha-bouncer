@@ -3767,7 +3767,7 @@ ${aiMatchText.slice(0, 3000)}`;
           const cap=captains[mid+"_"+teamId]||{};
           let pts=d.base;
           if(cap.captain===pid) pts*=2; else if(cap.vc===pid) pts*=1.5;
-          total+=Math.round(pts);
+          total+=pts;
         }
         continue;
       }
@@ -3808,8 +3808,8 @@ ${aiMatchText.slice(0, 3000)}`;
           // Currently assigned, count all points
           const cap=captains[mid+"_"+teamId]||{};
           let pts=d.base;
-          if(cap.captain===pid)pts*=2;else if(cap.vc===pid)pts*=1.5;
-          total+=Math.round(pts);
+          if(cap.captain===pid) pts*=2; else if(cap.vc===pid) pts*=1.5;
+          total+=pts;
           continue;
         }
         const owned = periods.some(o=>{
@@ -3822,10 +3822,10 @@ ${aiMatchText.slice(0, 3000)}`;
         const cap=captains[mid+"_"+teamId]||{};
         let pts=d.base;
         if(cap.captain===pid)pts*=2;else if(cap.vc===pid)pts*=1.5;
-        total+=Math.round(pts);
+        total+=pts;
       }
     }
-    return total; // already summed from rounded values
+    return Math.round(total);
   };
 
   const leaderboard=[...teams].map(t=>({...t,total:getTeamTotal(t.id)})).sort((a,b)=>b.total-a.total);
@@ -3849,9 +3849,9 @@ ${aiMatchText.slice(0, 3000)}`;
         const cap=captains[`${mid}_${tid}`]||{};
         let pts=d.base;
         if(cap.captain===pid)pts*=2;else if(cap.vc===pid)pts*=1.5;
-        tot+=Math.round(pts);
+        tot+=pts;
       }
-      return tot;
+      return Math.round(tot);
     };
 
     // Collect ALL traded-out/in pids across ALL history + current window
@@ -3937,9 +3937,9 @@ ${aiMatchText.slice(0, 3000)}`;
         const cap=captains[`${mid}_${teamId}`]||{};
         let pts=d.base;
         if(cap.captain===p.id)pts*=2;else if(cap.vc===p.id)pts*=1.5;
-        tot+=Math.round(pts);
+        tot+=pts;
       }
-      return p?{...p,total:tot,status:"snatched-in",frozenAt:tot}:null;
+      return p?{...p,total:Math.round(tot),status:"snatched-in",frozenAt:Math.round(tot)}:null;
     })() : null;
 
     // Players currently snatched AWAY from this team (show struck-through, frozen pts)
