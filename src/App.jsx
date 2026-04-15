@@ -2612,7 +2612,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
             if(d.assignments) setAssignments(d.assignments);
             if(d.matches)     setMatches(d.matches);
             if(d.captains)    setCaptains(d.captains);
-            if(d.transfers && typeof d.transfers === 'object') setTransfers(d.transfers);
+            // Note: transfers intentionally NOT loaded from cache — always fetch fresh from Supabase
             if(d.snatch && typeof d.snatch === 'object')       setSnatch(d.snatch);
             if(d.tournaments && Array.isArray(d.tournaments))  { setTournaments(d.tournaments); const exp={}; d.tournaments.forEach(t=>exp[t.id]=true); setExpandedTournaments(exp); }
             setAppReady(true); // show UI immediately from cache
@@ -2655,7 +2655,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
 
         // ── Save fresh data to localStorage for next instant load ─────────
         try {
-          const toCache = { teams: t, players: p, assignments: a, matches: m, captains: c, transfers: tr, snatch: sn, tournaments: tv };
+          const toCache = { teams: t, players: p, assignments: a, matches: m, captains: c, snatch: sn, tournaments: tv };
           localStorage.setItem('tb_appdata_' + _pitchId, JSON.stringify(toCache));
         } catch {}
 
@@ -3306,11 +3306,16 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
 
   const resetTransferWindow = () => withPassword(() => {
     if (!confirm("Reset transfer window for new week?")) return;
+    // Archive current window to history before clearing
+    const hasActivity = (transfers.tradedPairs||[]).length > 0 || Object.values(transfers.releases||{}).some(a=>a.length>0);
+    const newHistory = hasActivity
+      ? [...(transfers.history||[]), { week: transfers.weekNum, releases: transfers.releases||{}, tradedPairs: transfers.tradedPairs||[], date: new Date().toISOString() }]
+      : (transfers.history||[]);
     const updated = {
       weekNum: transfers.weekNum + 1,
-      phase: 'closed', releases: {}, picks: [],
+      phase: 'closed', releases: {}, picks: [], tradedPairs: [], ineligible: [],
       currentPickTeam: null, pickDeadline: null,
-      history: transfers.history || [],
+      history: newHistory,
     };
     updTransfers(updated);
   });
@@ -3877,11 +3882,34 @@ ${aiMatchText.slice(0, 3000)}`;
     }
 
     // Players in BOTH sets = traded out then returned (boomerang)
-    const returnedPids    = new Set([...allTradedInPids].filter(id => allTradedOutPids.has(id) && assignments[id]===teamId));
-    // Net traded-in: came in but never went out (or went out but came back = returned)
+    // BUT only count as "returned" if they were originally on this team BEFORE any trades
+    // i.e. they appear in tradedOut first (week-chronologically) then tradedIn
+    // If they were tradedIn first then tradedOut, they're just gone — show as traded-out
+    const allWeeks = [...(transfers.history||[]), { tradedPairs: transfers.tradedPairs||[], releases: transfers.releases||{} }];
+    const firstAppearance = {}; // pid -> 'in' or 'out' (whichever came first for this team)
+    for (const w of allWeeks) {
+      for (const pr of (w.tradedPairs||[]).filter(pr=>pr.teamId===teamId)) {
+        if (!firstAppearance[pr.releasedPid]) firstAppearance[pr.releasedPid] = 'out';
+        if (!firstAppearance[pr.pickedPid])   firstAppearance[pr.pickedPid]   = 'in';
+      }
+    }
+    // "returned" = originally traded OUT first, then came back IN
+    const returnedPids    = new Set([...allTradedInPids].filter(id =>
+      allTradedOutPids.has(id) &&
+      assignments[id]===teamId &&
+      firstAppearance[id] === 'out' // was released first, then came back
+    ));
+    // traded-out-then-back-in but originally picked = just gone (not returned)
+    const pickThenReleasedPids = new Set([...allTradedInPids].filter(id =>
+      allTradedOutPids.has(id) && firstAppearance[id] === 'in'
+    ));
+    // Net traded-in: came in and stayed (not released later)
     const netTradedInPids  = new Set([...allTradedInPids].filter(id => !allTradedOutPids.has(id)));
-    // Net traded-out: went out and never came back
-    const netTradedOutPids = new Set([...allTradedOutPids].filter(id => !returnedPids.has(id)));
+    // Net traded-out: originally released and never came back, OR picked then released
+    const netTradedOutPids = new Set([
+      ...[...allTradedOutPids].filter(id => !returnedPids.has(id) && !pickThenReleasedPids.has(id)),
+      ...pickThenReleasedPids
+    ]);
 
     // Source of truth for who is physically in the squad right now
     const inSquadNow = new Set(players.filter(p=>assignments[p.id]===teamId).map(p=>p.id));
