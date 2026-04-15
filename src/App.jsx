@@ -3840,6 +3840,7 @@ ${aiMatchText.slice(0, 3000)}`;
   };
 
   const getPlayerBreakdown=(teamId)=>{
+    console.log("getPlayerBreakdown", teamId, "tradedPairs:", transfers.tradedPairs?.length, "history:", transfers.history?.length);
     // Helper: get points for player during team's ownership period(s)
     const getPtsForTeam = (pid, tid) => {
       const periods = (ownershipLog[pid]||[]).filter(o=>o.teamId===tid);
