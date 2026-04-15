@@ -3956,6 +3956,7 @@ ${aiMatchText.slice(0, 3000)}`;
     // Traded-out players (strikethrough ⬇️ — in trade history AND NOT currently in squad)
     const currentTradedAway = [...netTradedOutPids].map(pid=>{
       const p = players.find(x=>x.id===pid);
+      if(teamId==="t0") console.log("t0 tradedAway check:", pid, "found:", !!p, "inSquad:", inSquadNow.has(pid));
       if(!p) return null;
       if(inSquadNow.has(pid)) return null; // manually re-added → show as active instead
       const tot = getPtsForTeam(pid, teamId);
