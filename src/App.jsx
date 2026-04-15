@@ -3841,6 +3841,8 @@ ${aiMatchText.slice(0, 3000)}`;
 
   const getPlayerBreakdown=(teamId)=>{
     console.log("getPlayerBreakdown", teamId, "tradedPairs:", transfers.tradedPairs?.length, "history:", transfers.history?.length);
+    const _t0pairs = [...(transfers.history||[]), { tradedPairs: transfers.tradedPairs||[], releases: transfers.releases||{} }].flatMap(w=>(w.tradedPairs||[]).filter(pr=>pr.teamId===teamId));
+    console.log("pairs for", teamId, ":", _t0pairs.length, _t0pairs.map(p=>p.pickedPid));
     // Helper: get points for player during team's ownership period(s)
     const getPtsForTeam = (pid, tid) => {
       const periods = (ownershipLog[pid]||[]).filter(o=>o.teamId===tid);
