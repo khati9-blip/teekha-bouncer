@@ -51,12 +51,7 @@ function getNextSundayIST() {
   const istOffset = 5.5 * 60 * 60 * 1000;
   const istNow = new Date(now.getTime() + istOffset);
   const day = istNow.getUTCDay(); // 0=Sun
-  const h = istNow.getUTCHours();
-  const m = istNow.getUTCMinutes();
-  // If today IS Sunday and 11:59 PM hasn't passed yet → target today
-  // If today IS Sunday and 11:59 PM has already passed → jump to next Sunday
-  const sundayPassed = day === 0 && (h > 23 || (h === 23 && m >= 59));
-  const daysUntilSunday = sundayPassed ? 7 : (day === 0 ? 0 : 7 - day);
+  const daysUntilSunday = day === 0 ? 7 : 7 - day;
   const nextSunday = new Date(istNow);
   nextSunday.setUTCDate(istNow.getUTCDate() + daysUntilSunday);
   nextSunday.setUTCHours(18, 29, 0, 0); // 23:59 IST = 18:29 UTC
@@ -392,16 +387,34 @@ export default function TransferWindow({
 
   // ── ADMIN ACTIONS ─────────────────────────────────────────────────────────
   const startTradePhase = () => withPassword(() => {
-    const firstTeam = pickOrder[0]?.id; // last place picks first
-    const deadline = new Date(Date.now() + 45 * 60 * 1000).toISOString();
+    // Ask admin for match start time
+    const matchTimeStr = prompt("Enter match start time (e.g. 19:30 for 7:30 PM today):");
+    if (!matchTimeStr) return;
+    const [hStr, mStr] = matchTimeStr.split(":");
+    if (!hStr || !mStr) { alert("Invalid time format. Use HH:MM"); return; }
+    const matchTime = new Date();
+    matchTime.setHours(parseInt(hStr), parseInt(mStr), 0, 0);
+    if (matchTime <= Date.now()) matchTime.setDate(matchTime.getDate() + 1); // next day if past
+
+    // Calculate per-pick timer
+    const totalPicks = Object.values(transfers.releases || {}).reduce((s, arr) => s + arr.length, 0) || (teams.length * 3);
+    const msAvail = Math.max(0, matchTime.getTime() - Date.now() - 30 * 60 * 1000); // 30min buffer
+    const msPerPick = Math.max(15 * 60 * 1000, Math.floor(msAvail / totalPicks)); // min 15 min
+    const minPerPick = Math.round(msPerPick / 60000);
+
+    const firstTeam = pickOrder[0]?.id;
+    const deadline = new Date(Date.now() + msPerPick).toISOString();
     onUpdateTransfers({
       ...transfers,
       phase: "trade",
       currentPickTeam: firstTeam,
       pickDeadline: deadline,
+      matchStartTime: matchTime.toISOString(),
+      msPerPick,
       tradedPairs: [],
       ineligible: [],
     });
+    alert(`✅ Trade phase started!\n⏱ ${minPerPick} min per pick (${totalPicks} total picks, match at ${matchTimeStr})`);
   });
 
   const resetTradePhase = () => withPassword(() => {
@@ -661,8 +674,39 @@ export default function TransferWindow({
             {phase === "trade" && (
               <>
                 <button onClick={() => withPassword(() => {
+                  // Force auto-pick: pick best available player for current team
+                  const currentTeamId = transfers.currentPickTeam;
+                  const released = getReleasedPlayers(currentTeamId);
+                  const traded = (transfers.tradedPairs||[]).filter(p=>p.teamId===currentTeamId).map(p=>p.releasedPid);
+                  const relPlayer = released.find(p => !traded.includes(p.id));
+                  const available = unsoldPool
+                    .map(pid => players.find(p => p.id === pid))
+                    .filter(Boolean)
+                    .sort((a,b) => {
+                      const pA = Object.values((window._points||{})[a.id]||{}).reduce((s,d)=>s+(d?.base||0),0);
+                      const pB = Object.values((window._points||{})[b.id]||{}).reduce((s,d)=>s+(d?.base||0),0);
+                      return pB - pA;
+                    });
+                  const pick = available[0];
+                  if (!pick || !relPlayer) { alert("Nothing to auto-pick"); return; }
+                  const msPerPick = transfers.msPerPick || 45*60*1000;
+                  const newPairs = [...(transfers.tradedPairs||[]), { teamId: currentTeamId, pickedPid: pick.id, releasedPid: relPlayer.id, timestamp: new Date().toISOString(), autoPicked: true }];
+                  const nextTeam = getNextPickTeam(currentTeamId, newPairs);
+                  const deadline = nextTeam ? new Date(Date.now() + msPerPick).toISOString() : null;
+                  const newPhase = nextTeam ? "trade" : "done";
+                  const newAssign = { ...assignments, [pick.id]: currentTeamId };
+                  const newPool = unsoldPool.filter(x => x !== pick.id);
+                  onUpdateAssignments(newAssign);
+                  onUpdateUnsoldPool(newPool);
+                  onUpdateTransfers({ ...transfers, tradedPairs: newPairs, currentPickTeam: nextTeam, pickDeadline: deadline, phase: newPhase });
+                  alert(`🤖 Auto-picked ${pick.name} for ${teams.find(t=>t.id===currentTeamId)?.name}`);
+                })} style={adminBtn("#F5A623")}>
+                  🤖 FORCE AUTO-PICK
+                </button>
+                <button onClick={() => withPassword(() => {
                   const nextTeam = getNextPickTeam(currentPickTeamId, transfers.tradedPairs);
-                  const deadline = new Date(Date.now() + 45 * 60 * 1000).toISOString();
+                  const msPerPick = transfers.msPerPick || 45*60*1000;
+                  const deadline = nextTeam ? new Date(Date.now() + msPerPick).toISOString() : null;
                   onUpdateTransfers({ ...transfers, currentPickTeam: nextTeam, pickDeadline: deadline });
                 })} style={adminBtn("#4F8EF7")}>
                   ⏭ SKIP CURRENT TEAM
@@ -671,6 +715,11 @@ export default function TransferWindow({
                   🔄 RESET TRADE PHASE
                 </button>
                 <button onClick={() => withPassword(() => {
+                  const pairs = transfers.tradedPairs || [];
+                  const totalReleased = Object.values(transfers.releases || {}).reduce((s, arr) => s + arr.length, 0);
+                  if (pairs.length === 0 && totalReleased > 0) {
+                    if (!confirm(`⚠️ WARNING: No trades have been recorded yet but ${totalReleased} players were released. Ending now will return ALL released players to their teams and undo any trades that happened outside this window.\n\nAre you sure you want to end the trade phase?`)) return;
+                  }
                   const { newAssignments: cleanAssign, newPool: cleanPool } = returnUntradedPlayers(transfers, assignments, unsoldPool);
                   onUpdateAssignments(cleanAssign);
                   onUpdateUnsoldPool(cleanPool);
@@ -884,6 +933,12 @@ export default function TransferWindow({
                 {currentPickTeam.name} {isMyTurn ? "— YOUR TURN 🎯" : ""}
               </div>
               {transfers.pickDeadline && <Timer deadline={transfers.pickDeadline} label="TO MAKE A PICK" />}
+              {transfers.msPerPick && (
+                <div style={{fontSize:11,color:T.muted,marginTop:8}}>
+                  ⏱ {Math.round(transfers.msPerPick/60000)} min per pick
+                  {transfers.matchStartTime && ` · Match at ${new Date(transfers.matchStartTime).toLocaleTimeString("en-IN",{hour:"2-digit",minute:"2-digit"})}`}
+                </div>
+              )}
             </div>
           )}
 

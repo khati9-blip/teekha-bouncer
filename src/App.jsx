@@ -3840,9 +3840,6 @@ ${aiMatchText.slice(0, 3000)}`;
   };
 
   const getPlayerBreakdown=(teamId)=>{
-    console.log("getPlayerBreakdown", teamId, "tradedPairs:", transfers.tradedPairs?.length, "history:", transfers.history?.length);
-    const _t0pairs = [...(transfers.history||[]), { tradedPairs: transfers.tradedPairs||[], releases: transfers.releases||{} }].flatMap(w=>(w.tradedPairs||[]).filter(pr=>pr.teamId===teamId));
-    console.log("pairs for", teamId, ":", _t0pairs.length, _t0pairs.map(p=>p.pickedPid));
     // Helper: get points for player during team's ownership period(s)
     const getPtsForTeam = (pid, tid) => {
       const periods = (ownershipLog[pid]||[]).filter(o=>o.teamId===tid);
@@ -3913,12 +3910,9 @@ ${aiMatchText.slice(0, 3000)}`;
       ...[...allTradedOutPids].filter(id => !returnedPids.has(id) && !pickThenReleasedPids.has(id)),
       ...pickThenReleasedPids
     ]);
-    if(teamId==="t0") console.log("t0 netTradedInPids:", [...netTradedInPids], "allTradedInPids:", [...allTradedInPids], "allTradedOutPids:", [...allTradedOutPids]);
 
     // Source of truth for who is physically in the squad right now
     const inSquadNow = new Set(players.filter(p=>assignments[p.id]===teamId).map(p=>p.id));
-    if(teamId==="t0") console.log("t0 inSquadNow has prince-yadav:", inSquadNow.has("prince-yadav-54735"), "assignment:", assignments["prince-yadav-54735"]);
-    if(teamId==="t0") console.log("t0 netTradedOutPids:", [...netTradedOutPids]);
 
     // Active players — physically in squad now, not a trade-history special case
     // Note: we intentionally DON'T exclude netTradedOutPids here —
@@ -3956,7 +3950,6 @@ ${aiMatchText.slice(0, 3000)}`;
     // Traded-out players (strikethrough ⬇️ — in trade history AND NOT currently in squad)
     const currentTradedAway = [...netTradedOutPids].map(pid=>{
       const p = players.find(x=>x.id===pid);
-      if(teamId==="t0") console.log("t0 tradedAway check:", pid, "found:", !!p, "inSquad:", inSquadNow.has(pid));
       if(!p) return null;
       if(inSquadNow.has(pid)) return null; // manually re-added → show as active instead
       const tot = getPtsForTeam(pid, teamId);
