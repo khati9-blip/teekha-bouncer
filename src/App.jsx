@@ -3917,6 +3917,10 @@ ${aiMatchText.slice(0, 3000)}`;
 
     // Source of truth for who is physically in the squad right now
     const inSquadNow = new Set(players.filter(p=>assignments[p.id]===teamId).map(p=>p.id));
+    if(teamId==="t0") console.log("t0 inSquadNow has prince-yadav:", inSquadNow.has("prince-yadav-54735"), "assignment:", assignments["prince-yadav-54735"]);
+
+    // Source of truth for who is physically in the squad right now
+    const inSquadNow = new Set(players.filter(p=>assignments[p.id]===teamId).map(p=>p.id));
 
     // Active players — physically in squad now, not a trade-history special case
     // Note: we intentionally DON'T exclude netTradedOutPids here —
