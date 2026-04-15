@@ -2407,12 +2407,18 @@ function CaptainModal({ match, teams, players, assignments, captains, points, my
 
         {teams.map(team => {
           const cap = local[team.id] || {};
-          // Only show players whose iplTeam is one of the two match teams
+          // Only show players whose iplTeam is one of the two match teams AND currently assigned to this team
           const matchTeams = [match.team1, match.team2].map(t => t.toLowerCase().trim());
           const teamPlayers = players.filter(p =>
             assignments[p.id] === team.id &&
             matchTeams.some(mt => (p.iplTeam || "").toLowerCase().trim().includes(mt) || mt.includes((p.iplTeam || "").toLowerCase().trim()))
           );
+          const validPids = new Set(teamPlayers.map(p => p.id));
+          // Clear stale C/VC selections — if saved player is no longer in squad, treat as unset
+          const cleanCap = {
+            captain: validPids.has(cap.captain) ? cap.captain : "",
+            vc:      validPids.has(cap.vc)      ? cap.vc      : "",
+          };
           const editable = canEdit(team.id);
           const isMyTeam = myTeam?.id === team.id;
 
@@ -2436,11 +2442,11 @@ function CaptainModal({ match, teams, players, assignments, captains, points, my
                           No players from {match.team1} or {match.team2}
                         </div>
                       ) : (
-                      <select value={cap[role]||""} onChange={e=>handleChange(team.id, role, e.target.value)}
+                      <select value={cleanCap[role]||""} onChange={e=>handleChange(team.id, role, e.target.value)}
                         style={{width:"100%",background:T.bg,border:"1px solid "+(isMyTeam?team.color+"44":"#1E2D45"),borderRadius:8,padding:"7px 10px",color:T.text,fontSize:13,fontFamily:fonts.body,cursor:"pointer",outline:"none"}}>
                         <option value="">— None —</option>
                         {teamPlayers.map(p=>(
-                          <option key={p.id} value={p.id} disabled={(role==="vc"&&cap.captain===p.id)||(role==="captain"&&cap.vc===p.id)}>
+                          <option key={p.id} value={p.id} disabled={(role==="vc"&&cleanCap.captain===p.id)||(role==="captain"&&cleanCap.vc===p.id)}>
                             {p.name} ({p.iplTeam})
                           </option>
                         ))}
@@ -2448,7 +2454,7 @@ function CaptainModal({ match, teams, players, assignments, captains, points, my
                       )
                     ) : (
                       <div style={{background:T.bg,borderRadius:8,padding:"8px 12px",fontWeight:700,color:role==="captain"?"#F5A623":"#94A3B8",fontSize:14}}>
-                        {teamPlayers.find(p=>p.id===cap[role])?.name||"—"}
+                        {teamPlayers.find(p=>p.id===cleanCap[role])?.name||"—"}
                       </div>
                     )}
                   </div>
