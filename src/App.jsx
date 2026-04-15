@@ -3913,6 +3913,7 @@ ${aiMatchText.slice(0, 3000)}`;
       ...[...allTradedOutPids].filter(id => !returnedPids.has(id) && !pickThenReleasedPids.has(id)),
       ...pickThenReleasedPids
     ]);
+    if(teamId==="t0") console.log("t0 netTradedInPids:", [...netTradedInPids], "allTradedInPids:", [...allTradedInPids], "allTradedOutPids:", [...allTradedOutPids]);
 
     // Source of truth for who is physically in the squad right now
     const inSquadNow = new Set(players.filter(p=>assignments[p.id]===teamId).map(p=>p.id));
