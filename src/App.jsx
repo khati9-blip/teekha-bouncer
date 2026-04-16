@@ -3728,11 +3728,14 @@ ${aiMatchText.slice(0, 3000)}`;
     updCaptains({...captains,[key]:{...(captains[key]||{}),[type]:pid}});
   };
 
-  // Fix active snatch pointsAtSnatch to include C/VC multipliers
+  // Fix active snatch pointsAtSnatch to include C/VC multipliers — only pre-snatch matches
   useEffect(()=>{
     if(!snatch.active) return;
-    const {pid, fromTeamId} = snatch.active;
+    const {pid, fromTeamId, startDate} = snatch.active;
+    const snatchDateStr = startDate?.split('T')[0] || '9999-01-01';
     const correctPts = Object.entries(points[pid]||{}).reduce((s,[mid,d])=>{
+      const m = matches.find(x=>x.id===mid);
+      if(!m || m.date >= snatchDateStr) return s; // skip post-snatch matches
       const cap = captains[mid+"_"+fromTeamId]||{};
       let pts = d.base||0;
       if(cap.captain===pid) pts*=2; else if(cap.vc===pid) pts*=1.5;
@@ -3743,7 +3746,7 @@ ${aiMatchText.slice(0, 3000)}`;
       setSnatch(updated);
       storeSet("snatch", updated);
     }
-  },[snatch.active?.pid, snatch.active?.pointsAtSnatch, points, captains]);
+  },[snatch.active?.pid, snatch.active?.pointsAtSnatch, points, captains, matches]);
 
   const getTeamTotal=(teamId)=>{
     let total=0;
