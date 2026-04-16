@@ -1,38 +1,64 @@
 import React, { useState } from "react";
 import { T, fonts } from "./Theme";
 
-function H2HStats({ teams, matches, points, assignments, players, captains }) {
+function H2HStats({ teams, matches, points, assignments, players, captains, ownershipLog, snatch }) {
   const [teamA, setTeamA] = useState("");
   const [teamB, setTeamB] = useState("");
   const [expandedMatch, setExpandedMatch] = useState(null);
 
-  const getTeamMatchData = (teamId, matchId) => {
+  // Same ownership-aware logic as Results tab
+  const getTeamMatchData = (teamId, match) => {
+    const matchId = match.id;
+    const matchDateStr = match.date || "9999-12-31";
     const cap = captains?.[matchId + "_" + teamId] || {};
-    let total = 0;
+
     const playerRows = [];
     players.forEach(p => {
-      if (assignments[p.id] !== teamId) return;
       const d = points[p.id]?.[matchId];
       if (!d) return;
+
+      // Check ownership via ownershipLog
+      const periods = (ownershipLog?.[p.id] || []).filter(o => o.teamId === teamId);
+      if (periods.length > 0) {
+        const owned = periods.some(o => (!o.from || o.from <= matchDateStr + "Z") && (!o.to || o.to >= matchDateStr));
+        if (!owned) return;
+      } else {
+        // No ownershipLog — check snatch and fallback to current assignment
+        if (snatch?.active?.pid === p.id && snatch.active.fromTeamId === teamId) {
+          if (matchDateStr >= snatch.active.startDate.split('T')[0]) return; // post-snatch, skip
+        }
+        const histAway = (snatch?.history || []).find(h => h.pid === p.id && h.fromTeamId === teamId);
+        if (histAway) {
+          const snatchStart = histAway.startDate.split('T')[0];
+          const snatchEnd = histAway.returnDate ? histAway.returnDate.split('T')[0] : '2099-01-01';
+          if (matchDateStr >= snatchStart && matchDateStr <= snatchEnd) return; // during snatch, skip
+        }
+        if (assignments[p.id] !== teamId) return;
+      }
+
       let pts = d.base || 0;
       let mult = 1;
       let role = "";
       if (cap.captain === p.id) { pts = Math.round(pts * 2); mult = 2; role = "C"; }
       else if (cap.vc === p.id) { pts = Math.round(pts * 1.5); mult = 1.5; role = "VC"; }
-      total += pts;
       playerRows.push({ ...p, pts, base: d.base || 0, mult, role });
     });
+
     playerRows.sort((a, b) => b.pts - a.pts);
+    const total = playerRows.reduce((s, p) => s + p.pts, 0);
     return { total, playerRows };
   };
 
-  const played = matches.filter(m => players.some(p => points[p.id]?.[m.id]));
+  const played = matches
+    .filter(m => m.status === "completed" && players.some(p => points[p.id]?.[m.id]))
+    .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+
   const tA = teams.find(t => t.id === teamA);
   const tB = teams.find(t => t.id === teamB);
 
   const rows = played.map(m => {
-    const aData = getTeamMatchData(teamA, m.id);
-    const bData = getTeamMatchData(teamB, m.id);
+    const aData = getTeamMatchData(teamA, m);
+    const bData = getTeamMatchData(teamB, m);
     const winner = aData.total > bData.total ? "a" : bData.total > aData.total ? "b" : "draw";
     return { match: m, aScore: aData.total, bScore: bData.total, aPlayers: aData.playerRows, bPlayers: bData.playerRows, winner };
   });
