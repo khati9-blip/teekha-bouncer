@@ -4259,6 +4259,10 @@ ${aiMatchText.slice(0, 3000)}`;
           </div>
           </div>
           <div style={{display:"flex",alignItems:"center",gap:6}}>
+            <button onClick={onLeave} style={{background:"#4F8EF722",border:"1px solid #4F8EF744",color:"#4F8EF7",fontSize:13,borderRadius:6,padding:"6px 12px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700}}>
+              <span className="desk-only">🏠 HOME</span>
+              <span className="mob-only">🏠</span>
+            </button>
             <button onClick={()=>{if(unlocked)setUnlocked(false);else{setPendingAction(null);setShowPwModal(true);}}} style={{background:unlocked?"#2ECC7122":"transparent",border:"1px solid "+(unlocked?"#2ECC71":"#1E2D45"),color:unlocked?"#2ECC71":"#4A5E78",fontSize:13,borderRadius:6,padding:"6px 12px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700}}>
               <span className="desk-only">{unlocked?"🔓 ON":"🔒 OFF"}</span>
               <span className="mob-only">{unlocked?"🔓":"🔒"}</span>
