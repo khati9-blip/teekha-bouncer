@@ -6158,30 +6158,19 @@ function EditPointsForm({ config, onSave, onCancel }) {
 
 function ProposeRulesForm({ teams, eligibleVoters, onPropose, withPassword, tournamentStarted, isAdmin, onApplyDirect }) {
   const [open, setOpen] = useState(false);
-  const [snatchStart, setSnatchStart] = useState("Saturday 12:00 AM");
-  const [snatchEnd, setSnatchEnd] = useState("Saturday 12:00 PM");
-  const [snatchReturn, setSnatchReturn] = useState("Friday 11:58 PM");
-
   const days = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
   const times = ["12:00 AM","1:00 AM","2:00 AM","3:00 AM","6:00 AM","9:00 AM","10:00 AM","11:00 AM","12:00 PM","1:00 PM","3:00 PM","6:00 PM","9:00 PM","10:00 PM","11:00 PM","11:58 PM","11:59 PM"];
 
-  // Parse "Sunday 11:59 PM" into {day, time}
-  const parse = (str, defDay, defTime) => {
-    if (!str) return {day: defDay, time: defTime};
-    const idx = str.lastIndexOf(" ", str.lastIndexOf(" ") - 1);
-    return {day: str.substring(0, idx), time: str.substring(idx+1)};
-  };
-
-  const [tsDay, setTsDay] = useState(parse(transferStart, "Sunday", "11:59 PM").day);
-  const [tsTime, setTsTime] = useState(parse(transferStart, "Sunday", "11:59 PM").time);
-  const [teDay, setTeDay] = useState(parse(transferEnd, "Monday", "11:00 AM").day);
-  const [teTime, setTeTime] = useState(parse(transferEnd, "Monday", "11:00 AM").time);
-  const [ssDay, setSsDay] = useState(parse(snatchStart, "Saturday", "12:00 AM").day);
-  const [ssTime, setSsTime] = useState(parse(snatchStart, "Saturday", "12:00 AM").time);
-  const [seDay, setSeDay] = useState(parse(snatchEnd, "Saturday", "12:00 PM").day);
-  const [seTime, setSeTime] = useState(parse(snatchEnd, "Saturday", "12:00 PM").time);
-  const [srDay, setSrDay] = useState(parse(snatchReturn, "Friday", "11:58 PM").day);
-  const [srTime, setSrTime] = useState(parse(snatchReturn, "Friday", "11:58 PM").time);
+  const [tsDay, setTsDay] = useState("Sunday");
+  const [tsTime, setTsTime] = useState("11:59 PM");
+  const [teDay, setTeDay] = useState("Monday");
+  const [teTime, setTeTime] = useState("11:00 AM");
+  const [ssDay, setSsDay] = useState("Saturday");
+  const [ssTime, setSsTime] = useState("12:00 AM");
+  const [seDay, setSeDay] = useState("Saturday");
+  const [seTime, setSeTime] = useState("12:00 PM");
+  const [srDay, setSrDay] = useState("Friday");
+  const [srTime, setSrTime] = useState("11:58 PM");
 
   const dayTime = (day, time) => day + " " + time;
 
