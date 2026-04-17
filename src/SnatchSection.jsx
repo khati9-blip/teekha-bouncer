@@ -98,8 +98,10 @@ export default function SnatchSection({
   const myTeamId = useMemo(() => {
     if (myTeam?.id) return myTeam.id;
     if (!user?.email || !teamIdentity) return null;
-    const entry = Object.values(teamIdentity).find(t => t.claimedBy === user.email);
-    return entry?.teamRef || null;
+    const found = Object.entries(teamIdentity).find(([key, t]) => t.claimedBy === user.email);
+    if (!found) return null;
+    const [key, entry] = found;
+    return entry.teamRef || key; // fall back to key (e.g. "t2") if teamRef missing
   }, [myTeam?.id, user?.email, teamIdentity]);
 
   const isEligible = !!(myTeamId && elig?.team?.id === myTeamId);
