@@ -571,6 +571,7 @@ export default function TransferWindow({
   // ── CLEANUP: return un-traded released players to their teams ───────────────
   const returnUntradedPlayers = (currentTransfers, currentAssignments, currentPool) => {
     const tradedReleasedPids = new Set((currentTransfers.tradedPairs||[]).map(tp => tp.releasedPid));
+    const allReleasedPids = new Set(Object.values(currentTransfers.releases || {}).flat());
     const newAssignments = { ...currentAssignments };
     const untradedPids = new Set();
 
@@ -584,7 +585,13 @@ export default function TransferWindow({
     });
 
     const pickedPids = new Set((currentTransfers.tradedPairs||[]).map(tp => tp.pickedPid));
-    const newPool = currentPool.filter(pid => !untradedPids.has(pid) && !pickedPids.has(pid));
+    // Only remove from pool if: player was released this week (untraded) OR was picked this week
+    // Never touch originally unsold players who were already in the pool before this window
+    const newPool = currentPool.filter(pid => {
+      if (untradedPids.has(pid)) return false; // released but not traded — returned to team
+      if (pickedPids.has(pid) && allReleasedPids.has(pid)) return false; // was released then picked — no longer in pool
+      return true; // originally unsold — keep in pool
+    });
     return { newAssignments, newPool };
   };
 
