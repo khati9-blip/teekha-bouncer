@@ -6137,14 +6137,15 @@ function EditPointsForm({ config, onSave, onCancel }) {
 
 function ProposeRulesForm({ teams, eligibleVoters, onPropose, withPassword, tournamentStarted }) {
   const [open, setOpen] = useState(false);
-  const [transferDay, setTransferDay] = useState("Sunday");
-  const [transferTime, setTransferTime] = useState("11:00 AM");
+  const [transferStart, setTransferStart] = useState("Sunday 11:59 PM");
+  const [transferEnd, setTransferEnd] = useState("Monday 11:00 AM");
   const [snatchStart, setSnatchStart] = useState("Saturday 12:00 AM");
   const [snatchEnd, setSnatchEnd] = useState("Saturday 12:00 PM");
   const [snatchReturn, setSnatchReturn] = useState("Friday 11:58 PM");
 
   const days = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
-  const times = ["12:00 AM","1:00 AM","2:00 AM","3:00 AM","6:00 AM","9:00 AM","10:00 AM","11:00 AM","12:00 PM","1:00 PM","3:00 PM","6:00 PM","9:00 PM","10:00 PM","11:00 PM","11:58 PM"];
+  const times = ["12:00 AM","1:00 AM","2:00 AM","3:00 AM","6:00 AM","9:00 AM","10:00 AM","11:00 AM","11:59 PM","12:00 PM","1:00 PM","3:00 PM","6:00 PM","9:00 PM","10:00 PM","11:00 PM","11:58 PM"];
+  const dayTimeOpts = days.flatMap(d => times.map(t => d + " " + t));
 
   if (!open) return (
     <button onClick={()=>withPassword(()=>setOpen(true))} style={{width:"100%",background:T.accentBg,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:14,color:T.accent,fontFamily:fonts.body,fontWeight:700,fontSize:15,cursor:"pointer"}}>
@@ -6165,14 +6166,14 @@ function ProposeRulesForm({ teams, eligibleVoters, onPropose, withPassword, tour
     <div style={{background:T.card,borderRadius:12,border:`1px solid ${T.accentBorder}`,padding:20}}>
       <div style={{fontFamily:fonts.display,fontSize:18,fontWeight:700,color:T.accent,letterSpacing:2,marginBottom:4}}>PROPOSE RULE CHANGE</div>
       <div style={{fontSize:11,color:T.muted,marginBottom:16}}>All {eligibleVoters.length} claimed teams must approve for changes to take effect.</div>
-      {sel("Transfer Window Start Day", transferDay, setTransferDay, days)}
-      {sel("Transfer Window End Time", transferTime, setTransferTime, times)}
+      {sel("Transfer Window Start", transferStart, setTransferStart, dayTimeOpts)}
+      {sel("Transfer Window End", transferEnd, setTransferEnd, dayTimeOpts)}
       {sel("Snatch Window Start", snatchStart, setSnatchStart, days.map(d=>{const s="12:00 AM";return d+" "+s;}).concat(days.map(d=>{const s="12:00 PM";return d+" "+s;})))}
       {sel("Snatch Window End", snatchEnd, setSnatchEnd, days.map(d=>{const s="12:00 PM";return d+" "+s;}).concat(days.map(d=>{const s="6:00 PM";return d+" "+s;})))}
       {sel("Snatch Return Time", snatchReturn, setSnatchReturn, days.map(d=>{const s="11:58 PM";return d+" "+s;}).concat(days.map(d=>{const s="11:00 PM";return d+" "+s;})))}
       <div style={{display:"flex",gap:8,marginTop:4}}>
         <button onClick={()=>setOpen(false)} style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:8,padding:10,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
-        <button onClick={()=>{onPropose({"Transfer Start":transferDay,"Transfer End":transferTime,"Snatch Window":snatchStart+" to "+snatchEnd,"Snatch Return":snatchReturn});setOpen(false);}} style={{flex:2,background:"#F5A623",border:"none",borderRadius:8,padding:10,color:T.bg,fontFamily:fonts.body,fontWeight:800,fontSize:14,cursor:"pointer"}}>SUBMIT FOR VOTE</button>
+        <button onClick={()=>{onPropose({"Transfer Start":transferStart,"Transfer End":transferEnd,"Snatch Window":snatchStart+" to "+snatchEnd,"Snatch Return":snatchReturn});setOpen(false);}} style={{flex:2,background:"#F5A623",border:"none",borderRadius:8,padding:10,color:T.bg,fontFamily:fonts.body,fontWeight:800,fontSize:14,cursor:"pointer"}}>SUBMIT FOR VOTE</button>
       </div>
     </div>
   );
