@@ -3848,9 +3848,27 @@ ${aiMatchText.slice(0, 3000)}`;
       const periods = (ownershipLog[pid]||[]).filter(o=>o.teamId===tid);
       let tot = 0;
 
-      // Check snatch history — if player was snatched away from this team, skip snatch period
+      // Active snatch: player currently snatched away from this team — freeze at pointsAtSnatch
+      if(snatch.active?.pid===pid && snatch.active?.fromTeamId===tid) {
+        return snatch.active.pointsAtSnatch || 0;
+      }
+      // Active snatch: player currently on loan TO this team — only post-snatch points
+      if(snatch.active?.pid===pid && snatch.active?.byTeamId===tid) {
+        const snatchDate = snatch.active.startDate.split('T')[0];
+        for(const[mid,d] of Object.entries(points[pid]||{})){
+          const m = matches.find(x=>x.id===mid);
+          if(!m || m.date < snatchDate) continue;
+          const cap=captains[`${mid}_${tid}`]||{};
+          let pts=d.base;
+          if(cap.captain===pid)pts*=2;else if(cap.vc===pid)pts*=1.5;
+          tot+=Math.round(pts);
+        }
+        return tot;
+      }
+
+      // Historical snatch: player was snatched away from this team, now returned
       const histSnatchedAway = (snatch.history||[]).find(h=>h.pid===pid && h.fromTeamId===tid);
-      // If player was snatched IN to this team historically, use frozen snatchWeekPts
+      // Historical snatch: player was snatched IN to this team, now returned — use frozen pts
       const histSnatchedIn = (snatch.history||[]).find(h=>h.pid===pid && h.byTeamId===tid);
       if(histSnatchedIn) return histSnatchedIn.snatchWeekPts || 0;
 
@@ -4078,6 +4096,7 @@ ${aiMatchText.slice(0, 3000)}`;
   // Auto-return snatched player on Friday 11:58 PM IST
   useEffect(() => {
     if (!snatch.active) return;
+    if (!points || Object.keys(points).length === 0) return; // wait for points to load
     const check = () => {
       // Correct IST: neutralise local timezone first, then add IST offset
       const IST_OFFSET = 5.5 * 60 * 60 * 1000;
@@ -4123,7 +4142,7 @@ ${aiMatchText.slice(0, 3000)}`;
     check();
     const t = setInterval(check, 60000);
     return () => clearInterval(t);
-  }, [snatch.active]);
+  }, [snatch.active, points]);
 
 
   const savePointsConfig = async (cfg) => {
@@ -4173,7 +4192,17 @@ ${aiMatchText.slice(0, 3000)}`;
     } else if (allApproved) {
       newProposal.status = 'approved';
       await updRuleProposal(newProposal);
-      // Apply the rule changes
+      // Apply the rule changes — save to pitchConfig
+      const existingConfig = await storeGet("pitchConfig") || {};
+      const changes = ruleProposal.changes || {};
+      const newConfig = {
+        ...existingConfig,
+        ...(changes["Snatch Return"] ? { snatchReturn: changes["Snatch Return"] } : {}),
+        ...(changes["Transfer Start"] ? { transferStart: changes["Transfer Start"] } : {}),
+        ...(changes["Transfer End"] ? { transferEnd: changes["Transfer End"] } : {}),
+        ...(changes["Snatch Window"] ? { snatchWindow: changes["Snatch Window"] } : {}),
+      };
+      await storeSet("pitchConfig", newConfig);
       alert("All teams approved! Rules updated.");
     } else {
       await updRuleProposal(newProposal);
