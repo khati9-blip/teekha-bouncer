@@ -2640,6 +2640,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
         if(tv && Array.isArray(tv)) { setTournaments(tv); const exp={}; tv.forEach(t=>exp[t.id]=true); setExpandedTournaments(exp); }
         if(sp) setSafePlayers(sp);
         if(pcfg && typeof pcfg === 'object') setPitchConfig(pcfg);
+        console.log("pitchConfig loaded:", pcfg);
         setAppReady(true);
 
         // ── Pass 2: Heavy keys in background ─────────────────────────────
