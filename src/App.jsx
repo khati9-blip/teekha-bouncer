@@ -2640,7 +2640,6 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
         if(tv && Array.isArray(tv)) { setTournaments(tv); const exp={}; tv.forEach(t=>exp[t.id]=true); setExpandedTournaments(exp); }
         if(sp) setSafePlayers(sp);
         if(pcfg && typeof pcfg === 'object') setPitchConfig(pcfg);
-        console.log("pitchConfig loaded:", JSON.stringify(pcfg));
         setAppReady(true);
 
         // ── Pass 2: Heavy keys in background ─────────────────────────────
@@ -6086,6 +6085,12 @@ function Root() {
           await sbSet("pitches", updated);
           setPendingPitches(null);
         }
+        // Auto-create pitchConfig with defaults for this new pitch
+        await sbSet(pitch.id + "_pitchConfig", {
+          transferStart: "Sunday 11:59 PM",
+          transferEnd: "Monday 11:00 AM",
+          snatchReturn: "Friday 11:58 PM",
+        });
         setCurrentPitch(pitch); setIsAdmin(true);
         try { localStorage.setItem('tb_admin_' + pitch.id, '1'); } catch {}
         setScreenAndSave('app');
