@@ -5289,7 +5289,20 @@ ${aiMatchText.slice(0, 3000)}`;
 
               {/* Propose new timing change — always visible, needs admin password */}
               {showRulesPanel === true && (!ruleProposal || ruleProposal.status !== "pending") && (
-                <ProposeRulesForm teams={teams} eligibleVoters={eligibleVoters} tournamentStarted={tournamentStarted} onPropose={proposeRuleChange} withPassword={withPassword} />
+                <ProposeRulesForm teams={teams} eligibleVoters={eligibleVoters} tournamentStarted={tournamentStarted} onPropose={proposeRuleChange} withPassword={withPassword} isAdmin={isAdmin}
+                  onApplyDirect={async (changes) => {
+                    const existingConfig = await storeGet("pitchConfig") || {};
+                    const newConfig = {
+                      ...existingConfig,
+                      ...(changes["Transfer Start"] ? { transferStart: changes["Transfer Start"] } : {}),
+                      ...(changes["Transfer End"] ? { transferEnd: changes["Transfer End"] } : {}),
+                      ...(changes["Snatch Return"] ? { snatchReturn: changes["Snatch Return"] } : {}),
+                    };
+                    await storeSet("pitchConfig", newConfig);
+                    setPitchConfig(newConfig);
+                    alert("✅ Config applied directly — no vote needed.");
+                  }}
+                />
               )}
             </div>
           </div>
@@ -6135,7 +6148,7 @@ function EditPointsForm({ config, onSave, onCancel }) {
 
 // ── PROPOSE RULES FORM ───────────────────────────────────────────────────────
 
-function ProposeRulesForm({ teams, eligibleVoters, onPropose, withPassword, tournamentStarted }) {
+function ProposeRulesForm({ teams, eligibleVoters, onPropose, withPassword, tournamentStarted, isAdmin, onApplyDirect }) {
   const [open, setOpen] = useState(false);
   const [transferStart, setTransferStart] = useState("Sunday 11:59 PM");
   const [transferEnd, setTransferEnd] = useState("Monday 11:00 AM");
@@ -6173,6 +6186,12 @@ function ProposeRulesForm({ teams, eligibleVoters, onPropose, withPassword, tour
       {sel("Snatch Return Time", snatchReturn, setSnatchReturn, days.map(d=>{const s="11:58 PM";return d+" "+s;}).concat(days.map(d=>{const s="11:00 PM";return d+" "+s;})))}
       <div style={{display:"flex",gap:8,marginTop:4}}>
         <button onClick={()=>setOpen(false)} style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:8,padding:10,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
+        {isAdmin && onApplyDirect && (
+          <button onClick={()=>withPassword(()=>{onApplyDirect({"Transfer Start":transferStart,"Transfer End":transferEnd,"Snatch Return":snatchReturn});setOpen(false);})}
+            style={{flex:1,background:"#4F8EF722",border:"1px solid #4F8EF744",borderRadius:8,padding:10,color:"#4F8EF7",fontFamily:fonts.body,fontWeight:700,fontSize:13,cursor:"pointer"}}>
+            🔑 APPLY DIRECT
+          </button>
+        )}
         <button onClick={()=>{onPropose({"Transfer Start":transferStart,"Transfer End":transferEnd,"Snatch Window":snatchStart+" to "+snatchEnd,"Snatch Return":snatchReturn});setOpen(false);}} style={{flex:2,background:"#F5A623",border:"none",borderRadius:8,padding:10,color:T.bg,fontFamily:fonts.body,fontWeight:800,fontSize:14,cursor:"pointer"}}>SUBMIT FOR VOTE</button>
       </div>
     </div>
