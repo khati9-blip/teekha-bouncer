@@ -1,3 +1,2 @@
 [functions.snatch-auto-return]
-schedule = "28 18 * * 5"
-# Every Friday at 18:28 UTC = 23:58 IST
+# Cron is configured directly in Supabase SQL Editor — see deployment instructions
