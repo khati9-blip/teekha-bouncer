@@ -6187,7 +6187,7 @@ function ProposeRulesForm({ teams, eligibleVoters, onPropose, withPassword, tour
       <div style={{display:"flex",gap:8,marginTop:4}}>
         <button onClick={()=>setOpen(false)} style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:8,padding:10,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
         {isAdmin && onApplyDirect && (
-          <button onClick={()=>withPassword(()=>{onApplyDirect({"Transfer Start":transferStart,"Transfer End":transferEnd,"Snatch Return":snatchReturn});setOpen(false);})}
+          <button onClick={async ()=>{await onApplyDirect({"Transfer Start":transferStart,"Transfer End":transferEnd,"Snatch Return":snatchReturn});setOpen(false);}}
             style={{flex:1,background:"#4F8EF722",border:"1px solid #4F8EF744",borderRadius:8,padding:10,color:"#4F8EF7",fontFamily:fonts.body,fontWeight:700,fontSize:13,cursor:"pointer"}}>
             🔑 APPLY DIRECT
           </button>
