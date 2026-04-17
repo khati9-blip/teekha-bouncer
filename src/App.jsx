@@ -3847,9 +3847,22 @@ ${aiMatchText.slice(0, 3000)}`;
     const getPtsForTeam = (pid, tid) => {
       const periods = (ownershipLog[pid]||[]).filter(o=>o.teamId===tid);
       let tot = 0;
+
+      // Check snatch history — if player was snatched away from this team, skip snatch period
+      const histSnatchedAway = (snatch.history||[]).find(h=>h.pid===pid && h.fromTeamId===tid);
+      // If player was snatched IN to this team historically, use frozen snatchWeekPts
+      const histSnatchedIn = (snatch.history||[]).find(h=>h.pid===pid && h.byTeamId===tid);
+      if(histSnatchedIn) return histSnatchedIn.snatchWeekPts || 0;
+
       for(const[mid,d] of Object.entries(points[pid]||{})){
         const m = matches.find(x=>x.id===mid);
         if(!m) continue;
+        // Skip matches during snatch period for original team
+        if(histSnatchedAway) {
+          const snatchStart = histSnatchedAway.startDate.split('T')[0];
+          const snatchEnd = histSnatchedAway.returnDate ? histSnatchedAway.returnDate.split('T')[0] : '2099-01-01';
+          if(m.date >= snatchStart && m.date <= snatchEnd) continue;
+        }
         // Check if match falls within any ownership period for this team
         const owned = periods.length === 0
           ? true // no log = original owner, count all
