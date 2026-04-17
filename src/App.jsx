@@ -4093,56 +4093,9 @@ ${aiMatchText.slice(0, 3000)}`;
     return () => clearInterval(t);
   }, []);
 
-  // Auto-return snatched player on Friday 11:58 PM IST
-  useEffect(() => {
-    if (!snatch.active) return;
-    if (!points || Object.keys(points).length === 0) return; // wait for points to load
-    const check = () => {
-      // Correct IST: neutralise local timezone first, then add IST offset
-      const IST_OFFSET = 5.5 * 60 * 60 * 1000;
-      const ist = new Date(Date.now() + IST_OFFSET);
-      const day = ist.getUTCDay(); // 5 = Friday
-      const hour = ist.getUTCHours();
-      const min = ist.getUTCMinutes();
-      if (day === 5 && hour === 23 && min >= 58) {
-        // Auto return!
-        const { pid, fromTeamId, byTeamId, pointsAtSnatch } = snatch.active;
-        // Calculate points earned during snatch week for B
-        const snatchDate = snatch.active.startDate;
-        let snatchWeekPts = 0;
-        Object.entries(points[pid] || {}).forEach(([mid, d]) => {
-          const match = matches.find(m => m.id === mid);
-          if (match && match.date >= snatchDate.split('T')[0]) {
-            const cap = captains[mid+"_"+byTeamId]||{};
-            let pts = d.base;
-            if(cap.captain===pid) pts*=2; else if(cap.vc===pid) pts*=1.5;
-            snatchWeekPts += Math.round(pts);
-          }
-        });
-        const newHistory = [...(snatch.history || []), {
-          ...snatch.active,
-          returnDate: new Date().toISOString(),
-          snatchWeekPts,
-        }];
-        // Return player to original team
-        const a = {...assignments, [pid]: fromTeamId};
-        updAssign(a);
-        updSnatch({...snatch, active: null, history: newHistory, weekNum: snatch.weekNum + 1});
-        // Auto-mark returned player as SAFE — can never be snatched again
-        const currentSafe = safePlayers[fromTeamId] || [];
-        if (!currentSafe.includes(pid)) {
-          const newSafe = {...safePlayers, [fromTeamId]: [...currentSafe, pid]};
-          setSafePlayers(newSafe); storeSet("safePlayers", newSafe);
-        }
-        const rp = players.find(x=>x.id===pid);
-        const rt = teams.find(t=>t.id===fromTeamId);
-        pushNotif('snatch', (rp?.name||'Player') + ' returned to ' + (rt?.name||'original team') + ' — now SAFE 🛡', '↩️');
-      }
-    };
-    check();
-    const t = setInterval(check, 60000);
-    return () => clearInterval(t);
-  }, [snatch.active, points]);
+  // Auto-return is handled by Supabase Edge Function (snatch-auto-return)
+  // which runs every minute and checks the configured return time from pitchConfig
+  // App.jsx only handles the pointsAtSnatch correction useEffect below
 
 
   const savePointsConfig = async (cfg) => {

@@ -93,54 +93,55 @@ export default function SnatchSection({
   const isEligible = eligibility?.team?.id === myTeamId;
   const hasActivSnatch = !!snatch.active;
 
-  // Auto-return: check every minute + immediately on load
-  useEffect(() => {
-    const checkReturn = () => {
-      if (!snatch.active) return;
-      const ist = nowIST();
-      const day = ist.getUTCDay();   // 5 = Friday
-      const hour = ist.getUTCHours();
-      const min = ist.getUTCMinutes();
-      // Return at Friday 11:58 PM IST or later
-      const isReturnTime = day === 5 && hour === 23 && min >= 58;
-      // Also catch if Saturday and snatch was from a previous week
-      const startDate = snatch.active?.startDate;
-      const snatchDay = startDate ? new Date(startDate).getDay() : -1;
-      const isSaturdayOverdue = day === 6 && snatchDay !== 6;
-      if (isReturnTime || isSaturdayOverdue) {
-        handleReturn(snatch.active);
-      }
-    };
-    checkReturn(); // check immediately on load
-    const interval = setInterval(checkReturn, 60000); // check every minute
-    return () => clearInterval(interval);
-  }, [snatch.active]);
+  // Auto-return handled by Edge Function on Supabase
+  // Only manual force-return via admin button remains here
 
   const handleReturn = (activeSnatch = snatch.active) => {
     if (!activeSnatch) return;
-    const { pid, fromTeamId, pointsAtSnatch, byTeamId } = activeSnatch;
-    const snatchWeekPts = Math.max(0,
-      Object.values(points[pid] || {}).reduce((s, d) => s + (d?.base || 0), 0) - (pointsAtSnatch || 0)
-    );
-    const newHistory = [...(snatch.history || []), { ...activeSnatch, returnDate: new Date().toISOString(), snatchWeekPts }];
-    const newAssignments = { ...assignments, [pid]: fromTeamId };
-    const now = new Date().toISOString().split("T")[0];
-    const newLog = { ...ownershipLog };
-    if (!newLog[pid]) newLog[pid] = [];
-    newLog[pid] = newLog[pid].map(o => o.teamId === byTeamId && !o.to ? { ...o, to: now } : o);
-    newLog[pid] = [...newLog[pid], { teamId: fromTeamId, from: now, to: null }];
+    const { pid, fromTeamId, byTeamId, startDate } = activeSnatch;
+    const snatchDateStr = (startDate || "").split("T")[0];
 
-    // Mark player permanently safe — using same object format as App.jsx {teamId: [pids]}
-    const safeObj = (Array.isArray(safePlayers) || !safePlayers) ? {} : {...safePlayers};
+    // Calculate snatchWeekPts correctly — post-snatch matches with C/VC for byTeam
+    let snatchWeekPts = 0;
+    Object.entries(points[pid] || {}).forEach(([mid, d]) => {
+      const match = matches.find(m => m.id === mid);
+      if (!match || match.date < snatchDateStr) return;
+      const cap = (captains || {})[mid + "_" + byTeamId] || {};
+      let pts = d?.base || 0;
+      if (cap.captain === pid) pts *= 2;
+      else if (cap.vc === pid) pts *= 1.5;
+      snatchWeekPts += Math.round(pts);
+    });
+
+    // Calculate correct pointsAtSnatch — pre-snatch matches for fromTeam
+    let correctPointsAtSnatch = 0;
+    Object.entries(points[pid] || {}).forEach(([mid, d]) => {
+      const match = matches.find(m => m.id === mid);
+      if (!match || match.date >= snatchDateStr) return;
+      const cap = (captains || {})[mid + "_" + fromTeamId] || {};
+      let pts = d?.base || 0;
+      if (cap.captain === pid) pts *= 2;
+      else if (cap.vc === pid) pts *= 1.5;
+      correctPointsAtSnatch += Math.round(pts);
+    });
+
+    const newHistory = [...(snatch.history || []), {
+      ...activeSnatch,
+      pointsAtSnatch: correctPointsAtSnatch,
+      returnDate: new Date().toISOString(),
+      snatchWeekPts,
+    }];
+
+    const newAssignments = { ...assignments, [pid]: fromTeamId };
+
+    // Mark player permanently safe
+    const safeObj = (Array.isArray(safePlayers) || !safePlayers) ? {} : { ...safePlayers };
     const teamSafe = safeObj[fromTeamId] || [];
-    if (!teamSafe.includes(pid)) {
-      safeObj[fromTeamId] = [...teamSafe, pid];
-    }
+    if (!teamSafe.includes(pid)) safeObj[fromTeamId] = [...teamSafe, pid];
     onUpdateSafePlayers(safeObj);
 
     onUpdateSnatch({ ...snatch, active: null, history: newHistory, weekNum: (snatch.weekNum || 1) + 1 });
     onUpdateAssignments(newAssignments);
-    onUpdateOwnershipLog(newLog);
     pushNotif("snatch", "Snatched player returned & marked 🛡 SAFE permanently", "↩️");
   };
 
