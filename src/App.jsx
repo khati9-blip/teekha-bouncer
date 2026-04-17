@@ -2621,10 +2621,10 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
         } catch {}
 
         // ── Pass 1: Critical keys from Supabase ───────────────────────────
-        const criticalKeys = ["teams","assignments","matches","captains","tnames","numteams","pwhash","transfers","snatch","teamIdentity","pointsConfig","tournaments","safePlayers"];
+        const criticalKeys = ["teams","assignments","matches","captains","tnames","numteams","pwhash","transfers","snatch","teamIdentity","pointsConfig","tournaments","safePlayers","pitchConfig"];
         const rawCritical = criticalKeys.map(k => _pitchId + "_" + k);
         const critResults = await sbGetMany(rawCritical);
-        const [t,a,m,c,tn,nt,ph,tr,sn,ti,pc,tv,sp] = critResults;
+        const [t,a,m,c,tn,nt,ph,tr,sn,ti,pc,tv,sp,pcfg] = critResults;
         if(t) setTeams(t);
         if(a) setAssignments(a);
         if(m) setMatches(m);
@@ -2639,13 +2639,14 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
         if(pc && typeof pc === 'object') setPointsConfig(prev=>({...prev,...pc}));
         if(tv && Array.isArray(tv)) { setTournaments(tv); const exp={}; tv.forEach(t=>exp[t.id]=true); setExpandedTournaments(exp); }
         if(sp) setSafePlayers(sp);
+        if(pcfg && typeof pcfg === 'object') setPitchConfig(pcfg);
         setAppReady(true);
 
         // ── Pass 2: Heavy keys in background ─────────────────────────────
-        const heavyKeys = ["players","points","ownershipLog","recoveryHash","teamLogos","unsoldPool","ruleProposal","pitchConfig"];
+        const heavyKeys = ["players","points","ownershipLog","recoveryHash","teamLogos","unsoldPool","ruleProposal"];
         const rawHeavy = heavyKeys.map(k => _pitchId + "_" + k);
         const heavyResults = await sbGetMany(rawHeavy);
-        const [p,pts,ol,rh,tl,up,rp,pc2] = heavyResults;
+        const [p,pts,ol,rh,tl,up,rp] = heavyResults;
         if(p) setPlayers(p);
         if(pts) setPoints(pts);
         if(ol && typeof ol === 'object') setOwnershipLog(ol);
@@ -2653,7 +2654,6 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
         if(tl) setTeamLogos(tl);
         if(up) setUnsoldPool(up);
         if(rp && typeof rp === 'object') setRuleProposal(rp);
-        if(pc2 && typeof pc2 === 'object') setPitchConfig(pc2);
 
         // ── Save fresh data to localStorage for next instant load ─────────
         try {
