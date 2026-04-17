@@ -5466,7 +5466,14 @@ ${aiMatchText.slice(0, 3000)}`;
           assignments={assignments}
           captains={captains}
           points={points}
-          myTeam={myTeam}
+          myTeam={myTeam || (() => {
+            if (!user?.email || !teamIdentity) return null;
+            const found = Object.entries(teamIdentity).find(([,t]) => t.claimedBy === user.email);
+            if (!found) return null;
+            const [key, entry] = found;
+            const tid = entry.teamRef || key;
+            return teams.find(t => t.id === tid) || null;
+          })()}
           unlocked={unlocked}
           isGuest={isGuest}
           withPassword={withPassword}
