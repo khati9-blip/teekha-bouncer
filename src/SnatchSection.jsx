@@ -104,6 +104,7 @@ export default function SnatchSection({
 
   const isEligible = !!(myTeamId && elig?.team?.id === myTeamId);
   const hasActivSnatch = !!snatch.active;
+  console.log("SNATCH DEBUG:", { myTeamId, eligTeamId: elig?.team?.id, isEligible, windowOpen: windowStatus.open, hasActivSnatch, userEmail: user?.email, teamIdentityKeys: Object.keys(teamIdentity||{}) });
 
   // Auto-return handled by Edge Function on Supabase
   // Only manual force-return via admin button remains here
