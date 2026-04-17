@@ -6158,15 +6158,46 @@ function EditPointsForm({ config, onSave, onCancel }) {
 
 function ProposeRulesForm({ teams, eligibleVoters, onPropose, withPassword, tournamentStarted, isAdmin, onApplyDirect }) {
   const [open, setOpen] = useState(false);
-  const [transferStart, setTransferStart] = useState("Sunday 11:59 PM");
-  const [transferEnd, setTransferEnd] = useState("Monday 11:00 AM");
   const [snatchStart, setSnatchStart] = useState("Saturday 12:00 AM");
   const [snatchEnd, setSnatchEnd] = useState("Saturday 12:00 PM");
   const [snatchReturn, setSnatchReturn] = useState("Friday 11:58 PM");
 
   const days = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
-  const times = ["12:00 AM","1:00 AM","2:00 AM","3:00 AM","6:00 AM","9:00 AM","10:00 AM","11:00 AM","11:59 PM","12:00 PM","1:00 PM","3:00 PM","6:00 PM","9:00 PM","10:00 PM","11:00 PM","11:58 PM"];
-  const dayTimeOpts = days.flatMap(d => times.map(t => d + " " + t));
+  const times = ["12:00 AM","1:00 AM","2:00 AM","3:00 AM","6:00 AM","9:00 AM","10:00 AM","11:00 AM","12:00 PM","1:00 PM","3:00 PM","6:00 PM","9:00 PM","10:00 PM","11:00 PM","11:58 PM","11:59 PM"];
+
+  // Parse "Sunday 11:59 PM" into {day, time}
+  const parse = (str, defDay, defTime) => {
+    if (!str) return {day: defDay, time: defTime};
+    const idx = str.lastIndexOf(" ", str.lastIndexOf(" ") - 1);
+    return {day: str.substring(0, idx), time: str.substring(idx+1)};
+  };
+
+  const [tsDay, setTsDay] = useState(parse(transferStart, "Sunday", "11:59 PM").day);
+  const [tsTime, setTsTime] = useState(parse(transferStart, "Sunday", "11:59 PM").time);
+  const [teDay, setTeDay] = useState(parse(transferEnd, "Monday", "11:00 AM").day);
+  const [teTime, setTeTime] = useState(parse(transferEnd, "Monday", "11:00 AM").time);
+  const [ssDay, setSsDay] = useState(parse(snatchStart, "Saturday", "12:00 AM").day);
+  const [ssTime, setSsTime] = useState(parse(snatchStart, "Saturday", "12:00 AM").time);
+  const [seDay, setSeDay] = useState(parse(snatchEnd, "Saturday", "12:00 PM").day);
+  const [seTime, setSeTime] = useState(parse(snatchEnd, "Saturday", "12:00 PM").time);
+  const [srDay, setSrDay] = useState(parse(snatchReturn, "Friday", "11:58 PM").day);
+  const [srTime, setSrTime] = useState(parse(snatchReturn, "Friday", "11:58 PM").time);
+
+  const dayTime = (day, time) => day + " " + time;
+
+  const DayTimeRow = ({label, day, setDay, time, setTime}) => (
+    <div style={{marginBottom:12}}>
+      <div style={{fontSize:11,color:T.muted,marginBottom:6,letterSpacing:1}}>{label}</div>
+      <div style={{display:"flex",gap:8}}>
+        <select value={day} onChange={e=>setDay(e.target.value)} style={{flex:1,background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"8px 10px",color:T.text,fontSize:13,fontFamily:fonts.body,cursor:"pointer",outline:"none"}}>
+          {days.map(d=><option key={d} value={d}>{d}</option>)}
+        </select>
+        <select value={time} onChange={e=>setTime(e.target.value)} style={{flex:1,background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"8px 10px",color:T.text,fontSize:13,fontFamily:fonts.body,cursor:"pointer",outline:"none"}}>
+          {times.map(t=><option key={t} value={t}>{t}</option>)}
+        </select>
+      </div>
+    </div>
+  );
 
   if (!open) return (
     <button onClick={()=>withPassword(()=>setOpen(true))} style={{width:"100%",background:T.accentBg,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:14,color:T.accent,fontFamily:fonts.body,fontWeight:700,fontSize:15,cursor:"pointer"}}>
@@ -6174,33 +6205,50 @@ function ProposeRulesForm({ teams, eligibleVoters, onPropose, withPassword, tour
     </button>
   );
 
-  const sel = (label, val, setVal, opts) => (
-    <div style={{marginBottom:12}}>
-      <div style={{fontSize:11,color:T.muted,marginBottom:4,letterSpacing:1}}>{label}</div>
-      <select value={val} onChange={e=>setVal(e.target.value)} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"8px 12px",color:T.text,fontSize:14,fontFamily:fonts.body,cursor:"pointer",outline:"none"}}>
-        {opts.map(o=><option key={o} value={o}>{o}</option>)}
-      </select>
-    </div>
-  );
-
   return (
     <div style={{background:T.card,borderRadius:12,border:`1px solid ${T.accentBorder}`,padding:20}}>
       <div style={{fontFamily:fonts.display,fontSize:18,fontWeight:700,color:T.accent,letterSpacing:2,marginBottom:4}}>PROPOSE RULE CHANGE</div>
       <div style={{fontSize:11,color:T.muted,marginBottom:16}}>All {eligibleVoters.length} claimed teams must approve for changes to take effect.</div>
-      {sel("Transfer Window Start", transferStart, setTransferStart, dayTimeOpts)}
-      {sel("Transfer Window End", transferEnd, setTransferEnd, dayTimeOpts)}
-      {sel("Snatch Window Start", snatchStart, setSnatchStart, days.map(d=>{const s="12:00 AM";return d+" "+s;}).concat(days.map(d=>{const s="12:00 PM";return d+" "+s;})))}
-      {sel("Snatch Window End", snatchEnd, setSnatchEnd, days.map(d=>{const s="12:00 PM";return d+" "+s;}).concat(days.map(d=>{const s="6:00 PM";return d+" "+s;})))}
-      {sel("Snatch Return Time", snatchReturn, setSnatchReturn, days.map(d=>{const s="11:58 PM";return d+" "+s;}).concat(days.map(d=>{const s="11:00 PM";return d+" "+s;})))}
+
+      {/* Transfer Window */}
+      <div style={{background:T.bg,borderRadius:10,padding:"12px 14px",marginBottom:12,border:`1px solid ${T.border}`}}>
+        <div style={{fontSize:11,color:"#4F8EF7",fontWeight:700,letterSpacing:1,marginBottom:10}}>🔄 TRANSFER WINDOW</div>
+        <DayTimeRow label="Opens" day={tsDay} setDay={setTsDay} time={tsTime} setTime={setTsTime} />
+        <DayTimeRow label="Closes" day={teDay} setDay={setTeDay} time={teTime} setTime={setTeTime} />
+      </div>
+
+      {/* Snatch Window */}
+      <div style={{background:T.bg,borderRadius:10,padding:"12px 14px",marginBottom:12,border:`1px solid ${T.border}`}}>
+        <div style={{fontSize:11,color:"#A855F7",fontWeight:700,letterSpacing:1,marginBottom:10}}>⚡ SNATCH WINDOW</div>
+        <DayTimeRow label="Opens" day={ssDay} setDay={setSsDay} time={ssTime} setTime={setSsTime} />
+        <DayTimeRow label="Closes" day={seDay} setDay={setSeDay} time={seTime} setTime={setSeTime} />
+        <DayTimeRow label="Player Returns" day={srDay} setDay={setSrDay} time={srTime} setTime={setSrTime} />
+      </div>
+
       <div style={{display:"flex",gap:8,marginTop:4}}>
         <button onClick={()=>setOpen(false)} style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:8,padding:10,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
         {isAdmin && onApplyDirect && (
-          <button onClick={async ()=>{await onApplyDirect({"Transfer Start":transferStart,"Transfer End":transferEnd,"Snatch Return":snatchReturn,"Snatch Window":snatchStart+" to "+snatchEnd});setOpen(false);}}
-            style={{flex:1,background:"#4F8EF722",border:"1px solid #4F8EF744",borderRadius:8,padding:10,color:"#4F8EF7",fontFamily:fonts.body,fontWeight:700,fontSize:13,cursor:"pointer"}}>
+          <button onClick={async ()=>{
+            await onApplyDirect({
+              "Transfer Start": dayTime(tsDay,tsTime),
+              "Transfer End": dayTime(teDay,teTime),
+              "Snatch Window": dayTime(ssDay,ssTime)+" to "+dayTime(seDay,seTime),
+              "Snatch Return": dayTime(srDay,srTime),
+            });
+            setOpen(false);
+          }} style={{flex:1,background:"#4F8EF722",border:"1px solid #4F8EF744",borderRadius:8,padding:10,color:"#4F8EF7",fontFamily:fonts.body,fontWeight:700,fontSize:13,cursor:"pointer"}}>
             🔑 APPLY DIRECT
           </button>
         )}
-        <button onClick={()=>{onPropose({"Transfer Start":transferStart,"Transfer End":transferEnd,"Snatch Window":snatchStart+" to "+snatchEnd,"Snatch Return":snatchReturn});setOpen(false);}} style={{flex:2,background:"#F5A623",border:"none",borderRadius:8,padding:10,color:T.bg,fontFamily:fonts.body,fontWeight:800,fontSize:14,cursor:"pointer"}}>SUBMIT FOR VOTE</button>
+        <button onClick={()=>{
+          onPropose({
+            "Transfer Start": dayTime(tsDay,tsTime),
+            "Transfer End": dayTime(teDay,teTime),
+            "Snatch Window": dayTime(ssDay,ssTime)+" to "+dayTime(seDay,seTime),
+            "Snatch Return": dayTime(srDay,srTime),
+          });
+          setOpen(false);
+        }} style={{flex:2,background:"#F5A623",border:"none",borderRadius:8,padding:10,color:T.bg,fontFamily:fonts.body,fontWeight:800,fontSize:14,cursor:"pointer"}}>SUBMIT FOR VOTE</button>
       </div>
     </div>
   );
