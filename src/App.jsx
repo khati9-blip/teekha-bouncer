@@ -2535,6 +2535,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   const [fetchPlayerSelectedSeries, setFetchPlayerSelectedSeries] = useState(null);
   const [teamIdsOpen, setTeamIdsOpen] = useState(false);
   const [ruleProposal, setRuleProposal] = useState(null);
+  const [pitchConfig, setPitchConfig] = useState({});
   const [pointsConfig, setPointsConfig] = useState({
     run:1, four:8, six:12, fifty:10, century:20,
     wicket:25, fourWkt:8, fiveWkt:15, ecoBonus:10, ecoThreshold:6, ecoMinOvers:2,
@@ -2641,10 +2642,10 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
         setAppReady(true);
 
         // ── Pass 2: Heavy keys in background ─────────────────────────────
-        const heavyKeys = ["players","points","ownershipLog","recoveryHash","teamLogos","unsoldPool","ruleProposal"];
+        const heavyKeys = ["players","points","ownershipLog","recoveryHash","teamLogos","unsoldPool","ruleProposal","pitchConfig"];
         const rawHeavy = heavyKeys.map(k => _pitchId + "_" + k);
         const heavyResults = await sbGetMany(rawHeavy);
-        const [p,pts,ol,rh,tl,up,rp] = heavyResults;
+        const [p,pts,ol,rh,tl,up,rp,pc2] = heavyResults;
         if(p) setPlayers(p);
         if(pts) setPoints(pts);
         if(ol && typeof ol === 'object') setOwnershipLog(ol);
@@ -2652,6 +2653,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
         if(tl) setTeamLogos(tl);
         if(up) setUnsoldPool(up);
         if(rp && typeof rp === 'object') setRuleProposal(rp);
+        if(pc2 && typeof pc2 === 'object') setPitchConfig(pc2);
 
         // ── Save fresh data to localStorage for next instant load ─────────
         try {
@@ -2829,23 +2831,47 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
     }
   }, [appReady, transfers.phase, transfers.pickDeadline, transfers.releaseDeadline]);
   // Fires for everyone (not just admin) — silently opens release window if
-  // it's within the Sun 11:59 PM → Mon 11:00 AM IST window and still closed.
+  // it's within the configured transfer window and still closed.
   useEffect(() => {
     if (!appReady) return;
-    if (transfers.phase !== 'closed') return; // already open or in pick phase
-    // Check if within release window
+    if (transfers.phase !== 'closed') return;
+
     const now = new Date();
     const ist = new Date(now.getTime() + now.getTimezoneOffset() * 60000 + 5.5 * 3600000);
     const day = ist.getUTCDay(), h = ist.getUTCHours(), m = ist.getUTCMinutes();
-    const inWindow =
-      (day === 0 && (h > 23 || (h === 23 && m >= 59))) || // Sun 11:59 PM+
-      (day === 1 && (h < 5 || (h === 5 && m < 30)));       // Mon before 11 AM IST
+
+    // Parse transfer window times from pitchConfig or use defaults
+    const parseDay = (str, def) => {
+      const days = {Sunday:0,Monday:1,Tuesday:2,Wednesday:3,Thursday:4,Friday:5,Saturday:6};
+      if (!str) return def;
+      const d = str.split(" ")[0];
+      return days[d] ?? def;
+    };
+    const parseTime = (str, defH, defM) => {
+      if (!str) return {h: defH, m: defM};
+      const parts = str.split(" ");
+      const hhmm = parts[parts.length - 2] || "11:59";
+      const ampm = parts[parts.length - 1] || "PM";
+      let [hh, mm] = hhmm.split(":").map(Number);
+      if (ampm === "PM" && hh !== 12) hh += 12;
+      if (ampm === "AM" && hh === 12) hh = 0;
+      return {h: hh, m: mm};
+    };
+
+    const startDay = parseDay(pitchConfig?.transferStart, 0); // default Sunday
+    const startTime = parseTime(pitchConfig?.transferStart, 23, 59); // default 11:59 PM
+    const endDay = parseDay(pitchConfig?.transferEnd, 1); // default Monday
+    const endTime = parseTime(pitchConfig?.transferEnd, 11, 0); // default 11:00 AM
+
+    const afterStart = day === startDay && (h > startTime.h || (h === startTime.h && m >= startTime.m));
+    const beforeEnd = day === endDay && (h < endTime.h || (h === endTime.h && m < endTime.m));
+    const inWindow = afterStart || (day === endDay && beforeEnd) || (startDay !== endDay && day > startDay && day < endDay);
+
     if (!inWindow) return;
-    // Auto-open silently — no password needed, no alert
     const updated = { ...transfers, phase: 'release', weekNum: transfers.weekNum };
     updTransfers(updated);
     pushNotif('transfer', 'Transfer window is now open — release your players!', '📤');
-  }, [appReady, transfers.phase]);
+  }, [appReady, transfers.phase, pitchConfig]);
 
   // ── LOAD USER-SPECIFIC NOTES & HIGHLIGHTS ────────────────────────────────
   useEffect(() => {
@@ -4845,6 +4871,7 @@ ${aiMatchText.slice(0, 3000)}`;
                   ownershipLog={ownershipLog}
                   points={points}
                   user={user}
+                  pitchConfig={pitchConfig}
                   onUpdateTransfers={(val)=>{setTransfers(val);storeSet("transfers",val);}}
                   onUpdateAssignments={updAssign}
                   onUpdateUnsoldPool={(val)=>{setUnsoldPool(val);storeSet("unsoldPool",val);}}

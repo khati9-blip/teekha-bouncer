@@ -45,7 +45,7 @@ function Timer({ deadline, label = "REMAINING" }) {
 }
 
 // ── AUTO WINDOW TIMING ───────────────────────────────────────────────────────
-function getNextSundayIST() {
+function getNextTransferStartIST() {
   // Returns ISO string for next Sunday 23:59:00 IST (UTC+5:30)
   const now = new Date();
   const istOffset = 5.5 * 60 * 60 * 1000;
@@ -58,7 +58,7 @@ function getNextSundayIST() {
   return nextSunday.toISOString();
 }
 
-function getNextMondayIST() {
+function getNextTransferEndIST() {
   // Returns ISO string for next Monday 05:30:00 UTC = 11:00 AM IST
   const now = new Date();
   const istOffset = 5.5 * 60 * 60 * 1000;
@@ -75,7 +75,7 @@ function getNextMondayIST() {
   return nextMonday.toISOString();
 }
 
-function isWithinReleaseWindow() {
+function isWithinReleaseWindowDynamic() {
   // Sunday 11:59 PM → Monday 11:00 AM IST
   const now = new Date();
   const istOffset = 5.5 * 60 * 60 * 1000;
@@ -93,8 +93,66 @@ export default function TransferWindow({
   leaderboard, isAdmin, myTeam, unlocked, withPassword,
   onUpdateTransfers, onUpdateAssignments, onUpdateUnsoldPool,
   onUpdateOwnershipLog, ownershipLog, points, onUpdatePoints,
-  user, safePlayers
+  user, safePlayers, pitchConfig
 }) {
+
+  // Parse day/time from pitchConfig string like "Sunday 11:59 PM"
+  const parseDayTime = (str, defDay, defH, defM) => {
+    const days = {Sunday:0,Monday:1,Tuesday:2,Wednesday:3,Thursday:4,Friday:5,Saturday:6};
+    if (!str) return { day: defDay, h: defH, m: defM };
+    try {
+      const parts = str.split(" ");
+      const d = days[parts[0]] ?? defDay;
+      const hhmm = parts[parts.length-2] || "11:59";
+      const ampm = parts[parts.length-1] || "PM";
+      let [hh, mm] = hhmm.split(":").map(Number);
+      if (ampm === "PM" && hh !== 12) hh += 12;
+      if (ampm === "AM" && hh === 12) hh = 0;
+      return { day: d, h: hh, m: mm };
+    } catch { return { day: defDay, h: defH, m: defM }; }
+  };
+
+  const transferStart = parseDayTime(pitchConfig?.transferStart, 0, 23, 59); // Sun 11:59 PM
+  const transferEnd   = parseDayTime(pitchConfig?.transferEnd,   1,  11, 0); // Mon 11:00 AM
+
+  const getNextTransferStartIST = () => {
+    const now = new Date();
+    const istOffset = 5.5 * 60 * 60 * 1000;
+    const istNow = new Date(now.getTime() + istOffset);
+    const day = istNow.getUTCDay();
+    const daysUntil = day === transferStart.day ? 7 : (transferStart.day - day + 7) % 7 || 7;
+    const next = new Date(istNow);
+    next.setUTCDate(istNow.getUTCDate() + daysUntil);
+    next.setUTCHours(transferStart.h - 5, transferStart.m - 30, 0, 0); // convert IST to UTC
+    return next.toISOString();
+  };
+
+  const getNextTransferEndIST = () => {
+    const now = new Date();
+    const istOffset = 5.5 * 60 * 60 * 1000;
+    const istNow = new Date(now.getTime() + istOffset);
+    const day = istNow.getUTCDay();
+    const h = istNow.getUTCHours(), m = istNow.getUTCMinutes();
+    const isEndDayBeforeDeadline = day === transferEnd.day &&
+      (h < transferEnd.h - 6 || (h === transferEnd.h - 6 && m < transferEnd.m));
+    const daysUntil = isEndDayBeforeDeadline ? 0 : (transferEnd.day - day + 7) % 7 || 7;
+    const next = new Date(istNow);
+    next.setUTCDate(istNow.getUTCDate() + daysUntil);
+    next.setUTCHours(transferEnd.h - 6, transferEnd.m + 30, 0, 0); // convert IST to UTC approx
+    return next.toISOString();
+  };
+
+  const isWithinReleaseWindowDynamic = () => {
+    const now = new Date();
+    const istOffset = 5.5 * 60 * 60 * 1000;
+    const ist = new Date(now.getTime() + istOffset);
+    const day = ist.getUTCDay(), h = ist.getUTCHours(), m = ist.getUTCMinutes();
+    const afterStart = day === transferStart.day &&
+      (h > transferStart.h || (h === transferStart.h && m >= transferStart.m));
+    const beforeEnd = day === transferEnd.day &&
+      (h < transferEnd.h || (h === transferEnd.h && m < transferEnd.m));
+    return afterStart || beforeEnd;
+  };
   const [pickModal, setPickModal] = useState(null); // {poolPlayer}
   const [sessionTeamId, setSessionTeamId] = useState(null);
   const [confirmModal, setConfirmModal] = useState(null); // {message, onConfirm}
@@ -118,7 +176,7 @@ export default function TransferWindow({
   // ── AUTO WINDOW CHECK — prompt admin instead of auto-opening ──────────────
   useEffect(() => {
     if (!unlocked) return;
-    if (phase === "closed" && isWithinReleaseWindow()) {
+    if (phase === "closed" && isWithinReleaseWindowDynamic()) {
       setShowAutoOpenPrompt(true);
     }
   }, [unlocked]);
@@ -558,7 +616,7 @@ export default function TransferWindow({
       ...transfers,
       phase: "release",
       weekNum: hasHistory ? (transfers.weekNum || 1) + 1 : (transfers.weekNum || 1),
-      releaseDeadline: getNextMondayIST(),
+      releaseDeadline: getNextTransferEndIST(),
       releases: {},
       tradedPairs: [],
       ineligible: [],
@@ -596,8 +654,8 @@ export default function TransferWindow({
   };
 
   // ── NEXT AUTO OPEN INFO ──────────────────────────────────────────────────
-  const nextAutoOpen = getNextSundayIST();
-  const releaseDeadline = transfers?.releaseDeadline || getNextMondayIST();
+  const nextAutoOpen = getNextTransferStartIST();
+  const releaseDeadline = transfers?.releaseDeadline || getNextTransferEndIST();
 
   // ── RENDER ────────────────────────────────────────────────────────────────
   const phaseBadge = { closed:"#4A5E78", release:"#F5A623", trade:"#2ECC71", done:"#4F8EF7" };
