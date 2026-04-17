@@ -1,10 +1,10 @@
 // Supabase Edge Function — Snatch Auto-Return
-// Runs every Friday at 6:28 PM UTC (= 11:58 PM IST)
-// Automatically returns snatched player to original team
+// Runs every minute via cron: "* * * * *"
+// Dynamically handles ALL pitches — reads pitch list from Supabase
+// Each pitch can have its own snatch return time via pitchConfig
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const PITCH_ID = "p1"; // Update if you have multiple pitches
 
 const headers = {
   "apikey": SUPABASE_SERVICE_KEY,
@@ -24,96 +24,126 @@ async function getKey(key: string) {
 async function setKey(key: string, value: unknown) {
   await fetch(
     `${SUPABASE_URL}/rest/v1/league_data?key=eq.${key}`,
-    {
-      method: "PATCH",
-      headers,
-      body: JSON.stringify({ value }),
-    }
+    { method: "PATCH", headers, body: JSON.stringify({ value }) }
   );
 }
 
-Deno.serve(async () => {
+function parseReturnTime(timeStr: string) {
+  const days: Record<string, number> = {
+    Sunday:0, Monday:1, Tuesday:2, Wednesday:3, Thursday:4, Friday:5, Saturday:6
+  };
+  const defaults = { day: 5, hour: 23, minute: 58 }; // Friday 11:58 PM IST
+  if (!timeStr) return defaults;
   try {
-    const snatch = await getKey(`${PITCH_ID}_snatch`);
+    const parts = timeStr.split(" ");
+    const dayStr = parts[0];
+    const ampm = parts[parts.length - 1];
+    const hhmm = parts[parts.length - 2];
+    const [hhStr, mmStr] = hhmm.split(":");
+    let hour = parseInt(hhStr);
+    const minute = parseInt(mmStr);
+    if (ampm === "PM" && hour !== 12) hour += 12;
+    if (ampm === "AM" && hour === 12) hour = 0;
+    return { day: days[dayStr] ?? 5, hour, minute };
+  } catch { return defaults; }
+}
 
-    if (!snatch?.active) {
-      return new Response("No active snatch", { status: 200 });
-    }
+async function processSnatchReturn(pitchId: string, currentDay: number, currentHour: number, currentMinute: number) {
+  // Read pitch config for dynamic return time
+  const pitchConfig = await getKey(`${pitchId}_pitchConfig`);
+  const returnTimeStr = pitchConfig?.snatchReturn || "Friday 11:58 PM";
+  const { day, hour, minute } = parseReturnTime(returnTimeStr);
 
-    const { pid, fromTeamId, byTeamId, pointsAtSnatch, startDate } = snatch.active;
+  // Check if it's time for this pitch
+  if (currentDay !== day || currentHour !== hour || currentMinute !== minute) return null;
 
-    // Load points and matches
-    const points = await getKey(`${PITCH_ID}_points`);
-    const matches = await getKey(`${PITCH_ID}_matches`);
-    const captains = await getKey(`${PITCH_ID}_captains`);
-    const assignments = await getKey(`${PITCH_ID}_assignments`);
-    const safePlayers = await getKey(`${PITCH_ID}_safePlayers`) || {};
+  // Check for active snatch
+  const snatch = await getKey(`${pitchId}_snatch`);
+  if (!snatch?.active) return { pitchId, result: "no active snatch" };
 
-    const snatchDateStr = startDate.split("T")[0];
+  const { pid, fromTeamId, byTeamId, startDate } = snatch.active;
+  const points = await getKey(`${pitchId}_points`);
+  const matches = await getKey(`${pitchId}_matches`);
+  const captains = await getKey(`${pitchId}_captains`);
+  const assignments = await getKey(`${pitchId}_assignments`);
+  const safePlayers = await getKey(`${pitchId}_safePlayers`) || {};
+  const snatchDateStr = startDate.split("T")[0];
 
-    // Calculate snatchWeekPts — points earned by borrowing team during snatch week
-    let snatchWeekPts = 0;
-    const playerPoints = points?.[pid] || {};
-    for (const [mid, d] of Object.entries(playerPoints) as [string, any][]) {
-      const match = (matches || []).find((m: any) => m.id === mid);
-      if (!match || match.date < snatchDateStr) continue;
+  let snatchWeekPts = 0;
+  let correctPointsAtSnatch = 0;
+  const playerPoints = points?.[pid] || {};
+
+  for (const [mid, d] of Object.entries(playerPoints) as [string, any][]) {
+    const match = (matches || []).find((m: any) => m.id === mid);
+    if (!match) continue;
+    if (match.date >= snatchDateStr) {
       const cap = captains?.[`${mid}_${byTeamId}`] || {};
       let pts = d.base || 0;
       if (cap.captain === pid) pts *= 2;
       else if (cap.vc === pid) pts *= 1.5;
       snatchWeekPts += Math.round(pts);
-    }
-
-    // Calculate correct pointsAtSnatch — pre-snatch points for original team
-    let correctPointsAtSnatch = 0;
-    for (const [mid, d] of Object.entries(playerPoints) as [string, any][]) {
-      const match = (matches || []).find((m: any) => m.id === mid);
-      if (!match || match.date >= snatchDateStr) continue;
+    } else {
       const cap = captains?.[`${mid}_${fromTeamId}`] || {};
       let pts = d.base || 0;
       if (cap.captain === pid) pts *= 2;
       else if (cap.vc === pid) pts *= 1.5;
       correctPointsAtSnatch += Math.round(pts);
     }
+  }
 
-    // Archive to history
-    const newHistory = [
-      ...(snatch.history || []),
-      {
-        ...snatch.active,
-        pointsAtSnatch: correctPointsAtSnatch,
-        returnDate: new Date().toISOString(),
-        snatchWeekPts,
-      },
-    ];
+  const newHistory = [...(snatch.history || []), {
+    ...snatch.active,
+    pointsAtSnatch: correctPointsAtSnatch,
+    returnDate: new Date().toISOString(),
+    snatchWeekPts,
+  }];
 
-    // Update snatch — clear active, add to history
-    await setKey(`${PITCH_ID}_snatch`, {
-      ...snatch,
-      active: null,
-      history: newHistory,
-      weekNum: (snatch.weekNum || 1) + 1,
+  await setKey(`${pitchId}_snatch`, {
+    ...snatch, active: null, history: newHistory,
+    weekNum: (snatch.weekNum || 1) + 1
+  });
+  await setKey(`${pitchId}_assignments`, { ...assignments, [pid]: fromTeamId });
+
+  const currentSafe = safePlayers[fromTeamId] || [];
+  if (!currentSafe.includes(pid)) {
+    await setKey(`${pitchId}_safePlayers`, {
+      ...safePlayers, [fromTeamId]: [...currentSafe, pid]
     });
+  }
 
-    // Return player to original team in assignments
-    const newAssignments = { ...assignments, [pid]: fromTeamId };
-    await setKey(`${PITCH_ID}_assignments`, newAssignments);
+  return { pitchId, result: "returned", pid, fromTeamId, byTeamId, snatchWeekPts, correctPointsAtSnatch };
+}
 
-    // Mark player as SAFE for original team
-    const currentSafe = safePlayers[fromTeamId] || [];
-    if (!currentSafe.includes(pid)) {
-      const newSafe = { ...safePlayers, [fromTeamId]: [...currentSafe, pid] };
-      await setKey(`${PITCH_ID}_safePlayers`, newSafe);
+Deno.serve(async () => {
+  try {
+    // Get current IST time
+    const IST_OFFSET = 5.5 * 60 * 60 * 1000;
+    const ist = new Date(Date.now() + IST_OFFSET);
+    const currentDay = ist.getUTCDay();
+    const currentHour = ist.getUTCHours();
+    const currentMinute = ist.getUTCMinutes();
+
+    // Get all pitches dynamically
+    const pitches = await getKey("pitches") || [];
+    const pitchIds = pitches.map((p: any) => p.id).filter(Boolean);
+
+    if (pitchIds.length === 0) {
+      return new Response("No pitches found", { status: 200 });
     }
 
-    console.log(`✅ Snatch auto-return complete: ${pid} returned to ${fromTeamId}, snatchWeekPts=${snatchWeekPts}, pointsAtSnatch=${correctPointsAtSnatch}`);
+    // Process each pitch
+    const results = await Promise.all(
+      pitchIds.map((pitchId: string) =>
+        processSnatchReturn(pitchId, currentDay, currentHour, currentMinute)
+      )
+    );
 
+    const processed = results.filter(Boolean);
     return new Response(
-      JSON.stringify({ success: true, pid, fromTeamId, byTeamId, snatchWeekPts, pointsAtSnatch: correctPointsAtSnatch }),
+      JSON.stringify({ processed, time: `Day ${currentDay} ${currentHour}:${String(currentMinute).padStart(2,"0")} IST` }),
       { status: 200, headers: { "Content-Type": "application/json" } }
     );
-  } catch (e) {
-    console.error("Snatch auto-return failed:", e);
+  } catch (e: any) {
     return new Response(JSON.stringify({ error: e.message }), { status: 500 });
   }
 });
