@@ -89,9 +89,20 @@ export default function SnatchSection({
     return getSnatchEligibleTeam(matches, points, players, teams, assignments, weekOffset);
   }, [matches, points, players, teams, assignments, windowStatus.open]);
 
-  const myTeamId = myTeam?.id ||
-    (user?.email ? Object.values(teamIdentity || {}).find(t => t.claimedBy === user.email)?.teamRef : null);
-  const isEligible = eligibility?.team?.id === myTeamId;
+  // Keep last known eligibility so button doesn't flicker when points reload
+  const stableEligibility = React.useRef(null);
+  if (eligibility) stableEligibility.current = eligibility;
+  const elig = eligibility || stableEligibility.current;
+
+  // Determine this user's team — check myTeam first, then look up via teamIdentity for admin
+  const myTeamId = useMemo(() => {
+    if (myTeam?.id) return myTeam.id;
+    if (!user?.email || !teamIdentity) return null;
+    const entry = Object.values(teamIdentity).find(t => t.claimedBy === user.email);
+    return entry?.teamRef || null;
+  }, [myTeam?.id, user?.email, teamIdentity]);
+
+  const isEligible = !!(myTeamId && elig?.team?.id === myTeamId);
   const hasActivSnatch = !!snatch.active;
 
   // Auto-return handled by Edge Function on Supabase
@@ -147,7 +158,7 @@ export default function SnatchSection({
   };
 
   const confirmSnatch = async (pid) => {
-    const actingTeamId = myTeamId || eligibility?.team?.id;
+    const actingTeamId = myTeamId || elig?.team?.id;
     if (!unlocked) {
       const myIdentity = Object.values(teamIdentity || {}).find(t => t.claimedBy === user?.email);
       if (!myIdentity?.pinHash) { setPinErr("No PIN set for your team"); return; }
@@ -224,16 +235,16 @@ export default function SnatchSection({
       {/* Eligibility */}
       <div style={{background:"#080C14",borderRadius:10,padding:"10px 14px",marginBottom:14}}>
         <div style={{fontSize:10,color:"#4A5E78",letterSpacing:2,marginBottom:6}}>SNATCH RIGHTS THIS WEEK</div>
-        {!eligibility ? (
+        {!elig ? (
           <div style={{fontSize:12,color:"#4A5E78"}}>No matches with stats this week — snatch unavailable</div>
         ) : (
           <div style={{display:"flex",alignItems:"center",gap:10}}>
-            <div style={{width:10,height:10,borderRadius:"50%",background:eligibility.team?.color,flexShrink:0}} />
+            <div style={{width:10,height:10,borderRadius:"50%",background:elig.team?.color,flexShrink:0}} />
             <div>
-              <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:16,fontWeight:700,color:eligibility.team?.color}}>{eligibility.team?.name}</div>
-              <div style={{fontSize:11,color:"#4A5E78"}}>Best single match: {eligibility.bestPts} base pts this week</div>
+              <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:16,fontWeight:700,color:elig.team?.color}}>{elig.team?.name}</div>
+              <div style={{fontSize:11,color:"#4A5E78"}}>Best single match: {elig.bestPts} base pts this week</div>
             </div>
-            {eligibility.team?.id === myTeamId && (
+            {elig.team?.id === myTeamId && (
               <span style={{marginLeft:"auto",background:"#2ECC7122",border:"1px solid #2ECC7144",borderRadius:6,padding:"3px 8px",fontSize:11,color:"#2ECC71",fontWeight:700}}>YOU</span>
             )}
           </div>
@@ -264,9 +275,9 @@ export default function SnatchSection({
       {/* Snatch action — only for eligible team OR admin override */}
       {!hasActivSnatch && windowStatus.open && (isEligible || unlocked) && (
         <div>
-          {unlocked && !isEligible && eligibility && (
+          {unlocked && !isEligible && elig && (
             <div style={{background:"#F5A62311",border:"1px solid #F5A62333",borderRadius:8,padding:"8px 12px",marginBottom:8,fontSize:11,color:"#F5A623"}}>
-              🔑 Admin override — eligible team is <strong>{eligibility.team?.name}</strong>
+              🔑 Admin override — eligible team is <strong>{elig.team?.name}</strong>
             </div>
           )}
           {!selectingPlayer ? (
@@ -275,7 +286,7 @@ export default function SnatchSection({
             <div>
               <div style={{fontSize:11,color:"#4A5E78",marginBottom:10}}>Select a team to snatch from:</div>
               <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
-                {teams.filter(t => t.id !== (myTeamId || eligibility?.team?.id)).map(t => (
+                {teams.filter(t => t.id !== (myTeamId || elig?.team?.id)).map(t => (
                   <button key={t.id} onClick={()=>setSelectedVictimTeam(t.id === selectedVictimTeam ? null : t.id)}
                     style={{background:selectedVictimTeam===t.id?t.color+"33":"transparent",border:"1px solid "+(selectedVictimTeam===t.id?t.color:t.color+"44"),borderRadius:8,padding:"6px 14px",color:t.color,fontFamily:"Barlow Condensed,sans-serif",fontWeight:700,fontSize:12,cursor:"pointer"}}>
                     {t.name}
@@ -316,9 +327,9 @@ export default function SnatchSection({
         </div>
       )}
 
-      {!hasActivSnatch && windowStatus.open && !isEligible && !unlocked && eligibility && (
+      {!hasActivSnatch && windowStatus.open && !isEligible && !unlocked && elig && (
         <div style={{fontSize:12,color:"#4A5E78",textAlign:"center",padding:"10px 0"}}>
-          Only <span style={{color:eligibility.team?.color,fontWeight:700}}>{eligibility.team?.name}</span> can snatch this week
+          Only <span style={{color:elig.team?.color,fontWeight:700}}>{elig.team?.name}</span> can snatch this week
         </div>
       )}
 
