@@ -5214,9 +5214,9 @@ ${aiMatchText.slice(0, 3000)}`;
               <div style={{background:T.card,borderRadius:12,border:`1px solid ${T.border}`,padding:20,marginBottom:16}}>
                 <div style={{fontSize:11,color:T.muted,letterSpacing:2,fontWeight:700,marginBottom:12}}>⏰ TIMING RULES</div>
                 {[
-                  ["Transfer Window", "Sunday 11:59 PM → Monday 11:00 AM IST"],
+                  ["Transfer Window", `${pitchConfig?.transferStart || "Sunday 11:59 PM"} → ${pitchConfig?.transferEnd || "Monday 11:00 AM"} IST`],
                   ["Snatch Window", "Saturday 12:00 AM → 12:00 PM IST"],
-                  ["Snatch Return", "Friday 11:58 PM IST"],
+                  ["Snatch Return", `${pitchConfig?.snatchReturn || "Friday 11:58 PM"} IST`],
                 ].map(([label, val]) => (
                   <div key={label} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${T.border}33`}}>
                     <div style={{fontSize:13,color:T.muted}}>{label}</div>
