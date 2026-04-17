@@ -5215,7 +5215,7 @@ ${aiMatchText.slice(0, 3000)}`;
                 <div style={{fontSize:11,color:T.muted,letterSpacing:2,fontWeight:700,marginBottom:12}}>⏰ TIMING RULES</div>
                 {[
                   ["Transfer Window", `${pitchConfig?.transferStart || "Sunday 11:59 PM"} → ${pitchConfig?.transferEnd || "Monday 11:00 AM"} IST`],
-                  ["Snatch Window", "Saturday 12:00 AM → 12:00 PM IST"],
+                  ["Snatch Window", pitchConfig?.snatchWindow ? pitchConfig.snatchWindow.replace(" to ", " → ") + " IST" : "Saturday 12:00 AM → 12:00 PM IST"],
                   ["Snatch Return", `${pitchConfig?.snatchReturn || "Friday 11:58 PM"} IST`],
                 ].map(([label, val]) => (
                   <div key={label} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${T.border}33`}}>
@@ -5297,6 +5297,7 @@ ${aiMatchText.slice(0, 3000)}`;
                       ...(changes["Transfer Start"] ? { transferStart: changes["Transfer Start"] } : {}),
                       ...(changes["Transfer End"] ? { transferEnd: changes["Transfer End"] } : {}),
                       ...(changes["Snatch Return"] ? { snatchReturn: changes["Snatch Return"] } : {}),
+                      ...(changes["Snatch Window"] ? { snatchWindow: changes["Snatch Window"] } : {}),
                     };
                     await storeSet("pitchConfig", newConfig);
                     setPitchConfig(newConfig);
@@ -6090,6 +6091,7 @@ function Root() {
           transferStart: "Sunday 11:59 PM",
           transferEnd: "Monday 11:00 AM",
           snatchReturn: "Friday 11:58 PM",
+          snatchWindow: "Saturday 12:00 AM to Saturday 12:00 PM",
         });
         setCurrentPitch(pitch); setIsAdmin(true);
         try { localStorage.setItem('tb_admin_' + pitch.id, '1'); } catch {}
