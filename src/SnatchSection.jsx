@@ -89,7 +89,8 @@ export default function SnatchSection({
     return getSnatchEligibleTeam(matches, points, players, teams, assignments, weekOffset);
   }, [matches, points, players, teams, assignments, windowStatus.open]);
 
-  const myTeamId = myTeam?.id;
+  const myTeamId = myTeam?.id ||
+    (user?.email ? Object.values(teamIdentity || {}).find(t => t.claimedBy === user.email)?.teamRef : null);
   const isEligible = eligibility?.team?.id === myTeamId;
   const hasActivSnatch = !!snatch.active;
 
