@@ -4121,6 +4121,94 @@ ${aiMatchText.slice(0, 3000)}`;
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [page]);
 
+  // Auto-update match statuses — smart polling only around match times
+  useEffect(() => {
+    if (!appReady || matches.length === 0) return;
+
+    const autoUpdateStatuses = async () => {
+      try {
+        const [liveRes, resultsRes] = await Promise.all([
+          fetch("/api/cricketdata?path=currentMatches").then(r=>r.json()).catch(()=>({})),
+          fetch("/api/cricketdata?path=cricket-results").then(r=>r.json()).catch(()=>({})),
+        ]);
+        const liveList = Array.isArray(liveRes?.response) ? liveRes.response : [];
+        const liveIds = new Set(liveList.map(m => String(m?.matchId || m?.id)).filter(Boolean));
+        const resultsList = Array.isArray(resultsRes?.response) ? resultsRes.response : [];
+        const completedIds = new Set(resultsList.map(m => String(m?.matchId || m?.id)).filter(Boolean));
+
+        let changed = false;
+        const updated = matches.map(m => {
+          if (!m.cricbuzzId) return m;
+          const id = String(m.cricbuzzId);
+          if (m.status === "completed") return m;
+          if (completedIds.has(id)) { changed = true; return { ...m, status: "completed" }; }
+          if (liveIds.has(id)) { changed = true; return { ...m, status: "live" }; }
+          return m;
+        });
+        if (changed) updMatches(updated);
+      } catch(e) { console.warn("Auto status update failed:", e.message); }
+    };
+
+    const timeouts = [];
+    const intervals = [];
+
+    const scheduleForMatch = (matchMins) => {
+      const IST_OFFSET = 5.5 * 60 * 60 * 1000;
+      const nowIST = new Date(Date.now() + IST_OFFSET);
+      const nowMins = nowIST.getUTCHours() * 60 + nowIST.getUTCMinutes();
+      const nowMs = Date.now();
+
+      // Schedule +1, +2, +3 minute rapid checks
+      [1, 2, 3].forEach(offset => {
+        const targetMins = matchMins + offset;
+        const delayMs = (targetMins - nowMins) * 60 * 1000;
+        if (delayMs > 0 && delayMs < 5 * 60 * 60 * 1000) {
+          timeouts.push(setTimeout(autoUpdateStatuses, delayMs));
+        }
+      });
+
+      // Schedule every 30 mins from match start until 5 hours after
+      for (let i = 1; i <= 10; i++) {
+        const targetMins = matchMins + i * 30;
+        const delayMs = (targetMins - nowMins) * 60 * 1000;
+        if (delayMs > 0 && delayMs < 5.5 * 60 * 60 * 1000) {
+          timeouts.push(setTimeout(autoUpdateStatuses, delayMs));
+        }
+      }
+    };
+
+    // Every minute check for today's upcoming matches and schedule polls
+    const scheduled = new Set(); // track which matches we've scheduled for
+    const masterCheck = () => {
+      const IST_OFFSET = 5.5 * 60 * 60 * 1000;
+      const nowIST = new Date(Date.now() + IST_OFFSET);
+      const todayStr = nowIST.toISOString().split("T")[0];
+      const nowMins = nowIST.getUTCHours() * 60 + nowIST.getUTCMinutes();
+
+      matches.forEach(m => {
+        if (m.date !== todayStr || m.status === "completed") return;
+        if (scheduled.has(m.id)) return;
+        const timeStr = m.time || "20:00";
+        const [hh, mm] = timeStr.split(":").map(Number);
+        const matchMins = hh * 60 + mm;
+        // Only schedule if within 10 mins before match
+        if (nowMins >= matchMins - 10 && nowMins <= matchMins + 300) {
+          scheduled.add(m.id);
+          scheduleForMatch(matchMins);
+        }
+      });
+    };
+
+    masterCheck();
+    const masterInterval = setInterval(masterCheck, 60 * 1000);
+
+    return () => {
+      clearInterval(masterInterval);
+      timeouts.forEach(clearTimeout);
+      intervals.forEach(clearInterval);
+    };
+  }, [appReady, matches.length]);
+
   // Update snatch window status every minute
   useEffect(() => {
     const t = setInterval(() => setSnatchWindowStatus(getSnatchWindowStatus()), 60000);
