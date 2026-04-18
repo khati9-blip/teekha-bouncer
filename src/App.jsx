@@ -6167,7 +6167,7 @@ function EditPointsForm({ config, onSave, onCancel }) {
 function ProposeRulesForm({ teams, eligibleVoters, onPropose, withPassword, tournamentStarted, isAdmin, onApplyDirect }) {
   const [open, setOpen] = useState(false);
   const days = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
-  const times = ["12:00 AM","1:00 AM","2:00 AM","3:00 AM","6:00 AM","9:00 AM","10:00 AM","11:00 AM","12:00 PM","1:00 PM","3:00 PM","6:00 PM","9:00 PM","10:00 PM","11:00 PM","11:58 PM","11:59 PM"];
+  const times = ["12:00 AM","12:30 AM","1:00 AM","1:30 AM","2:00 AM","3:00 AM","4:00 AM","5:00 AM","6:00 AM","7:00 AM","8:00 AM","9:00 AM","10:00 AM","10:30 AM","11:00 AM","11:30 AM","11:45 AM","11:58 AM","11:59 AM","12:00 PM","12:30 PM","1:00 PM","2:00 PM","3:00 PM","4:00 PM","5:00 PM","6:00 PM","7:00 PM","8:00 PM","9:00 PM","10:00 PM","11:00 PM","11:30 PM","11:45 PM","11:58 PM","11:59 PM"];
 
   const [tsDay, setTsDay] = useState("Sunday");
   const [tsTime, setTsTime] = useState("11:59 PM");
@@ -6182,16 +6182,23 @@ function ProposeRulesForm({ teams, eligibleVoters, onPropose, withPassword, tour
 
   const dayTime = (day, time) => day + " " + time;
 
-  const DayTimeRow = ({label, day, setDay, time, setTime}) => (
+  const DayTimeRow = ({label, day, setDay, time, setTime, listId}) => (
     <div style={{marginBottom:12}}>
       <div style={{fontSize:11,color:T.muted,marginBottom:6,letterSpacing:1}}>{label}</div>
       <div style={{display:"flex",gap:8}}>
-        <select value={day} onChange={e=>setDay(e.target.value)} style={{flex:1,background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"8px 10px",color:T.text,fontSize:13,fontFamily:fonts.body,cursor:"pointer",outline:"none"}}>
+        <select value={day} onChange={e=>setDay(e.target.value)} style={{flex:"0 0 120px",background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"8px 10px",color:T.text,fontSize:13,fontFamily:fonts.body,cursor:"pointer",outline:"none"}}>
           {days.map(d=><option key={d} value={d}>{d}</option>)}
         </select>
-        <select value={time} onChange={e=>setTime(e.target.value)} style={{flex:1,background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"8px 10px",color:T.text,fontSize:13,fontFamily:fonts.body,cursor:"pointer",outline:"none"}}>
-          {times.map(t=><option key={t} value={t}>{t}</option>)}
-        </select>
+        <datalist id={listId}>
+          {times.map(t=><option key={t} value={t}/>)}
+        </datalist>
+        <input
+          list={listId}
+          value={time}
+          onChange={e=>setTime(e.target.value)}
+          placeholder="e.g. 11:59 PM"
+          style={{flex:1,background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"8px 10px",color:T.text,fontSize:13,fontFamily:fonts.body,outline:"none"}}
+        />
       </div>
     </div>
   );
@@ -6210,16 +6217,16 @@ function ProposeRulesForm({ teams, eligibleVoters, onPropose, withPassword, tour
       {/* Transfer Window */}
       <div style={{background:T.bg,borderRadius:10,padding:"12px 14px",marginBottom:12,border:`1px solid ${T.border}`}}>
         <div style={{fontSize:11,color:"#4F8EF7",fontWeight:700,letterSpacing:1,marginBottom:10}}>🔄 TRANSFER WINDOW</div>
-        <DayTimeRow label="Opens" day={tsDay} setDay={setTsDay} time={tsTime} setTime={setTsTime} />
-        <DayTimeRow label="Closes" day={teDay} setDay={setTeDay} time={teTime} setTime={setTeTime} />
+        <DayTimeRow label="Opens" day={tsDay} setDay={setTsDay} time={tsTime} setTime={setTsTime} listId="ts-times" />
+        <DayTimeRow label="Closes" day={teDay} setDay={setTeDay} time={teTime} setTime={setTeTime} listId="te-times" />
       </div>
 
       {/* Snatch Window */}
       <div style={{background:T.bg,borderRadius:10,padding:"12px 14px",marginBottom:12,border:`1px solid ${T.border}`}}>
         <div style={{fontSize:11,color:"#A855F7",fontWeight:700,letterSpacing:1,marginBottom:10}}>⚡ SNATCH WINDOW</div>
-        <DayTimeRow label="Opens" day={ssDay} setDay={setSsDay} time={ssTime} setTime={setSsTime} />
-        <DayTimeRow label="Closes" day={seDay} setDay={setSeDay} time={seTime} setTime={setSeTime} />
-        <DayTimeRow label="Player Returns" day={srDay} setDay={setSrDay} time={srTime} setTime={setSrTime} />
+        <DayTimeRow label="Opens" day={ssDay} setDay={setSsDay} time={ssTime} setTime={setSsTime} listId="ss-times" />
+        <DayTimeRow label="Closes" day={seDay} setDay={setSeDay} time={seTime} setTime={setSeTime} listId="se-times" />
+        <DayTimeRow label="Player Returns" day={srDay} setDay={setSrDay} time={srTime} setTime={setSrTime} listId="sr-times" />
       </div>
 
       <div style={{display:"flex",gap:8,marginTop:4}}>
