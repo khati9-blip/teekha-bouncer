@@ -682,13 +682,13 @@ export default function TransferWindow({
         {phase === "closed" && (
           <div style={{background:T.card,borderRadius:10,padding:"10px 16px",textAlign:"center",border:`1px solid ${T.border}`}}>
             <div style={{fontSize:10,color:T.muted,letterSpacing:2,marginBottom:4}}>NEXT WINDOW OPENS</div>
-            <Timer deadline={nextAutoOpen} label="UNTIL SUNDAY 11:59 PM IST" />
+            <Timer deadline={nextAutoOpen} label={"UNTIL " + (pitchConfig?.transferStart || "SUNDAY 11:59 PM") + " IST"} />
           </div>
         )}
         {phase === "release" && (
           <div style={{background:T.accentBg,borderRadius:10,padding:"10px 16px",textAlign:"center",border:`1px solid ${T.accentBorder}`}}>
             <div style={{fontSize:10,color:T.accent,letterSpacing:2,marginBottom:4}}>RELEASE WINDOW CLOSES</div>
-            <Timer deadline={releaseDeadline} label="MONDAY 11:00 AM IST" />
+            <Timer deadline={releaseDeadline} label={(pitchConfig?.transferEnd || "MONDAY 11:00 AM") + " IST"} />
           </div>
         )}
       </div>
@@ -887,7 +887,7 @@ export default function TransferWindow({
         <div style={{background:T.card,borderRadius:12,border:`1px solid ${T.border}`,padding:40,textAlign:"center"}}>
           <div style={{fontSize:48,marginBottom:12}}>🔒</div>
           <div style={{fontFamily:fonts.display,fontSize:22,fontWeight:700,color:T.muted,letterSpacing:2,marginBottom:8}}>TRANSFER WINDOW CLOSED</div>
-          <div style={{fontSize:13,color:T.muted}}>Opens automatically every Sunday at 11:59 PM IST</div>
+          <div style={{fontSize:13,color:T.muted}}>Opens automatically every {pitchConfig?.transferStart || "Sunday at 11:59 PM IST"}</div>
         </div>
       )}
 
@@ -898,7 +898,7 @@ export default function TransferWindow({
             📤 RELEASE PHASE
           </div>
           <div style={{fontSize:12,color:T.muted,marginBottom:16}}>
-            Select up to 3 players to release. Window closes Monday 11:00 AM IST. You can change selections until then.
+            Window closes {pitchConfig?.transferEnd || "Monday 11:00 AM IST"}. You can change selections until then.
           </div>
 
           {sortedTeams.map(team => {
