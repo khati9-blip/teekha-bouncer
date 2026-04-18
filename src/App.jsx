@@ -4121,11 +4121,13 @@ ${aiMatchText.slice(0, 3000)}`;
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [page]);
 
-  // Auto-update match statuses — smart polling only around match times
+  // Auto-update match statuses + auto-lock C/VC when match goes live
+  // Smart polling: +1+2+3 mins then every 30 mins for status
+  // +0+1 mins then every 10 mins for C/VC lock
   useEffect(() => {
     if (!appReady || matches.length === 0) return;
 
-    const autoUpdateStatuses = async () => {
+    const checkAndUpdate = async (matchesToCheck) => {
       try {
         const [liveRes, resultsRes] = await Promise.all([
           fetch("/api/cricketdata?path=currentMatches").then(r=>r.json()).catch(()=>({})),
@@ -4136,49 +4138,63 @@ ${aiMatchText.slice(0, 3000)}`;
         const resultsList = Array.isArray(resultsRes?.response) ? resultsRes.response : [];
         const completedIds = new Set(resultsList.map(m => String(m?.matchId || m?.id)).filter(Boolean));
 
-        let changed = false;
-        const updated = matches.map(m => {
+        let matchesChanged = false;
+        let captainsChanged = false;
+        const updatedMatches = matches.map(m => {
           if (!m.cricbuzzId) return m;
           const id = String(m.cricbuzzId);
           if (m.status === "completed") return m;
-          if (completedIds.has(id)) { changed = true; return { ...m, status: "completed" }; }
-          if (liveIds.has(id)) { changed = true; return { ...m, status: "live" }; }
+          if (completedIds.has(id)) { matchesChanged = true; return { ...m, status: "completed" }; }
+          if (liveIds.has(id)) { matchesChanged = true; return { ...m, status: "live" }; }
           return m;
         });
-        if (changed) updMatches(updated);
-      } catch(e) { console.warn("Auto status update failed:", e.message); }
+        if (matchesChanged) updMatches(updatedMatches);
+
+        // Auto-lock C/VC for matches that just went live
+        const newCaptains = { ...captains };
+        matches.forEach(m => {
+          if (!m.cricbuzzId) return;
+          const id = String(m.cricbuzzId);
+          const isLive = liveIds.has(id) || completedIds.has(id);
+          const alreadyLocked = !!captains[m.id + "_locked"];
+          if (isLive && !alreadyLocked) {
+            newCaptains[m.id + "_locked"] = true;
+            captainsChanged = true;
+            pushNotif('match', `🔒 C/VC locked for ${m.team1} vs ${m.team2} — match is live!`, '🔒');
+          }
+        });
+        if (captainsChanged) updCaptains(newCaptains);
+
+      } catch(e) { console.warn("Auto status/lock check failed:", e.message); }
     };
 
     const timeouts = [];
-    const intervals = [];
+    const scheduled = new Set();
 
-    const scheduleForMatch = (matchMins) => {
+    const scheduleForMatch = (m, matchMins) => {
       const IST_OFFSET = 5.5 * 60 * 60 * 1000;
       const nowIST = new Date(Date.now() + IST_OFFSET);
       const nowMins = nowIST.getUTCHours() * 60 + nowIST.getUTCMinutes();
-      const nowMs = Date.now();
 
-      // Schedule +1, +2, +3 minute rapid checks
-      [1, 2, 3].forEach(offset => {
+      // C/VC lock checks: match time +0 and +1 min, then every 10 mins up to 5 hours
+      [0, 1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 120, 150, 180, 210, 240, 270, 300].forEach(offset => {
         const targetMins = matchMins + offset;
         const delayMs = (targetMins - nowMins) * 60 * 1000;
-        if (delayMs > 0 && delayMs < 5 * 60 * 60 * 1000) {
-          timeouts.push(setTimeout(autoUpdateStatuses, delayMs));
+        if (delayMs >= 0 && delayMs < 5.5 * 60 * 60 * 1000) {
+          timeouts.push(setTimeout(() => checkAndUpdate([m]), delayMs));
         }
       });
 
-      // Schedule every 30 mins from match start until 5 hours after
-      for (let i = 1; i <= 10; i++) {
-        const targetMins = matchMins + i * 30;
+      // Status checks: +1+2+3 then every 30 mins
+      [1, 2, 3, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300].forEach(offset => {
+        const targetMins = matchMins + offset;
         const delayMs = (targetMins - nowMins) * 60 * 1000;
         if (delayMs > 0 && delayMs < 5.5 * 60 * 60 * 1000) {
-          timeouts.push(setTimeout(autoUpdateStatuses, delayMs));
+          timeouts.push(setTimeout(() => checkAndUpdate([m]), delayMs));
         }
-      }
+      });
     };
 
-    // Every minute check for today's upcoming matches and schedule polls
-    const scheduled = new Set(); // track which matches we've scheduled for
     const masterCheck = () => {
       const IST_OFFSET = 5.5 * 60 * 60 * 1000;
       const nowIST = new Date(Date.now() + IST_OFFSET);
@@ -4191,10 +4207,9 @@ ${aiMatchText.slice(0, 3000)}`;
         const timeStr = m.time || "20:00";
         const [hh, mm] = timeStr.split(":").map(Number);
         const matchMins = hh * 60 + mm;
-        // Only schedule if within 10 mins before match
         if (nowMins >= matchMins - 10 && nowMins <= matchMins + 300) {
           scheduled.add(m.id);
-          scheduleForMatch(matchMins);
+          scheduleForMatch(m, matchMins);
         }
       });
     };
@@ -4205,7 +4220,6 @@ ${aiMatchText.slice(0, 3000)}`;
     return () => {
       clearInterval(masterInterval);
       timeouts.forEach(clearTimeout);
-      intervals.forEach(clearInterval);
     };
   }, [appReady, matches.length]);
 
