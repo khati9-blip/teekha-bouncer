@@ -683,6 +683,9 @@ export default function TransferWindow({
           <div style={{background:T.card,borderRadius:10,padding:"10px 16px",textAlign:"center",border:`1px solid ${T.border}`}}>
             <div style={{fontSize:10,color:T.muted,letterSpacing:2,marginBottom:4}}>NEXT WINDOW OPENS</div>
             <Timer deadline={nextAutoOpen} label={"UNTIL " + (pitchConfig?.transferStart || "SUNDAY 11:59 PM") + " IST"} />
+            <div style={{marginTop:8,paddingTop:8,borderTop:`1px solid ${T.border}33`}}>
+              <div style={{fontSize:10,color:T.muted}}>🔄 <span style={{color:T.sub}}>{pitchConfig?.transferStart || "Sunday 11:59 PM"} → {pitchConfig?.transferEnd || "Monday 11:00 AM"} IST</span></div>
+            </div>
           </div>
         )}
         {phase === "release" && (
@@ -887,7 +890,10 @@ export default function TransferWindow({
         <div style={{background:T.card,borderRadius:12,border:`1px solid ${T.border}`,padding:40,textAlign:"center"}}>
           <div style={{fontSize:48,marginBottom:12}}>🔒</div>
           <div style={{fontFamily:fonts.display,fontSize:22,fontWeight:700,color:T.muted,letterSpacing:2,marginBottom:8}}>TRANSFER WINDOW CLOSED</div>
-          <div style={{fontSize:13,color:T.muted}}>Opens automatically every {pitchConfig?.transferStart || "Sunday at 11:59 PM IST"}</div>
+          <div style={{fontSize:13,color:T.muted,marginBottom:12}}>Opens automatically every {pitchConfig?.transferStart || "Sunday at 11:59 PM IST"}</div>
+          <div style={{display:"inline-flex",flexDirection:"column",gap:4,background:T.bg,borderRadius:10,padding:"10px 20px",border:`1px solid ${T.border}`}}>
+            <div style={{fontSize:11,color:T.muted}}>🔄 Window: <span style={{color:T.text,fontWeight:600}}>{pitchConfig?.transferStart || "Sunday 11:59 PM"} → {pitchConfig?.transferEnd || "Monday 11:00 AM"} IST</span></div>
+          </div>
         </div>
       )}
 
