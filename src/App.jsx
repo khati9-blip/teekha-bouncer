@@ -4909,6 +4909,7 @@ ${aiMatchText.slice(0, 3000)}`;
                   ownershipLog={ownershipLog}
                   safePlayers={safePlayers}
                   pushNotif={pushNotif}
+                  pitchConfig={pitchConfig}
                   onUpdateSnatch={(val)=>{setSnatch(val);storeSet("snatch",val);}}
                   onUpdateAssignments={updAssign}
                   onUpdateOwnershipLog={(val)=>{setOwnershipLog(val);storeSet("ownershipLog",val);}}

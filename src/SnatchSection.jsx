@@ -68,7 +68,7 @@ export default function SnatchSection({
   leaderboard, myTeam, isAdmin, unlocked, withPassword,
   teamIdentity, user, pitch,
   onUpdateSnatch, onUpdateAssignments, onUpdateOwnershipLog, ownershipLog,
-  safePlayers, onUpdateSafePlayers, pushNotif
+  safePlayers, onUpdateSafePlayers, pushNotif, pitchConfig
 }) {
   const [windowStatus, setWindowStatus] = useState(getSnatchWindowStatus());
   const [pinInput, setPinInput] = useState("");
@@ -234,6 +234,10 @@ export default function SnatchSection({
         </div>
         <div style={{fontSize:10,color:"#4A5E78",letterSpacing:2,marginTop:4}}>
           {windowStatus.open ? "UNTIL WINDOW CLOSES" : "UNTIL WINDOW OPENS · SAT 12:00 AM IST"}
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:3,marginTop:10,padding:"8px 0",borderTop:"1px solid #1E2D4533"}}>
+          <div style={{fontSize:11,color:"#4A5E78"}}>🪟 Window: <span style={{color:"#E2EAF4",fontWeight:600}}>{pitchConfig?.snatchWindow ? pitchConfig.snatchWindow.replace(" to ", " → ") + " IST" : "Sat 12:00 AM → 12:00 PM IST"}</span></div>
+          <div style={{fontSize:11,color:"#4A5E78"}}>↩️ Return: <span style={{color:"#E2EAF4",fontWeight:600}}>{pitchConfig?.snatchReturn || "Friday 11:58 PM"} IST</span></div>
         </div>
       </div>
 
