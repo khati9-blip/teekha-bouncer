@@ -6167,7 +6167,23 @@ function EditPointsForm({ config, onSave, onCancel }) {
 function ProposeRulesForm({ teams, eligibleVoters, onPropose, withPassword, tournamentStarted, isAdmin, onApplyDirect }) {
   const [open, setOpen] = useState(false);
   const days = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
-  const times = ["12:00 AM","12:30 AM","1:00 AM","1:30 AM","2:00 AM","3:00 AM","4:00 AM","5:00 AM","6:00 AM","7:00 AM","8:00 AM","9:00 AM","10:00 AM","10:30 AM","11:00 AM","11:30 AM","11:45 AM","11:58 AM","11:59 AM","12:00 PM","12:30 PM","1:00 PM","2:00 PM","3:00 PM","4:00 PM","5:00 PM","6:00 PM","7:00 PM","8:00 PM","9:00 PM","10:00 PM","11:00 PM","11:30 PM","11:45 PM","11:58 PM","11:59 PM"];
+  // Generate all times in 30-min intervals + key times
+  const times = (() => {
+    const t = [];
+    for (let h = 0; h < 24; h++) {
+      for (let m = 0; m < 60; m += 30) {
+        const ampm = h < 12 ? "AM" : "PM";
+        const hh = h === 0 ? 12 : h > 12 ? h - 12 : h;
+        const mm = m === 0 ? "00" : "30";
+        t.push(`${hh}:${mm} ${ampm}`);
+      }
+    }
+    // Add key times not in 30-min grid
+    ["11:45 AM","11:58 AM","11:59 AM","11:45 PM","11:58 PM","11:59 PM"].forEach(x => {
+      if (!t.includes(x)) t.push(x);
+    });
+    return t;
+  })();
 
   const [tsDay, setTsDay] = useState("Sunday");
   const [tsTime, setTsTime] = useState("11:59 PM");
@@ -6189,16 +6205,9 @@ function ProposeRulesForm({ teams, eligibleVoters, onPropose, withPassword, tour
         <select value={day} onChange={e=>setDay(e.target.value)} style={{flex:"0 0 120px",background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"8px 10px",color:T.text,fontSize:13,fontFamily:fonts.body,cursor:"pointer",outline:"none"}}>
           {days.map(d=><option key={d} value={d}>{d}</option>)}
         </select>
-        <datalist id={listId}>
-          {times.map(t=><option key={t} value={t}/>)}
-        </datalist>
-        <input
-          list={listId}
-          value={time}
-          onChange={e=>setTime(e.target.value)}
-          placeholder="e.g. 11:59 PM"
-          style={{flex:1,background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"8px 10px",color:T.text,fontSize:13,fontFamily:fonts.body,outline:"none"}}
-        />
+        <select value={time} onChange={e=>setTime(e.target.value)} style={{flex:1,background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"8px 10px",color:T.text,fontSize:13,fontFamily:fonts.body,cursor:"pointer",outline:"none"}}>
+          {times.map(t=><option key={t} value={t}>{t}</option>)}
+        </select>
       </div>
     </div>
   );
