@@ -2840,7 +2840,6 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
     const ist = new Date(now.getTime() + now.getTimezoneOffset() * 60000 + 5.5 * 3600000);
     const day = ist.getUTCDay(), h = ist.getUTCHours(), m = ist.getUTCMinutes();
 
-    // Parse transfer window times from pitchConfig or use defaults
     const parseDay = (str, def) => {
       const days = {Sunday:0,Monday:1,Tuesday:2,Wednesday:3,Thursday:4,Friday:5,Saturday:6};
       if (!str) return def;
@@ -2858,15 +2857,24 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
       return {h: hh, m: mm};
     };
 
-    const startDay = parseDay(pitchConfig?.transferStart, 0); // default Sunday
-    const startTime = parseTime(pitchConfig?.transferStart, 23, 59); // default 11:59 PM
-    const endDay = parseDay(pitchConfig?.transferEnd, 1); // default Monday
-    const endTime = parseTime(pitchConfig?.transferEnd, 11, 0); // default 11:00 AM
+    const startDay = parseDay(pitchConfig?.transferStart, 0);
+    const startTime = parseTime(pitchConfig?.transferStart, 23, 59);
+    const endDay = parseDay(pitchConfig?.transferEnd, 1);
+    const endTime = parseTime(pitchConfig?.transferEnd, 11, 0);
 
+    // Must be after start time on start day, OR before end time on end day
     const afterStart = day === startDay && (h > startTime.h || (h === startTime.h && m >= startTime.m));
     const beforeEnd = day === endDay && (h < endTime.h || (h === endTime.h && m < endTime.m));
-    const inWindow = afterStart || (day === endDay && beforeEnd) || (startDay !== endDay && day > startDay && day < endDay);
 
+    // Handle week wrap: if start is Sunday (0) and end is Monday (1)
+    // any day strictly between them (in weekly cycle) is also in window
+    const betweenDays = startDay !== endDay && (
+      startDay < endDay
+        ? (day > startDay && day < endDay)
+        : (day > startDay || day < endDay) // wraps around week
+    );
+
+    const inWindow = afterStart || beforeEnd || betweenDays;
     if (!inWindow) return;
     const updated = { ...transfers, phase: 'release', weekNum: transfers.weekNum };
     updTransfers(updated);
