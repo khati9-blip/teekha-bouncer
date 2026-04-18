@@ -220,19 +220,21 @@ export default function SnatchSection({
       </div>
 
       {/* Window status */}
-      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14,flexWrap:"wrap"}}>
-        <div style={{display:"flex",alignItems:"center",gap:6}}>
-          <div style={{width:8,height:8,borderRadius:"50%",background:windowStatus.open?"#2ECC71":"#FF3D5A",flexShrink:0}} />
-          <span style={{fontSize:12,color:windowStatus.open?"#2ECC71":"#FF3D5A",fontWeight:700}}>
+      <div style={{textAlign:"center",marginBottom:14,padding:"12px 0"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8,marginBottom:6}}>
+          <div style={{width:10,height:10,borderRadius:"50%",background:windowStatus.open?"#2ECC71":"#FF3D5A",flexShrink:0}} />
+          <span style={{fontFamily:"Rajdhani,sans-serif",fontSize:16,color:windowStatus.open?"#2ECC71":"#FF3D5A",fontWeight:700,letterSpacing:2}}>
             {windowStatus.open ? "WINDOW OPEN" : "WINDOW CLOSED"}
           </span>
         </div>
-        <span style={{fontSize:11,color:"#4A5E78"}}>
+        <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:36,fontWeight:800,color:windowStatus.open?"#2ECC71":"#F5A623",letterSpacing:2,lineHeight:1}}>
           {windowStatus.open
-            ? "Closes in " + formatMins(windowStatus.minsLeft)
-            : "Opens Sat 12:00 AM IST · " + formatMins(windowStatus.minsUntil) + " away"}
-        </span>
-        <span style={{fontSize:11,color:"#4A5E78",marginLeft:"auto"}}>Sat 12:00 AM → 12:00 PM IST</span>
+            ? formatMins(windowStatus.minsLeft)
+            : formatMins(windowStatus.minsUntil)}
+        </div>
+        <div style={{fontSize:10,color:"#4A5E78",letterSpacing:2,marginTop:4}}>
+          {windowStatus.open ? "UNTIL WINDOW CLOSES" : "UNTIL WINDOW OPENS · SAT 12:00 AM IST"}
+        </div>
       </div>
 
       {/* Eligibility */}
