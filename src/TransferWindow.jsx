@@ -229,7 +229,6 @@ export default function TransferWindow({
 
   // ── HELPERS ────────────────────────────────────────────────────────────────
   const getReleasedPlayers = (teamId) => {
-    // Players picked by OTHER teams (not available anymore regardless of our releases)
     const pickedByOthers = new Set(
       (transfers?.tradedPairs || [])
         .filter(tp => tp.teamId !== teamId)
@@ -238,13 +237,10 @@ export default function TransferWindow({
     return (transfers?.releases?.[teamId] || [])
       .map(pid => players.find(p => p.id === pid))
       .filter(Boolean)
-      .filter(p => {
-        // Always include if this team already traded them (for display)
-        const tradedByUs = (transfers?.tradedPairs || []).some(tp => tp.teamId === teamId && tp.releasedPid === p.id);
-        if (tradedByUs) return true;
-        // Exclude if picked by another team — that slot is gone
-        return !pickedByOthers.has(p.id);
-      });
+      .map(p => ({
+        ...p,
+        pickedByOther: pickedByOthers.has(p.id), // mark if another team picked this player
+      }));
   };
 
   const getTradedPairs = (teamId) =>
@@ -288,6 +284,126 @@ export default function TransferWindow({
   };
 
   const currentPickTeamId = transfers?.currentPickTeam;
+
+  // After every trade — check if any released player now has no valid pool match
+  // If so, immediately return it to its team and remove from pool
+  React.useEffect(() => {
+    if (phase !== "trade") return;
+    const currentIneligible = new Set(transfers.ineligible || []);
+    const newlyIneligible = [];
+
+    teams.forEach(team => {
+      const tradedPids = new Set(getTradedPairs(team.id).map(t => t.releasedPid));
+      const releasedPids = transfers.releases?.[team.id] || [];
+
+      releasedPids.forEach(pid => {
+        if (tradedPids.has(pid)) return; // already traded ✅
+        if (currentIneligible.has(pid)) return; // already returned
+        // Check if this released player (in pool) has any valid match for THIS team
+        const rp = players.find(p => p.id === pid);
+        if (!rp) return;
+        const hasMatch = poolPlayers.some(pp =>
+          pp.id !== pid && // not itself
+          pp.role === rp.role &&
+          TIER_ORDER[pp.tier||""] <= TIER_ORDER[rp.tier||""]
+        );
+        if (!hasMatch) newlyIneligible.push({ pid, teamId: team.id });
+      });
+    });
+
+    if (newlyIneligible.length === 0) return;
+
+    // Return ineligible players to their teams
+    const newAssignments = { ...assignments };
+    const newPool = [...unsoldPool];
+    const newIneligible = [...(transfers.ineligible || [])];
+
+    newlyIneligible.forEach(({ pid, teamId }) => {
+      newAssignments[pid] = teamId; // return to original team
+      const idx = newPool.indexOf(pid);
+      if (idx > -1) newPool.splice(idx, 1); // remove from pool
+      newIneligible.push(pid);
+    });
+
+    // Check if current picking team now has nothing left
+    const currentTeamPids = transfers.releases?.[currentPickTeamId] || [];
+    const currentTeamTraded = new Set(getTradedPairs(currentPickTeamId).map(t => t.releasedPid));
+    const currentTeamHasMore = currentTeamPids.some(pid =>
+      !currentTeamTraded.has(pid) && !newIneligible.includes(pid)
+    );
+
+    const updatedTransfers = {
+      ...transfers,
+      ineligible: newIneligible,
+    };
+
+    if (!currentTeamHasMore && currentPickTeamId) {
+      const nextTeam = getNextPickTeam(currentPickTeamId, transfers.tradedPairs);
+      updatedTransfers.currentPickTeam = nextTeam || null;
+      updatedTransfers.pickDeadline = nextTeam ? new Date(Date.now() + 45 * 60 * 1000).toISOString() : null;
+      updatedTransfers.phase = nextTeam ? "trade" : "done";
+    }
+
+    onUpdateAssignments(newAssignments);
+    onUpdateUnsoldPool(newPool);
+    onUpdateTransfers(updatedTransfers);
+  }, [phase, JSON.stringify(poolPlayers.map(p=>p.id)), JSON.stringify(transfers.tradedPairs)]);
+
+  // Auto-return released players that have no valid replacement in pool
+  // Runs whenever pool changes (after each trade)
+  React.useEffect(() => {
+    if (phase !== "trade") return;
+    const currentIneligible = new Set(transfers.ineligible || []);
+    const newlyIneligible = [];
+
+    teams.forEach(team => {
+      const released = getReleasedPlayers(team.id);
+      const tradedPids = new Set(getTradedPairs(team.id).map(t => t.releasedPid));
+
+      released.forEach(rp => {
+        if (tradedPids.has(rp.id)) return; // already traded
+        if (currentIneligible.has(rp.id)) return; // already returned
+        if (rp.pickedByOther) return; // picked by another team — handled by reversal
+        // Check if any valid pool player exists for this released player
+        const hasMatch = poolPlayers.some(pp =>
+          pp.role === rp.role && TIER_ORDER[pp.tier||""] <= TIER_ORDER[rp.tier||""]
+        );
+        if (!hasMatch) newlyIneligible.push({ teamId: team.id, pid: rp.id });
+      });
+    });
+
+    if (newlyIneligible.length === 0) return;
+
+    // Mark as ineligible and return to their teams
+    const newAssignments = { ...assignments };
+    const newPool = [...unsoldPool];
+    newlyIneligible.forEach(({ teamId, pid }) => {
+      newAssignments[pid] = teamId; // return to team
+      const idx = newPool.indexOf(pid);
+      if (idx > -1) newPool.splice(idx, 1); // remove from pool
+    });
+
+    const ineligible = [...currentIneligible, ...newlyIneligible.map(x => x.pid)];
+
+    // Check if current picking team's turn should be skipped
+    const nextTeam = getNextPickTeam(currentPickTeamId, transfers.tradedPairs || []);
+    const currentTeamStillHasPicks = (() => {
+      if (!currentPickTeamId) return false;
+      const rel = getReleasedPlayers(currentPickTeamId);
+      const traded = new Set(getTradedPairs(currentPickTeamId).map(t => t.releasedPid));
+      return rel.some(p => !traded.has(p.id) && !ineligible.includes(p.id) && !p.pickedByOther);
+    })();
+
+    onUpdateAssignments(newAssignments);
+    onUpdateUnsoldPool(newPool);
+    onUpdateTransfers({
+      ...transfers,
+      ineligible,
+      currentPickTeam: currentTeamStillHasPicks ? currentPickTeamId : nextTeam,
+      pickDeadline: currentTeamStillHasPicks ? transfers.pickDeadline : (nextTeam ? new Date(Date.now() + 45 * 60 * 1000).toISOString() : null),
+      phase: (!currentTeamStillHasPicks && !nextTeam) ? "done" : "trade",
+    });
+  }, [phase, poolPlayers.map(p=>p.id).join(","), (transfers.tradedPairs||[]).length]);
   const currentPickTeam = teams.find(t => t.id === currentPickTeamId);
   const isMyTurn = currentPickTeamId === myTeamId;
   const effectiveTeamId = myTeamId || (unlocked ? currentPickTeamId : null);
@@ -1076,8 +1192,11 @@ export default function TransferWindow({
                       const pair = pairs.find(pr => pr.releasedPid === p.id);
                       const incoming = pair ? players.find(x => x.id === pair.pickedPid) : null;
                       const isIneligible = (transfers.ineligible||[]).includes(p.id);
+                      const takenByTeam = p.pickedByOther ? teams.find(t =>
+                        (transfers.tradedPairs||[]).some(tp => tp.pickedPid === p.id && tp.teamId === t.id)
+                      ) : null;
                       return (
-                        <div key={p.id} style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+                        <div key={p.id} style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",opacity:p.pickedByOther?0.6:1}}>
                           {/* Released player */}
                           <div style={{display:"flex",alignItems:"center",gap:5,background:T.dangerBg,border:`1px solid ${T.danger}33`,borderRadius:8,padding:"5px 10px"}}>
                             <span style={{fontSize:12}}>⬇️</span>
@@ -1095,6 +1214,13 @@ export default function TransferWindow({
                                 <span style={{fontSize:12,color:T.success,fontWeight:700}}>{incoming.name}</span>
                                 <TierBadge tier={incoming.tier} />
                                 <span style={{fontSize:10,color:T.muted}}>{incoming.role}</span>
+                              </div>
+                            </>
+                          ) : takenByTeam ? (
+                            <>
+                              <span style={{color:T.muted,fontSize:14}}>→</span>
+                              <div style={{background:"#4A5E7822",border:"1px solid #4A5E7844",borderRadius:8,padding:"5px 10px"}}>
+                                <span style={{fontSize:11,color:T.muted}}>🚫 taken by <span style={{color:takenByTeam.color,fontWeight:700}}>{takenByTeam.name}</span></span>
                               </div>
                             </>
                           ) : isIneligible ? (
@@ -1206,17 +1332,18 @@ export default function TransferWindow({
                       const traded = pairs.find(pr => pr.releasedPid === p.id);
                       const ineligible = (transfers.ineligible||[]).includes(p.id);
                       return (
-                        <div key={p.id} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 10px",background:traded?"#2ECC7111":ineligible?"#4A5E7822":"#080C14",borderRadius:8,border:"1px solid "+(traded?"#2ECC7144":ineligible?"#4A5E7844":"#1E2D44"),marginBottom:4}}>
-                          <span style={{fontSize:11}}>{traded?"✅":ineligible?"↩️":"📤"}</span>
+                        <div key={p.id} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 10px",background:traded?"#2ECC7111":p.pickedByOther?"#FF3D5A11":ineligible?"#4A5E7822":"#080C14",borderRadius:8,border:"1px solid "+(traded?"#2ECC7144":p.pickedByOther?"#FF3D5A33":ineligible?"#4A5E7844":"#1E2D44"),marginBottom:4}}>
+                          <span style={{fontSize:11}}>{traded?"✅":p.pickedByOther?"🚫":ineligible?"↩️":"📤"}</span>
                           <div style={{flex:1}}>
                             <div style={{display:"flex",alignItems:"center",gap:4}}>
-                              <span style={{fontWeight:700,fontSize:12,color:traded?"#2ECC71":ineligible?"#4A5E78":"#E2EAF4",textDecoration:traded?"line-through":"none"}}>{p.name}</span>
+                              <span style={{fontWeight:700,fontSize:12,color:traded?"#2ECC71":p.pickedByOther?"#FF3D5A":ineligible?"#4A5E78":"#E2EAF4",textDecoration:(traded||p.pickedByOther)?"line-through":"none"}}>{p.name}</span>
                               <TierBadge tier={p.tier} />
                             </div>
                             <div style={{fontSize:10,color:T.muted}}>{p.role}</div>
                           </div>
                           {traded && <span style={{fontSize:10,color:T.success,fontWeight:700}}>TRADED</span>}
-                          {ineligible && !traded && <span style={{fontSize:10,color:T.muted,fontWeight:700}}>RETURNED</span>}
+                          {p.pickedByOther && !traded && <span style={{fontSize:10,color:"#FF3D5A",fontWeight:700}}>TAKEN</span>}
+                          {ineligible && !traded && !p.pickedByOther && <span style={{fontSize:10,color:T.muted,fontWeight:700}}>RETURNED</span>}
                         </div>
                       );
                     })}
