@@ -2880,14 +2880,13 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
     if (!inWindow) return;
 
     // Calculate correct deadline
-    const endDay = parseDay(pitchConfig?.transferEnd, 1);
-    const endTime = parseTime(pitchConfig?.transferEnd, 11, 0);
-    const deadlineIST = new Date();
-    const istNow2 = new Date(deadlineIST.getTime() + deadlineIST.getTimezoneOffset() * 60000 + 5.5 * 3600000);
-    const daysUntilEnd = (endDay - istNow2.getUTCDay() + 7) % 7;
+    const dlEndDay = parseDay(pitchConfig?.transferEnd, 1);
+    const dlEndTime = parseTime(pitchConfig?.transferEnd, 11, 0);
+    const istNow2 = new Date(Date.now() + new Date().getTimezoneOffset() * 60000 + 5.5 * 3600000);
+    const daysUntilEnd = (dlEndDay - istNow2.getUTCDay() + 7) % 7;
     const deadline = new Date(istNow2);
     deadline.setUTCDate(istNow2.getUTCDate() + daysUntilEnd);
-    deadline.setUTCHours(endTime.h - 5, endTime.m - 30 + 60, 0, 0); // approx IST→UTC
+    deadline.setUTCHours(dlEndTime.h - 5, dlEndTime.m + 30, 0, 0);
 
     const updated = { ...transfers, phase: 'release', weekNum: transfers.weekNum, releaseDeadline: deadline.toISOString() };
     updTransfers(updated);
