@@ -2594,6 +2594,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
     pickDeadline: null,
     history: [],  // all past transfers
   });
+  const [transfersLoaded, setTransfersLoaded] = useState(false);
   const [snatch, setSnatch] = useState({
     weekNum: 1,
     active: null, // {byTeamId, pid, fromTeamId, pointsAtSnatch, startDate}
@@ -2633,7 +2634,8 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
         if(nt) setNumTeams(nt);
         if(ph) setPwHash(ph);
         else { const ah = await sbGet(_pitchId + "_adminHash"); if(ah) { setPwHash(ah); storeSet("pwhash", ah); } }
-        if(tr && typeof tr === 'object') setTransfers(tr);
+        if(tr && typeof tr === 'object') { setTransfers(tr); setTransfersLoaded(true); }
+        else setTransfersLoaded(true); // even if null, we know Supabase responded
         if(sn && typeof sn === 'object') setSnatch(sn);
         if(ti && typeof ti === 'object') setTeamIdentity(ti);
         if(pc && typeof pc === 'object') setPointsConfig(prev=>({...prev,...pc}));
@@ -2834,13 +2836,8 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   // it's within the configured transfer window and still closed.
   useEffect(() => {
     if (!appReady) return;
+    if (!transfersLoaded) return; // wait for Supabase to respond before acting
     if (transfers.phase !== 'closed') return;
-    // Guard: don't auto-open if transfers hasn't loaded yet (weekNum=1, no history, no releases)
-    // This prevents overwriting real data with empty defaults on first load
-    const transfersLoaded = transfers.weekNum > 1 || 
-      (transfers.history && transfers.history.length > 0) ||
-      Object.values(transfers.releases || {}).some(r => r.length > 0);
-    if (!transfersLoaded) return;
 
     const now = new Date();
     const ist = new Date(now.getTime() + now.getTimezoneOffset() * 60000 + 5.5 * 3600000);
@@ -2891,7 +2888,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
     const updated = { ...transfers, phase: 'release', weekNum: transfers.weekNum, releaseDeadline: deadline.toISOString() };
     updTransfers(updated);
     pushNotif('transfer', 'Transfer window is now open — release your players!', '📤');
-  }, [appReady, transfers.phase, transfers.weekNum, pitchConfig]);
+  }, [appReady, transfersLoaded, transfers.phase, transfers.weekNum, pitchConfig]);
 
   // ── LOAD USER-SPECIFIC NOTES & HIGHLIGHTS ────────────────────────────────
   useEffect(() => {
