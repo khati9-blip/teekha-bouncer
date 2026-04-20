@@ -608,7 +608,7 @@ export default function TransferWindow({
   // ── ADMIN ACTIONS ─────────────────────────────────────────────────────────
   const startTradePhase = () => withPassword(() => {
     const totalPicks = Object.values(transfers.releases || {}).reduce((s, arr) => s + arr.length, 0) || (teams.length * 3);
-    const msPerPick = 30 * 60 * 1000; // 30 mins per pick
+    const msPerPick = 45 * 60 * 1000; // 45 mins per pick
 
     const firstTeam = pickOrder[0]?.id;
     const deadline = new Date(Date.now() + msPerPick).toISOString();
@@ -1158,7 +1158,78 @@ export default function TransferWindow({
               <div style={{fontFamily:fonts.display,fontSize:24,fontWeight:700,color:currentPickTeam.color,marginBottom:12,letterSpacing:1}}>
                 {currentPickTeam.name} {isMyTurn ? "— YOUR TURN 🎯" : ""}
               </div>
-              {transfers.pickDeadline && <Timer deadline={transfers.pickDeadline} label="TO MAKE A PICK" />}
+              {transfers.pickDeadline && <Timer deadline={transfers.pickDeadline} label="TO MAKE A PICK"
+                onExpire={() => {
+                  if (phase !== "trade" || !currentPickTeamId) return;
+                  // Auto-pick: for each remaining released player, pick a random valid pool player
+                  const actingId = currentPickTeamId;
+                  const tradedPids = new Set(getTradedPairs(actingId).map(t => t.releasedPid));
+                  const ineligible = new Set(transfers.ineligible || []);
+                  const remaining = (transfers.releases?.[actingId] || [])
+                    .filter(pid => !tradedPids.has(pid) && !ineligible.has(pid));
+
+                  if (remaining.length === 0) { handlePass(); return; }
+
+                  // Try to auto-pick for each remaining released player
+                  let currentPool = [...poolPlayers];
+                  let currentAssignments = { ...assignments };
+                  let currentTradedPairs = [...(transfers.tradedPairs || [])];
+                  let currentOwnershipLog = { ...(ownershipLog || {}) };
+                  let autoPickedAny = false;
+                  const now = new Date().toISOString();
+
+                  remaining.forEach(releasedPid => {
+                    const rp = players.find(p => p.id === releasedPid);
+                    if (!rp) return;
+                    // Find valid matches from current pool
+                    const validPool = currentPool.filter(pp =>
+                      pp.role === rp.role && TIER_ORDER[pp.tier||""] <= TIER_ORDER[rp.tier||""]
+                    );
+                    if (validPool.length === 0) return; // no match — will be handled by ineligible logic
+
+                    // Pick random valid player
+                    const picked = validPool[Math.floor(Math.random() * validPool.length)];
+
+                    // Apply trade
+                    currentAssignments[picked.id] = actingId;
+                    if (currentAssignments[releasedPid] === actingId) delete currentAssignments[releasedPid];
+
+                    // Update ownership log
+                    if (!currentOwnershipLog[releasedPid]) currentOwnershipLog[releasedPid] = [];
+                    currentOwnershipLog[releasedPid] = currentOwnershipLog[releasedPid].map(o =>
+                      o.teamId === actingId && !o.to ? { ...o, to: now } : o
+                    );
+                    if (!currentOwnershipLog[picked.id]) currentOwnershipLog[picked.id] = [];
+                    currentOwnershipLog[picked.id] = currentOwnershipLog[picked.id].map(o => !o.to ? { ...o, to: now } : o);
+                    currentOwnershipLog[picked.id].push({ teamId: actingId, from: now, to: null });
+
+                    // Record trade pair
+                    currentTradedPairs.push({ teamId: actingId, releasedPid, pickedPid: picked.id, week: transfers.weekNum, timestamp: now, autoPicked: true });
+
+                    // Update pool
+                    currentPool = currentPool.filter(p => p.id !== picked.id);
+                    if (!currentPool.find(p => p.id === releasedPid)) currentPool.push(rp);
+
+                    autoPickedAny = true;
+                  });
+
+                  if (!autoPickedAny) { handlePass(); return; }
+
+                  const nextTeam = getNextPickTeam(actingId, currentTradedPairs);
+                  const deadline = nextTeam ? new Date(Date.now() + 45 * 60 * 1000).toISOString() : null;
+
+                  onUpdateAssignments(currentAssignments);
+                  onUpdateUnsoldPool(currentPool.map(p => p.id));
+                  onUpdateOwnershipLog(currentOwnershipLog);
+                  onUpdateTransfers({
+                    ...transfers,
+                    tradedPairs: currentTradedPairs,
+                    currentPickTeam: nextTeam || null,
+                    pickDeadline: deadline,
+                    phase: nextTeam ? "trade" : "done",
+                  });
+                }}
+              />}
               {transfers.msPerPick && (
                 <div style={{fontSize:11,color:T.muted,marginTop:8}}>
                   ⏱ {Math.round(transfers.msPerPick/60000)} min per pick
