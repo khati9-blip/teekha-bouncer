@@ -133,12 +133,21 @@ export default function TransferWindow({
     const istNow = new Date(now.getTime() + istOffset);
     const day = istNow.getUTCDay();
     const h = istNow.getUTCHours(), m = istNow.getUTCMinutes();
-    const isEndDayBeforeDeadline = day === transferEnd.day &&
-      (h < transferEnd.h - 6 || (h === transferEnd.h - 6 && m < transferEnd.m));
-    const daysUntil = isEndDayBeforeDeadline ? 0 : (transferEnd.day - day + 7) % 7 || 7;
+
+    // Convert IST end time to UTC hours/minutes
+    const endHourIST = transferEnd.h;
+    const endMinIST = transferEnd.m;
+    const endHourUTC = endHourIST - 5;
+    const endMinUTC = endMinIST - 30;
+
+    // If today is the end day and we haven't passed the deadline yet — use today
+    const isBeforeDeadlineToday = day === transferEnd.day &&
+      (h < endHourIST || (h === endHourIST && m < endMinIST));
+
+    const daysUntil = isBeforeDeadlineToday ? 0 : (transferEnd.day - day + 7) % 7 || 7;
     const next = new Date(istNow);
     next.setUTCDate(istNow.getUTCDate() + daysUntil);
-    next.setUTCHours(transferEnd.h - 6, transferEnd.m + 30, 0, 0); // convert IST to UTC approx
+    next.setUTCHours(endHourUTC, endMinUTC + 30, 0, 0);
     return next.toISOString();
   };
 
@@ -162,7 +171,14 @@ export default function TransferWindow({
   const [tradeConfirmModal, setTradeConfirmModal] = useState(null); // {poolPlayer, releasedPlayer}
   const [resetConfirm, setResetConfirm] = useState(false);
 
-  const phase = transfers?.phase || "closed";
+  const rawPhase = transfers?.phase || "closed";
+  const storedDeadline = transfers?.releaseDeadline;
+  const calculatedDeadline = getNextTransferEndIST();
+  // If stored deadline exists and passed — close. If no stored deadline, use calculated.
+  const releaseDeadlinePassed = rawPhase === "release" && (
+    storedDeadline ? new Date(storedDeadline) < new Date() : new Date(calculatedDeadline) < new Date()
+  );
+  const phase = releaseDeadlinePassed ? "closed" : rawPhase;
   const myTeamId = myTeam?.id || sessionTeamId;
   const isPlayerSafe = (pid) => Object.values(safePlayers || {}).some(arr => arr.includes(pid));
   const sortedTeams = leaderboard.map(t => teams.find(x => x.id === t.id)).filter(Boolean);
@@ -655,7 +671,7 @@ export default function TransferWindow({
 
   // ── NEXT AUTO OPEN INFO ──────────────────────────────────────────────────
   const nextAutoOpen = getNextTransferStartIST();
-  const releaseDeadline = transfers?.releaseDeadline || getNextTransferEndIST();
+  const releaseDeadline = storedDeadline || calculatedDeadline;
 
   // ── RENDER ────────────────────────────────────────────────────────────────
   const phaseBadge = { closed:"#4A5E78", release:"#F5A623", trade:"#2ECC71", done:"#4F8EF7" };
