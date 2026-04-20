@@ -1570,23 +1570,16 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
 
       // Reset transfers to closed state — don't inherit live window from original
       const originalTransfers = await sbGet(cloneModal.id + "_transfers") || {};
-      await sbSet(cloneId + "_transfers", {
-        ...originalTransfers,
-        phase: "closed",
-        releases: {},
-        tradedPairs: [],
-        currentPickTeam: null,
-        pickDeadline: null,
-        releaseDeadline: null,
-      });
+      await sbSet(cloneId + "_transfers", originalTransfers);
 
-      // Create fresh pitchConfig with defaults for clone
-      await sbSet(cloneId + "_pitchConfig", {
+      // Copy pitchConfig exactly
+      const originalPitchConfig = await sbGet(cloneModal.id + "_pitchConfig") || {
         transferStart: "Sunday 11:59 PM",
         transferEnd: "Monday 11:00 AM",
         snatchReturn: "Friday 11:58 PM",
         snatchWindow: "Saturday 12:00 AM to Saturday 12:00 PM",
-      });
+      };
+      await sbSet(cloneId + "_pitchConfig", originalPitchConfig);
 
       // Save clone pitch to pitch list
       const updated = [...pitches, clonePitch];
