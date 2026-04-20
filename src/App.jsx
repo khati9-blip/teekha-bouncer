@@ -2893,9 +2893,10 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
         : (day > startDay || day < endDay)
     );
 
-    // Must be AFTER start time — beforeEnd alone is not enough
     const sameDay = startDay === endDay;
     const inWindow = afterStart || (!sameDay && betweenDays) || (!sameDay && day === endDay && beforeEnd);
+
+    console.log("AUTO-OPEN CHECK:", { day, h, m, startDay, startTime, endDay, endTime, afterStart, beforeEnd, betweenDays, sameDay, inWindow, pitchConfigStart: pitchConfig?.transferStart });
     if (!inWindow) return;
 
     // Calculate correct deadline using total minutes for accurate IST→UTC conversion
