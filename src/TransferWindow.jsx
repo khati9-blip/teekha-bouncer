@@ -120,10 +120,18 @@ export default function TransferWindow({
     const istOffset = 5.5 * 60 * 60 * 1000;
     const istNow = new Date(now.getTime() + istOffset);
     const day = istNow.getUTCDay();
-    const daysUntil = day === transferStart.day ? 7 : (transferStart.day - day + 7) % 7 || 7;
+    const h = istNow.getUTCHours(), m = istNow.getUTCMinutes();
+
+    const isBeforeStartToday = day === transferStart.day &&
+      (h < transferStart.h || (h === transferStart.h && m < transferStart.m));
+
+    // If today is start day and we haven't hit start time yet — use today
+    // If today is start day but already past — next occurrence is next week
+    const daysUntil = isBeforeStartToday ? 0 : (transferStart.day - day + 7) % 7 || 7;
+
     const next = new Date(istNow);
     next.setUTCDate(istNow.getUTCDate() + daysUntil);
-    next.setUTCHours(transferStart.h - 5, transferStart.m - 30, 0, 0); // convert IST to UTC
+    next.setUTCHours(transferStart.h - 5, transferStart.m - 30 < 0 ? transferStart.m + 30 : transferStart.m - 30, 0, 0);
     return next.toISOString();
   };
 
