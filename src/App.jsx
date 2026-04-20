@@ -3864,7 +3864,7 @@ ${aiMatchText.slice(0, 3000)}`;
           const matchDate = m.date;
           const snatchStart = histSnatchedAway.startDate.split('T')[0];
           const snatchEnd = histSnatchedAway.returnDate ? histSnatchedAway.returnDate.split('T')[0] : '2099-01-01';
-          if(matchDate >= snatchStart && matchDate <= snatchEnd) continue; // skip snatch week
+          if(matchDate >= snatchStart && matchDate < snatchEnd) continue; // skip snatch period — returnDate counts for original team
           const cap=captains[mid+"_"+teamId]||{};
           let pts=d.base;
           if(cap.captain===pid)pts*=2;else if(cap.vc===pid)pts*=1.5;
@@ -3947,7 +3947,7 @@ ${aiMatchText.slice(0, 3000)}`;
         if(histSnatchedAway) {
           const snatchStart = histSnatchedAway.startDate.split('T')[0];
           const snatchEnd = histSnatchedAway.returnDate ? histSnatchedAway.returnDate.split('T')[0] : '2099-01-01';
-          if(m.date >= snatchStart && m.date <= snatchEnd) continue;
+          if(m.date >= snatchStart && m.date < snatchEnd) continue; // strict less than — returnDate counts for original team
         }
         // Check if match falls within any ownership period for this team
         const owned = periods.length === 0
@@ -5446,7 +5446,14 @@ ${aiMatchText.slice(0, 3000)}`;
                     };
                     await storeSet("pitchConfig", newConfig);
                     setPitchConfig(newConfig);
-                    alert("✅ Config applied directly — no vote needed.");
+                    // If transfer window is currently open, close it so new timing takes effect
+                    if (transfers.phase === 'release') {
+                      const resetTransfers = { ...transfers, phase: 'closed', releaseDeadline: null };
+                      updTransfers(resetTransfers);
+                      alert("✅ Config applied — transfer window closed. Will reopen at new time.");
+                    } else {
+                      alert("✅ Config applied directly — no vote needed.");
+                    }
                   }}
                 />
               )}
