@@ -6290,15 +6290,14 @@ function ProposeRulesForm({ teams, eligibleVoters, onPropose, withPassword, tour
         t.push(`${hh}:${mm} ${ampm}`);
       }
     }
-    // Add key times not in 30-min grid
-    ["11:45 AM","11:58 AM","11:59 AM","11:45 PM","11:58 PM","11:59 PM"].forEach(x => {
-      if (!t.includes(x)) t.push(x);
-    });
+    // Add key times not in 30-min grid, inserted in correct position
+    const extras = ["11:45 AM","11:58 AM","11:59 AM","11:45 PM","11:58 PM","11:59 PM"];
+    extras.forEach(x => { if (!t.includes(x)) t.push(x); });
     return t;
   })();
 
   const [tsDay, setTsDay] = useState("Sunday");
-  const [tsTime, setTsTime] = useState("11:59 PM");
+  const [tsTime, setTsTime] = useState("11:30 PM");
   const [teDay, setTeDay] = useState("Monday");
   const [teTime, setTeTime] = useState("11:00 AM");
   const [ssDay, setSsDay] = useState("Saturday");
@@ -6317,9 +6316,18 @@ function ProposeRulesForm({ teams, eligibleVoters, onPropose, withPassword, tour
         <select value={day} onChange={e=>setDay(e.target.value)} style={{flex:"0 0 120px",background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"8px 10px",color:T.text,fontSize:13,fontFamily:fonts.body,cursor:"pointer",outline:"none"}}>
           {days.map(d=><option key={d} value={d}>{d}</option>)}
         </select>
-        <select value={time} onChange={e=>setTime(e.target.value)} style={{flex:1,background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"8px 10px",color:T.text,fontSize:13,fontFamily:fonts.body,cursor:"pointer",outline:"none"}}>
-          {times.map(t=><option key={t} value={t}>{t}</option>)}
-        </select>
+        <div style={{flex:1,position:"relative"}}>
+          <input
+            value={time}
+            onChange={e=>setTime(e.target.value)}
+            list={listId}
+            placeholder="e.g. 11:30 PM"
+            style={{width:"100%",boxSizing:"border-box",background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"8px 10px",color:T.text,fontSize:13,fontFamily:fonts.body,outline:"none"}}
+          />
+          <datalist id={listId}>
+            {times.map(t=><option key={t} value={t}>{t}</option>)}
+          </datalist>
+        </div>
       </div>
     </div>
   );
