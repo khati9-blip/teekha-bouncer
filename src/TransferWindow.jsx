@@ -621,7 +621,7 @@ export default function TransferWindow({
       tradedPairs: [],
       ineligible: [],
     });
-    alert(`✅ Trade phase started! 30 minutes per pick (${totalPicks} total picks).`);
+    setConfirmModal({ message: `✅ Trade phase started! 45 minutes per pick (${totalPicks} total picks).`, onConfirm: null });
   });
 
   const resetTradePhase = () => withPassword(() => {
@@ -724,7 +724,7 @@ export default function TransferWindow({
   });
 
   const startNewWeek = () => withPassword(() => {
-    if (!confirm("Start new week? This archives this window's history.")) return;
+    setConfirmModal({ message: "Start new week? This will archive this window's history and reset for a fresh transfer window.", onConfirm: () => {
     onUpdateTransfers({
       weekNum: (transfers.weekNum || 1) + 1,
       phase: "closed",
@@ -747,7 +747,7 @@ export default function TransferWindow({
     const { newAssignments: cleanAssign, newPool: cleanPool } = returnUntradedPlayers(transfers, assignments, unsoldPool);
     onUpdateAssignments(cleanAssign);
     onUpdateUnsoldPool(cleanPool);
-  });
+    }});
 
   const openReleaseManually = () => withPassword(() => doOpenRelease());
 
@@ -1539,18 +1539,27 @@ export default function TransferWindow({
       {/* CONFIRM MODAL */}
       {confirmModal && (
         <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.95)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:800,padding:16}}>
-          <div style={{background:T.card,borderRadius:16,border:`1px solid ${T.danger}44`,padding:24,width:"100%",maxWidth:380}}>
-            <div style={{fontSize:22,marginBottom:12}}>⚠️</div>
-            <div style={{fontFamily:fonts.display,fontSize:18,fontWeight:700,color:T.danger,marginBottom:12}}>{confirmModal.message}</div>
+          <div style={{background:T.card,borderRadius:16,border:`1px solid ${confirmModal.onConfirm ? T.danger+"44" : T.success+"44"}`,padding:24,width:"100%",maxWidth:380}}>
+            <div style={{fontSize:22,marginBottom:12}}>{confirmModal.onConfirm ? "⚠️" : "✅"}</div>
+            <div style={{fontFamily:fonts.display,fontSize:18,fontWeight:700,color:confirmModal.onConfirm ? T.danger : T.success,marginBottom:12}}>{confirmModal.message}</div>
             <div style={{display:"flex",gap:8}}>
-              <button onClick={()=>setConfirmModal(null)}
-                style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:8,padding:11,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>
-                CANCEL
-              </button>
-              <button onClick={()=>{confirmModal.onConfirm();setConfirmModal(null);}}
-                style={{flex:1,background:T.dangerBg,border:"1px solid #FF3D5A",borderRadius:8,padding:11,color:T.danger,fontFamily:fonts.body,fontWeight:800,fontSize:14,cursor:"pointer"}}>
-                CONFIRM
-              </button>
+              {confirmModal.onConfirm ? (
+                <>
+                  <button onClick={()=>setConfirmModal(null)}
+                    style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:8,padding:11,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>
+                    CANCEL
+                  </button>
+                  <button onClick={()=>{confirmModal.onConfirm();setConfirmModal(null);}}
+                    style={{flex:1,background:T.dangerBg,border:"1px solid #FF3D5A",borderRadius:8,padding:11,color:T.danger,fontFamily:fonts.body,fontWeight:800,fontSize:14,cursor:"pointer"}}>
+                    CONFIRM
+                  </button>
+                </>
+              ) : (
+                <button onClick={()=>setConfirmModal(null)}
+                  style={{flex:1,background:"#2ECC7122",border:"1px solid #2ECC7144",borderRadius:8,padding:11,color:T.success,fontFamily:fonts.body,fontWeight:800,fontSize:14,cursor:"pointer"}}>
+                  OK
+                </button>
+              )}
             </div>
           </div>
         </div>

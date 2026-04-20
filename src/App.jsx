@@ -1590,7 +1590,7 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
       try { localStorage.setItem("tb_admin_" + cloneId, "1"); } catch {}
 
       setCloneModal(null); setCloneAdminPw(""); setCloneErr("");
-      alert("✅ Clone created! Enter '" + clonePitch.name + "' to test.");
+      pushNotif('system', `✅ Clone '${clonePitch.name}' created! Enter it to test.`, '🎉');
     } catch(e) { setCloneErr("Error: " + e.message); }
     setCloning(false);
   };
@@ -5450,9 +5450,9 @@ ${aiMatchText.slice(0, 3000)}`;
                     if (transfers.phase === 'release') {
                       const resetTransfers = { ...transfers, phase: 'closed', releaseDeadline: null };
                       updTransfers(resetTransfers);
-                      alert("✅ Config applied — transfer window closed. Will reopen at new time.");
+                      pushNotif("system", "✅ Config applied — transfer window closed. Will reopen at new time.", "⚙️");
                     } else {
-                      alert("✅ Config applied directly — no vote needed.");
+                      pushNotif("system", "✅ Config applied directly — no vote needed.", "⚙️");
                     }
                   }}
                 />
