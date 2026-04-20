@@ -1519,7 +1519,7 @@ function TransferHistory({ transfers, players, teams }) {
               const teamPairs = pairs.filter(p=>p.teamId===tid);
               const teamReleases = releases[tid]||[];
               const tradedReleasedPids = new Set(teamPairs.map(p=>p.releasedPid));
-              const returnedPids = teamReleases.filter(pid => !tradedReleasedPids.has(pid));
+              const returnedPids = week.isCurrent ? [] : teamReleases.filter(pid => !tradedReleasedPids.has(pid));
 
               if (teamPairs.length === 0 && returnedPids.length === 0) return null;
 
