@@ -748,6 +748,7 @@ export default function TransferWindow({
     onUpdateAssignments(cleanAssign);
     onUpdateUnsoldPool(cleanPool);
     }});
+  });
 
   const openReleaseManually = () => withPassword(() => doOpenRelease());
 

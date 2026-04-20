@@ -5784,7 +5784,7 @@ ${aiMatchText.slice(0, 3000)}`;
                 <button onClick={()=>{setShowMVP(true);setDrawerOpen(false);}} style={{width:"100%",background:"transparent",border:"none",padding:"10px 14px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12}}>
                   <span style={{fontSize:20}}>🏅</span>
                   <div style={{flex:1}}>
-                    <div style={{fontFamily:fonts.body,fontWeight:600,fontSize:14,color:T.text,fontFamily:fonts.body}}>MVP Stats</div>
+                    <div style={{fontFamily:fonts.body,fontWeight:600,fontSize:14,color:T.text}}>MVP Stats</div>
                     <div style={{fontSize:11,color:T.muted}}>Weekly player performance</div>
                   </div>
                 </button>
@@ -5798,7 +5798,7 @@ ${aiMatchText.slice(0, 3000)}`;
                 <button onClick={()=>{setShowWeeklyReport(true);setDrawerOpen(false);}} style={{width:"100%",background:showWeeklyReport?"#2ECC7122":"transparent",border:"1px solid "+(showWeeklyReport?"#2ECC7144":"transparent"),borderRadius:10,padding:"10px 14px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12,marginBottom:4}}>
                   <span style={{fontSize:20}}>📋</span>
                   <div style={{flex:1}}>
-                    <div style={{fontFamily:fonts.body,fontWeight:600,fontSize:14,color:T.text,fontFamily:fonts.body}}>Weekly Report</div>
+                    <div style={{fontFamily:fonts.body,fontWeight:600,fontSize:14,color:T.text}}>Weekly Report</div>
                     <div style={{fontSize:11,color:T.muted}}>This week & last week summary</div>
                   </div>
                 </button>
@@ -5808,7 +5808,7 @@ ${aiMatchText.slice(0, 3000)}`;
                       {unreadNotifCount>0 && <span style={{position:"absolute",top:-4,right:-4,background:"#FF3D5A",borderRadius:"50%",width:14,height:14,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,fontWeight:700,color:"#fff"}}>{unreadNotifCount}</span>}
                     </span>
                     <div style={{flex:1}}>
-                      <div style={{fontFamily:fonts.body,fontWeight:600,fontSize:14,color:T.text,fontFamily:fonts.body}}>Notifications</div>
+                      <div style={{fontFamily:fonts.body,fontWeight:600,fontSize:14,color:T.text}}>Notifications</div>
                       <div style={{fontSize:11,color:T.muted,marginTop:1}}>{unreadNotifCount>0?unreadNotifCount+" unread":"All caught up"}</div>
                     </div>
                     <span style={{color:T.muted,fontSize:11}}>{notifOpen?"▲":"▼"}</span>
@@ -5911,7 +5911,7 @@ ${aiMatchText.slice(0, 3000)}`;
               <button onClick={()=>{setShowRulesPanel(true);setDrawerOpen(false);}} style={{width:"100%",background:"transparent",border:"none",padding:"10px 14px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12}}>
                 <span style={{fontSize:20}}>📋</span>
                 <div style={{flex:1}}>
-                  <div style={{fontFamily:fonts.body,fontWeight:600,fontSize:14,color:T.text,fontFamily:fonts.body}}>Points & Rules</div>
+                  <div style={{fontFamily:fonts.body,fontWeight:600,fontSize:14,color:T.text}}>Points & Rules</div>
                   <div style={{fontSize:11,color:T.muted}}>Points system & league timing</div>
                 </div>
                 {pendingVote && <span style={{width:8,height:8,background:"#FF3D5A",borderRadius:"50%",flexShrink:0}} />}
