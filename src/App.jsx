@@ -3868,7 +3868,7 @@ ${aiMatchText.slice(0, 3000)}`;
           const cap=captains[mid+"_"+teamId]||{};
           let pts=d.base;
           if(cap.captain===pid)pts*=2;else if(cap.vc===pid)pts*=1.5;
-          total+=pts;
+          total+=Math.round(pts);
         }
         continue;
       }
