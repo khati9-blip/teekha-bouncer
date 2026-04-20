@@ -125,13 +125,14 @@ export default function TransferWindow({
     const isBeforeStartToday = day === transferStart.day &&
       (h < transferStart.h || (h === transferStart.h && m < transferStart.m));
 
-    // If today is start day and we haven't hit start time yet — use today
-    // If today is start day but already past — next occurrence is next week
     const daysUntil = isBeforeStartToday ? 0 : (transferStart.day - day + 7) % 7 || 7;
 
     const next = new Date(istNow);
     next.setUTCDate(istNow.getUTCDate() + daysUntil);
-    next.setUTCHours(transferStart.h - 5, transferStart.m - 30 < 0 ? transferStart.m + 30 : transferStart.m - 30, 0, 0);
+    // Convert IST to UTC: subtract 5 hours 30 minutes
+    const totalMinutesIST = transferStart.h * 60 + transferStart.m;
+    const totalMinutesUTC = totalMinutesIST - 330; // 330 = 5.5 * 60
+    next.setUTCHours(Math.floor(totalMinutesUTC / 60), totalMinutesUTC % 60, 0, 0);
     return next.toISOString();
   };
 
@@ -141,22 +142,20 @@ export default function TransferWindow({
     const istNow = new Date(now.getTime() + istOffset);
     const day = istNow.getUTCDay();
     const h = istNow.getUTCHours(), m = istNow.getUTCMinutes();
-    const endHourIST = transferEnd.h;
-    const endMinIST = transferEnd.m;
 
     const isBeforeDeadlineToday = day === transferEnd.day &&
-      (h < endHourIST || (h === endHourIST && m < endMinIST));
+      (h < transferEnd.h || (h === transferEnd.h && m < transferEnd.m));
 
-    // If today is end day but deadline already passed — return today's deadline (in the past)
-    // This makes the timer show TIME UP correctly
     const daysUntil = isBeforeDeadlineToday ? 0 :
-      day === transferEnd.day ? 0 : // same day but passed — use today (past)
+      day === transferEnd.day ? 0 :
       (transferEnd.day - day + 7) % 7 || 7;
 
     const next = new Date(istNow);
     next.setUTCDate(istNow.getUTCDate() + daysUntil);
-    // Convert IST to UTC: subtract 5h30m
-    next.setUTCHours(endHourIST - 5, endMinIST - 30 < 0 ? endMinIST + 30 : endMinIST - 30, 0, 0);
+    // Convert IST to UTC: subtract 5 hours 30 minutes
+    const totalMinutesIST = transferEnd.h * 60 + transferEnd.m;
+    const totalMinutesUTC = totalMinutesIST - 330;
+    next.setUTCHours(Math.floor(totalMinutesUTC / 60), totalMinutesUTC % 60, 0, 0);
     return next.toISOString();
   };
 
