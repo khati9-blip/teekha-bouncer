@@ -23,10 +23,19 @@ function TierBadge({ tier }) {
 }
 
 // ── COUNTDOWN TIMER ──────────────────────────────────────────────────────────
-function Timer({ deadline, label = "REMAINING" }) {
+function Timer({ deadline, label = "REMAINING", onExpire }) {
   const [left, setLeft] = useState(0);
+  const expiredRef = React.useRef(false);
   useEffect(() => {
-    const tick = () => setLeft(Math.max(0, Math.floor((new Date(deadline) - Date.now()) / 1000)));
+    expiredRef.current = false;
+    const tick = () => {
+      const remaining = Math.max(0, Math.floor((new Date(deadline) - Date.now()) / 1000));
+      setLeft(remaining);
+      if (remaining === 0 && !expiredRef.current) {
+        expiredRef.current = true;
+        if (onExpire) onExpire();
+      }
+    };
     tick();
     const t = setInterval(tick, 1000);
     return () => clearInterval(t);
@@ -38,8 +47,8 @@ function Timer({ deadline, label = "REMAINING" }) {
   return (
     <div style={{fontFamily:fonts.display,fontSize:32,fontWeight:700,
       color:left===0?"#4A5E78":urgent?"#FF3D5A":"#F5A623",textAlign:"center",letterSpacing:2}}>
-      {left === 0 ? "TIME UP" : h > 0 ? `${h}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}` : `${m}:${String(s).padStart(2,"0")}`}
-      <div style={{fontSize:10,color:T.muted,letterSpacing:2,marginTop:2}}>{left===0?"EXPIRED":label}</div>
+      {left === 0 ? "OPENING..." : h > 0 ? `${h}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}` : `${m}:${String(s).padStart(2,"0")}`}
+      <div style={{fontSize:10,color:T.muted,letterSpacing:2,marginTop:2}}>{left===0?"JUST A SEC...":label}</div>
     </div>
   );
 }
@@ -618,7 +627,9 @@ export default function TransferWindow({
     onUpdateUnsoldPool(cleanPool);
   });
 
-  const openReleaseManually = () => withPassword(() => {
+  const openReleaseManually = () => withPassword(() => doOpenRelease());
+
+  const doOpenRelease = () => {
     // First: return any un-traded released players from previous window
     const { newAssignments: cleanAssign, newPool: cleanPool } = returnUntradedPlayers(transfers, assignments, unsoldPool);
     onUpdateAssignments(cleanAssign);
@@ -648,7 +659,7 @@ export default function TransferWindow({
       pickDeadline: null,
       history,
     });
-  });
+  };
 
   // ── CLEANUP: return un-traded released players to their teams ───────────────
   const returnUntradedPlayers = (currentTransfers, currentAssignments, currentPool) => {
@@ -706,7 +717,11 @@ export default function TransferWindow({
         {phase === "closed" && (
           <div style={{background:T.card,borderRadius:10,padding:"10px 16px",textAlign:"center",border:`1px solid ${T.border}`}}>
             <div style={{fontSize:10,color:T.muted,letterSpacing:2,marginBottom:4}}>NEXT WINDOW OPENS</div>
-            <Timer deadline={nextAutoOpen} label={"UNTIL " + (pitchConfig?.transferStart || "SUNDAY 11:59 PM") + " IST"} />
+            <Timer deadline={nextAutoOpen} label={"UNTIL " + (pitchConfig?.transferStart || "SUNDAY 11:59 PM") + " IST"}
+              onExpire={() => {
+                if (transfers.phase === "closed") doOpenRelease();
+              }}
+            />
             <div style={{marginTop:8,paddingTop:8,borderTop:`1px solid ${T.border}33`}}>
               <div style={{fontSize:10,color:T.muted}}>🔄 <span style={{color:T.sub}}>{pitchConfig?.transferStart || "Sunday 11:59 PM"} → {pitchConfig?.transferEnd || "Monday 11:00 AM"} IST</span></div>
             </div>
