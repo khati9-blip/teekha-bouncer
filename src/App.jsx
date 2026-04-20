@@ -2835,6 +2835,12 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   useEffect(() => {
     if (!appReady) return;
     if (transfers.phase !== 'closed') return;
+    // Guard: don't auto-open if transfers hasn't loaded yet (weekNum=1, no history, no releases)
+    // This prevents overwriting real data with empty defaults on first load
+    const transfersLoaded = transfers.weekNum > 1 || 
+      (transfers.history && transfers.history.length > 0) ||
+      Object.values(transfers.releases || {}).some(r => r.length > 0);
+    if (!transfersLoaded) return;
 
     const now = new Date();
     const ist = new Date(now.getTime() + now.getTimezoneOffset() * 60000 + 5.5 * 3600000);
@@ -2862,16 +2868,12 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
     const endDay = parseDay(pitchConfig?.transferEnd, 1);
     const endTime = parseTime(pitchConfig?.transferEnd, 11, 0);
 
-    // Must be after start time on start day, OR before end time on end day
     const afterStart = day === startDay && (h > startTime.h || (h === startTime.h && m >= startTime.m));
     const beforeEnd = day === endDay && (h < endTime.h || (h === endTime.h && m < endTime.m));
-
-    // Handle week wrap: if start is Sunday (0) and end is Monday (1)
-    // any day strictly between them (in weekly cycle) is also in window
     const betweenDays = startDay !== endDay && (
       startDay < endDay
         ? (day > startDay && day < endDay)
-        : (day > startDay || day < endDay) // wraps around week
+        : (day > startDay || day < endDay)
     );
 
     const inWindow = afterStart || beforeEnd || betweenDays;
@@ -2879,7 +2881,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
     const updated = { ...transfers, phase: 'release', weekNum: transfers.weekNum };
     updTransfers(updated);
     pushNotif('transfer', 'Transfer window is now open — release your players!', '📤');
-  }, [appReady, transfers.phase, pitchConfig]);
+  }, [appReady, transfers.phase, transfers.weekNum, pitchConfig]);
 
   // ── LOAD USER-SPECIFIC NOTES & HIGHLIGHTS ────────────────────────────────
   useEffect(() => {
