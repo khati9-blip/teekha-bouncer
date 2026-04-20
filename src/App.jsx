@@ -2896,14 +2896,15 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
     const inWindow = afterStart || beforeEnd || betweenDays;
     if (!inWindow) return;
 
-    // Calculate correct deadline
+    // Calculate correct deadline using total minutes for accurate IST→UTC conversion
     const dlEndDay = parseDay(pitchConfig?.transferEnd, 1);
     const dlEndTime = parseTime(pitchConfig?.transferEnd, 11, 0);
     const istNow2 = new Date(Date.now() + new Date().getTimezoneOffset() * 60000 + 5.5 * 3600000);
     const daysUntilEnd = (dlEndDay - istNow2.getUTCDay() + 7) % 7;
     const deadline = new Date(istNow2);
     deadline.setUTCDate(istNow2.getUTCDate() + daysUntilEnd);
-    deadline.setUTCHours(dlEndTime.h - 5, dlEndTime.m + 30, 0, 0);
+    const totalMinsUTC = dlEndTime.h * 60 + dlEndTime.m - 330; // subtract 5h30m = 330 mins
+    deadline.setUTCHours(Math.floor(totalMinsUTC / 60), totalMinsUTC % 60, 0, 0);
 
     const updated = { ...transfers, phase: 'release', weekNum: transfers.weekNum, releaseDeadline: deadline.toISOString() };
     updTransfers(updated);
