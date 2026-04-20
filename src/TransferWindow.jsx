@@ -202,7 +202,15 @@ export default function TransferWindow({
   useEffect(() => {
     if (!unlocked) return;
     if (phase !== "closed") return;
-    if (isWithinReleaseWindowDynamic()) {
+    const now = new Date();
+    const istOffset = 5.5 * 60 * 60 * 1000;
+    const ist = new Date(now.getTime() + istOffset);
+    const day = ist.getUTCDay(), h = ist.getUTCHours(), m = ist.getUTCMinutes();
+    const afterStart = day === transferStart.day &&
+      (h > transferStart.h || (h === transferStart.h && m >= transferStart.m));
+    const beforeEnd = day === transferEnd.day &&
+      (h < transferEnd.h || (h === transferEnd.h && m < transferEnd.m));
+    if (afterStart || beforeEnd) {
       setShowAutoOpenPrompt(true);
     } else {
       setShowAutoOpenPrompt(false);
