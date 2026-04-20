@@ -98,11 +98,37 @@ async function processSnatchReturn(pitchId: string, currentDay: number, currentH
     snatchWeekPts,
   }];
 
+  const returnNow = new Date().toISOString();
+
   await setKey(`${pitchId}_snatch`, {
     ...snatch, active: null, history: newHistory,
     weekNum: (snatch.weekNum || 1) + 1
   });
   await setKey(`${pitchId}_assignments`, { ...assignments, [pid]: fromTeamId });
+
+  // Fix ownershipLog — close byTeam's period, ensure fromTeam has pre+post periods
+  const ownershipLog = await getKey(`${pitchId}_ownershipLog`) || {};
+  const playerLog: any[] = ownershipLog[pid] || [];
+
+  // Close byTeam's open period
+  const updatedLog = playerLog.map((o: any) => {
+    if (o.teamId === byTeamId && !o.to) return { ...o, to: returnNow };
+    return o;
+  });
+
+  // Add fromTeam's post-return period if not already present
+  const hasPostReturn = updatedLog.some((o: any) => o.teamId === fromTeamId && o.from >= startDate);
+  if (!hasPostReturn) {
+    updatedLog.push({ teamId: fromTeamId, from: returnNow, to: null });
+  }
+
+  // Ensure fromTeam has a pre-snatch period
+  const hasPreSnatch = updatedLog.some((o: any) => o.teamId === fromTeamId && o.from < startDate);
+  if (!hasPreSnatch) {
+    updatedLog.unshift({ teamId: fromTeamId, from: "2025-01-01T00:00:00.000Z", to: startDate });
+  }
+
+  await setKey(`${pitchId}_ownershipLog`, { ...ownershipLog, [pid]: updatedLog });
 
   const currentSafe = safePlayers[fromTeamId] || [];
   if (!currentSafe.includes(pid)) {
