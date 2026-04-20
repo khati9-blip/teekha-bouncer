@@ -480,20 +480,8 @@ export default function TransferWindow({
 
   // ── ADMIN ACTIONS ─────────────────────────────────────────────────────────
   const startTradePhase = () => withPassword(() => {
-    // Ask admin for match start time
-    const matchTimeStr = prompt("Enter match start time (e.g. 19:30 for 7:30 PM today):");
-    if (!matchTimeStr) return;
-    const [hStr, mStr] = matchTimeStr.split(":");
-    if (!hStr || !mStr) { alert("Invalid time format. Use HH:MM"); return; }
-    const matchTime = new Date();
-    matchTime.setHours(parseInt(hStr), parseInt(mStr), 0, 0);
-    if (matchTime <= Date.now()) matchTime.setDate(matchTime.getDate() + 1); // next day if past
-
-    // Calculate per-pick timer
     const totalPicks = Object.values(transfers.releases || {}).reduce((s, arr) => s + arr.length, 0) || (teams.length * 3);
-    const msAvail = Math.max(0, matchTime.getTime() - Date.now() - 30 * 60 * 1000); // 30min buffer
-    const msPerPick = Math.max(15 * 60 * 1000, Math.floor(msAvail / totalPicks)); // min 15 min
-    const minPerPick = Math.round(msPerPick / 60000);
+    const msPerPick = 30 * 60 * 1000; // 30 mins per pick
 
     const firstTeam = pickOrder[0]?.id;
     const deadline = new Date(Date.now() + msPerPick).toISOString();
@@ -502,12 +490,11 @@ export default function TransferWindow({
       phase: "trade",
       currentPickTeam: firstTeam,
       pickDeadline: deadline,
-      matchStartTime: matchTime.toISOString(),
       msPerPick,
       tradedPairs: [],
       ineligible: [],
     });
-    alert(`✅ Trade phase started!\n⏱ ${minPerPick} min per pick (${totalPicks} total picks, match at ${matchTimeStr})`);
+    alert(`✅ Trade phase started! 30 minutes per pick (${totalPicks} total picks).`);
   });
 
   const resetTradePhase = () => withPassword(() => {
