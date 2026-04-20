@@ -133,21 +133,22 @@ export default function TransferWindow({
     const istNow = new Date(now.getTime() + istOffset);
     const day = istNow.getUTCDay();
     const h = istNow.getUTCHours(), m = istNow.getUTCMinutes();
-
-    // Convert IST end time to UTC hours/minutes
     const endHourIST = transferEnd.h;
     const endMinIST = transferEnd.m;
-    const endHourUTC = endHourIST - 5;
-    const endMinUTC = endMinIST - 30;
 
-    // If today is the end day and we haven't passed the deadline yet — use today
     const isBeforeDeadlineToday = day === transferEnd.day &&
       (h < endHourIST || (h === endHourIST && m < endMinIST));
 
-    const daysUntil = isBeforeDeadlineToday ? 0 : (transferEnd.day - day + 7) % 7 || 7;
+    // If today is end day but deadline already passed — return today's deadline (in the past)
+    // This makes the timer show TIME UP correctly
+    const daysUntil = isBeforeDeadlineToday ? 0 :
+      day === transferEnd.day ? 0 : // same day but passed — use today (past)
+      (transferEnd.day - day + 7) % 7 || 7;
+
     const next = new Date(istNow);
     next.setUTCDate(istNow.getUTCDate() + daysUntil);
-    next.setUTCHours(endHourUTC, endMinUTC + 30, 0, 0);
+    // Convert IST to UTC: subtract 5h30m
+    next.setUTCHours(endHourIST - 5, endMinIST - 30 < 0 ? endMinIST + 30 : endMinIST - 30, 0, 0);
     return next.toISOString();
   };
 
