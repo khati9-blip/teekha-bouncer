@@ -625,22 +625,16 @@ export default function TransferWindow({
   });
 
   const resetTradePhase = () => withPassword(() => {
-    setConfirmModal({ message: "⚠️ Reset trade phase? All picks will be erased and it restarts from the top team.", onConfirm: () => {
+    setConfirmModal({ message: "⚠️ Full reset? All picks AND releases will be erased. Teams start fresh from release phase.", onConfirm: () => {
 
-    // Restore released players to pool (undo all trades)
     const currentPairs = transfers.tradedPairs || [];
     let newAssignments = { ...assignments };
-    let newPool = [...unsoldPool];
     let newLog = { ...(ownershipLog || {}) };
 
+    // Undo all trades first
     for (const pair of currentPairs) {
-      // Return picked player to pool
-      delete newAssignments[pair.pickedPid];
-      if (!newPool.includes(pair.pickedPid)) newPool.push(pair.pickedPid);
-      // Return released player to team
-      newAssignments[pair.releasedPid] = pair.teamId;
-      newPool = newPool.filter(id => id !== pair.releasedPid);
-      // Undo ownership log entries
+      delete newAssignments[pair.pickedPid]; // remove picked player from team
+      newAssignments[pair.releasedPid] = pair.teamId; // return released to original team
       if (newLog[pair.pickedPid]) {
         newLog[pair.pickedPid] = newLog[pair.pickedPid].filter(o =>
           !(o.teamId === pair.teamId && o.from > (transfers.tradeStartedAt || ""))
@@ -653,20 +647,32 @@ export default function TransferWindow({
       }
     }
 
-    const firstTeam = pickOrder[0]?.id; // last place picks first
-    const deadline = new Date(Date.now() + 45 * 60 * 1000).toISOString();
+    // Return all released players to their teams
+    const allReleases = transfers.releases || {};
+    Object.entries(allReleases).forEach(([teamId, pids]) => {
+      pids.forEach(pid => {
+        newAssignments[pid] = teamId; // return to original team
+      });
+    });
+
+    // Restore pool to original unsold pool (remove all released players)
+    const allReleasedPids = new Set(Object.values(allReleases).flat());
+    const allPickedPids = new Set(currentPairs.map(p => p.pickedPid));
+    const newPool = unsoldPool.filter(id => !allReleasedPids.has(id) && !allPickedPids.has(id));
 
     onUpdateAssignments(newAssignments);
     onUpdateUnsoldPool(newPool);
     onUpdateOwnershipLog(newLog);
     onUpdateTransfers({
       ...transfers,
-      phase: "trade",
-      currentPickTeam: firstTeam,
-      pickDeadline: deadline,
+      phase: "release",
+      releases: {},
       tradedPairs: [],
       ineligible: [],
-      tradeStartedAt: new Date().toISOString(),
+      currentPickTeam: null,
+      pickDeadline: null,
+      releaseDeadline: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24hrs to re-release
+      tradeStartedAt: null,
     });
     }});
   });
