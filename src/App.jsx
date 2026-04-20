@@ -3864,7 +3864,7 @@ ${aiMatchText.slice(0, 3000)}`;
           const matchDate = m.date;
           const snatchStart = histSnatchedAway.startDate.split('T')[0];
           const snatchEnd = histSnatchedAway.returnDate ? histSnatchedAway.returnDate.split('T')[0] : '2099-01-01';
-          if(matchDate >= snatchStart && matchDate < snatchEnd) continue; // skip snatch period — returnDate counts for original team
+          if(matchDate >= snatchStart && matchDate <= snatchEnd) continue; // same day as return = still snatched
           const cap=captains[mid+"_"+teamId]||{};
           let pts=d.base;
           if(cap.captain===pid)pts*=2;else if(cap.vc===pid)pts*=1.5;
@@ -3947,7 +3947,7 @@ ${aiMatchText.slice(0, 3000)}`;
         if(histSnatchedAway) {
           const snatchStart = histSnatchedAway.startDate.split('T')[0];
           const snatchEnd = histSnatchedAway.returnDate ? histSnatchedAway.returnDate.split('T')[0] : '2099-01-01';
-          if(m.date >= snatchStart && m.date < snatchEnd) continue; // strict less than — returnDate counts for original team
+          if(m.date >= snatchStart && m.date <= snatchEnd) continue; // include same day as return only after next day
         }
         // Check if match falls within any ownership period for this team
         const owned = periods.length === 0
@@ -5081,6 +5081,13 @@ ${aiMatchText.slice(0, 3000)}`;
                           const periods = (ownershipLog[p.id]||[]).filter(o=>o.teamId===team.id);
                           if (periods.length > 0) {
                             return periods.some(o => (!o.from || o.from <= matchDateStr+"Z") && (!o.to || o.to >= matchDateStr));
+                          }
+                          // If player was snatched IN to this team and returned — only show during snatch period
+                          const histSnatchedIn = (snatch.history||[]).find(h=>h.pid===p.id && h.byTeamId===team.id);
+                          if (histSnatchedIn) {
+                            const snatchStart = histSnatchedIn.startDate.split('T')[0];
+                            const snatchEnd = histSnatchedIn.returnDate ? histSnatchedIn.returnDate.split('T')[0] : '2099-01-01';
+                            return matchDateStr >= snatchStart && matchDateStr <= snatchEnd;
                           }
                           // If player snatched away from this team — include for pre-snatch matches
                           if (snatch.active?.pid===p.id && snatch.active?.fromTeamId===team.id) {
