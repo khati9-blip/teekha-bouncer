@@ -87,7 +87,7 @@ function getTeamPids(teamId, players, assignments, snatch) {
 }
 
 // Returns true if a match date belongs to a team's ownership window for this player
-function isMatchOwnedByTeam(pid, matchDate, teamId, snatch, ownershipLog) {
+function isMatchOwnedByTeam(pid, matchDate, teamId, snatch, ownershipLog, assignments) {
   // Check ownershipLog first (most accurate — covers trades + snatch)
   const periods = (ownershipLog?.[pid] || []).filter(o => o.teamId === teamId);
   if (periods.length > 0) {
@@ -126,7 +126,7 @@ function getTeamWeekPts(teamId, weekMatches, points, captains, players, assignme
   for (const pid of getTeamPids(teamId, players, assignments, snatch)) {
     for (const m of weekMatches) {
       const d = points?.[pid]?.[m.id]; if (!d) continue;
-      if (!isMatchOwnedByTeam(pid, m.date, teamId, snatch, ownershipLog)) continue;
+      if (!isMatchOwnedByTeam(pid, m.date, teamId, snatch, ownershipLog, assignments)) continue;
       const cap = captains?.[m.id + "_" + teamId] || {};
       let pts = d.base;
       if (cap.captain === pid) pts *= 2; else if (cap.vc === pid) pts *= 1.5;
@@ -149,7 +149,7 @@ function getStatLeaders(weekMatches, points, players, assignments, teams, snatch
       let sixes = 0, wickets = 0, totalOvers = 0, totalRunsConceded = 0, hasLongest = false;
       for (const m of weekMatches) {
         const d = points[pid]?.[m.id]; if (!d?.stats) continue;
-        if (!isMatchOwnedByTeam(pid, m.date, team.id, snatch, ownershipLog)) continue;
+        if (!isMatchOwnedByTeam(pid, m.date, team.id, snatch, ownershipLog, assignments)) continue;
         sixes   += +d.stats.sixes   || 0;
         wickets += +d.stats.wickets || 0;
         const ovs = +d.stats.overs  || 0;
@@ -318,7 +318,7 @@ function WeekCard({ week, weekMatches, teams, players, assignments, points, capt
     for (const pid of getTeamPids(team.id, players, assignments, snatch)) {
       const p = players.find(x => x.id === pid); if (!p) continue;
       const pts = weekMatches.reduce((s, m) => {
-        if (!isMatchOwnedByTeam(pid, m.date, team.id, snatch, ownershipLog)) return s;
+        if (!isMatchOwnedByTeam(pid, m.date, team.id, snatch, ownershipLog, assignments)) return s;
         return s + (points[pid]?.[m.id]?.base || 0);
       }, 0);
       if (pts > topScorerPts) { topScorerPts = pts; topScorer = p; topScorerTeam = team; }
