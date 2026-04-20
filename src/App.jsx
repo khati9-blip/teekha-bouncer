@@ -5687,6 +5687,7 @@ ${aiMatchText.slice(0, 3000)}`;
             captains={captains}
             matches={matches}
             snatch={snatch}
+            ownershipLog={ownershipLog}
             onClose={()=>setShowWeeklyReport(false)}
           />
         )}

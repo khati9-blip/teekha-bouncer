@@ -87,7 +87,18 @@ function getTeamPids(teamId, players, assignments, snatch) {
 }
 
 // Returns true if a match date belongs to a team's ownership window for this player
-function isMatchOwnedByTeam(pid, matchDate, teamId, snatch) {
+function isMatchOwnedByTeam(pid, matchDate, teamId, snatch, ownershipLog) {
+  // Check ownershipLog first (most accurate — covers trades + snatch)
+  const periods = (ownershipLog?.[pid] || []).filter(o => o.teamId === teamId);
+  if (periods.length > 0) {
+    return periods.some(o => {
+      const from = (o.from || "").split("T")[0];
+      const to = o.to ? o.to.split("T")[0] : "2099-01-01";
+      return matchDate >= from && matchDate <= to;
+    });
+  }
+
+  // Fallback to snatch logic if no ownershipLog
   const a = snatch?.active, h = snatch?.history || [];
   if (a?.pid === pid && a?.fromTeamId === teamId) {
     return matchDate < (a.startDate?.split("T")[0] || "9999");
@@ -107,15 +118,15 @@ function isMatchOwnedByTeam(pid, matchDate, teamId, snatch) {
     const e = hi.returnDate?.split("T")[0] || "9999";
     return matchDate >= s && matchDate <= e;
   }
-  return true; // normal ownership
+  return assignments?.[pid] === teamId;
 }
 
-function getTeamWeekPts(teamId, weekMatches, points, captains, players, assignments, snatch) {
+function getTeamWeekPts(teamId, weekMatches, points, captains, players, assignments, snatch, ownershipLog) {
   let total = 0;
   for (const pid of getTeamPids(teamId, players, assignments, snatch)) {
     for (const m of weekMatches) {
       const d = points?.[pid]?.[m.id]; if (!d) continue;
-      if (!isMatchOwnedByTeam(pid, m.date, teamId, snatch)) continue;
+      if (!isMatchOwnedByTeam(pid, m.date, teamId, snatch, ownershipLog)) continue;
       const cap = captains?.[m.id + "_" + teamId] || {};
       let pts = d.base;
       if (cap.captain === pid) pts *= 2; else if (cap.vc === pid) pts *= 1.5;
@@ -125,7 +136,7 @@ function getTeamWeekPts(teamId, weekMatches, points, captains, players, assignme
   return total;
 }
 
-function getStatLeaders(weekMatches, points, players, assignments, teams, snatch) {
+function getStatLeaders(weekMatches, points, players, assignments, teams, snatch, ownershipLog) {
   let topSixes = { player: null, count: 0, team: null };
   let topWickets = { player: null, count: 0, team: null };
   let bestEco = { player: null, eco: 999, team: null };
@@ -138,7 +149,7 @@ function getStatLeaders(weekMatches, points, players, assignments, teams, snatch
       let sixes = 0, wickets = 0, totalOvers = 0, totalRunsConceded = 0, hasLongest = false;
       for (const m of weekMatches) {
         const d = points[pid]?.[m.id]; if (!d?.stats) continue;
-        if (!isMatchOwnedByTeam(pid, m.date, team.id, snatch)) continue;
+        if (!isMatchOwnedByTeam(pid, m.date, team.id, snatch, ownershipLog)) continue;
         sixes   += +d.stats.sixes   || 0;
         wickets += +d.stats.wickets || 0;
         const ovs = +d.stats.overs  || 0;
@@ -292,13 +303,13 @@ function StatPill({ emoji, label, name, value, unit, color, onClick, player }) {
   );
 }
 
-function WeekCard({ week, weekMatches, teams, players, assignments, points, captains, snatch, isCurrentWeek, weekOffset }) {
+function WeekCard({ week, weekMatches, teams, players, assignments, points, captains, snatch, ownershipLog, isCurrentWeek, weekOffset }) {
   const [expanded, setExpanded] = useState(isCurrentWeek);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const weekLabel = isCurrentWeek ? "📅 THIS WEEK" : weekOffset === 1 ? "📋 LAST WEEK" : `📋 ${weekOffset} WEEKS AGO`;
-  const weekTeams = teams.map(t => ({ ...t, weekPts: getTeamWeekPts(t.id, weekMatches, points, captains, players, assignments, snatch) })).sort((a, b) => b.weekPts - a.weekPts);
+  const weekTeams = teams.map(t => ({ ...t, weekPts: getTeamWeekPts(t.id, weekMatches, points, captains, players, assignments, snatch, ownershipLog) })).sort((a, b) => b.weekPts - a.weekPts);
   const totalLeaguePts = weekTeams.reduce((s, t) => s + t.weekPts, 0);
-  const { topSixes, topWickets, bestEco, longestSix } = getStatLeaders(weekMatches, points, players, assignments, teams, snatch);
+  const { topSixes, topWickets, bestEco, longestSix } = getStatLeaders(weekMatches, points, players, assignments, teams, snatch, ownershipLog);
   const medals = ["🥇", "🥈", "🥉", "#4"];
 
   // Top scorer — attribute each player's weekly pts to their owning team per match
@@ -307,7 +318,7 @@ function WeekCard({ week, weekMatches, teams, players, assignments, points, capt
     for (const pid of getTeamPids(team.id, players, assignments, snatch)) {
       const p = players.find(x => x.id === pid); if (!p) continue;
       const pts = weekMatches.reduce((s, m) => {
-        if (!isMatchOwnedByTeam(pid, m.date, team.id, snatch)) return s;
+        if (!isMatchOwnedByTeam(pid, m.date, team.id, snatch, ownershipLog)) return s;
         return s + (points[pid]?.[m.id]?.base || 0);
       }, 0);
       if (pts > topScorerPts) { topScorerPts = pts; topScorer = p; topScorerTeam = team; }
@@ -419,7 +430,7 @@ function WeekCard({ week, weekMatches, teams, players, assignments, points, capt
           <div style={{ padding: "13px 18px 16px" }}>
             <div style={{ fontFamily: fonts.display, fontSize: 9, color: T.muted, letterSpacing: 2, fontWeight: 700, marginBottom: 10 }}>FORM (LAST 3 MATCHES)</div>
             {teams.map(team => {
-              const streak = weekMatches.slice(-3).map(m => getTeamWeekPts(team.id, [m], points, captains, players, assignments, snatch));
+              const streak = weekMatches.slice(-3).map(m => getTeamWeekPts(team.id, [m], points, captains, players, assignments, snatch, ownershipLog));
               const maxStreak = Math.max(...streak, 1);
               return (
                 <div key={team.id} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
@@ -442,8 +453,8 @@ function WeekCard({ week, weekMatches, teams, players, assignments, points, capt
   );
 }
 
-export default function WeeklyReport({ teams, players, assignments, points, captains, matches, snatch, onClose }) {
-  const sharedProps = { teams, players, assignments, points, captains, snatch };
+export default function WeeklyReport({ teams, players, assignments, points, captains, matches, snatch, ownershipLog, onClose }) {
+  const sharedProps = { teams, players, assignments, points, captains, snatch, ownershipLog };
 
   // Build list of weeks: current + all past weeks that have completed matches.
   // offset=0 → this Sat–Fri week, offset=1 → last week, offset=2 → week before, etc.
