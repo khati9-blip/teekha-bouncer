@@ -6241,7 +6241,7 @@ function Root() {
     );
 
     if (screen === 'app') return (
-      <App pitch={currentPitch} onLeave={handleLeave} user={currentUser}
+      <App key={currentPitch.id} pitch={currentPitch} onLeave={handleLeave} user={currentUser}
         onLogout={handleLogout} myTeam={myTeam} myPinHash={myPinHash}
         isGuest={isGuest} isAdmin={isAdmin} />
     );
