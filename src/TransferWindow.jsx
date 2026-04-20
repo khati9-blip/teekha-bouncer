@@ -199,21 +199,23 @@ export default function TransferWindow({
 
   // ── AUTO WINDOW CHECK — prompt admin instead of auto-opening ──────────────
   useEffect(() => {
-    if (!unlocked) return;
-    if (phase !== "closed") return;
-    const now = new Date();
-    const istOffset = 5.5 * 60 * 60 * 1000;
-    const ist = new Date(now.getTime() + istOffset);
-    const day = ist.getUTCDay(), h = ist.getUTCHours(), m = ist.getUTCMinutes();
-    const afterStart = day === transferStart.day &&
-      (h > transferStart.h || (h === transferStart.h && m >= transferStart.m));
-    const beforeEnd = day === transferEnd.day &&
-      (h < transferEnd.h || (h === transferEnd.h && m < transferEnd.m));
-    if (afterStart || beforeEnd) {
-      setShowAutoOpenPrompt(true);
-    } else {
-      setShowAutoOpenPrompt(false);
-    }
+    const check = () => {
+      if (!unlocked || phase !== "closed") { setShowAutoOpenPrompt(false); return; }
+      const now = new Date();
+      const istOffset = 5.5 * 60 * 60 * 1000;
+      const ist = new Date(now.getTime() + istOffset);
+      const day = ist.getUTCDay(), h = ist.getUTCHours(), m = ist.getUTCMinutes();
+      const afterStart = day === transferStart.day &&
+        (h > transferStart.h || (h === transferStart.h && m >= transferStart.m));
+      const beforeEnd = day === transferEnd.day &&
+        (h < transferEnd.h || (h === transferEnd.h && m < transferEnd.m));
+      const betweenDays = transferStart.day !== transferEnd.day && day !== transferStart.day && day !== transferEnd.day;
+      const inWindow = afterStart || (betweenDays && beforeEnd);
+      setShowAutoOpenPrompt(inWindow);
+    };
+    check();
+    const interval = setInterval(check, 30000); // re-check every 30 seconds
+    return () => clearInterval(interval);
   }, [unlocked, pitchConfig, phase]);
 
   // ── HELPERS ────────────────────────────────────────────────────────────────
