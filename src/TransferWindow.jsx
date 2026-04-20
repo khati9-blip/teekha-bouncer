@@ -193,10 +193,13 @@ export default function TransferWindow({
   // ── AUTO WINDOW CHECK — prompt admin instead of auto-opening ──────────────
   useEffect(() => {
     if (!unlocked) return;
-    if (phase === "closed" && isWithinReleaseWindowDynamic()) {
+    if (phase !== "closed") return;
+    if (isWithinReleaseWindowDynamic()) {
       setShowAutoOpenPrompt(true);
+    } else {
+      setShowAutoOpenPrompt(false);
     }
-  }, [unlocked]);
+  }, [unlocked, pitchConfig, phase]);
 
   // ── HELPERS ────────────────────────────────────────────────────────────────
   const getReleasedPlayers = (teamId) => {
@@ -690,7 +693,7 @@ export default function TransferWindow({
               {phase}
             </span>
             {phase === "closed" && (
-              <span style={{fontSize:11,color:T.muted}}>Auto-opens Sun 11:59 PM IST</span>
+              <span style={{fontSize:11,color:T.muted}}>Auto-opens {pitchConfig?.transferStart || "Sun 11:59 PM"} IST</span>
             )}
           </div>
         </div>
@@ -1263,7 +1266,7 @@ export default function TransferWindow({
           <div style={{background:T.card,borderRadius:16,border:`1px solid ${T.accentBorder}`,padding:24,width:"100%",maxWidth:380}}>
             <div style={{fontSize:28,marginBottom:8}}>⏰</div>
             <div style={{fontFamily:fonts.display,fontSize:20,fontWeight:700,color:T.accent,marginBottom:8}}>TIME TO OPEN THE WINDOW</div>
-            <div style={{fontSize:13,color:T.muted,marginBottom:20}}>It's within the transfer window period (Sun 11:59 PM – Mon 11:00 AM IST). Do you want to open the release window now?</div>
+            <div style={{fontSize:13,color:T.muted,marginBottom:20}}>It's within the transfer window period ({pitchConfig?.transferStart || "Sun 11:59 PM"} – {pitchConfig?.transferEnd || "Mon 11:00 AM"} IST). Do you want to open the release window now?</div>
             <div style={{display:"flex",gap:8}}>
               <button onClick={()=>setShowAutoOpenPrompt(false)}
                 style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:8,padding:11,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>
