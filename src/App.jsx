@@ -5174,10 +5174,11 @@ ${aiMatchText.slice(0, 3000)}`;
                                     <div key={p.id} style={{padding:"10px 16px",borderBottom:"1px solid #1E2D4522",display:"flex",alignItems:"flex-start",gap:12,opacity:p.tradedOut||p.snatchedOut?0.6:1,background:p.snatchReturned?T.purple+"0A":"transparent"}}>
                                       <div style={{flex:1,minWidth:0}}>
                                         <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-                                          <span style={{fontWeight:700,fontSize:14,color:p.tradedOut?T.muted:p.snatchedOut?T.purple:p.snatchReturned?T.purple:T.text,textDecoration:p.tradedOut||p.snatchedOut?"line-through":"none"}}>{p.name}</span>
+                                          <span style={{fontWeight:700,fontSize:14,color:p.tradedOut?T.muted:p.snatchedOut?T.purple:p.snatchReturned?T.purple:ruledOut.includes(p.id)?"#FF3D5A":T.text,textDecoration:p.tradedOut||p.snatchedOut?"line-through":"none"}}>{p.name}</span>
                                           {p.tradedOut && <span style={{fontSize:9,color:T.danger,background:T.dangerBg,border:`1px solid ${T.danger}33`,borderRadius:4,padding:"1px 5px",fontWeight:700,letterSpacing:0.5}}>TRADED OUT</span>}
                                           {p.snatchedOut && <span style={{fontSize:9,color:T.purple,background:T.purpleBg,border:`1px solid ${T.purple}33`,borderRadius:4,padding:"1px 5px",fontWeight:700,letterSpacing:0.5}}>⚡ SNATCHED</span>}
                                           {p.snatchReturned && <span style={{fontSize:9,color:T.purple,background:T.purpleBg,border:`1px solid ${T.purple}33`,borderRadius:4,padding:"1px 5px",fontWeight:700,letterSpacing:0.5}}>↩️ RETURNED</span>}
+                                          {ruledOut.includes(p.id) && <span style={{fontSize:9,color:"#FF3D5A",background:"#FF3D5A11",border:"1px solid #FF3D5A33",borderRadius:4,padding:"1px 5px",fontWeight:700,letterSpacing:0.5}}>🚫 RULED OUT</span>}
                                           {p.mult>1 && <span style={{background:p.mult===2?"#F5A62322":"#94A3B822",color:p.mult===2?"#F5A623":"#94A3B8",border:"1px solid "+(p.mult===2?"#F5A62344":"#94A3B844"),fontSize:10,padding:"1px 7px",borderRadius:10,fontWeight:700}}>
                                             {p.mult===2?"⭐ CAPTAIN 2×":"🥈 VC 1.5×"}
                                           </span>}
@@ -5259,12 +5260,17 @@ ${aiMatchText.slice(0, 3000)}`;
                   <div style={{fontWeight:700,color:T.muted,letterSpacing:2,fontSize:12,marginBottom:16}}>TEAM PLAYER BREAKDOWN</div>
                   {leaderboard.map(team=>{
                     const breakdown=getPlayerBreakdown(team.id),isOpen=expandedTeam===team.id;
-                    const activeCount=breakdown.filter(p=>p.status!=="traded-out"&&p.status!=="snatched-out"&&p.status!=="snatch-returned-in"&&p.status!=="released").length;
+                    const activeCount=breakdown.filter(p=>p.status!=="traded-out"&&p.status!=="snatched-out"&&p.status!=="snatch-returned-in"&&p.status!=="released"&&!ruledOut.includes(p.id)).length;
                     const safeCount=(safePlayers[team.id]||[]).length;
+                    const ruledOutCount=breakdown.filter(p=>ruledOut.includes(p.id)).length;
                     return(
                       <Card key={team.id} accent={team.color} sx={{marginBottom:12,overflow:"hidden"}}>
                         <div style={{display:"flex",alignItems:"center",padding:"14px 18px",cursor:"pointer"}} onClick={()=>setExpandedTeam(isOpen?null:team.id)}>
-                          <div style={{flex:1}}><span style={{fontWeight:700,color:team.color,fontFamily:"Rajdhani",fontSize:17,letterSpacing:1}}>{team.name}</span><span style={{color:T.muted,marginLeft:10,fontSize:13}}>{activeCount} players</span></div>
+                          <div style={{flex:1}}>
+                            <span style={{fontWeight:700,color:team.color,fontFamily:"Rajdhani",fontSize:17,letterSpacing:1}}>{team.name}</span>
+                            <span style={{color:T.muted,marginLeft:10,fontSize:13}}>{activeCount} players</span>
+                            {ruledOutCount>0&&<span style={{color:"#FF3D5A",marginLeft:6,fontSize:11}}>({ruledOutCount} ruled out)</span>}
+                          </div>
                           <span style={{color:T.accent,fontWeight:800,fontFamily:"Rajdhani",fontSize:22,marginRight:16}}>{team.total} pts</span>
                           <span style={{color:team.color,fontSize:12,opacity:0.7}}>{isOpen?"▲":"▼"}</span>
                         </div>
@@ -5272,30 +5278,33 @@ ${aiMatchText.slice(0, 3000)}`;
                           <div style={{borderTop:`1px solid ${T.border}`,padding:"12px 18px"}}>
                             <div style={{display:"flex",fontSize:11,color:T.muted,marginBottom:10,padding:"0 4px"}}><span style={{flex:1}}>PLAYER</span><span style={{width:90}}>ROLE</span><span style={{width:70,textAlign:"right"}}>POINTS</span></div>
                             {breakdown.map((p,idx)=>(
-                              <div key={p.id} style={{display:"flex",alignItems:"center",padding:"9px 4px",borderBottom:`1px solid ${T.border}`,opacity:p.status==="snatched-out"||p.status==="snatch-returned-in"||p.status==="traded-out"?0.65:1}}>
+                              <div key={p.id} style={{display:"flex",alignItems:"center",padding:"9px 4px",borderBottom:`1px solid ${T.border}`,opacity:p.status==="snatched-out"||p.status==="snatch-returned-in"||p.status==="traded-out"||ruledOut.includes(p.id)?0.65:1}}>
                                 <div style={{flex:1,fontWeight:idx<3?700:400,fontSize:14,
-                                  color:p.status==="traded-in"?"#2ECC71":p.status==="returned"?"#F5A623":p.status==="traded-out"?"#FF3D5A":idx===0&&p.status==="active"?"#F5A623":"#E2EAF4",
-                                  textDecoration:p.status==="snatched-out"||p.status==="snatch-returned-in"||p.status==="traded-out"?"line-through":"none"}}>
+                                  color:ruledOut.includes(p.id)?"#FF3D5A":p.status==="traded-in"?"#2ECC71":p.status==="returned"?"#F5A623":p.status==="traded-out"?"#FF3D5A":idx===0&&p.status==="active"?"#F5A623":"#E2EAF4",
+                                  textDecoration:p.status==="snatched-out"||p.status==="snatch-returned-in"||p.status==="traded-out"||ruledOut.includes(p.id)?"line-through":"none"}}>
                                   {p.status==="traded-out"&&<span style={{marginRight:4}}>⬇️</span>}
                                   {p.status==="traded-in"&&<span style={{marginRight:4}}>⬆️</span>}
                                   {p.status==="returned"&&<span style={{marginRight:4}}>↩️</span>}
+                                  {ruledOut.includes(p.id)&&<span style={{marginRight:4}}>🚫</span>}
                                   {p.name}
-                                  {p.status==="traded-out"&&<span style={{fontSize:9,color:T.danger,marginLeft:6,textDecoration:"none",fontWeight:700}}>→ {p.tradedFor}</span>}
-                                  {p.status==="traded-in"&&<span style={{fontSize:9,color:T.success,marginLeft:6,textDecoration:"none",fontWeight:700}}>FROM POOL</span>}
-                                  {p.status==="returned"&&<span style={{fontSize:9,color:T.accent,marginLeft:6,textDecoration:"none",fontWeight:700}}>↩ RETURNED</span>}
-                                  {p.status==="snatched-out"&&<span style={{fontSize:9,color:T.purple,marginLeft:6,textDecoration:"none",fontWeight:700}}> SNATCHED</span>}
-                                  {p.status==="snatched-in"&&<span style={{fontSize:9,color:T.success,marginLeft:6,textDecoration:"none",fontWeight:700}}> ON LOAN</span>}
-                                  {p.status==="snatch-returned-in"&&<span style={{fontSize:9,color:T.muted,marginLeft:6,textDecoration:"none"}}> RETURNED</span>}
-                                  {p.status==="released"&&<span style={{fontSize:9,color:T.muted,marginLeft:6,textDecoration:"none"}}> RELEASED</span>}
+                                  {ruledOut.includes(p.id)&&<span style={{fontSize:9,color:"#FF3D5A",marginLeft:6,textDecoration:"none",fontWeight:700}}>RULED OUT</span>}
+                                  {!ruledOut.includes(p.id)&&p.status==="traded-out"&&<span style={{fontSize:9,color:T.danger,marginLeft:6,textDecoration:"none",fontWeight:700}}>→ {p.tradedFor}</span>}
+                                  {!ruledOut.includes(p.id)&&p.status==="traded-in"&&<span style={{fontSize:9,color:T.success,marginLeft:6,textDecoration:"none",fontWeight:700}}>FROM POOL</span>}
+                                  {!ruledOut.includes(p.id)&&p.status==="returned"&&<span style={{fontSize:9,color:T.accent,marginLeft:6,textDecoration:"none",fontWeight:700}}>↩ RETURNED</span>}
+                                  {!ruledOut.includes(p.id)&&p.status==="snatched-out"&&<span style={{fontSize:9,color:T.purple,marginLeft:6,textDecoration:"none",fontWeight:700}}> SNATCHED</span>}
+                                  {!ruledOut.includes(p.id)&&p.status==="snatched-in"&&<span style={{fontSize:9,color:T.success,marginLeft:6,textDecoration:"none",fontWeight:700}}> ON LOAN</span>}
+                                  {!ruledOut.includes(p.id)&&p.status==="snatch-returned-in"&&<span style={{fontSize:9,color:T.muted,marginLeft:6,textDecoration:"none"}}> RETURNED</span>}
+                                  {!ruledOut.includes(p.id)&&p.status==="released"&&<span style={{fontSize:9,color:T.muted,marginLeft:6,textDecoration:"none"}}> RELEASED</span>}
                                 </div>
                                 <div style={{width:90}}><Badge label={p.role||"—"} color={ROLE_COLORS[p.role]||"#4A5E78"} /></div>
                                 <div style={{width:70,textAlign:"right",fontWeight:700,
-                                  color:p.status==="traded-in"?"#2ECC71":p.status==="returned"?"#F5A623":p.status==="traded-out"||p.status==="snatched-out"||p.status==="snatch-returned-in"?"#4A5E78":p.total>0?"#E2EAF4":"#4A5E78",
+                                  color:ruledOut.includes(p.id)?"#FF3D5A":p.status==="traded-in"?"#2ECC71":p.status==="returned"?"#F5A623":p.status==="traded-out"||p.status==="snatched-out"||p.status==="snatch-returned-in"?"#4A5E78":p.total>0?"#E2EAF4":"#4A5E78",
                                   fontFamily:"Rajdhani",fontSize:17}}>
                                   {p.total}
-                                  {p.status==="traded-in"&&<span style={{fontSize:9,display:"block",color:T.success,letterSpacing:0.5}}>RESET</span>}
-                                  {p.status==="returned"&&<span style={{fontSize:9,display:"block",color:T.accent,letterSpacing:0.5}}>BACK</span>}
-                                  {p.status==="traded-out"&&<span style={{fontSize:9,display:"block",color:T.danger,letterSpacing:0.5}}>FROZEN</span>}
+                                  {ruledOut.includes(p.id)&&<span style={{fontSize:9,display:"block",color:"#FF3D5A",letterSpacing:0.5}}>FROZEN</span>}
+                                  {!ruledOut.includes(p.id)&&p.status==="traded-in"&&<span style={{fontSize:9,display:"block",color:T.success,letterSpacing:0.5}}>RESET</span>}
+                                  {!ruledOut.includes(p.id)&&p.status==="returned"&&<span style={{fontSize:9,display:"block",color:T.accent,letterSpacing:0.5}}>BACK</span>}
+                                  {!ruledOut.includes(p.id)&&p.status==="traded-out"&&<span style={{fontSize:9,display:"block",color:T.danger,letterSpacing:0.5}}>FROZEN</span>}
                                 </div>
                               </div>
                             ))}
