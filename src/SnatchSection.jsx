@@ -68,7 +68,7 @@ export default function SnatchSection({
   leaderboard, myTeam, isAdmin, unlocked, withPassword,
   teamIdentity, user, pitch,
   onUpdateSnatch, onUpdateAssignments, onUpdateOwnershipLog, ownershipLog,
-  safePlayers, onUpdateSafePlayers, pushNotif, pitchConfig
+  safePlayers, onUpdateSafePlayers, pushNotif, pitchConfig, ruledOut = []
 }) {
   const [windowStatus, setWindowStatus] = useState(getSnatchWindowStatus());
   const [pinInput, setPinInput] = useState("");
@@ -161,6 +161,7 @@ export default function SnatchSection({
   };
 
   const confirmSnatch = async (pid) => {
+    if (ruledOut.includes(pid)) { alert("This player is ruled out for the season and cannot be snatched."); return; }
     const actingTeamId = myTeamId || elig?.team?.id;
     if (!unlocked) {
       const myIdentity = Object.values(teamIdentity || {}).find(t => t.claimedBy === user?.email);
@@ -308,17 +309,21 @@ export default function SnatchSection({
                   {players.filter(p => assignments[p.id] === selectedVictimTeam).map(p => {
                     const safeArr = Array.isArray(safePlayers) ? safePlayers : Object.values(safePlayers||{}).flat();
                     const isSafe = safeArr.includes(p.id);
+                    const isRuledOut = ruledOut.includes(p.id);
                     return (
-                    <div key={p.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:"#080C14",borderRadius:8,border:"1px solid "+(isSafe?"#4A5E7844":"#1E2D45"),marginBottom:6,opacity:isSafe?0.6:1}}>
+                    <div key={p.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 12px",background:"#080C14",borderRadius:8,border:"1px solid "+(isSafe?"#4A5E7844":isRuledOut?"#FF3D5A33":"#1E2D45"),marginBottom:6,opacity:(isSafe||isRuledOut)?0.6:1}}>
                       <div style={{flex:1}}>
                         <div style={{fontWeight:700,fontSize:13,color:"#E2EAF4",display:"flex",alignItems:"center",gap:6}}>
                           {p.name}
                           {isSafe && <span style={{fontSize:10,background:"#4A5E7833",border:"1px solid #4A5E7866",borderRadius:4,padding:"1px 6px",color:"#94A3B8",fontWeight:700}}>🛡 SAFE</span>}
+                          {isRuledOut && <span style={{fontSize:10,background:"#FF3D5A22",border:"1px solid #FF3D5A44",borderRadius:4,padding:"1px 6px",color:"#FF3D5A",fontWeight:700}}>🚫 RULED OUT</span>}
                         </div>
                         <div style={{fontSize:11,color:"#4A5E78"}}>{p.iplTeam} • {p.role}</div>
                       </div>
                       {isSafe ? (
                         <div style={{fontSize:11,color:"#4A5E78",padding:"4px 12px"}}>🛡 Protected</div>
+                      ) : isRuledOut ? (
+                        <div style={{fontSize:11,color:"#FF3D5A",padding:"4px 12px"}}>🚫 Ruled Out</div>
                       ) : (
                         <button onClick={()=>{ if (unlocked) { confirmSnatch(p.id); } else { setPinModal(p); setPinInput(""); setPinErr(""); } }}
                           style={{...sBtn("#A855F7"),fontSize:11,padding:"4px 12px",cursor:"pointer"}}>SNATCH</button>

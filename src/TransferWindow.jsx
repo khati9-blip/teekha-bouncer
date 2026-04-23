@@ -102,7 +102,7 @@ export default function TransferWindow({
   leaderboard, isAdmin, myTeam, unlocked, withPassword,
   onUpdateTransfers, onUpdateAssignments, onUpdateUnsoldPool,
   onUpdateOwnershipLog, ownershipLog, points, onUpdatePoints,
-  user, safePlayers, pitchConfig
+  user, safePlayers, pitchConfig, ruledOut = []
 }) {
 
   // Parse day/time from pitchConfig string like "Sunday 11:59 PM"
@@ -418,6 +418,7 @@ export default function TransferWindow({
   const handleRelease = (teamId, pid) => {
     if (phase !== "release") return;
     if (isPlayerSafe(pid)) { alert("This player is marked SAFE and cannot be released."); return; }
+    if (ruledOut.includes(pid)) { setConfirmModal({message:"🚫 This player is ruled out for the season and cannot be released.", onConfirm:null}); return; }
     const current = transfers?.releases?.[teamId] || [];
     const isReleased = current.includes(pid);
     if (!isReleased && current.length >= 3) { alert("Max 3 releases per team"); return; }
@@ -1114,7 +1115,9 @@ export default function TransferWindow({
                           <div style={{fontSize:11,color:T.muted}}>{p.iplTeam} • {p.role}</div>
                         </div>
                         {/* Release/Undo button — only for own team, no lock needed */}
-                        {isPlayerSafe(p.id) ? (
+                        {ruledOut.includes(p.id) ? (
+                            <span style={{fontSize:10,color:"#FF3D5A",fontWeight:700,background:"#FF3D5A11",border:"1px solid #FF3D5A33",padding:"3px 8px",borderRadius:6,letterSpacing:0.5}}>🚫 RULED OUT</span>
+                          ) : isPlayerSafe(p.id) ? (
                             <span style={{fontSize:10,color:T.success,fontWeight:700,background:"#2ECC7111",border:`1px solid ${T.success}33`,padding:"3px 8px",borderRadius:6,letterSpacing:0.5}}>🛡 SAFE</span>
                           ) : canEdit ? (
                             <button onClick={() => handleRelease(team.id, p.id)}

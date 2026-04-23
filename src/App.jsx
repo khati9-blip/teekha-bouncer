@@ -2590,6 +2590,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   const [sortOrder, setSortOrder] = useState('default'); // default | az | za
   const [teamLogos, setTeamLogos] = useState({});
   const [safePlayers, setSafePlayers] = useState({}); // {teamId: [pid,pid,pid]}
+  const [ruledOut, setRuledOut] = useState([]); // [pid, pid] — players ruled out for season
   const [unsoldPool, setUnsoldPool] = useState([]);
   const [myHighlights, setMyHighlights] = useState({});
   const [myNotes, setMyNotes] = useState({});
@@ -2635,10 +2636,10 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
         } catch {}
 
         // ── Pass 1: Critical keys from Supabase ───────────────────────────
-        const criticalKeys = ["teams","assignments","matches","captains","tnames","numteams","pwhash","transfers","snatch","teamIdentity","pointsConfig","tournaments","safePlayers","pitchConfig"];
+        const criticalKeys = ["teams","assignments","matches","captains","tnames","numteams","pwhash","transfers","snatch","teamIdentity","pointsConfig","tournaments","safePlayers","pitchConfig","ruledOut"];
         const rawCritical = criticalKeys.map(k => _pitchId + "_" + k);
         const critResults = await sbGetMany(rawCritical);
-        const [t,a,m,c,tn,nt,ph,tr,sn,ti,pc,tv,sp,pcfg] = critResults;
+        const [t,a,m,c,tn,nt,ph,tr,sn,ti,pc,tv,sp,pcfg,ro] = critResults;
         if(t) setTeams(t);
         if(a) setAssignments(a);
         if(m) setMatches(m);
@@ -2648,13 +2649,14 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
         if(ph) setPwHash(ph);
         else { const ah = await sbGet(_pitchId + "_adminHash"); if(ah) { setPwHash(ah); storeSet("pwhash", ah); } }
         if(tr && typeof tr === 'object') { setTransfers(tr); setTransfersLoaded(true); }
-        else setTransfersLoaded(true); // even if null, we know Supabase responded
+        else setTransfersLoaded(true);
         if(sn && typeof sn === 'object') setSnatch(sn);
         if(ti && typeof ti === 'object') setTeamIdentity(ti);
         if(pc && typeof pc === 'object') setPointsConfig(prev=>({...prev,...pc}));
         if(tv && Array.isArray(tv)) { setTournaments(tv); const exp={}; tv.forEach(t=>exp[t.id]=true); setExpandedTournaments(exp); }
         if(sp) setSafePlayers(sp);
         if(pcfg && typeof pcfg === 'object') setPitchConfig(pcfg);
+        if(ro && Array.isArray(ro)) setRuledOut(ro);
         setAppReady(true);
 
         // ── Pass 2: Heavy keys in background ─────────────────────────────
@@ -4640,13 +4642,16 @@ ${aiMatchText.slice(0, 3000)}`;
                 <div style={{display:"flex",flexDirection:"column",gap:12}}>
                   {teams.map(team=>{
                     const teamPlayers=players.filter(p=>assignments[p.id]===team.id);
-                    const unassignedCount=players.filter(p=>!assignments[p.id]).length;
+                    const activeCount=teamPlayers.filter(p=>!ruledOut.includes(p.id)).length;
                     return(
                       <Card key={team.id} accent={team.color} sx={{overflow:"hidden"}}>
                         <div style={{padding:"14px 18px",borderBottom:`1px solid ${T.border}`,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
                           <div>
                             <span style={{fontFamily:fonts.display,fontWeight:700,fontSize:18,color:team.color,letterSpacing:1}}>{team.name}</span>
-                            <span style={{color:T.muted,fontSize:13,marginLeft:10}}>{teamPlayers.length} players</span>
+                            <span style={{color:T.muted,fontSize:13,marginLeft:10}}>{activeCount} active</span>
+                            {teamPlayers.filter(p=>ruledOut.includes(p.id)).length > 0 && (
+                              <span style={{color:"#FF3D5A",fontSize:12,marginLeft:6}}>({teamPlayers.filter(p=>ruledOut.includes(p.id)).length} ruled out)</span>
+                            )}
                           </div>
                         </div>
                         {teamPlayers.length===0?(
@@ -4659,16 +4664,31 @@ ${aiMatchText.slice(0, 3000)}`;
                               return(
                                 <div key={role}>
                                   <div style={{padding:"6px 18px",fontSize:11,color:T.muted,letterSpacing:2,fontWeight:700,background:"#0E152188"}}>{role.toUpperCase()}S ({rp.length})</div>
-                                  {rp.map(p=>(
-                                    <div key={p.id} style={{display:"flex",alignItems:"center",padding:"8px 18px",borderBottom:"1px solid #1E2D4522",gap:10}}>
+                                  {rp.map(p=>{
+                                    const isRuledOut = ruledOut.includes(p.id);
+                                    return(
+                                    <div key={p.id} style={{display:"flex",alignItems:"center",padding:"8px 18px",borderBottom:"1px solid #1E2D4522",gap:10,opacity:isRuledOut?0.5:1}}>
                                       <div style={{flex:1}}>
-                                        <span style={{fontSize:14,fontWeight:600,color:T.text}}>{p.name}</span>
+                                        <span style={{fontSize:14,fontWeight:600,color:isRuledOut?"#FF3D5A":T.text,textDecoration:isRuledOut?"line-through":"none"}}>{p.name}</span>
                                         <span style={{fontSize:12,color:T.muted,marginLeft:8}}>{p.iplTeam}</span>
+                                        {isRuledOut && <span style={{marginLeft:8,fontSize:10,color:"#FF3D5A",fontWeight:700,background:"#FF3D5A22",padding:"2px 6px",borderRadius:4}}>RULED OUT</span>}
                                       </div>
-                                      <button onClick={()=>withPassword(()=>setEditPlayer(p))} style={{background:T.infoBg,border:`1px solid ${T.info}44`,color:T.info,borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:12}}>✏️</button>
+                                      {isAdmin && (
+                                        <button onClick={()=>{
+                                          const updated = isRuledOut
+                                            ? ruledOut.filter(id=>id!==p.id)
+                                            : [...ruledOut, p.id];
+                                          setRuledOut(updated);
+                                          storeSet("ruledOut", updated);
+                                        }} style={{background:isRuledOut?"#2ECC7122":"#FF3D5A22",border:`1px solid ${isRuledOut?"#2ECC7144":"#FF3D5A44"}`,color:isRuledOut?"#2ECC71":"#FF3D5A",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:11,fontWeight:700}}>
+                                          {isRuledOut?"✅ RESTORE":"🚫 RULE OUT"}
+                                        </button>
+                                      )}
+                                      {isAdmin && <button onClick={()=>withPassword(()=>setEditPlayer(p))} style={{background:T.infoBg,border:`1px solid ${T.info}44`,color:T.info,borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:12}}>✏️</button>}
                                       <button onClick={()=>removePlayer(p.id)} style={{background:T.dangerBg,border:`1px solid ${T.danger}44`,color:T.danger,borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:12}}>✕</button>
                                     </div>
-                                  ))}
+                                    );
+                                  })}
                                 </div>
                               );
                             })}
@@ -5009,6 +5029,7 @@ ${aiMatchText.slice(0, 3000)}`;
                   points={points}
                   user={user}
                   pitchConfig={pitchConfig}
+                  ruledOut={ruledOut}
                   onUpdateTransfers={(val)=>{setTransfers(val);storeSet("transfers",val);}}
                   onUpdateAssignments={updAssign}
                   onUpdateUnsoldPool={(val)=>{setUnsoldPool(val);storeSet("unsoldPool",val);}}
@@ -5039,6 +5060,7 @@ ${aiMatchText.slice(0, 3000)}`;
                   safePlayers={safePlayers}
                   pushNotif={pushNotif}
                   pitchConfig={pitchConfig}
+                  ruledOut={ruledOut}
                   onUpdateSnatch={(val)=>{setSnatch(val);storeSet("snatch",val);}}
                   onUpdateAssignments={updAssign}
                   onUpdateOwnershipLog={(val)=>{setOwnershipLog(val);storeSet("ownershipLog",val);}}
