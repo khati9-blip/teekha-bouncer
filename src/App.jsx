@@ -4737,14 +4737,15 @@ ${aiMatchText.slice(0, 3000)}`;
                       const aTeam=teams.find(t=>t.id===assignments[p.id]);
                       const isAssigned=!!assignments[p.id];
                       return(
-                        <div key={p.id} style={{padding:"10px 14px",background:T.card,borderRadius:8,borderLeft:"3px solid "+(aTeam?aTeam.color:"#1E2D45")}}>
+                        <div key={p.id} style={{padding:"10px 14px",background:T.card,borderRadius:8,borderLeft:"3px solid "+(ruledOut.includes(p.id)?"#FF3D5A":aTeam?aTeam.color:"#1E2D45"),opacity:ruledOut.includes(p.id)?0.7:1}}>
                           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
                             <div style={{minWidth:0,flex:1}}>
                               <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
                                 {unlocked&&<input type="checkbox" checked={selectedBulk.includes(p.id)} onChange={e=>setSelectedBulk(prev=>e.target.checked?[...prev,p.id]:prev.filter(x=>x!==p.id))} style={{width:14,height:14,cursor:"pointer",accentColor:T.accent,flexShrink:0}} />}
-                                <span style={{fontWeight:600,fontSize:14,color:T.text,fontFamily:fonts.body}}>{p.name}</span>
+                                <span style={{fontWeight:600,fontSize:14,color:ruledOut.includes(p.id)?"#FF3D5A":T.text,fontFamily:fonts.body,textDecoration:ruledOut.includes(p.id)?"line-through":"none"}}>{p.name}</span>
                                 {p.tier&&<span style={{fontSize:9,fontWeight:800,letterSpacing:1,padding:"1px 5px",borderRadius:4,fontFamily:fonts.body,textTransform:"uppercase",background:p.tier==="platinum"?"#4A5E7833":p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":"#CD7F3222",border:"1px solid "+(p.tier==="platinum"?"#4A5E7866":p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":"#CD7F3255"),color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32"}}>{p.tier==="platinum"?"PLAT":p.tier==="gold"?"GOLD":p.tier==="silver"?"SILV":"BRNZ"}</span>}
-                                {isAssigned&&isPlayerSafeForTeam(assignments[p.id],p.id)&&<span style={{background:T.successBg,color:T.success,border:`1px solid ${T.success}44`,borderRadius:10,fontSize:9,padding:"1px 5px",fontWeight:700}}>🛡️</span>}
+                                {ruledOut.includes(p.id)&&<span style={{fontSize:9,color:"#FF3D5A",background:"#FF3D5A22",border:"1px solid #FF3D5A44",borderRadius:4,padding:"1px 6px",fontWeight:700}}>🚫 RULED OUT</span>}
+                                {!ruledOut.includes(p.id)&&isAssigned&&isPlayerSafeForTeam(assignments[p.id],p.id)&&<span style={{background:T.successBg,color:T.success,border:`1px solid ${T.success}44`,borderRadius:10,fontSize:9,padding:"1px 5px",fontWeight:700}}>🛡️</span>}
                               </div>
                               <div style={{fontSize:11,color:T.muted,marginTop:2}}>{p.iplTeam} • <span style={{color:ROLE_COLORS[p.role]||"#94A3B8"}}>{p.role}</span>{isAssigned&&<span style={{marginLeft:6,color:aTeam?.color,fontWeight:700}}>{aTeam?.name}</span>}</div>
                             </div>
