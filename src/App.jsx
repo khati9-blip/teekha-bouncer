@@ -4608,6 +4608,8 @@ ${aiMatchText.slice(0, 3000)}`;
               <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
                 {teams.map(t=>{
                   const cnt=players.filter(p=>assignments[p.id]===t.id).length;
+                  const ruledOutCnt=players.filter(p=>assignments[p.id]===t.id&&ruledOut.includes(p.id)).length;
+                  const activeCnt=cnt-ruledOutCnt;
                   const active=teamFilter===t.id;
                   return(
                     <div key={t.id} style={{position:"relative",display:"flex",alignItems:"center",background:active?t.color+"22":"#0E1521",borderRadius:8,borderLeft:"3px solid "+t.color,fontSize:13,border:active?"1px solid "+t.color:"1px solid transparent",transition:"all .15s",overflow:"hidden"}}>
@@ -4615,7 +4617,8 @@ ${aiMatchText.slice(0, 3000)}`;
                       <div onClick={()=>setTeamFilter(active?null:t.id)} style={{padding:"7px 10px",cursor:"pointer",display:"flex",alignItems:"center",gap:6,flex:1}}>
                         {teamLogos[t.id]&&<img src={teamLogos[t.id]} style={{width:22,height:22,objectFit:"contain",borderRadius:4}} />}
                         <span style={{color:t.color,fontWeight:700}}>{t.name}</span>
-                        <span style={{color:T.muted}}>{cnt}p</span>
+                        <span style={{color:T.muted}}>{activeCnt}p</span>
+                        {ruledOutCnt>0&&<span style={{color:"#FF3D5A",fontSize:11}}>🚫{ruledOutCnt}</span>}
                         {active&&<span style={{color:t.color,fontSize:11}}>✓</span>}
                       </div>
                       <label title="Upload team logo" style={{padding:"7px 8px",cursor:"pointer",color:T.muted,fontSize:12,borderLeft:"1px solid #1E2D4555"}}>
