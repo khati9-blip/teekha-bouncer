@@ -9,30 +9,14 @@ jobs:
   trigger-snatch-return:
     runs-on: ubuntu-latest
     env:
-      SUPABASE_URL: https://rmcxhorijitrhqyrvvkn.supabase.co/functions/v1/snatch-auto-return
+      ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      FUNC_URL: https://rmcxhorijitrhqyrvvkn.supabase.co/functions/v1/snatch-auto-return
     steps:
-      - name: Trigger snatch return
-        run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$SUPABASE_URL" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
-            -H "Content-Type: application/json")
-          echo "Status: $STATUS"
-          if [ "$STATUS" != "200" ]; then exit 1; fi
+      - name: Trigger snatch return (attempt 1)
+        run: curl -s -X POST "$FUNC_URL" -H "Authorization: Bearer $ANON_KEY" -H "Content-Type: application/json"
 
-      - name: Wait 60s and retry
-        run: |
-          sleep 60
-          curl -s -X POST "$SUPABASE_URL" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
-            -H "Content-Type: application/json"
-        env:
-          SUPABASE_URL: https://rmcxhorijitrhqyrvvkn.supabase.co/functions/v1/snatch-auto-return
+      - name: Wait and retry (attempt 2)
+        run: sleep 60 && curl -s -X POST "$FUNC_URL" -H "Authorization: Bearer $ANON_KEY" -H "Content-Type: application/json"
 
-      - name: Wait 60s and retry again
-        run: |
-          sleep 60
-          curl -s -X POST "$SUPABASE_URL" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
-            -H "Content-Type: application/json"
-        env:
-          SUPABASE_URL: https://rmcxhorijitrhqyrvvkn.supabase.co/functions/v1/snatch-auto-return
+      - name: Wait and retry (attempt 3)
+        run: sleep 60 && curl -s -X POST "$FUNC_URL" -H "Authorization: Bearer $ANON_KEY" -H "Content-Type: application/json"
