@@ -10,14 +10,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Trigger snatch return
-        run: |
-          python3 -c "
-          import urllib.request, os
-          url = 'https://rmcxhorijitrhqyrvvkn.supabase.co/functions/v1/snatch-auto-return'
-          key = os.environ['SUPABASE_ANON_KEY']
-          req = urllib.request.Request(url, method='POST', headers={'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json'})
-          resp = urllib.request.urlopen(req)
-          print('Status:', resp.status)
-          "
         env:
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          curl -s -X POST \
+            "https://rmcxhorijitrhqyrvvkn.supabase.co/functions/v1/snatch-auto-return" \
+            -H "apikey: ${SUPABASE_ANON_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
+            -H "Content-Type: application/json" \
+            -d '{}'
