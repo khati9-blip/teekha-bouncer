@@ -2,39 +2,37 @@ name: Snatch Auto Return
 
 on:
   schedule:
-    # Friday 18:28 UTC = Friday 11:58 PM IST
     - cron: '28 18 * * 5'
-  workflow_dispatch: # Allow manual trigger from GitHub UI
+  workflow_dispatch:
 
 jobs:
   trigger-snatch-return:
     runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: https://rmcxhorijitrhqyrvvkn.supabase.co/functions/v1/snatch-auto-return
     steps:
-      - name: Trigger Snatch Auto Return Edge Function
+      - name: Trigger snatch return
         run: |
-          response=$(curl -s -o /dev/null -w "%{http_code}" \
-            -X POST \
-            "https://rmcxhorijitrhqyrvvkn.supabase.co/functions/v1/snatch-auto-return" \
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$SUPABASE_URL" \
             -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
             -H "Content-Type: application/json")
-          
-          echo "Response status: $response"
-          
-          if [ "$response" -eq 200 ]; then
-            echo "✅ Snatch auto return triggered successfully"
-          else
-            echo "❌ Failed with status $response"
-            exit 1
-          fi
+          echo "Status: $STATUS"
+          if [ "$STATUS" != "200" ]; then exit 1; fi
 
-      - name: Also trigger at +1 minute (safety net)
-        run: sleep 60 && curl -s -X POST \
-          "https://rmcxhorijitrhqyrvvkn.supabase.co/functions/v1/snatch-auto-return" \
-          -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
-          -H "Content-Type: application/json"
+      - name: Wait 60s and retry
+        run: |
+          sleep 60
+          curl -s -X POST "$SUPABASE_URL" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json"
+        env:
+          SUPABASE_URL: https://rmcxhorijitrhqyrvvkn.supabase.co/functions/v1/snatch-auto-return
 
-      - name: Also trigger at +2 minutes (safety net)
-        run: sleep 60 && curl -s -X POST \
-          "https://rmcxhorijitrhqyrvvkn.supabase.co/functions/v1/snatch-auto-return" \
-          -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
-          -H "Content-Type: application/json"
+      - name: Wait 60s and retry again
+        run: |
+          sleep 60
+          curl -s -X POST "$SUPABASE_URL" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json"
+        env:
+          SUPABASE_URL: https://rmcxhorijitrhqyrvvkn.supabase.co/functions/v1/snatch-auto-return
