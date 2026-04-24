@@ -2628,8 +2628,8 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
             if(d.assignments) setAssignments(d.assignments);
             if(d.matches)     setMatches(d.matches);
             if(d.captains)    setCaptains(d.captains);
+            // Note: snatch intentionally NOT loaded from cache — always fetch fresh from Supabase
             // Note: transfers intentionally NOT loaded from cache — always fetch fresh from Supabase
-            if(d.snatch && typeof d.snatch === 'object')       setSnatch(d.snatch);
             if(d.tournaments && Array.isArray(d.tournaments))  { setTournaments(d.tournaments); const exp={}; d.tournaments.forEach(t=>exp[t.id]=true); setExpandedTournaments(exp); }
             setAppReady(true); // show UI immediately from cache
           }
