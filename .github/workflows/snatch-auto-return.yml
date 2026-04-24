@@ -8,15 +8,18 @@ on:
 jobs:
   trigger-snatch-return:
     runs-on: ubuntu-latest
-    env:
-      ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-      FUNC_URL: https://rmcxhorijitrhqyrvvkn.supabase.co/functions/v1/snatch-auto-return
     steps:
-      - name: Trigger snatch return (attempt 1)
-        run: curl -s -X POST "$FUNC_URL" -H "Authorization: Bearer $ANON_KEY" -H "Content-Type: application/json"
+      - name: Attempt 1
+        env:
+          KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: curl -s -X POST "https://rmcxhorijitrhqyrvvkn.supabase.co/functions/v1/snatch-auto-return" -H "Authorization: Bearer $KEY" -H "Content-Type: application/json"
 
-      - name: Wait and retry (attempt 2)
-        run: sleep 60 && curl -s -X POST "$FUNC_URL" -H "Authorization: Bearer $ANON_KEY" -H "Content-Type: application/json"
+      - name: Attempt 2
+        env:
+          KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: sleep 60 && curl -s -X POST "https://rmcxhorijitrhqyrvvkn.supabase.co/functions/v1/snatch-auto-return" -H "Authorization: Bearer $KEY" -H "Content-Type: application/json"
 
-      - name: Wait and retry (attempt 3)
-        run: sleep 60 && curl -s -X POST "$FUNC_URL" -H "Authorization: Bearer $ANON_KEY" -H "Content-Type: application/json"
+      - name: Attempt 3
+        env:
+          KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: sleep 60 && curl -s -X POST "https://rmcxhorijitrhqyrvvkn.supabase.co/functions/v1/snatch-auto-return" -H "Authorization: Bearer $KEY" -H "Content-Type: application/json"
