@@ -1,0 +1,40 @@
+name: Snatch Auto Return
+
+on:
+  schedule:
+    # Friday 18:28 UTC = Friday 11:58 PM IST
+    - cron: '28 18 * * 5'
+  workflow_dispatch: # Allow manual trigger from GitHub UI
+
+jobs:
+  trigger-snatch-return:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Snatch Auto Return Edge Function
+        run: |
+          response=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST \
+            "https://rmcxhorijitrhqyrvvkn.supabase.co/functions/v1/snatch-auto-return" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Content-Type: application/json")
+          
+          echo "Response status: $response"
+          
+          if [ "$response" -eq 200 ]; then
+            echo "✅ Snatch auto return triggered successfully"
+          else
+            echo "❌ Failed with status $response"
+            exit 1
+          fi
+
+      - name: Also trigger at +1 minute (safety net)
+        run: sleep 60 && curl -s -X POST \
+          "https://rmcxhorijitrhqyrvvkn.supabase.co/functions/v1/snatch-auto-return" \
+          -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+          -H "Content-Type: application/json"
+
+      - name: Also trigger at +2 minutes (safety net)
+        run: sleep 60 && curl -s -X POST \
+          "https://rmcxhorijitrhqyrvvkn.supabase.co/functions/v1/snatch-auto-return" \
+          -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+          -H "Content-Type: application/json"
