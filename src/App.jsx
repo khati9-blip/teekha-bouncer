@@ -4913,6 +4913,7 @@ ${aiMatchText.slice(0, 3000)}`;
                                 const live = match.status==="live";
                                 const liveScore = liveScores[match.id];
                                 const isSynced = completed && Object.keys(points).some(pid=>points[pid][match.id]);
+                                const hasStats = Object.keys(points).some(pid=>points[pid][match.id]);
                                 return (
                                   <div key={match.id} style={{background:T.card,borderRadius:10,border:"1px solid "+(live?"#FF3D5A33":completed?"#2ECC7122":"#1E2D45")}}>
                                     <div style={{display:"flex",alignItems:"center",padding:"10px 14px",gap:12,cursor:"pointer"}} onClick={()=>setExpandedMatchId(expandedMatchId===match.id?null:match.id)}>
@@ -4970,6 +4971,15 @@ ${aiMatchText.slice(0, 3000)}`;
                                               style={{background:T.successBg,border:`1px solid ${T.success}44`,color:T.success,borderRadius:7,padding:"6px 10px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:11}}>✓ DONE</button>}
                                             {match.status!=="upcoming" && <button onClick={()=>{const upd=matches.map(m=>m.id===match.id?{...m,status:"upcoming"}:m);updMatches(upd);}}
                                               style={{background:"#4A5E7822",border:"1px solid #4A5E7844",color:T.muted,borderRadius:7,padding:"6px 10px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:11}}>↩ RESET</button>}
+                                            {hasStats && <button onClick={()=>setConfirmAction({msg:`Clear ALL stats for Match ${match.matchNum}? This cannot be undone.`, fn:()=>{
+                                              const newPts = {...points};
+                                              Object.keys(newPts).forEach(pid => {
+                                                if(newPts[pid][match.id]) delete newPts[pid][match.id];
+                                              });
+                                              updPoints(newPts);
+                                              pushNotif("stats", `Match ${match.matchNum} stats cleared`, "🗑");
+                                            }})}
+                                              style={{background:T.dangerBg,border:`1px solid ${T.danger}44`,color:T.danger,borderRadius:7,padding:"6px 10px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:11}}>🗑 CLEAR STATS</button>}
                                           </div>
                                         )}
                                       </div>
