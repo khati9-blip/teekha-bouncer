@@ -2674,7 +2674,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
 
         // ── Save fresh data to localStorage for next instant load ─────────
         try {
-          const toCache = { teams: t, players: p, assignments: a, matches: m, captains: c, snatch: sn, tournaments: tv };
+          const toCache = { teams: t, players: p, assignments: a, matches: m, captains: c, tournaments: tv };
           localStorage.setItem('tb_appdata_' + _pitchId, JSON.stringify(toCache));
         } catch {}
 
