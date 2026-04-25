@@ -5109,7 +5109,11 @@ ${aiMatchText.slice(0, 3000)}`;
                           // Check ownershipLog for this team during match date
                           const periods = (ownershipLog[p.id]||[]).filter(o=>o.teamId===team.id);
                           if (periods.length > 0) {
-                            return periods.some(o => (!o.from || o.from <= matchDateStr+"Z") && (!o.to || o.to >= matchDateStr));
+                            return periods.some(o => {
+                              const fromDate = o.from ? o.from.split('T')[0] : '0000-01-01';
+                              const toDate = o.to ? o.to.split('T')[0] : '2099-12-31';
+                              return matchDateStr >= fromDate && matchDateStr <= toDate;
+                            });
                           }
                           // If player was snatched IN to this team and returned — only show during snatch period
                           const histSnatchedIn = (snatch.history||[]).find(h=>h.pid===p.id && h.byTeamId===team.id);
