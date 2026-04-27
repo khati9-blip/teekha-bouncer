@@ -4480,6 +4480,15 @@ ${aiMatchText.slice(0, 3000)}`;
           existingStats={Object.fromEntries(Object.entries(points).filter(([pid,m])=>m[smartStatsMatch.id]).map(([pid,m])=>[pid,m[smartStatsMatch.id].stats]))}
           onSave={(statsList)=>{
             const newPts={...points};
+            // First clear all existing stats for this match
+            for(const pid of Object.keys(newPts)){
+              if(newPts[pid][smartStatsMatch.id]){
+                const updated={...newPts[pid]};
+                delete updated[smartStatsMatch.id];
+                newPts[pid]=updated;
+              }
+            }
+            // Then save only the played players
             for(const s of statsList){
               if(!s.playerId)continue;
               const pts=calcPoints(s, pointsConfig);
