@@ -1689,7 +1689,8 @@ function TransferHistory({ transfers, players, teams }) {
     isCurrent: true,
   }] : [];
 
-  const history = [...currentWeekEntry, ...[...(transfers.history || [])].reverse()];
+  const history = [...currentWeekEntry, ...[...(transfers.history || [])].reverse()]
+    .filter(w => (w.tradedPairs || []).length > 0); // only show weeks with actual trades
 
   if (history.length === 0) {
     return (
