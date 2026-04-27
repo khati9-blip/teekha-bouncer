@@ -800,6 +800,12 @@ Only include players who appear in the scorecard. Match names as closely as poss
       for (const entry of parsed) {
         const p = findP(entry.name);
         if (!p) continue;
+        // Validate: player's last name or first name must appear in the raw scorecard text
+        const nameParts = p.name.toLowerCase().split(" ");
+        const appearsInScorecard = nameParts.some(part => 
+          part.length >= 4 && pasteText.toLowerCase().includes(part)
+        );
+        if (!appearsInScorecard) continue; // skip false matches
         matched++;
         newStats[p.id] = {
           ...newStats[p.id],
@@ -820,6 +826,44 @@ Only include players who appear in the scorecard. Match names as closely as poss
           played: true,
         };
       }
+
+      // Regex scan of raw scorecard for catches/runouts/stumpings — more reliable than AI
+      const lines = pasteText.split("\n");
+      for (const line of lines) {
+        const trimmed = line.trim();
+        // Catches: lines starting with "c PlayerName b ..."
+        const catchMatch = trimmed.match(/^c\s+([A-Za-z][A-Za-z\s\-]+?)\s+b\s/i);
+        if (catchMatch) {
+          const fielderName = catchMatch[1].trim();
+          const fp = findP(fielderName);
+          if (fp) {
+            if (!newStats[fp.id]) newStats[fp.id] = { runs:0, balls:0, fours:0, sixes:0, dismissed:false, wickets:0, overs:0, economy:0, maidens:0, catches:0, stumpings:0, runouts:0, longestSix:false, mom:false, played:true };
+            newStats[fp.id].catches = (parseInt(newStats[fp.id].catches) || 0) + 1;
+          }
+        }
+        // Stumpings: "st PlayerName b ..."
+        const stumpMatch = trimmed.match(/^st\s+([A-Za-z][A-Za-z\s\-]+?)\s+b\s/i);
+        if (stumpMatch) {
+          const keeperName = stumpMatch[1].trim();
+          const kp = findP(keeperName);
+          if (kp) {
+            if (!newStats[kp.id]) newStats[kp.id] = { runs:0, balls:0, fours:0, sixes:0, dismissed:false, wickets:0, overs:0, economy:0, maidens:0, catches:0, stumpings:0, runouts:0, longestSix:false, mom:false, played:true };
+            newStats[kp.id].stumpings = (parseInt(newStats[kp.id].stumpings) || 0) + 1;
+          }
+        }
+        // Run outs: "run out (PlayerName)" or "run out (P1/P2)"
+        const roMatch = trimmed.match(/run\s+out\s+\(([^)]+)\)/i);
+        if (roMatch) {
+          for (const name of roMatch[1].split("/")) {
+            const rp = findP(name.trim());
+            if (rp) {
+              if (!newStats[rp.id]) newStats[rp.id] = { runs:0, balls:0, fours:0, sixes:0, dismissed:false, wickets:0, overs:0, economy:0, maidens:0, catches:0, stumpings:0, runouts:0, longestSix:false, mom:false, played:true };
+              newStats[rp.id].runouts = (parseInt(newStats[rp.id].runouts) || 0) + 1;
+            }
+          }
+        }
+      }
+
       setStats(newStats);
       setFetchStatus("✅ Parsed " + matched + " players from scorecard");
       setShowPasteModal(false);
