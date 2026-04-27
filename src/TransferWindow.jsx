@@ -907,9 +907,11 @@ export default function TransferWindow({
               </>
             )}
 
-            <button onClick={startNewWeek} style={adminBtn("#F5A623")}>
-              📅 START NEW WEEK
-            </button>
+            {phase === "done" && (
+              <button onClick={startNewWeek} style={adminBtn("#F5A623")}>
+                📅 START NEW WEEK
+              </button>
+            )}
 
             {phase === "trade" && (
               <>
