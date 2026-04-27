@@ -1571,12 +1571,20 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
         clonedFromName: cloneModal.name,
       };
 
-      // Copy all data keys from original to clone
-      const dataKeys = ["teams","players","assignments","matches","captains","points","page","tnames","numteams","pwhash","pointsConfig","adminHash","adminEmail","teamIdentity","guestAllowed","tournaments","safePlayers","unsoldPool","transfers","ownershipLog","snatch"];
-      for (const key of dataKeys) {
+      // Copy ALL data keys from original pitch dynamically
+      // This ensures any new features added in future are automatically cloned
+      const allKeys = await fetch(
+        `${SUPABASE_URL}/rest/v1/league_data?key=like.${cloneModal.id}_%&select=key`,
+        { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
+      ).then(r => r.json()).then(rows => rows.map(r => r.key));
+
+      for (const fullKey of allKeys) {
         try {
-          const val = await sbGet(cloneModal.id + "_" + key);
-          if (val !== null && val !== undefined) await sbSet(cloneId + "_" + key, val);
+          const suffix = fullKey.slice(cloneModal.id.length + 1); // remove "p1_" prefix
+          // Skip keys that should not be cloned
+          if (["pwhash","adminHash","adminEmail"].includes(suffix)) continue;
+          const val = await sbGet(cloneModal.id + "_" + suffix);
+          if (val !== null && val !== undefined) await sbSet(cloneId + "_" + suffix, val);
         } catch {}
       }
 
