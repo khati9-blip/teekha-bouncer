@@ -985,12 +985,6 @@ export default function TransferWindow({
               </>
             )}
 
-            {phase === "done" && (
-              <button onClick={startNewWeek} style={adminBtn("#F5A623")}>
-                📅 START NEW WEEK
-              </button>
-            )}
-
             {/* Full rollback — undo all trades and restore squads */}
             <button onClick={()=>setConfirmModal({
               message:"⚠️ FULL RESET: Undo ALL transfers across all weeks? Players return to their original teams, all trade history is wiped. This cannot be undone.",
