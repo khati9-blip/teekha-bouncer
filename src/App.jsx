@@ -737,7 +737,19 @@ function SmartStatsModal({ match, players, assignments, existingStats, onSave, o
           model: "claude-sonnet-4-6",
           max_tokens: 4000,
           system: "You are a cricket scorecard parser. Extract player stats from the scorecard text and return ONLY a valid JSON array. No markdown, no explanation.",
-          messages: [{ role: "user", content: `Parse this cricket scorecard and extract stats for these players: ${playerList}.
+          messages: [{ role: "user", content: `Parse this cricket scorecard and extract stats for every player mentioned.
+
+IMPORTANT RULES:
+1. CATCHES: Look for "c PlayerName b ..." in batting section — the fielder after "c" took a catch. Also look for "Caught" entries. Count all catches per fielder.
+2. RUN OUTS: Look for "run out (PlayerName)" or "run out (PlayerName/PlayerName)" — the fielder(s) in brackets get a run-out credit. Count all run-outs per fielder.
+3. STUMPINGS: Look for "st PlayerName b ..." — the keeper after "st" gets a stumping.
+4. WICKETS: Count wickets from bowling figures.
+5. ECONOMY: Calculate from runs/overs if given.
+6. MOM: Look for "Player of the Match" or "Man of the Match".
+7. DISMISSED: true if the batsman got out (not "not out").
+8. Include ALL players who appear anywhere in the scorecard.
+
+Players to find: ${playerList}
 
 Scorecard:
 ${pasteText}
