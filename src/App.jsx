@@ -764,16 +764,34 @@ Only include players who appear in the scorecard. Match names as closely as poss
       let parsed = [];
       try { parsed = JSON.parse(clean); } catch { throw new Error("Could not parse AI response"); }
       
-      // Match parsed players to our matchPlayers
+      // Match parsed players to our matchPlayers — strict matching to avoid wrong assignments
       const nameMap = {};
+      const lastNameMap = {};
       matchPlayers.forEach(p => {
-        nameMap[p.name.toLowerCase()] = p;
-        p.name.toLowerCase().split(" ").forEach(part => { if(part.length > 3) nameMap[part] = p; });
+        const full = p.name.toLowerCase();
+        nameMap[full] = p;
+        // Map last name only if unique
+        const parts = full.split(" ");
+        const last = parts[parts.length - 1];
+        if (last.length >= 4) {
+          if (!lastNameMap[last]) lastNameMap[last] = p;
+          else lastNameMap[last] = null; // conflict — don't use last name for this
+        }
+        // Also map first+last for players with middle names
+        if (parts.length > 2) nameMap[parts[0] + " " + parts[parts.length-1]] = p;
       });
       const findP = (name) => {
         const n = (name||"").toLowerCase().trim();
+        // 1. Exact full name match
         if (nameMap[n]) return nameMap[n];
-        for (const part of n.split(" ")) { if(part.length >= 4 && nameMap[part]) return nameMap[part]; }
+        // 2. Check if parsed name is contained in any player name
+        for (const [key, p] of Object.entries(nameMap)) {
+          if (key.includes(n) || n.includes(key)) return p;
+        }
+        // 3. Last name match only if unambiguous
+        const parts = n.split(" ");
+        const last = parts[parts.length - 1];
+        if (last.length >= 4 && lastNameMap[last]) return lastNameMap[last];
         return null;
       };
 
@@ -794,9 +812,9 @@ Only include players who appear in the scorecard. Match names as closely as poss
           overs: +entry.overs || 0,
           economy: +entry.economy || 0,
           maidens: +entry.maidens || 0,
-          catches: +entry.catches || 0,
-          stumpings: +entry.stumpings || 0,
-          runouts: +entry.runouts || 0,
+          catches: parseInt(entry.catches) || 0,
+          stumpings: parseInt(entry.stumpings) || 0,
+          runouts: parseInt(entry.runouts) || 0,
           longestSix: !!entry.longestSix,
           mom: !!entry.mom,
           played: true,
