@@ -193,7 +193,7 @@ export default function TransferWindow({
   const calculatedDeadline = getNextTransferEndIST();
   // If stored deadline exists and passed — close. If no stored deadline, use calculated.
   const releaseDeadlinePassed = rawPhase === "release" && (
-    storedDeadline ? new Date(storedDeadline) < new Date() : new Date(calculatedDeadline) < new Date()
+    storedDeadline ? new Date(storedDeadline) < new Date() : false
   );
   const phase = releaseDeadlinePassed ? "closed" : rawPhase;
   const myTeamId = myTeam?.id || sessionTeamId;
@@ -775,7 +775,7 @@ export default function TransferWindow({
       ...transfers,
       phase: "release",
       weekNum: hasHistory ? (transfers.weekNum || 1) + 1 : (transfers.weekNum || 1),
-      releaseDeadline: getNextTransferEndIST(),
+      releaseDeadline: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24hrs from now
       releases: {},
       tradedPairs: [],
       ineligible: [],
