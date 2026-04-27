@@ -895,12 +895,24 @@ export default function TransferWindow({
               </button>
             )}
 
-            {/* Phase-specific actions */}
-            {phase === "release" && (
+            {/* Phase-specific actions — always show when unlocked */}
+            {(phase === "release" || phase === "closed" || phase === "done") && (
               <button onClick={startTradePhase} style={adminBtn("#2ECC71")}>
                 🏁 START TRADE PHASE
               </button>
             )}
+
+            {(phase === "trade" || phase === "release" || phase === "closed") && (
+              <>
+                <button onClick={resetTradePhase} style={adminBtn("#A855F7")}>
+                  🔄 RESET TRADE PHASE
+                </button>
+              </>
+            )}
+
+            <button onClick={startNewWeek} style={adminBtn("#F5A623")}>
+              📅 START NEW WEEK
+            </button>
 
             {phase === "trade" && (
               <>
