@@ -767,31 +767,37 @@ Only include players who appear in the scorecard. Match names as closely as poss
       // Match parsed players to our matchPlayers — strict matching to avoid wrong assignments
       const nameMap = {};
       const lastNameMap = {};
+      const firstNameMap = {};
       matchPlayers.forEach(p => {
         const full = p.name.toLowerCase();
         nameMap[full] = p;
-        // Map last name only if unique
         const parts = full.split(" ");
         const last = parts[parts.length - 1];
+        const first = parts[0];
+        // Last name map — only if unique across all players
         if (last.length >= 4) {
           if (!lastNameMap[last]) lastNameMap[last] = p;
-          else lastNameMap[last] = null; // conflict — don't use last name for this
+          else lastNameMap[last] = null; // conflict — ambiguous, don't use
         }
-        // Also map first+last for players with middle names
-        if (parts.length > 2) nameMap[parts[0] + " " + parts[parts.length-1]] = p;
+        // First name map — only if unique
+        if (first.length >= 4) {
+          if (!firstNameMap[first]) firstNameMap[first] = p;
+          else firstNameMap[first] = null;
+        }
+        // first+last for players with middle names
+        if (parts.length > 2) nameMap[parts[0] + " " + last] = p;
       });
       const findP = (name) => {
         const n = (name||"").toLowerCase().trim();
         // 1. Exact full name match
         if (nameMap[n]) return nameMap[n];
-        // 2. Check if parsed name is contained in any player name
-        for (const [key, p] of Object.entries(nameMap)) {
-          if (key.includes(n) || n.includes(key)) return p;
-        }
-        // 3. Last name match only if unambiguous
+        // 2. Unambiguous last name match
         const parts = n.split(" ");
         const last = parts[parts.length - 1];
+        const first = parts[0];
         if (last.length >= 4 && lastNameMap[last]) return lastNameMap[last];
+        // 3. Unambiguous first name match
+        if (first.length >= 4 && firstNameMap[first]) return firstNameMap[first];
         return null;
       };
 
@@ -825,6 +831,13 @@ Only include players who appear in the scorecard. Match names as closely as poss
           mom: !!entry.mom,
           played: true,
         };
+      }
+
+      // Reset fielding stats before regex scan — AI counts are unreliable, regex is authoritative
+      for (const pid of Object.keys(newStats)) {
+        newStats[pid].catches = 0;
+        newStats[pid].stumpings = 0;
+        newStats[pid].runouts = 0;
       }
 
       // Regex scan of raw scorecard for catches/runouts/stumpings — more reliable than AI
