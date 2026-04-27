@@ -611,7 +611,20 @@ export default function TransferWindow({
     const totalPicks = Object.values(transfers.releases || {}).reduce((s, arr) => s + arr.length, 0) || (teams.length * 3);
     const msPerPick = 45 * 60 * 1000; // 45 mins per pick
 
-    const firstTeam = pickOrder[0]?.id;
+    // Pick order: team with most releases goes first (they released most, so they pick first)
+    // Tiebreak: fewest players overall
+    const releaseCounts = {};
+    Object.entries(transfers.releases || {}).forEach(([tid, pids]) => { releaseCounts[tid] = pids.length; });
+    const orderedTeams = [...teams].sort((a, b) => {
+      const relA = releaseCounts[a.id] || 0;
+      const relB = releaseCounts[b.id] || 0;
+      if (relB !== relA) return relB - relA; // most releases first
+      const countA = players.filter(p => assignments[p.id] === a.id).length;
+      const countB = players.filter(p => assignments[p.id] === b.id).length;
+      return countA - countB; // fewest players as tiebreak
+    });
+
+    const firstTeam = orderedTeams[0]?.id;
     const deadline = new Date(Date.now() + msPerPick).toISOString();
     onUpdateTransfers({
       ...transfers,
@@ -619,8 +632,7 @@ export default function TransferWindow({
       currentPickTeam: firstTeam,
       pickDeadline: deadline,
       msPerPick,
-      tradedPairs: [],
-      ineligible: [],
+      tradeStartedAt: new Date().toISOString(),
     });
     setConfirmModal({ message: `✅ Trade phase started! 45 minutes per pick (${totalPicks} total picks).`, onConfirm: null });
   });
@@ -656,10 +668,12 @@ export default function TransferWindow({
       });
     });
 
-    // Restore pool to original unsold pool (remove all released players)
+    // Restore pool — add back released players that were in pool before window opened
+    // Released players go back to their teams (not pool), picked players go back to pool
     const allReleasedPids = new Set(Object.values(allReleases).flat());
     const allPickedPids = new Set(currentPairs.map(p => p.pickedPid));
-    const newPool = unsoldPool.filter(id => !allReleasedPids.has(id) && !allPickedPids.has(id));
+    // Remove picked players (they're assigned back), keep existing pool minus any newly picked
+    const newPool = unsoldPool.filter(id => !allPickedPids.has(id) || allReleasedPids.has(id));
 
     onUpdateAssignments(newAssignments);
     onUpdateUnsoldPool(newPool);
