@@ -904,9 +904,6 @@ export default function TransferWindow({
 
             {(phase === "trade" || phase === "release" || phase === "closed") && (
               <>
-                <button onClick={resetTradePhase} style={adminBtn("#A855F7")}>
-                  🔄 RESET TRADE PHASE
-                </button>
               </>
             )}
 
