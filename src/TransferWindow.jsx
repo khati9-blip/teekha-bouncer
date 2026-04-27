@@ -963,8 +963,7 @@ export default function TransferWindow({
                   const { newAssignments: cleanAssign, newPool: cleanPool } = returnUntradedPlayers(transfers, assignments, unsoldPool);
                   onUpdateAssignments(cleanAssign);
                   onUpdateUnsoldPool(cleanPool);
-                  onUpdateTransfers({ ...transfers, phase: "done" });
-                })} style={adminBtn("#2ECC71")}>
+                  onUpdateTransfers({ ...transfers, phase: "done" });                })} style={adminBtn("#2ECC71")}>
                   ✅ END TRADE PHASE
                 </button>
               </>
