@@ -806,12 +806,13 @@ Only include players who appear in the scorecard. Match names as closely as poss
       for (const entry of parsed) {
         const p = findP(entry.name);
         if (!p) continue;
-        // Validate: player's last name or first name must appear in the raw scorecard text
-        const nameParts = p.name.toLowerCase().split(" ");
-        const appearsInScorecard = nameParts.some(part => 
-          part.length >= 4 && pasteText.toLowerCase().includes(part)
-        );
-        if (!appearsInScorecard) continue; // skip false matches
+        // Validate: player's FIRST name must appear in the raw scorecard text
+        const firstName = p.name.toLowerCase().split(" ")[0];
+        if (firstName.length >= 4 && !pasteText.toLowerCase().includes(firstName)) continue;
+        if (firstName.length < 4) {
+          // For short first names, require full name
+          if (!pasteText.toLowerCase().includes(p.name.toLowerCase().split(" ").slice(0,2).join(" "))) continue;
+        }
         matched++;
         newStats[p.id] = {
           ...newStats[p.id],
