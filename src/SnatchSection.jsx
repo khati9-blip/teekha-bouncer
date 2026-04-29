@@ -247,8 +247,8 @@ export default function SnatchSection({
     let daysUntil = (returnDay - day + 7) % 7;
     if (daysUntil === 0 && totalMins >= returnMins) daysUntil = 7;
 
-    const midnightIst = Date.now() - totalSecs * 1000;
-    const returnMs = midnightIst + daysUntil * 24 * 60 * 60 * 1000 + (returnMins - 330) * 60000;
+    const istMidnightUtc = Date.now() - totalSecs * 1000;
+    const returnMs = istMidnightUtc + daysUntil * 24 * 60 * 60 * 1000 + returnMins * 60000 - IST_OFFSET;
     const secsLeft = Math.max(0, Math.floor((returnMs - Date.now()) / 1000));
 
     const d = Math.floor(secsLeft / 86400);
