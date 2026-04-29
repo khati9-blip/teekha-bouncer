@@ -100,7 +100,8 @@ export default function SnatchSection({
   leaderboard, myTeam, isAdmin, unlocked, withPassword,
   teamIdentity, user, pitch,
   onUpdateSnatch, onUpdateAssignments, onUpdateOwnershipLog, ownershipLog,
-  safePlayers, onUpdateSafePlayers, pushNotif, pitchConfig, ruledOut = []
+  safePlayers, onUpdateSafePlayers, pushNotif, pitchConfig, ruledOut = [],
+  storeGet
 }) {
   const [windowStatus, setWindowStatus] = useState(getSnatchWindowStatus(pitchConfig));
   const [pinInput, setPinInput] = useState("");
@@ -266,7 +267,14 @@ export default function SnatchSection({
   useEffect(() => {
     if (!snatch?.active) return;
     setReturnCountdown(calcReturnCountdown());
-    const t = setInterval(() => setReturnCountdown(calcReturnCountdown()), 1000);
+    const t = setInterval(async () => {
+      const val = calcReturnCountdown();
+      setReturnCountdown(val);
+      if (val === "00:00" && storeGet) {
+        const fresh = await storeGet("snatch");
+        if (fresh) onUpdateSnatch(fresh);
+      }
+    }, 1000);
     return () => clearInterval(t);
   }, [snatch?.active, pitchConfig]);
 
