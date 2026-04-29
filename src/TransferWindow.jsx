@@ -485,7 +485,6 @@ export default function TransferWindow({
           newlyIneligible.push({ pid: rp.id, teamId: team.id });
           return;
         }
-        }
         // Use getValidMatches which includes Hall's check — same logic as PICK buttons
       const validMatches = getValidMatches(rp, team.id);
       if (validMatches.length === 0) newlyIneligible.push({ pid: rp.id, teamId: team.id });
