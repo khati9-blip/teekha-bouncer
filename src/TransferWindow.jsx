@@ -279,6 +279,20 @@ export default function TransferWindow({
           );
           if (validPicks.length !== 1) continue;
 
+          // If two released players from the SAME team both have this
+          // as their only option — let the team choose manually
+          const sameTeamConflict = remainingReleased.some(otherRp => {
+            if (otherRp.id === rp.id) return false;
+            const otherValid = currentPoolPlayers.filter(pp =>
+              !teamReleasedPids.has(pp.id) &&
+              !alreadyPicked.has(pp.id) &&
+              pp.role === otherRp.role &&
+              TIER_ORDER[pp.tier||""] <= TIER_ORDER[otherRp.tier||""]
+            );
+            return otherValid.length === 1 && otherValid[0].id === validPicks[0].id;
+          });
+          if (sameTeamConflict) continue;
+
           const pp = validPicks[0];
           const now = new Date().toISOString();
 
