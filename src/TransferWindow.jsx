@@ -564,7 +564,7 @@ export default function TransferWindow({
       msPerPick,
       tradeStartedAt: new Date().toISOString(),
     });
-    setConfirmModal({ message: `✅ Trade phase started! 45 minutes per pick (${totalPicks} total picks).`, onConfirm: null });
+    setConfirmModal({ message: `Trade phase started! ${totalPicks} total picks · 45 min per pick.`, onConfirm: null });
   });
 
   const resetTradePhase = () => withPassword(() => {
@@ -684,6 +684,7 @@ export default function TransferWindow({
     onUpdateTransfers({
       weekNum: (transfers.weekNum || 1) + 1,
       phase: "closed",
+      suppressUntil: getNextTransferEndIST(), // don't auto-reopen until current window fully closes
       releases: {},
       tradedPairs: [],
       ineligible: [],
