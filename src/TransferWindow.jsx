@@ -375,13 +375,28 @@ export default function TransferWindow({
             )
             .map(pp => pp.id)
         );
-        releaseSlots.push({ validPicks });
+        releaseSlots.push({ validPicks, teamId: t.id });
       });
     });
 
+    // Remove same-team conflicted slots before Hall's check.
+    // If two slots from the same team share the same single valid pick
+    // (e.g. DD has Jos Buttler + Dhruv Jurel both needing Kartik),
+    // exclude them — auto-return will handle them, they shouldn't block others.
+    const filteredSlots = releaseSlots.filter((slot, idx) => {
+      if (slot.validPicks.size !== 1) return true;
+      const singlePick = [...slot.validPicks][0];
+      return !releaseSlots.some((other, otherIdx) =>
+        otherIdx !== idx &&
+        other.validPicks.size === 1 &&
+        [...other.validPicks][0] === singlePick &&
+        slot.teamId === other.teamId
+      );
+    });
+
     // Check Hall's condition for all non-empty subsets.
-    // Only block if BB's pick CREATES a new violation — ignore pre-existing ones.
-    const n = releaseSlots.length;
+    // Only block if this pick CREATES a new violation — ignore pre-existing ones.
+    const n = filteredSlots.length;
 
     // First compute current slots WITHOUT the pick to find pre-existing violations
     const currentSlots = [];
@@ -412,12 +427,12 @@ export default function TransferWindow({
         if (mask & (1 << i)) subset.push(i);
       }
       const unionAfter = new Set();
-      subset.forEach(i => releaseSlots[i].validPicks.forEach(pid => unionAfter.add(pid)));
+      subset.forEach(i => filteredSlots[i].validPicks.forEach(pid => unionAfter.add(pid)));
 
       if (unionAfter.size < subset.length) {
         // Violation after pick — check if it also existed before
         const unionBefore = new Set();
-        subset.forEach(i => currentSlots[i].validPicks.forEach(pid => unionBefore.add(pid)));
+        subset.forEach(i => currentSlots[i]?.validPicks.forEach(pid => unionBefore.add(pid)));
         if (unionBefore.size >= subset.length) {
           // Pre-existing was fine, pick made it worse — block
           return [];
