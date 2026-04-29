@@ -115,13 +115,6 @@ export default function SnatchSection({
     return () => clearInterval(t);
   }, []);
 
-  useEffect(() => {
-    if (!snatch?.active) return;
-    setReturnCountdown(calcReturnCountdown());
-    const t = setInterval(() => setReturnCountdown(calcReturnCountdown()), 1000);
-    return () => clearInterval(t);
-  }, [snatch?.active, pitchConfig]);
-
   const eligibility = useMemo(() => {
     // When snatch window is open (Saturday), look at previous week's matches
     // because the current week just started today (Saturday) with no matches yet
@@ -267,6 +260,13 @@ export default function SnatchSection({
     if (m > 0) return `${m}m ${s}s`;
     return `${s}s`;
   };
+
+  useEffect(() => {
+    if (!snatch?.active) return;
+    setReturnCountdown(calcReturnCountdown());
+    const t = setInterval(() => setReturnCountdown(calcReturnCountdown()), 1000);
+    return () => clearInterval(t);
+  }, [snatch?.active, pitchConfig]);
 
   const formatMins = (mins) => {
     if (!mins && mins !== 0) return "";
