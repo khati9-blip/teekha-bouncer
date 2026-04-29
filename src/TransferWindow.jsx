@@ -667,9 +667,10 @@ export default function TransferWindow({
     onUpdateAssignments(newAssignments);
     onUpdateUnsoldPool(newPool);
     if (tradedPairs.length > 0) onUpdateOwnershipLog(newLog);
-    onUpdateTransfers({
+onUpdateTransfers({
       ...transfers,
       phase: "closed",
+      suppressUntil: getNextTransferEndIST(), // don't auto-reopen until current window closes
       releases: {},
       tradedPairs: [],
       ineligible: [],
@@ -678,7 +679,6 @@ export default function TransferWindow({
     });
     }});
   });
-
   const startNewWeek = () => withPassword(() => {
     setConfirmModal({ message: "Start new week? This will archive this window's history and reset for a fresh transfer window.", onConfirm: () => {
     onUpdateTransfers({
