@@ -223,8 +223,13 @@ export default function TransferWindow({
         (h > transferStart.h || (h === transferStart.h && m >= transferStart.m));
       const beforeEnd = day === transferEnd.day &&
         (h < transferEnd.h || (h === transferEnd.h && m < transferEnd.m));
-      const betweenDays = transferStart.day !== transferEnd.day && day !== transferStart.day && day !== transferEnd.day;
-      const inWindow = afterStart || (betweenDays && beforeEnd);
+     const betweenDays = transferStart.day !== transferEnd.day &&
+        day !== transferStart.day &&
+        day !== transferEnd.day &&
+        ((transferStart.day < transferEnd.day)
+          ? (day > transferStart.day && day < transferEnd.day)
+          : (day > transferStart.day || day < transferEnd.day));
+      const inWindow = afterStart || betweenDays || beforeEnd;
       setShowAutoOpenPrompt(inWindow);
     };
     check();
@@ -275,9 +280,14 @@ export default function TransferWindow({
     const tradedPids = getTradedPairs(teamId).map(t => t.releasedPid);
     const remaining = released.filter(p => !tradedPids.includes(p.id));
     if (remaining.length === 0) return false;
+   const teamReleasedPids = new Set(transfers.releases?.[teamId] || []);
     for (const rp of remaining) {
       for (const pp of sortedPool) {
-        if (pp.role === rp.role && TIER_ORDER[pp.tier||""] <= TIER_ORDER[rp.tier||""]) return false;
+        if (
+          !teamReleasedPids.has(pp.id) &&
+          pp.role === rp.role &&
+          TIER_ORDER[pp.tier||""] <= TIER_ORDER[rp.tier||""]
+        ) return false;
       }
     }
     return true;
@@ -615,7 +625,7 @@ export default function TransferWindow({
       });
     });
 
-  const allReleasedPids = new Set(Object.values(allReleases).flat());
+    const allReleasedPids = new Set(Object.values(allReleases).flat());
     const allPickedPids = new Set(currentPairs.map(p => p.pickedPid));
 
     // Restore pool:
