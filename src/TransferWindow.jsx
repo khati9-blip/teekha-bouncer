@@ -492,8 +492,22 @@ export default function TransferWindow({
     const newAssignments = { ...assignments };
     // Return truly self-owned untraded players to this team
     trulySelfReturning.forEach(p => { newAssignments[p.id] = actingId; });
-    // For reversals: H returns to Team B (the passer who released H)
+    // For reversals: player returns to the passing team (actingId)
     reversals.forEach(r => { newAssignments[r.pickedPid] = actingId; });
+
+    // Fix ownershipLog — remove the stale open period written when the pick was made
+    const newLog = { ...(ownershipLog || {}) };
+    reversals.forEach(r => {
+      const pid = r.pickedPid;
+      if (!newLog[pid]) return;
+      newLog[pid] = newLog[pid]
+        .filter(o => !(o.teamId === r.teamId && o.to === null))  // remove Team B's open period
+        .map(o =>
+          o.teamId === actingId && o.to !== null                  // re-open Team A's closed period
+            ? { ...o, to: null }
+            : o
+        );
+    });
 
     // Pool: remove truly self-returning players; reversal players were already out of pool
     const returnedPids = new Set(trulySelfReturning.map(p => p.id));
@@ -524,6 +538,7 @@ export default function TransferWindow({
 
     onUpdateAssignments(newAssignments);
     onUpdateUnsoldPool(newPool);
+    onUpdateOwnershipLog(newLog);
     onUpdateTransfers({
       ...transfers,
       tradedPairs: newTradedPairs,
