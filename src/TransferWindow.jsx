@@ -238,7 +238,95 @@ export default function TransferWindow({
     (TIER_ORDER[b.tier||""] - TIER_ORDER[a.tier||""]) || a.name.localeCompare(b.name)
   );
 
- const getValidMatches = (poolPlayer, teamId) => {
+ // ── FORCED AUTO-TRADE ─────────────────────────────────────────────────────
+  // After every trade, check if any team now has exactly ONE valid pick left.
+  // If yes — auto-execute that trade immediately before next team sees the pool.
+  // Chains: keeps running until no more forced trades exist.
+  const runForcedTrades = (state) => {
+    const { pool, newAssignments, newTradedPairs, newLog } = state;
+    let current = { ...state };
+    let changed = true;
+
+    while (changed) {
+      changed = false;
+      const currentIneligible = new Set(transfers.ineligible || []);
+      const currentPoolPlayers = current.pool
+        .map(id => players.find(p => p.id === id)).filter(Boolean);
+
+      for (const team of teams) {
+        const teamReleasedPids = new Set(transfers.releases?.[team.id] || []);
+        const teamTradedPids = new Set(
+          (current.newTradedPairs || [])
+            .filter(tp => tp.teamId === team.id)
+            .map(tp => tp.releasedPid)
+        );
+
+        const remainingReleased = [...teamReleasedPids]
+          .filter(pid => !teamTradedPids.has(pid) && !currentIneligible.has(pid))
+          .map(pid => players.find(p => p.id === pid)).filter(Boolean);
+
+        if (remainingReleased.length === 0) continue;
+
+        for (const rp of remainingReleased) {
+          // Find all valid picks in pool for this released player
+          const validPicks = currentPoolPlayers.filter(pp =>
+            !teamReleasedPids.has(pp.id) &&
+            pp.role === rp.role &&
+            TIER_ORDER[pp.tier||""] <= TIER_ORDER[rp.tier||""]
+          );
+
+          if (validPicks.length !== 1) continue; // only act when exactly 1 option
+
+          // Auto-execute this forced trade
+          const pp = validPicks[0];
+          const now = new Date().toISOString();
+
+          const updAssignments = { ...current.newAssignments, [pp.id]: team.id };
+          if (updAssignments[rp.id] === team.id) delete updAssignments[rp.id];
+
+          // Ownership log
+          let updLog = { ...(current.newLog || {}) };
+          if (!updLog[rp.id]) updLog[rp.id] = [];
+          updLog[rp.id] = updLog[rp.id].map(o =>
+            o.teamId === team.id && !o.to ? { ...o, to: now } : o
+          );
+          if (!updLog[rp.id].some(o => o.teamId === team.id)) {
+            updLog[rp.id].push({ teamId: team.id, from: "2025-01-01T00:00:00.000Z", to: now });
+          }
+          if (!updLog[pp.id]) updLog[pp.id] = [];
+          updLog[pp.id] = updLog[pp.id].map(o => !o.to ? { ...o, to: now } : o);
+          updLog[pp.id].push({ teamId: team.id, from: now, to: null });
+
+          const updTradedPairs = [
+            ...(current.newTradedPairs || []),
+            {
+              teamId: team.id,
+              releasedPid: rp.id,
+              pickedPid: pp.id,
+              week: transfers.weekNum,
+              timestamp: now,
+              autoTraded: true, // flag so UI can show "auto-traded"
+            }
+          ];
+
+          const allPickedSoFar = new Set(updTradedPairs.map(tp => tp.pickedPid));
+          const updPool = current.pool.filter(id => !allPickedSoFar.has(id));
+          if (!updPool.includes(rp.id)) updPool.push(rp.id);
+
+          current = {
+            newAssignments: updAssignments,
+            pool: updPool,
+            newTradedPairs: updTradedPairs,
+            newLog: updLog,
+          };
+          changed = true;
+          break; // restart while loop with fresh state
+        }
+        if (changed) break;
+      }
+    }
+    return current;
+  };
     const released = getReleasedPlayers(teamId);
     const tradedPids = getTradedPairs(teamId).map(t => t.releasedPid);
     const remaining = released.filter(p => !tradedPids.includes(p.id));
@@ -313,7 +401,20 @@ export default function TransferWindow({
       released.forEach(rp => {
         if (tradedPids.has(rp.id)) return;        // already traded
         if (currentIneligible.has(rp.id)) return;  // already returned
-        if (rp.pickedByOther) return;               // another team picked them — reversal handles it
+        if (rp.pickedByOther) {
+          // Their released player was taken by another team.
+          // Check if they still have any OTHER valid pick in pool.
+          const teamReleasedPids2 = new Set(transfers.releases?.[team.id] || []);
+          const hasOtherMatch = poolPlayers.some(pp =>
+            !teamReleasedPids2.has(pp.id) &&
+            pp.role === rp.role &&
+            TIER_ORDER[pp.tier||""] <= TIER_ORDER[rp.tier||""]
+          );
+          if (hasOtherMatch) return; // still has options — fine
+          // No other match — stranded. Mark ineligible, return to team.
+          newlyIneligible.push({ pid: rp.id, teamId: team.id });
+          return;
+        }
         const teamReleasedPids = new Set(transfers.releases?.[team.id] || []);
       const hasMatch = poolPlayers.some(pp =>
         !teamReleasedPids.has(pp.id) &&           // can't pick any of your own released players
@@ -459,8 +560,20 @@ export default function TransferWindow({
     const newPool = unsoldPool.filter(id => !allPickedSoFar.has(id) && id !== poolPlayer.id);
     if (!newPool.includes(releasedPlayer.id)) newPool.push(releasedPlayer.id);
 
+   // Run forced auto-trades — chain until no more single-option situations
+    const forced = runForcedTrades({
+      pool: newPool,
+      newAssignments,
+      newTradedPairs: tradedPairs,
+      newLog,
+    });
+    const finalAssignments = forced.newAssignments;
+    const finalPool = forced.pool;
+    const finalTradedPairs = forced.newTradedPairs;
+    const finalLog = forced.newLog;
+
     // Advance to next team
-    const nextTeam = getNextPickTeam(tradeAsTeamId, tradedPairs);
+    const nextTeam = getNextPickTeam(tradeAsTeamId, finalTradedPairs);
     const deadline = nextTeam ? new Date(Date.now() + 45 * 60 * 1000).toISOString() : null;
     const allDone = !nextTeam;
 
@@ -476,10 +589,10 @@ export default function TransferWindow({
       reversalAlert: clearedAlerts.length > 0 ? clearedAlerts : null,
     };
 
-    onUpdateAssignments(newAssignments);
-    onUpdateUnsoldPool(newPool);
-    onUpdateOwnershipLog(newLog);
-    onUpdateTransfers(updated);
+    onUpdateAssignments(finalAssignments);
+    onUpdateUnsoldPool(finalPool);
+    onUpdateOwnershipLog(finalLog);
+    onUpdateTransfers({ ...updated, tradedPairs: finalTradedPairs });
     setTradeConfirmModal(null);
   };
 
