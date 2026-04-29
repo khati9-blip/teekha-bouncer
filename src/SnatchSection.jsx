@@ -108,11 +108,19 @@ export default function SnatchSection({
   const [selectingPlayer, setSelectingPlayer] = useState(false);
   const [selectedVictimTeam, setSelectedVictimTeam] = useState(null);
   const [pinModal, setPinModal] = useState(null); // player object to confirm snatch
+  const [returnCountdown, setReturnCountdown] = useState("");
 
   useEffect(() => {
     const t = setInterval(() => setWindowStatus(getSnatchWindowStatus(pitchConfig)), 30000);
     return () => clearInterval(t);
   }, []);
+
+  useEffect(() => {
+    if (!snatch?.active) return;
+    setReturnCountdown(calcReturnCountdown());
+    const t = setInterval(() => setReturnCountdown(calcReturnCountdown()), 1000);
+    return () => clearInterval(t);
+  }, [snatch?.active, pitchConfig]);
 
   const eligibility = useMemo(() => {
     // When snatch window is open (Saturday), look at previous week's matches
@@ -224,6 +232,42 @@ export default function SnatchSection({
     setSelectingPlayer(false); setSelectedVictimTeam(null); setPinInput(""); setPinErr(""); setPinModal(null);
   };
 
+  const calcReturnCountdown = () => {
+    if (!snatch?.active) return "";
+    const returnStr = pitchConfig?.snatchReturn || "Friday 11:58 PM";
+    const days = {sunday:0,monday:1,tuesday:2,wednesday:3,thursday:4,friday:5,saturday:6};
+    const parts = returnStr.split(" ");
+    const returnDay = days[parts[0]?.toLowerCase()] ?? 5;
+    const hhmm = parts[parts.length - 2] || "11:58";
+    const ampm = parts[parts.length - 1] || "PM";
+    let [hh, mm] = hhmm.split(":").map(Number);
+    if (ampm === "PM" && hh !== 12) hh += 12;
+    if (ampm === "AM" && hh === 12) hh = 0;
+    const returnMins = hh * 60 + mm;
+
+    const IST_OFFSET = 5.5 * 60 * 60 * 1000;
+    const ist = new Date(Date.now() + IST_OFFSET);
+    const day = ist.getUTCDay();
+    const totalMins = ist.getUTCHours() * 60 + ist.getUTCMinutes();
+    const totalSecs = ist.getUTCHours() * 3600 + ist.getUTCMinutes() * 60 + ist.getUTCSeconds();
+
+    let daysUntil = (returnDay - day + 7) % 7;
+    if (daysUntil === 0 && totalMins >= returnMins) daysUntil = 7;
+
+    const midnightIst = Date.now() + IST_OFFSET - totalSecs * 1000;
+    const returnMs = midnightIst + daysUntil * 24 * 60 * 60 * 1000 + returnMins * 60000;
+    const secsLeft = Math.max(0, Math.floor((returnMs - Date.now()) / 1000));
+
+    const d = Math.floor(secsLeft / 86400);
+    const h = Math.floor((secsLeft % 86400) / 3600);
+    const m = Math.floor((secsLeft % 3600) / 60);
+    const s = secsLeft % 60;
+    if (d > 0) return `${d}d ${h}h ${m}m`;
+    if (h > 0) return `${h}h ${m}m ${s}s`;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
+  };
+
   const formatMins = (mins) => {
     if (!mins && mins !== 0) return "";
     const d = Math.floor(mins / 1440);
@@ -305,6 +349,11 @@ export default function SnatchSection({
                 <span style={{color:snatchedFrom?.color,fontWeight:700}}>{snatchedFrom?.name}</span>
               </div>
               <div style={{fontSize:10,color:"#4A5E78",marginTop:2}}>Returns {pitchConfig?.snatchReturn || "Friday 11:58 PM"} IST</div>
+              {returnCountdown && (
+                <div style={{fontSize:13,fontFamily:"Rajdhani,sans-serif",fontWeight:700,color:"#A855F7",marginTop:4}}>
+                  ⏱ {returnCountdown} remaining
+                </div>
+              )}
             </div>
             {(isAdmin || unlocked) && (
               <button onClick={()=>withPassword(handleReturn)} style={{...sBtn("#2ECC71"),marginLeft:"auto"}}>↩️ FORCE RETURN</button>
