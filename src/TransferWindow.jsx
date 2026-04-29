@@ -238,14 +238,44 @@ export default function TransferWindow({
     (TIER_ORDER[b.tier||""] - TIER_ORDER[a.tier||""]) || a.name.localeCompare(b.name)
   );
 
-  const getValidMatches = (poolPlayer, teamId) => {
+ const getValidMatches = (poolPlayer, teamId) => {
     const released = getReleasedPlayers(teamId);
     const tradedPids = getTradedPairs(teamId).map(t => t.releasedPid);
     const remaining = released.filter(p => !tradedPids.includes(p.id));
-    return remaining.filter(rp =>
+
+    const directMatches = remaining.filter(rp =>
       rp.role === poolPlayer.role &&
       TIER_ORDER[poolPlayer.tier||""] <= TIER_ORDER[rp.tier||""]
     );
+    if (directMatches.length === 0) return [];
+
+    // Downstream check — simulate picking this player and verify
+    // no other team gets stranded with zero valid picks
+    const poolAfterPick = sortedPool.filter(pp => pp.id !== poolPlayer.id);
+    const ineligible = new Set(transfers.ineligible || []);
+
+    const wouldStrandAnotherTeam = teams.some(otherTeam => {
+      if (otherTeam.id === teamId) return false;
+      const otherReleased = getReleasedPlayers(otherTeam.id);
+      const otherTraded = new Set(getTradedPairs(otherTeam.id).map(t => t.releasedPid));
+      const otherTeamReleasedPids = new Set(transfers.releases?.[otherTeam.id] || []);
+      const otherRemaining = otherReleased.filter(p =>
+        !otherTraded.has(p.id) &&
+        !ineligible.has(p.id) &&
+        !p.pickedByOther
+      );
+      if (otherRemaining.length === 0) return false;
+      return otherRemaining.every(rp =>
+        !poolAfterPick.some(pp =>
+          !otherTeamReleasedPids.has(pp.id) &&
+          pp.role === rp.role &&
+          TIER_ORDER[pp.tier||""] <= TIER_ORDER[rp.tier||""]
+        )
+      );
+    });
+
+    if (wouldStrandAnotherTeam) return [];
+    return directMatches;
   };
 
   const canPass = (teamId) => {
