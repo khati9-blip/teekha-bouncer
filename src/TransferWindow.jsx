@@ -177,7 +177,13 @@ export default function TransferWindow({
       (h > transferStart.h || (h === transferStart.h && m >= transferStart.m));
     const beforeEnd = day === transferEnd.day &&
       (h < transferEnd.h || (h === transferEnd.h && m < transferEnd.m));
-    return afterStart || beforeEnd;
+    const betweenDays = transferStart.day !== transferEnd.day &&
+      day !== transferStart.day &&
+      day !== transferEnd.day &&
+      ((transferStart.day < transferEnd.day)
+        ? (day > transferStart.day && day < transferEnd.day)
+        : (day > transferStart.day || day < transferEnd.day)); // handles week wrap e.g. Fri→Mon
+    return afterStart || betweenDays || beforeEnd;
   };
   const [pickModal, setPickModal] = useState(null); // {poolPlayer}
   const [sessionTeamId, setSessionTeamId] = useState(null);
