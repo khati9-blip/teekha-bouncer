@@ -479,15 +479,20 @@ export default function TransferWindow({
       released.forEach(rp => {
         if (tradedPids.has(rp.id)) return;        // already traded
         if (currentIneligible.has(rp.id)) return;  // already returned
-        if (rp.pickedByOther) {
-          const hasValidPick = poolPlayers.some(pp => getValidMatches(pp, team.id).length > 0);
+       if (rp.pickedByOther) {
+          const hasValidPick = poolPlayers.some(pp => {
+            const matches = getValidMatches(pp, team.id);
+            return matches.some(m => m.id === rp.id);
+          });
           if (hasValidPick) return; // still has options — fine
           newlyIneligible.push({ pid: rp.id, teamId: team.id });
           return;
         }
-        // Check if any pool player is a valid pick for this released player
-        // using getValidMatches which includes Hall's check
-        const hasValidPick = poolPlayers.some(pp => getValidMatches(pp, team.id).length > 0);
+        // Check if any pool player is a valid pick specifically for THIS released player
+        const hasValidPick = poolPlayers.some(pp => {
+          const matches = getValidMatches(pp, team.id);
+          return matches.some(m => m.id === rp.id);
+        });
         if (!hasValidPick) newlyIneligible.push({ pid: rp.id, teamId: team.id });
       });
     });
