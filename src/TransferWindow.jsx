@@ -192,7 +192,6 @@ export default function TransferWindow({
   const [showAutoOpenPrompt, setShowAutoOpenPrompt] = useState(false);
   const [showReversalAlert, setShowReversalAlert] = useState(false);
   const [tradeConfirmModal, setTradeConfirmModal] = useState(null); // {poolPlayer, releasedPlayer}
-  const [resetConfirm, setResetConfirm] = useState(false);
 
   const rawPhase = transfers?.phase || "closed";
   const storedDeadline = transfers?.releaseDeadline;
