@@ -339,6 +339,10 @@ export default function TransferWindow({
   };
 
   const getValidMatches = (poolPlayer, teamId) => {
+    // Can't pick your own released player
+    const ownReleases = new Set(transfers.releases?.[teamId] || []);
+    if (ownReleases.has(poolPlayer.id)) return [];
+
     const released = getReleasedPlayers(teamId);
     const tradedPids = getTradedPairs(teamId).map(t => t.releasedPid);
     const remaining = released.filter(p => !tradedPids.includes(p.id));
