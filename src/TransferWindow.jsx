@@ -243,14 +243,17 @@ export default function TransferWindow({
   // If yes — auto-execute that trade immediately before next team sees the pool.
   // Chains: keeps running until no more forced trades exist.
   const runForcedTrades = (state) => {
-    const { pool, newAssignments, newTradedPairs, newLog } = state;
     let current = { ...state };
     let changed = true;
 
     while (changed) {
       changed = false;
       const currentIneligible = new Set(transfers.ineligible || []);
+      const alreadyPicked = new Set((current.newTradedPairs || []).map(tp => tp.pickedPid));
+
+      // Rebuild pool players fresh each iteration
       const currentPoolPlayers = current.pool
+        .filter(id => !alreadyPicked.has(id))
         .map(id => players.find(p => p.id === id)).filter(Boolean);
 
       for (const team of teams) {
@@ -260,7 +263,6 @@ export default function TransferWindow({
             .filter(tp => tp.teamId === team.id)
             .map(tp => tp.releasedPid)
         );
-
         const remainingReleased = [...teamReleasedPids]
           .filter(pid => !teamTradedPids.has(pid) && !currentIneligible.has(pid))
           .map(pid => players.find(p => p.id === pid)).filter(Boolean);
@@ -268,51 +270,20 @@ export default function TransferWindow({
         if (remainingReleased.length === 0) continue;
 
         for (const rp of remainingReleased) {
-          // Find all valid picks in pool for this released player
           const validPicks = currentPoolPlayers.filter(pp =>
             !teamReleasedPids.has(pp.id) &&
+            !alreadyPicked.has(pp.id) &&
             pp.role === rp.role &&
             TIER_ORDER[pp.tier||""] <= TIER_ORDER[rp.tier||""]
           );
+          if (validPicks.length !== 1) continue;
 
-          console.log("FORCED CHECK:", team.id, rp.name, "validPicks:", validPicks.map(p=>p.name));
-          if (validPicks.length !== 1) continue; // only act when exactly 1 option
-          console.log("FORCED TRADE FIRING:", rp.name, "→", validPicks[0].name, "for", team.id);
-
-          // Additional check — this pool player must have exactly 1 valid
-          // released player across ALL teams that can use it.
-          // If multiple released players (even from same team) can use it,
-          // the team should choose — don't force.
-          const candidatePp = validPicks[0];
-          const allValidUsers = [];
-          for (const t of teams) {
-            const tReleasedPids = new Set(transfers.releases?.[t.id] || []);
-            const tTradedPids = new Set(
-              (current.newTradedPairs || [])
-                .filter(tp => tp.teamId === t.id)
-                .map(tp => tp.releasedPid)
-            );
-            const tRemaining = [...tReleasedPids]
-              .filter(pid => !tTradedPids.has(pid) && !currentIneligible.has(pid))
-              .map(pid => players.find(p => p.id === pid)).filter(Boolean);
-            tRemaining.forEach(trp => {
-              if (
-                !tReleasedPids.has(candidatePp.id) &&
-                candidatePp.role === trp.role &&
-                TIER_ORDER[candidatePp.tier||""] <= TIER_ORDER[trp.tier||""]
-              ) allValidUsers.push({ teamId: t.id, releasedPid: trp.id });
-            });
-          }
-          if (allValidUsers.length !== 1) continue; // multiple users — let team choose
-
-          // Auto-execute this forced trade
           const pp = validPicks[0];
           const now = new Date().toISOString();
 
           const updAssignments = { ...current.newAssignments, [pp.id]: team.id };
           if (updAssignments[rp.id] === team.id) delete updAssignments[rp.id];
 
-          // Ownership log
           let updLog = { ...(current.newLog || {}) };
           if (!updLog[rp.id]) updLog[rp.id] = [];
           updLog[rp.id] = updLog[rp.id].map(o =>
@@ -333,22 +304,18 @@ export default function TransferWindow({
               pickedPid: pp.id,
               week: transfers.weekNum,
               timestamp: now,
-              autoTraded: true, // flag so UI can show "auto-traded"
+              autoTraded: true,
             }
           ];
 
-          const allPickedSoFar = new Set(updTradedPairs.map(tp => tp.pickedPid));
-          const updPool = current.pool.filter(id => !allPickedSoFar.has(id));
-          if (!updPool.includes(rp.id)) updPool.push(rp.id);
+          const newAlreadyPicked = new Set(updTradedPairs.map(tp => tp.pickedPid));
+          // Only add released player back to pool if not already picked by someone
+          const updPool = current.pool.filter(id => !newAlreadyPicked.has(id));
+          if (!newAlreadyPicked.has(rp.id)) updPool.push(rp.id);
 
-          current = {
-            newAssignments: updAssignments,
-            pool: updPool,
-            newTradedPairs: updTradedPairs,
-            newLog: updLog,
-          };
+          current = { newAssignments: updAssignments, pool: updPool, newTradedPairs: updTradedPairs, newLog: updLog };
           changed = true;
-          break; // restart while loop with fresh state
+          break;
         }
         if (changed) break;
       }
