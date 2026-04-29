@@ -24,10 +24,8 @@ function getWeekBounds(weekOffset = 0) {
 // ── Snatch window: Sat 12:00 AM → Sat 12:00 PM IST ────────────────────────
 function getSnatchWindowStatus(pitchConfig) {
   const ist = nowIST();
-  const day = ist.getUTCDay(); // 6 = Saturday
+  const day = ist.getUTCDay();
 
-  // Parse snatchWindow from pitchConfig e.g. "Saturday 12:00 AM to Saturday 12:00 PM"
-  // Default: Sat 12:00 AM → Sat 12:00 PM (720 mins)
   const parseSnatchTime = (str, defaultMins) => {
     if (!str) return defaultMins;
     const parts = str.split(" ");
@@ -39,21 +37,25 @@ function getSnatchWindowStatus(pitchConfig) {
     return hh * 60 + mm;
   };
 
-  const windowStr = pitchConfig?.snatchWindow || "";
-  const parts = windowStr.split(" to ");
-  const openMins = parseSnatchTime(parts[0], 0);    // default midnight
-  const closeMins = parseSnatchTime(parts[1], 720); // default noon
-
-  const hour = ist.getUTCHours();
-  const min = ist.getUTCMinutes();
-  const totalMins = hour * 60 + min;
   const parseDay = (str, def) => {
     const days = {sunday:0,monday:1,tuesday:2,wednesday:3,thursday:4,friday:5,saturday:6};
     if (!str) return def;
     return days[str.split(" ")[0].toLowerCase()] ?? def;
   };
+
+  const windowStr = pitchConfig?.snatchWindow || "";
+  const parts = windowStr.split(" to ");
+  const openMins = parseSnatchTime(parts[0], 0);
+  const closeMins = parseSnatchTime(parts[1], 720);
   const openDay = parseDay(parts[0], 6);
   const closeDay = parseDay(parts[1], 6);
+
+  const hour = ist.getUTCHours();
+  const min = ist.getUTCMinutes();
+  const sec = ist.getUTCSeconds();
+  const totalMins = hour * 60 + min;
+  const totalSecs = hour * 3600 + min * 60 + sec;
+
   const open = day === openDay && totalMins >= openMins &&
     (openDay === closeDay ? totalMins < closeMins : true);
 
@@ -62,19 +64,8 @@ function getSnatchWindowStatus(pitchConfig) {
     return { open: true, minsLeft, minsUntil: null };
   }
 
-  // Find next open time based on configured start day
-  const parseDay = (str, def) => {
-    const days = {sunday:0,monday:1,tuesday:2,wednesday:3,thursday:4,friday:5,saturday:6};
-    if (!str) return def;
-    return days[str.split(" ")[0].toLowerCase()] ?? def;
-  };
-  const openDay = parseDay(parts[0], 6);
-  const closeDay = parseDay(parts[1], 6);
-  const open = day === openDay && totalMins >= openMins &&
-    (openDay === closeDay ? totalMins < closeMins : true);
-
   let daysUntilOpen = (openDay - day + 7) % 7;
-  if (daysUntilOpen === 0) daysUntilOpen = 7; // same day but window closed — next week
+  if (daysUntilOpen === 0) daysUntilOpen = 7;
 
   const todayMidnightIst = ist.getTime() - totalSecs * 1000;
   const nextOpenMs = todayMidnightIst + daysUntilOpen * 24 * 60 * 60 * 1000 + openMins * 60000;
