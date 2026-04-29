@@ -281,7 +281,7 @@ export default function TransferWindow({
           // released player across ALL teams that can use it.
           // If multiple released players (even from same team) can use it,
           // the team should choose — don't force.
-          const pp = validPicks[0];
+          const candidatePp = validPicks[0];
           const allValidUsers = [];
           for (const t of teams) {
             const tReleasedPids = new Set(transfers.releases?.[t.id] || []);
@@ -295,9 +295,9 @@ export default function TransferWindow({
               .map(pid => players.find(p => p.id === pid)).filter(Boolean);
             tRemaining.forEach(trp => {
               if (
-                !tReleasedPids.has(pp.id) &&
-                pp.role === trp.role &&
-                TIER_ORDER[pp.tier||""] <= TIER_ORDER[trp.tier||""]
+                !tReleasedPids.has(candidatePp.id) &&
+                candidatePp.role === trp.role &&
+                TIER_ORDER[candidatePp.tier||""] <= TIER_ORDER[trp.tier||""]
               ) allValidUsers.push({ teamId: t.id, releasedPid: trp.id });
             });
           }
