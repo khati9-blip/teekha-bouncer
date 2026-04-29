@@ -350,8 +350,11 @@ export default function SnatchSection({
               </div>
               <div style={{fontSize:10,color:"#4A5E78",marginTop:2}}>Returns {pitchConfig?.snatchReturn || "Friday 11:58 PM"} IST</div>
               {returnCountdown && (
-                <div style={{fontSize:13,fontFamily:"Rajdhani,sans-serif",fontWeight:700,color:"#A855F7",marginTop:4}}>
-                  ⏱ {returnCountdown} remaining
+                <div style={{marginTop:8,padding:"8px 12px",background:"#A855F711",border:"1px solid #A855F733",borderRadius:8,display:"inline-block"}}>
+                  <div style={{fontSize:10,color:"#A855F7",letterSpacing:2,fontWeight:700,marginBottom:2}}>RETURNS IN</div>
+                  <div style={{fontSize:22,fontFamily:"Rajdhani,sans-serif",fontWeight:800,color:"#A855F7",letterSpacing:1}}>
+                    {returnCountdown}
+                  </div>
                 </div>
               )}
             </div>
