@@ -189,7 +189,6 @@ export default function TransferWindow({
   const [sessionTeamId, setSessionTeamId] = useState(null);
   const [confirmModal, setConfirmModal] = useState(null); // {message, onConfirm}
   const [twTab, setTwTab] = useState("window"); // "window" | "history"
-  const [showAutoOpenPrompt, setShowAutoOpenPrompt] = useState(false);
   const [showReversalAlert, setShowReversalAlert] = useState(false);
   const [tradeConfirmModal, setTradeConfirmModal] = useState(null); // {poolPlayer, releasedPlayer}
 
@@ -211,26 +210,6 @@ export default function TransferWindow({
     return countA - countB; // ascending — fewest picks first
   });
 
-  // ── AUTO WINDOW CHECK — prompt admin instead of auto-opening ──────────────
-  useEffect(() => {
-    const check = () => {
-      if (!unlocked || phase !== "closed") { setShowAutoOpenPrompt(false); return; }
-      const now = new Date();
-      const istOffset = 5.5 * 60 * 60 * 1000;
-      const ist = new Date(now.getTime() + istOffset);
-      const day = ist.getUTCDay(), h = ist.getUTCHours(), m = ist.getUTCMinutes();
-      const afterStart = day === transferStart.day &&
-        (h > transferStart.h || (h === transferStart.h && m >= transferStart.m));
-      const beforeEnd = day === transferEnd.day &&
-        (h < transferEnd.h || (h === transferEnd.h && m < transferEnd.m));
-     const betweenDays = transferStart.day !== transferEnd.day &&
-        day !== transferStart.day &&
-        day !== transferEnd.day &&
-        ((transferStart.day < transferEnd.day)
-          ? (day > transferStart.day && day < transferEnd.day)
-          : (day > transferStart.day || day < transferEnd.day));
-      const inWindow = afterStart || betweenDays || beforeEnd;
-      setShowAutoOpenPrompt(inWindow);
     };
     check();
     const interval = setInterval(check, 30000); // re-check every 30 seconds
@@ -1469,27 +1448,6 @@ export default function TransferWindow({
                 </div>
               );
             })}
-          </div>
-        </div>
-      )}
-
-      {/* AUTO-OPEN PROMPT */}
-      {showAutoOpenPrompt && (
-        <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.95)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:800,padding:16}}>
-          <div style={{background:T.card,borderRadius:16,border:`1px solid ${T.accentBorder}`,padding:24,width:"100%",maxWidth:380}}>
-            <div style={{fontSize:28,marginBottom:8}}>⏰</div>
-            <div style={{fontFamily:fonts.display,fontSize:20,fontWeight:700,color:T.accent,marginBottom:8}}>TIME TO OPEN THE WINDOW</div>
-            <div style={{fontSize:13,color:T.muted,marginBottom:20}}>It's within the transfer window period ({pitchConfig?.transferStart || "Sun 11:59 PM"} – {pitchConfig?.transferEnd || "Mon 11:00 AM"} IST). Do you want to open the release window now?</div>
-            <div style={{display:"flex",gap:8}}>
-              <button onClick={()=>setShowAutoOpenPrompt(false)}
-                style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:8,padding:11,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>
-                NOT YET
-              </button>
-              <button onClick={()=>{openReleaseManually();setShowAutoOpenPrompt(false);}}
-                style={{flex:2,background:`linear-gradient(135deg,${T.accent},${T.accentDim})`,border:"none",borderRadius:8,padding:11,color:T.bg,fontFamily:fonts.body,fontWeight:800,fontSize:15,cursor:"pointer"}}>
-                📤 OPEN NOW
-              </button>
-            </div>
           </div>
         </div>
       )}
