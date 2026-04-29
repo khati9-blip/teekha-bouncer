@@ -58,9 +58,10 @@ function getSnatchWindowStatus(pitchConfig) {
   let daysUntilSat = (6 - day + 7) % 7;
   if (daysUntilSat === 0) daysUntilSat = 7; // Saturday but window closed — next week
 
-  const todayMidnightIst = ist.getTime() - totalMins * 60000;
+  const totalSecs = hour * 3600 + min * 60 + ist.getUTCSeconds();
+  const todayMidnightIst = ist.getTime() - totalSecs * 1000;
   const nextSatOpenMs = todayMidnightIst + daysUntilSat * 24 * 60 * 60 * 1000 + openMins * 60000;
-  const minsUntil = Math.max(0, Math.floor((nextSatOpenMs - ist.getTime()) / 60000));
+  const minsUntil = Math.max(0, Math.round((nextSatOpenMs - ist.getTime()) / 60000));
 
   return { open: false, minsLeft: null, minsUntil };
 }
@@ -97,7 +98,7 @@ export default function SnatchSection({
   const [pinModal, setPinModal] = useState(null); // player object to confirm snatch
 
   useEffect(() => {
-    const t = setInterval(() => setWindowStatus(getSnatchWindowStatus(pitchConfig)), 30000);
+    const t = setInterval(() => setWindowStatus(getSnatchWindowStatus(pitchConfig)), 60000);
     return () => clearInterval(t);
   }, []);
 
@@ -160,7 +161,7 @@ export default function SnatchSection({
 
     const newHistory = [...(snatch.history || []), {
       ...activeSnatch,
-      pointsAtSnatch: correctPointsAtSnatch,
+      preSnatchPts: correctPointsAtSnatch,
       returnDate: new Date().toISOString(),
       snatchWeekPts,
     }];
@@ -173,7 +174,7 @@ export default function SnatchSection({
     if (!teamSafe.includes(pid)) safeObj[fromTeamId] = [...teamSafe, pid];
     onUpdateSafePlayers(safeObj);
 
-    onUpdateSnatch({ ...snatch, active: null, history: newHistory, weekNum: (snatch.weekNum || 1) + 1 });
+    onUpdateSnatch({ ...snatch, active: null, history: newHistory });
     onUpdateAssignments(newAssignments);
     pushNotif("snatch", "Snatched player returned & marked 🛡 SAFE permanently", "↩️");
   };
@@ -196,7 +197,7 @@ export default function SnatchSection({
       if(cap.captain===pid) pts*=2; else if(cap.vc===pid) pts*=1.5;
       return s + Math.round(pts);
     },0);
-    const active = { pid, byTeamId: actingTeamId, fromTeamId, pointsAtSnatch: playerTotalPts, startDate: new Date().toISOString() };
+    const active = { pid, byTeamId: actingTeamId, fromTeamId, totalPtsAtSnatch: playerTotalPts, startDate: new Date().toISOString() };
     const newAssignments = { ...assignments, [pid]: actingTeamId };
     const now = new Date().toISOString().split("T")[0];
     const newLog = { ...ownershipLog };
