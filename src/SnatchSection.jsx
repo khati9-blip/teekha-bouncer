@@ -236,21 +236,23 @@ export default function SnatchSection({
     let [hh, mm] = hhmm.split(":").map(Number);
     if (ampm === "PM" && hh !== 12) hh += 12;
     if (ampm === "AM" && hh === 12) hh = 0;
-    const returnMins = hh * 60 + mm;
 
-    const IST_OFFSET = 5.5 * 60 * 60 * 1000;
-    const ist = new Date(Date.now() + IST_OFFSET);
-    const day = ist.getUTCDay();
-    const totalMins = ist.getUTCHours() * 60 + ist.getUTCMinutes();
-    const totalSecs = ist.getUTCHours() * 3600 + ist.getUTCMinutes() * 60 + ist.getUTCSeconds();
+    // Build the return datetime directly in UTC
+    const now = new Date();
+    const returnDate = new Date(now);
+    const dayDiff = (returnDay - now.getUTCDay() + 7) % 7;
+    returnDate.setUTCDate(now.getUTCDate() + dayDiff);
+    // hh:mm is IST — convert to UTC by subtracting 5:30
+    const returnUtcHour = hh - 5;
+    const returnUtcMin = mm - 30;
+    returnDate.setUTCHours(returnUtcHour, returnUtcMin, 0, 0);
 
-    let daysUntil = (returnDay - day + 7) % 7;
-    if (daysUntil === 0 && totalMins >= returnMins) daysUntil = 7;
+    // If return time already passed today, jump to next week
+    if (returnDate.getTime() <= now.getTime()) {
+      returnDate.setUTCDate(returnDate.getUTCDate() + 7);
+    }
 
-    const istMidnightUtc = Date.now() - totalSecs * 1000;
-    const returnMs = istMidnightUtc + daysUntil * 24 * 60 * 60 * 1000 + returnMins * 60000 - IST_OFFSET;
-    const secsLeft = Math.max(0, Math.floor((returnMs - Date.now()) / 1000));
-
+    const secsLeft = Math.max(0, Math.floor((returnDate.getTime() - now.getTime()) / 1000));
     const d = Math.floor(secsLeft / 86400);
     const h = Math.floor((secsLeft % 86400) / 3600);
     const m = Math.floor((secsLeft % 3600) / 60);
