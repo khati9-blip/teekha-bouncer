@@ -2971,6 +2971,8 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
     const check = () => {
       // Exit immediately if window already open — zero Supabase calls
       if (transfers.phase !== 'closed') return;
+      // Exit if admin manually closed/reset this week — wait for next window
+      if (transfers.suppressUntil && Date.now() < new Date(transfers.suppressUntil)) return;
 
       const ist = new Date(Date.now() + IST_OFFSET);
       const day = ist.getUTCDay(), h = ist.getUTCHours(), m = ist.getUTCMinutes();
