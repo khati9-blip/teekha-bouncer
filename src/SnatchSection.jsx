@@ -22,26 +22,45 @@ function getWeekBounds(weekOffset = 0) {
 }
 
 // ── Snatch window: Sat 12:00 AM → Sat 12:00 PM IST ────────────────────────
-function getSnatchWindowStatus() {
+function getSnatchWindowStatus(pitchConfig) {
   const ist = nowIST();
   const day = ist.getUTCDay(); // 6 = Saturday
+
+  // Parse snatchWindow from pitchConfig e.g. "Saturday 12:00 AM to Saturday 12:00 PM"
+  // Default: Sat 12:00 AM → Sat 12:00 PM (720 mins)
+  const parseSnatchTime = (str, defaultMins) => {
+    if (!str) return defaultMins;
+    const parts = str.split(" ");
+    const hhmm = parts[parts.length - 2] || "12:00";
+    const ampm = parts[parts.length - 1] || "AM";
+    let [hh, mm] = hhmm.split(":").map(Number);
+    if (ampm === "PM" && hh !== 12) hh += 12;
+    if (ampm === "AM" && hh === 12) hh = 0;
+    return hh * 60 + mm;
+  };
+
+  const windowStr = pitchConfig?.snatchWindow || "";
+  const parts = windowStr.split(" to ");
+  const openMins = parseSnatchTime(parts[0], 0);    // default midnight
+  const closeMins = parseSnatchTime(parts[1], 720); // default noon
+
   const hour = ist.getUTCHours();
   const min = ist.getUTCMinutes();
   const totalMins = hour * 60 + min;
-  const open = day === 6 && totalMins < 720;
+  const open = day === 6 && totalMins >= openMins && totalMins < closeMins;
 
   if (open) {
-    const minsLeft = Math.max(0, 720 - totalMins);
+    const minsLeft = Math.max(0, closeMins - totalMins);
     return { open: true, minsLeft, minsUntil: null };
   }
 
-  // Find next Saturday midnight IST
+  // Find next Saturday open time
   let daysUntilSat = (6 - day + 7) % 7;
   if (daysUntilSat === 0) daysUntilSat = 7; // Saturday but window closed — next week
 
   const todayMidnightIst = ist.getTime() - totalMins * 60000;
-  const nextSatMs = todayMidnightIst + daysUntilSat * 24 * 60 * 60 * 1000;
-  const minsUntil = Math.max(0, Math.floor((nextSatMs - ist.getTime()) / 60000));
+  const nextSatOpenMs = todayMidnightIst + daysUntilSat * 24 * 60 * 60 * 1000 + openMins * 60000;
+  const minsUntil = Math.max(0, Math.floor((nextSatOpenMs - ist.getTime()) / 60000));
 
   return { open: false, minsLeft: null, minsUntil };
 }
@@ -70,7 +89,7 @@ export default function SnatchSection({
   onUpdateSnatch, onUpdateAssignments, onUpdateOwnershipLog, ownershipLog,
   safePlayers, onUpdateSafePlayers, pushNotif, pitchConfig, ruledOut = []
 }) {
-  const [windowStatus, setWindowStatus] = useState(getSnatchWindowStatus());
+  const [windowStatus, setWindowStatus] = useState(getSnatchWindowStatus(pitchConfig));
   const [pinInput, setPinInput] = useState("");
   const [pinErr, setPinErr] = useState("");
   const [selectingPlayer, setSelectingPlayer] = useState(false);
@@ -78,7 +97,7 @@ export default function SnatchSection({
   const [pinModal, setPinModal] = useState(null); // player object to confirm snatch
 
   useEffect(() => {
-    const t = setInterval(() => setWindowStatus(getSnatchWindowStatus()), 30000);
+    const t = setInterval(() => setWindowStatus(getSnatchWindowStatus(pitchConfig)), 30000);
     return () => clearInterval(t);
   }, []);
 
@@ -106,7 +125,6 @@ export default function SnatchSection({
 
   const isEligible = !!(myTeamId && elig?.team?.id === myTeamId);
   const hasActivSnatch = !!snatch.active;
-  console.log("SNATCH DEBUG:", { myTeamId, eligTeamId: elig?.team?.id, isEligible, windowOpen: windowStatus.open, hasActivSnatch, userEmail: user?.email, teamIdentityKeys: Object.keys(teamIdentity||{}) });
 
   // Auto-return handled by Edge Function on Supabase
   // Only manual force-return via admin button remains here
@@ -273,7 +291,7 @@ export default function SnatchSection({
                 <span style={{margin:"0 6px",color:"#4A5E78"}}>snatched from</span>
                 <span style={{color:snatchedFrom?.color,fontWeight:700}}>{snatchedFrom?.name}</span>
               </div>
-              <div style={{fontSize:10,color:"#4A5E78",marginTop:2}}>Returns Friday 11:58 PM IST</div>
+              <div style={{fontSize:10,color:"#4A5E78",marginTop:2}}>Returns {pitchConfig?.snatchReturn || "Friday 11:58 PM"} IST</div>
             </div>
             {(isAdmin || unlocked) && (
               <button onClick={()=>withPassword(handleReturn)} style={{...sBtn("#2ECC71"),marginLeft:"auto"}}>↩️ FORCE RETURN</button>
