@@ -349,32 +349,48 @@ export default function TransferWindow({
     );
     if (directMatches.length === 0) return [];
 
-    // Downstream check — simulate picking this player and verify
-    // no other team gets stranded with zero valid picks
+    // Hall's condition check — for every subset of remaining release slots
+    // across all other teams, the union of valid picks must be >= subset size.
+    // This catches all chain stranding scenarios, not just one step ahead.
     const poolAfterPick = sortedPool.filter(pp => pp.id !== poolPlayer.id);
     const ineligible = new Set(transfers.ineligible || []);
 
-    const wouldStrandAnotherTeam = teams.some(otherTeam => {
-      if (otherTeam.id === teamId) return false;
-      const otherReleased = getReleasedPlayers(otherTeam.id);
-      const otherTraded = new Set(getTradedPairs(otherTeam.id).map(t => t.releasedPid));
-      const otherTeamReleasedPids = new Set(transfers.releases?.[otherTeam.id] || []);
-      const otherRemaining = otherReleased.filter(p =>
-        !otherTraded.has(p.id) &&
-        !ineligible.has(p.id) &&
-        !p.pickedByOther
-      );
-      if (otherRemaining.length === 0) return false;
-      return otherRemaining.every(rp =>
-        !poolAfterPick.some(pp =>
-          !otherTeamReleasedPids.has(pp.id) &&
-          pp.role === rp.role &&
-          TIER_ORDER[pp.tier||""] <= TIER_ORDER[rp.tier||""]
-        )
-      );
+    // Build release slots for all other teams
+    const releaseSlots = [];
+    teams.forEach(t => {
+      if (t.id === teamId) return;
+      const tReleasedPids = new Set(transfers.releases?.[t.id] || []);
+      const tTradedPids = new Set(getTradedPairs(t.id).map(tp => tp.releasedPid));
+      const tRemaining = [...tReleasedPids]
+        .filter(pid => !tTradedPids.has(pid) && !ineligible.has(pid))
+        .map(pid => players.find(p => p.id === pid)).filter(Boolean);
+
+      tRemaining.forEach(rp => {
+        const validPicks = new Set(
+          poolAfterPick
+            .filter(pp =>
+              !tReleasedPids.has(pp.id) &&
+              pp.role === rp.role &&
+              TIER_ORDER[pp.tier||""] <= TIER_ORDER[rp.tier||""]
+            )
+            .map(pp => pp.id)
+        );
+        releaseSlots.push({ validPicks });
+      });
     });
 
-    if (wouldStrandAnotherTeam) return [];
+    // Check Hall's condition for all non-empty subsets
+    const n = releaseSlots.length;
+    for (let mask = 1; mask < (1 << n); mask++) {
+      const subset = [];
+      for (let i = 0; i < n; i++) {
+        if (mask & (1 << i)) subset.push(releaseSlots[i]);
+      }
+      const unionPicks = new Set();
+      subset.forEach(slot => slot.validPicks.forEach(pid => unionPicks.add(pid)));
+      if (unionPicks.size < subset.length) return []; // Hall's violated — block this pick
+    }
+
     return directMatches;
   };
 
