@@ -327,6 +327,8 @@ export default function TransferWindow({
     }
     return current;
   };
+
+  const getValidMatches = (poolPlayer, teamId) => {
     const released = getReleasedPlayers(teamId);
     const tradedPids = getTradedPairs(teamId).map(t => t.releasedPid);
     const remaining = released.filter(p => !tradedPids.includes(p.id));
