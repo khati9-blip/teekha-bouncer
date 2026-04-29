@@ -639,7 +639,6 @@ export default function TransferWindow({
     if (!newPool.includes(releasedPlayer.id)) newPool.push(releasedPlayer.id);
 
    // Run forced auto-trades — chain until no more single-option situations
-    console.log("runForcedTrades input pool:", newPool, "tradedPairs:", tradedPairs.length);
     const forced = runForcedTrades({
       pool: newPool,
       newAssignments,
