@@ -65,7 +65,11 @@ function getSnatchWindowStatus(pitchConfig) {
   }
 
   let daysUntilOpen = (openDay - day + 7) % 7;
-  if (daysUntilOpen === 0) daysUntilOpen = 7;
+  if (daysUntilOpen === 0) {
+    // Same day — only jump to next week if window already passed today
+    if (totalMins >= closeMins) daysUntilOpen = 7;
+    // else window hasn't opened yet today — daysUntilOpen stays 0
+  }
 
   const todayMidnightIst = ist.getTime() - totalSecs * 1000;
   const nextOpenMs = todayMidnightIst + daysUntilOpen * 24 * 60 * 60 * 1000 + openMins * 60000;
