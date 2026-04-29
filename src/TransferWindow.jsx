@@ -277,6 +277,32 @@ export default function TransferWindow({
 
           if (validPicks.length !== 1) continue; // only act when exactly 1 option
 
+          // Additional check — this pool player must have exactly 1 valid
+          // released player across ALL teams that can use it.
+          // If multiple released players (even from same team) can use it,
+          // the team should choose — don't force.
+          const pp = validPicks[0];
+          const allValidUsers = [];
+          for (const t of teams) {
+            const tReleasedPids = new Set(transfers.releases?.[t.id] || []);
+            const tTradedPids = new Set(
+              (current.newTradedPairs || [])
+                .filter(tp => tp.teamId === t.id)
+                .map(tp => tp.releasedPid)
+            );
+            const tRemaining = [...tReleasedPids]
+              .filter(pid => !tTradedPids.has(pid) && !currentIneligible.has(pid))
+              .map(pid => players.find(p => p.id === pid)).filter(Boolean);
+            tRemaining.forEach(trp => {
+              if (
+                !tReleasedPids.has(pp.id) &&
+                pp.role === trp.role &&
+                TIER_ORDER[pp.tier||""] <= TIER_ORDER[trp.tier||""]
+              ) allValidUsers.push({ teamId: t.id, releasedPid: trp.id });
+            });
+          }
+          if (allValidUsers.length !== 1) continue; // multiple users — let team choose
+
           // Auto-execute this forced trade
           const pp = validPicks[0];
           const now = new Date().toISOString();
