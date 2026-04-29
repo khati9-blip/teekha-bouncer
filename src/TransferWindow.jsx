@@ -101,7 +101,7 @@ export default function TransferWindow({
   pitch, teams, players, assignments, transfers, unsoldPool,
   leaderboard, isAdmin, myTeam, unlocked, withPassword,
   onUpdateTransfers, onUpdateAssignments, onUpdateUnsoldPool,
-  onUpdateOwnershipLog, ownershipLog, points, onUpdatePoints,
+  onUpdateOwnershipLog, ownershipLog, points,
   user, safePlayers, pitchConfig, ruledOut = []
 }) {
 
@@ -250,11 +250,6 @@ export default function TransferWindow({
 
   const getTradedPairs = (teamId) =>
     (transfers?.tradedPairs || []).filter(t => t.teamId === teamId);
-
-  const getTradedInPid = (releasedPid) => {
-    const pair = (transfers?.tradedPairs || []).find(t => t.releasedPid === releasedPid);
-    return pair ? players.find(p => p.id === pair.pickedPid) : null;
-  };
 
   // Build pool: from unsoldPool but also exclude players already traded this window
   const tradedPickedPids = new Set((transfers?.tradedPairs || []).map(tp => tp.pickedPid));
