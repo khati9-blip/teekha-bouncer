@@ -285,123 +285,66 @@ export default function TransferWindow({
 
   const currentPickTeamId = transfers?.currentPickTeam;
 
-  // After every trade — check if any released player now has no valid pool match
-  // If so, immediately return it to its team and remove from pool
+  // ── AUTO-RETURN INELIGIBLE RELEASED PLAYERS ──────────────────────────────
+  // Single unified effect — replaces two near-duplicate effects that were
+  // causing double Supabase writes on every trade.
   React.useEffect(() => {
     if (phase !== "trade") return;
     const currentIneligible = new Set(transfers.ineligible || []);
     const newlyIneligible = [];
 
     teams.forEach(team => {
+      const released = getReleasedPlayers(team.id); // includes pickedByOther flag
       const tradedPids = new Set(getTradedPairs(team.id).map(t => t.releasedPid));
-      const releasedPids = transfers.releases?.[team.id] || [];
 
-      releasedPids.forEach(pid => {
-        if (tradedPids.has(pid)) return; // already traded ✅
-        if (currentIneligible.has(pid)) return; // already returned
-        // Check if this released player (in pool) has any valid match for THIS team
-        const rp = players.find(p => p.id === pid);
-        if (!rp) return;
+      released.forEach(rp => {
+        if (tradedPids.has(rp.id)) return;        // already traded
+        if (currentIneligible.has(rp.id)) return;  // already returned
+        if (rp.pickedByOther) return;               // another team picked them — reversal handles it
         const hasMatch = poolPlayers.some(pp =>
-          pp.id !== pid && // not itself
+          pp.id !== rp.id &&                        // can't be their own replacement
           pp.role === rp.role &&
           TIER_ORDER[pp.tier||""] <= TIER_ORDER[rp.tier||""]
         );
-        if (!hasMatch) newlyIneligible.push({ pid, teamId: team.id });
+        if (!hasMatch) newlyIneligible.push({ pid: rp.id, teamId: team.id });
       });
     });
 
     if (newlyIneligible.length === 0) return;
 
-    // Return ineligible players to their teams
     const newAssignments = { ...assignments };
     const newPool = [...unsoldPool];
     const newIneligible = [...(transfers.ineligible || [])];
 
     newlyIneligible.forEach(({ pid, teamId }) => {
-      newAssignments[pid] = teamId; // return to original team
+      newAssignments[pid] = teamId;
       const idx = newPool.indexOf(pid);
-      if (idx > -1) newPool.splice(idx, 1); // remove from pool
+      if (idx > -1) newPool.splice(idx, 1);
       newIneligible.push(pid);
     });
 
-    // Check if current picking team now has nothing left
-    const currentTeamPids = transfers.releases?.[currentPickTeamId] || [];
-    const currentTeamTraded = new Set(getTradedPairs(currentPickTeamId).map(t => t.releasedPid));
-    const currentTeamHasMore = currentTeamPids.some(pid =>
-      !currentTeamTraded.has(pid) && !newIneligible.includes(pid)
-    );
-
-    const updatedTransfers = {
-      ...transfers,
-      ineligible: newIneligible,
-    };
-
-    if (!currentTeamHasMore && currentPickTeamId) {
-      const nextTeam = getNextPickTeam(currentPickTeamId, transfers.tradedPairs);
-      updatedTransfers.currentPickTeam = nextTeam || null;
-      updatedTransfers.pickDeadline = nextTeam ? new Date(Date.now() + 45 * 60 * 1000).toISOString() : null;
-      updatedTransfers.phase = nextTeam ? "trade" : "done";
-    }
-
-    onUpdateAssignments(newAssignments);
-    onUpdateUnsoldPool(newPool);
-    onUpdateTransfers(updatedTransfers);
-  }, [phase, JSON.stringify(poolPlayers.map(p=>p.id)), JSON.stringify(transfers.tradedPairs)]);
-
-  // Auto-return released players that have no valid replacement in pool
-  // Runs whenever pool changes (after each trade)
-  React.useEffect(() => {
-    if (phase !== "trade") return;
-    const currentIneligible = new Set(transfers.ineligible || []);
-    const newlyIneligible = [];
-
-    teams.forEach(team => {
-      const released = getReleasedPlayers(team.id);
-      const tradedPids = new Set(getTradedPairs(team.id).map(t => t.releasedPid));
-
-      released.forEach(rp => {
-        if (tradedPids.has(rp.id)) return; // already traded
-        if (currentIneligible.has(rp.id)) return; // already returned
-        if (rp.pickedByOther) return; // picked by another team — handled by reversal
-        // Check if any valid pool player exists for this released player
-        const hasMatch = poolPlayers.some(pp =>
-          pp.role === rp.role && TIER_ORDER[pp.tier||""] <= TIER_ORDER[rp.tier||""]
-        );
-        if (!hasMatch) newlyIneligible.push({ teamId: team.id, pid: rp.id });
-      });
-    });
-
-    if (newlyIneligible.length === 0) return;
-
-    // Mark as ineligible and return to their teams
-    const newAssignments = { ...assignments };
-    const newPool = [...unsoldPool];
-    newlyIneligible.forEach(({ teamId, pid }) => {
-      newAssignments[pid] = teamId; // return to team
-      const idx = newPool.indexOf(pid);
-      if (idx > -1) newPool.splice(idx, 1); // remove from pool
-    });
-
-    const ineligible = [...currentIneligible, ...newlyIneligible.map(x => x.pid)];
-
-    // Check if current picking team's turn should be skipped
-    const nextTeam = getNextPickTeam(currentPickTeamId, transfers.tradedPairs || []);
+    // Check if current picking team still has valid picks left
     const currentTeamStillHasPicks = (() => {
       if (!currentPickTeamId) return false;
       const rel = getReleasedPlayers(currentPickTeamId);
       const traded = new Set(getTradedPairs(currentPickTeamId).map(t => t.releasedPid));
-      return rel.some(p => !traded.has(p.id) && !ineligible.includes(p.id) && !p.pickedByOther);
+      return rel.some(p => !traded.has(p.id) && !newIneligible.includes(p.id) && !p.pickedByOther);
     })();
+
+    const nextTeam = currentTeamStillHasPicks
+      ? currentPickTeamId
+      : getNextPickTeam(currentPickTeamId, transfers.tradedPairs);
 
     onUpdateAssignments(newAssignments);
     onUpdateUnsoldPool(newPool);
     onUpdateTransfers({
       ...transfers,
-      ineligible,
-      currentPickTeam: currentTeamStillHasPicks ? currentPickTeamId : nextTeam,
-      pickDeadline: currentTeamStillHasPicks ? transfers.pickDeadline : (nextTeam ? new Date(Date.now() + 45 * 60 * 1000).toISOString() : null),
-      phase: (!currentTeamStillHasPicks && !nextTeam) ? "done" : "trade",
+      ineligible: newIneligible,
+      currentPickTeam: nextTeam || null,
+      pickDeadline: nextTeam && !currentTeamStillHasPicks
+        ? new Date(Date.now() + 45 * 60 * 1000).toISOString()
+        : currentTeamStillHasPicks ? transfers.pickDeadline : null,
+      phase: !nextTeam ? "done" : "trade",
     });
   }, [phase, poolPlayers.map(p=>p.id).join(","), (transfers.tradedPairs||[]).length]);
   const currentPickTeam = teams.find(t => t.id === currentPickTeamId);
