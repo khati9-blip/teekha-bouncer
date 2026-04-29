@@ -275,7 +275,9 @@ export default function TransferWindow({
             TIER_ORDER[pp.tier||""] <= TIER_ORDER[rp.tier||""]
           );
 
+          console.log("FORCED CHECK:", team.id, rp.name, "validPicks:", validPicks.map(p=>p.name));
           if (validPicks.length !== 1) continue; // only act when exactly 1 option
+          console.log("FORCED TRADE FIRING:", rp.name, "→", validPicks[0].name, "for", team.id);
 
           // Additional check — this pool player must have exactly 1 valid
           // released player across ALL teams that can use it.
@@ -589,6 +591,7 @@ export default function TransferWindow({
     if (!newPool.includes(releasedPlayer.id)) newPool.push(releasedPlayer.id);
 
    // Run forced auto-trades — chain until no more single-option situations
+    console.log("runForcedTrades input pool:", newPool, "tradedPairs:", tradedPairs.length);
     const forced = runForcedTrades({
       pool: newPool,
       newAssignments,
