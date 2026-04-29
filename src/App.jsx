@@ -2943,17 +2943,13 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
       }
     }
   }, [appReady, transfers.phase, transfers.pickDeadline, transfers.releaseDeadline]);
-  // Fires for everyone (not just admin) — silently opens release window if
-  // it's within the configured transfer window and still closed.
+ // Checks every minute whether the transfer window should open.
+  // Fires for everyone — whoever is on the app triggers it.
+  // Writes to Supabase only once (when window first opens).
   useEffect(() => {
-    if (!appReady) return;
-    if (!transfersLoaded) return; // wait for Supabase to respond before acting
-    if (transfers.phase !== 'closed') return;
+    if (!appReady || !transfersLoaded) return;
 
-    const now = new Date();
     const IST_OFFSET = 5.5 * 60 * 60 * 1000;
-    const ist = new Date(now.getTime() + IST_OFFSET);
-    const day = ist.getUTCDay(), h = ist.getUTCHours(), m = ist.getUTCMinutes();
 
     const parseDay = (str, def) => {
       const days = {Sunday:0,Monday:1,Tuesday:2,Wednesday:3,Thursday:4,Friday:5,Saturday:6};
@@ -2972,38 +2968,48 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
       return {h: hh, m: mm};
     };
 
-    const startDay = parseDay(pitchConfig?.transferStart, 0);
-    const startTime = parseTime(pitchConfig?.transferStart, 23, 59);
-    const endDay = parseDay(pitchConfig?.transferEnd, 1);
-    const endTime = parseTime(pitchConfig?.transferEnd, 11, 0);
+    const check = () => {
+      // Exit immediately if window already open — zero Supabase calls
+      if (transfers.phase !== 'closed') return;
 
-    const afterStart = day === startDay && (h > startTime.h || (h === startTime.h && m >= startTime.m));
-    const beforeEnd = day === endDay && (h < endTime.h || (h === endTime.h && m < endTime.m));
-    const betweenDays = startDay !== endDay && (
-      startDay < endDay
-        ? (day > startDay && day < endDay)
-        : (day > startDay || day < endDay)
-    );
+      const ist = new Date(Date.now() + IST_OFFSET);
+      const day = ist.getUTCDay(), h = ist.getUTCHours(), m = ist.getUTCMinutes();
 
-    const sameDay = startDay === endDay;
-    const inWindow = afterStart || (!sameDay && betweenDays) || (!sameDay && day === endDay && beforeEnd);
+      const startDay = parseDay(pitchConfig?.transferStart, 0);
+      const startTime = parseTime(pitchConfig?.transferStart, 23, 59);
+      const endDay = parseDay(pitchConfig?.transferEnd, 1);
+      const endTime = parseTime(pitchConfig?.transferEnd, 11, 0);
 
-    console.log("AUTO-OPEN CHECK:", { day, h, m, startDay, startTime, endDay, endTime, afterStart, beforeEnd, betweenDays, sameDay, inWindow, pitchConfigStart: pitchConfig?.transferStart });
-    if (!inWindow) return;
+      const afterStart = day === startDay && (h > startTime.h || (h === startTime.h && m >= startTime.m));
+      const beforeEnd = day === endDay && (h < endTime.h || (h === endTime.h && m < endTime.m));
+      const sameDay = startDay === endDay;
+      const betweenDays = !sameDay && startDay !== endDay && (
+        startDay < endDay
+          ? (day > startDay && day < endDay)
+          : (day > startDay || day < endDay)
+      );
+      const inWindow = afterStart || betweenDays || (!sameDay && day === endDay && beforeEnd);
 
-    // Calculate correct deadline using total minutes for accurate IST→UTC conversion
-    const dlEndDay = parseDay(pitchConfig?.transferEnd, 1);
-    const dlEndTime = parseTime(pitchConfig?.transferEnd, 11, 0);
-    const istNow2 = new Date(Date.now() + IST_OFFSET);
-    const daysUntilEnd = (dlEndDay - istNow2.getUTCDay() + 7) % 7;
-    const deadline = new Date(istNow2);
-    deadline.setUTCDate(istNow2.getUTCDate() + daysUntilEnd);
-    const totalMinsUTC = dlEndTime.h * 60 + dlEndTime.m - 330; // subtract 5h30m = 330 mins
-    deadline.setUTCHours(Math.floor(totalMinsUTC / 60), totalMinsUTC % 60, 0, 0);
+      if (!inWindow) return;
 
-    const updated = { ...transfers, phase: 'release', weekNum: transfers.weekNum, releaseDeadline: deadline.toISOString() };
-    updTransfers(updated);
-    pushNotif('transfer', 'Transfer window is now open — release your players!', '📤');
+      // Calculate release deadline
+      const dlEndDay = parseDay(pitchConfig?.transferEnd, 1);
+      const dlEndTime = parseTime(pitchConfig?.transferEnd, 11, 0);
+      const istNow2 = new Date(Date.now() + IST_OFFSET);
+      const daysUntilEnd = (dlEndDay - istNow2.getUTCDay() + 7) % 7;
+      const deadline = new Date(istNow2);
+      deadline.setUTCDate(istNow2.getUTCDate() + daysUntilEnd);
+      const totalMinsUTC = dlEndTime.h * 60 + dlEndTime.m - 330;
+      deadline.setUTCHours(Math.floor(totalMinsUTC / 60), totalMinsUTC % 60, 0, 0);
+
+      const updated = { ...transfers, phase: 'release', weekNum: transfers.weekNum, releaseDeadline: deadline.toISOString() };
+      updTransfers(updated);
+      pushNotif('transfer', 'Transfer window is now open — release your players!', '📤');
+    };
+
+    check(); // run immediately on mount
+    const interval = setInterval(check, 60000); // re-check every minute
+    return () => clearInterval(interval); // cleanup on unmount
   }, [appReady, transfersLoaded, transfers.phase, transfers.weekNum, pitchConfig]);
 
   // ── LOAD USER-SPECIFIC NOTES & HIGHLIGHTS ────────────────────────────────
