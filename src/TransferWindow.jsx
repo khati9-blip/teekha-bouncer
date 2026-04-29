@@ -242,7 +242,7 @@ export default function TransferWindow({
   // After every trade, check if any team now has exactly ONE valid pick left.
   // If yes — auto-execute that trade immediately before next team sees the pool.
   // Chains: keeps running until no more forced trades exist.
-  const runForcedTrades = (state) => {
+  const runForcedTrades = (state, skipTeamId) => {
     let current = { ...state };
     let changed = true;
 
@@ -257,6 +257,7 @@ export default function TransferWindow({
         .map(id => players.find(p => p.id === id)).filter(Boolean);
 
       for (const team of teams) {
+        if (team.id === skipTeamId) continue; // current picking team picks manually
         const teamReleasedPids = new Set(transfers.releases?.[team.id] || []);
         const teamTradedPids = new Set(
           (current.newTradedPairs || [])
@@ -564,7 +565,7 @@ export default function TransferWindow({
       newAssignments,
       newTradedPairs: tradedPairs,
       newLog,
-    });
+    }, tradeAsTeamId);
     const finalAssignments = forced.newAssignments;
     const finalPool = forced.pool;
     const finalTradedPairs = forced.newTradedPairs;
@@ -587,8 +588,9 @@ export default function TransferWindow({
       reversalAlert: clearedAlerts.length > 0 ? clearedAlerts : null,
     };
 
+   const dedupedPool = [...new Set(finalPool)];
     onUpdateAssignments(finalAssignments);
-    onUpdateUnsoldPool(finalPool);
+    onUpdateUnsoldPool(dedupedPool);
     onUpdateOwnershipLog(finalLog);
     onUpdateTransfers({ ...updated, tradedPairs: finalTradedPairs });
     setTradeConfirmModal(null);
