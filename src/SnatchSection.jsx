@@ -47,21 +47,35 @@ function getSnatchWindowStatus(pitchConfig) {
   const hour = ist.getUTCHours();
   const min = ist.getUTCMinutes();
   const totalMins = hour * 60 + min;
-  const open = day === 6 && totalMins >= openMins && totalMins < closeMins;
+  const parseDay = (str, def) => {
+    const days = {sunday:0,monday:1,tuesday:2,wednesday:3,thursday:4,friday:5,saturday:6};
+    if (!str) return def;
+    return days[str.split(" ")[0].toLowerCase()] ?? def;
+  };
+  const openDay = parseDay(parts[0], 6);
+  const closeDay = parseDay(parts[1], 6);
+  const open = day === openDay && totalMins >= openMins &&
+    (openDay === closeDay ? totalMins < closeMins : true);
 
   if (open) {
     const minsLeft = Math.max(0, closeMins - totalMins);
     return { open: true, minsLeft, minsUntil: null };
   }
 
-  // Find next Saturday open time
-  let daysUntilSat = (6 - day + 7) % 7;
-  if (daysUntilSat === 0) daysUntilSat = 7; // Saturday but window closed — next week
+  // Find next open time based on configured start day
+  const parseDay = (str, def) => {
+    const days = {sunday:0,monday:1,tuesday:2,wednesday:3,thursday:4,friday:5,saturday:6};
+    if (!str) return def;
+    return days[str.split(" ")[0].toLowerCase()] ?? def;
+  };
+  const openDay = parseDay(parts[0], 6); // default Saturday
 
-  const totalSecs = hour * 3600 + min * 60 + ist.getUTCSeconds();
+  let daysUntilOpen = (openDay - day + 7) % 7;
+  if (daysUntilOpen === 0) daysUntilOpen = 7; // same day but window closed — next week
+
   const todayMidnightIst = ist.getTime() - totalSecs * 1000;
-  const nextSatOpenMs = todayMidnightIst + daysUntilSat * 24 * 60 * 60 * 1000 + openMins * 60000;
-  const minsUntil = Math.max(0, Math.round((nextSatOpenMs - ist.getTime()) / 60000));
+  const nextOpenMs = todayMidnightIst + daysUntilOpen * 24 * 60 * 60 * 1000 + openMins * 60000;
+  const minsUntil = Math.max(0, Math.round((nextOpenMs - ist.getTime()) / 60000));
 
   return { open: false, minsLeft: null, minsUntil };
 }
