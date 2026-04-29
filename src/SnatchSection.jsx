@@ -110,7 +110,7 @@ export default function SnatchSection({
   const [pinModal, setPinModal] = useState(null); // player object to confirm snatch
 
   useEffect(() => {
-    const t = setInterval(() => setWindowStatus(getSnatchWindowStatus(pitchConfig)), 60000);
+    const t = setInterval(() => setWindowStatus(getSnatchWindowStatus(pitchConfig)), 30000);
     return () => clearInterval(t);
   }, []);
 
@@ -265,7 +265,7 @@ export default function SnatchSection({
             : formatMins(windowStatus.minsUntil)}
         </div>
         <div style={{fontSize:10,color:"#4A5E78",letterSpacing:2,marginTop:4}}>
-          {windowStatus.open ? "UNTIL WINDOW CLOSES" : "UNTIL WINDOW OPENS · SAT 12:00 AM IST"}
+          {windowStatus.open ? "UNTIL WINDOW CLOSES" : `UNTIL WINDOW OPENS · ${(pitchConfig?.snatchWindow?.split(" to ")[0] || "SAT 12:00 AM").toUpperCase()} IST`}
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:3,marginTop:10,padding:"8px 0",borderTop:"1px solid #1E2D4533"}}>
           <div style={{fontSize:11,color:"#4A5E78"}}>🪟 Window: <span style={{color:"#E2EAF4",fontWeight:600}}>{pitchConfig?.snatchWindow ? pitchConfig.snatchWindow.replace(" to ", " → ") + " IST" : "Sat 12:00 AM → 12:00 PM IST"}</span></div>
