@@ -68,7 +68,10 @@ function getSnatchWindowStatus(pitchConfig) {
     if (!str) return def;
     return days[str.split(" ")[0].toLowerCase()] ?? def;
   };
-  const openDay = parseDay(parts[0], 6); // default Saturday
+  const openDay = parseDay(parts[0], 6);
+  const closeDay = parseDay(parts[1], 6);
+  const open = day === openDay && totalMins >= openMins &&
+    (openDay === closeDay ? totalMins < closeMins : true);
 
   let daysUntilOpen = (openDay - day + 7) % 7;
   if (daysUntilOpen === 0) daysUntilOpen = 7; // same day but window closed — next week
