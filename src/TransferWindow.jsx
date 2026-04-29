@@ -210,12 +210,6 @@ export default function TransferWindow({
     return countA - countB; // ascending — fewest picks first
   });
 
-    };
-    check();
-    const interval = setInterval(check, 30000); // re-check every 30 seconds
-    return () => clearInterval(interval);
-  }, [unlocked, pitchConfig, phase]);
-
   // ── HELPERS ────────────────────────────────────────────────────────────────
   const getReleasedPlayers = (teamId) => {
     const pickedByOthers = new Set(
