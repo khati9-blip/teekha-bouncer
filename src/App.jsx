@@ -5168,6 +5168,7 @@ ${aiMatchText.slice(0, 3000)}`;
 
               {transferSubTab==="snatch" && (
                 <SnatchSection
+                  storeGet={storeGet}
                   teams={teams}
                   players={players}
                   assignments={assignments}
