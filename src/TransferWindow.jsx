@@ -379,16 +379,51 @@ export default function TransferWindow({
       });
     });
 
-    // Check Hall's condition for all non-empty subsets
+    // Check Hall's condition for all non-empty subsets.
+    // Only block if BB's pick CREATES a new violation — ignore pre-existing ones.
     const n = releaseSlots.length;
+
+    // First compute current slots WITHOUT the pick to find pre-existing violations
+    const currentSlots = [];
+    teams.forEach(t => {
+      if (t.id === teamId) return;
+      const tReleasedPids = new Set(transfers.releases?.[t.id] || []);
+      const tTradedPids = new Set(getTradedPairs(t.id).map(tp => tp.releasedPid));
+      const tRemaining = [...tReleasedPids]
+        .filter(pid => !tTradedPids.has(pid) && !ineligible.has(pid))
+        .map(pid => players.find(p => p.id === pid)).filter(Boolean);
+      tRemaining.forEach(rp => {
+        const validPicks = new Set(
+          sortedPool
+            .filter(pp =>
+              !tReleasedPids.has(pp.id) &&
+              pp.role === rp.role &&
+              TIER_ORDER[pp.tier||""] <= TIER_ORDER[rp.tier||""]
+            )
+            .map(pp => pp.id)
+        );
+        currentSlots.push({ validPicks });
+      });
+    });
+
     for (let mask = 1; mask < (1 << n); mask++) {
       const subset = [];
       for (let i = 0; i < n; i++) {
-        if (mask & (1 << i)) subset.push(releaseSlots[i]);
+        if (mask & (1 << i)) subset.push(i);
       }
-      const unionPicks = new Set();
-      subset.forEach(slot => slot.validPicks.forEach(pid => unionPicks.add(pid)));
-      if (unionPicks.size < subset.length) return []; // Hall's violated — block this pick
+      const unionAfter = new Set();
+      subset.forEach(i => releaseSlots[i].validPicks.forEach(pid => unionAfter.add(pid)));
+
+      if (unionAfter.size < subset.length) {
+        // Violation after pick — check if it also existed before
+        const unionBefore = new Set();
+        subset.forEach(i => currentSlots[i].validPicks.forEach(pid => unionBefore.add(pid)));
+        if (unionBefore.size >= subset.length) {
+          // Pre-existing was fine, pick made it worse — block
+          return [];
+        }
+        // Pre-existing violation — not our problem, continue
+      }
     }
 
     return directMatches;
