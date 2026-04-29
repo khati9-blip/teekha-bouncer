@@ -301,11 +301,12 @@ export default function TransferWindow({
         if (tradedPids.has(rp.id)) return;        // already traded
         if (currentIneligible.has(rp.id)) return;  // already returned
         if (rp.pickedByOther) return;               // another team picked them — reversal handles it
-        const hasMatch = poolPlayers.some(pp =>
-          pp.id !== rp.id &&                        // can't be their own replacement
-          pp.role === rp.role &&
-          TIER_ORDER[pp.tier||""] <= TIER_ORDER[rp.tier||""]
-        );
+        const teamReleasedPids = new Set(transfers.releases?.[team.id] || []);
+      const hasMatch = poolPlayers.some(pp =>
+        !teamReleasedPids.has(pp.id) &&           // can't pick any of your own released players
+        pp.role === rp.role &&
+        TIER_ORDER[pp.tier||""] <= TIER_ORDER[rp.tier||""]
+      );
         if (!hasMatch) newlyIneligible.push({ pid: rp.id, teamId: team.id });
       });
     });
@@ -614,12 +615,23 @@ export default function TransferWindow({
       });
     });
 
-    // Restore pool — add back released players that were in pool before window opened
-    // Released players go back to their teams (not pool), picked players go back to pool
-    const allReleasedPids = new Set(Object.values(allReleases).flat());
+  const allReleasedPids = new Set(Object.values(allReleases).flat());
     const allPickedPids = new Set(currentPairs.map(p => p.pickedPid));
-    // Remove picked players (they're assigned back), keep existing pool minus any newly picked
-    const newPool = unsoldPool.filter(id => !allPickedPids.has(id) || allReleasedPids.has(id));
+
+    // Restore pool:
+    // - Released but not traded → going back to their teams, remove from pool
+    // - Originally unsold players that were picked → trades undone, put back in pool
+    // - Everything else → stays as is
+    const newPool = unsoldPool.filter(id => {
+      if (allReleasedPids.has(id) && !allPickedPids.has(id)) return false; // released not traded — going to team
+      return true;
+    });
+    // Add back originally unsold players that were picked (trades are being undone)
+    for (const pair of currentPairs) {
+      if (!allReleasedPids.has(pair.pickedPid) && !newPool.includes(pair.pickedPid)) {
+        newPool.push(pair.pickedPid);
+      }
+    }
 
     onUpdateAssignments(newAssignments);
     onUpdateUnsoldPool(newPool);
