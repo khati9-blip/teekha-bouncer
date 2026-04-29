@@ -480,26 +480,15 @@ export default function TransferWindow({
         if (tradedPids.has(rp.id)) return;        // already traded
         if (currentIneligible.has(rp.id)) return;  // already returned
         if (rp.pickedByOther) {
-          // Their released player was taken by another team.
-          // Check if they still have any OTHER valid pick in pool.
-          const teamReleasedPids2 = new Set(transfers.releases?.[team.id] || []);
-          const hasOtherMatch = poolPlayers.some(pp =>
-            !teamReleasedPids2.has(pp.id) &&
-            pp.role === rp.role &&
-            TIER_ORDER[pp.tier||""] <= TIER_ORDER[rp.tier||""]
-          );
-          if (hasOtherMatch) return; // still has options — fine
-          // No other match — stranded. Mark ineligible, return to team.
+          const validMatches = getValidMatches(rp, team.id);
+          if (validMatches.length > 0) return; // still has options — fine
           newlyIneligible.push({ pid: rp.id, teamId: team.id });
           return;
         }
-        const teamReleasedPids = new Set(transfers.releases?.[team.id] || []);
-      const hasMatch = poolPlayers.some(pp =>
-        !teamReleasedPids.has(pp.id) &&           // can't pick any of your own released players
-        pp.role === rp.role &&
-        TIER_ORDER[pp.tier||""] <= TIER_ORDER[rp.tier||""]
-      );
-        if (!hasMatch) newlyIneligible.push({ pid: rp.id, teamId: team.id });
+        }
+        // Use getValidMatches which includes Hall's check — same logic as PICK buttons
+      const validMatches = getValidMatches(rp, team.id);
+      if (validMatches.length === 0) newlyIneligible.push({ pid: rp.id, teamId: team.id });
       });
     });
 
