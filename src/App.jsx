@@ -5342,81 +5342,79 @@ ${aiMatchText.slice(0, 3000)}`;
                 <Card sx={{padding:60,textAlign:"center"}}><div style={{fontSize:56}}>🏆</div><div style={{color:T.muted,marginTop:16}}>Set up your league first</div></Card>
               ):(
                 <>
-                  <div style={{marginBottom:32}}>
+                  <div style={{marginBottom:20}}>
                     {leaderboard.map((team,i)=>{
                       const medals=["🥇","🥈","🥉"],mc=["#F5A623","#94A3B8","#CD7C2F"];
+                      const breakdown=getPlayerBreakdown(team.id);
+                      const isOpen=expandedTeam===team.id;
+                      const ruledOutCount=breakdown.filter(p=>ruledOut.includes(p.id)).length;
                       return(
-                        <div key={team.id} style={{display:"flex",alignItems:"center",gap:16,background:T.card,borderRadius:0,padding:"18px 20px",marginBottom:6,borderLeft:"5px solid "+team.color,borderBottom:`1px solid ${T.border}`}}>
-                          <div style={{fontFamily:fonts.display,fontSize:i===0?40:32,fontWeight:900,color:i===0?team.color:T.muted,minWidth:44,lineHeight:1}}>{medals[i]||("#"+(i+1))}</div>
-                          <div style={{flex:1}}>
-                            <div style={{fontWeight:900,fontSize:i===0?26:22,color:team.color,fontFamily:fonts.display,letterSpacing:2,textTransform:"uppercase",lineHeight:1}}>{team.name}</div>
-                            <div style={{fontSize:11,color:T.muted,letterSpacing:2,marginTop:3,textTransform:"uppercase"}}>{players.filter(p=>assignments[p.id]===team.id).length} PLAYERS</div>
+                        <div key={team.id} style={{background:T.card,borderRadius:0,marginBottom:6,borderLeft:"5px solid "+team.color,borderBottom:`1px solid ${T.border}`,overflow:"hidden"}}>
+                          {/* Main row — clickable to expand */}
+                          <div style={{display:"flex",alignItems:"center",gap:16,padding:"18px 20px",cursor:"pointer"}} onClick={()=>setExpandedTeam(isOpen?null:team.id)}>
+                            <div style={{fontFamily:fonts.display,fontSize:i===0?40:32,fontWeight:900,color:i===0?team.color:T.muted,minWidth:44,lineHeight:1}}>{medals[i]||("#"+(i+1))}</div>
+                            <div style={{flex:1}}>
+                              <div style={{fontWeight:900,fontSize:i===0?26:22,color:team.color,fontFamily:fonts.display,letterSpacing:2,textTransform:"uppercase",lineHeight:1}}>{team.name}</div>
+                              <div style={{fontSize:11,color:T.muted,letterSpacing:2,marginTop:3,textTransform:"uppercase"}}>
+                                {players.filter(p=>assignments[p.id]===team.id).length} PLAYERS
+                                {ruledOutCount>0&&<span style={{color:T.danger,marginLeft:8}}>· {ruledOutCount} RULED OUT</span>}
+                              </div>
+                            </div>
+                            <div style={{textAlign:"right",display:"flex",alignItems:"center",gap:12}}>
+                              <div>
+                                <div style={{fontSize:i===0?48:36,fontWeight:900,color:i===0?T.accent:T.text,fontFamily:fonts.display,lineHeight:1,letterSpacing:1}}>{team.total.toLocaleString()}</div>
+                                <div style={{fontSize:10,color:T.muted,letterSpacing:3,textTransform:"uppercase",marginTop:2}}>PTS</div>
+                              </div>
+                              <span style={{color:team.color,fontSize:14,fontFamily:fonts.display,fontWeight:700}}>{isOpen?"▲":"▼"}</span>
+                            </div>
                           </div>
-                          <div style={{textAlign:"right"}}>
-                            <div style={{fontSize:i===0?48:36,fontWeight:900,color:i===0?T.accent:T.text,fontFamily:fonts.display,lineHeight:1,letterSpacing:1}}>{team.total.toLocaleString()}</div>
-                            <div style={{fontSize:10,color:T.muted,letterSpacing:3,textTransform:"uppercase",marginTop:2}}>PTS</div>
-                          </div>
+
+                          {/* Collapsible player breakdown */}
+                          {isOpen&&breakdown.length>0&&(
+                            <div style={{borderTop:`1px solid ${T.border}`,padding:"12px 18px"}}>
+                              <div style={{display:"flex",fontSize:11,color:T.muted,marginBottom:10,padding:"0 4px",letterSpacing:2,fontFamily:fonts.display}}>
+                                <span style={{flex:1}}>PLAYER</span>
+                                <span style={{width:90}}>ROLE</span>
+                                <span style={{width:70,textAlign:"right"}}>PTS</span>
+                              </div>
+                              {breakdown.map((p,idx)=>(
+                                <div key={p.id} style={{display:"flex",alignItems:"center",padding:"9px 4px",borderBottom:`1px solid ${T.border}`,opacity:p.status==="snatched-out"||p.status==="snatch-returned-in"||p.status==="traded-out"||ruledOut.includes(p.id)?0.65:1}}>
+                                  <div style={{flex:1,fontWeight:idx<3?700:400,fontSize:14,
+                                    color:ruledOut.includes(p.id)?T.danger:p.status==="traded-in"?T.success:p.status==="returned"?T.accent:p.status==="traded-out"?T.danger:idx===0&&p.status==="active"?T.accent:T.text,
+                                    textDecoration:p.status==="snatched-out"||p.status==="snatch-returned-in"||p.status==="traded-out"||ruledOut.includes(p.id)?"line-through":"none"}}>
+                                    {p.status==="traded-out"&&<span style={{marginRight:4}}>⬇️</span>}
+                                    {p.status==="traded-in"&&<span style={{marginRight:4}}>⬆️</span>}
+                                    {p.status==="returned"&&<span style={{marginRight:4}}>↩️</span>}
+                                    {ruledOut.includes(p.id)&&<span style={{marginRight:4}}>🚫</span>}
+                                    {p.name}
+                                    {ruledOut.includes(p.id)&&<span style={{fontSize:9,color:T.danger,marginLeft:6,textDecoration:"none",fontWeight:700}}>RULED OUT</span>}
+                                    {!ruledOut.includes(p.id)&&p.status==="traded-out"&&<span style={{fontSize:9,color:T.danger,marginLeft:6,textDecoration:"none",fontWeight:700}}>→ {p.tradedFor}</span>}
+                                    {!ruledOut.includes(p.id)&&p.status==="traded-in"&&<span style={{fontSize:9,color:T.success,marginLeft:6,textDecoration:"none",fontWeight:700}}>FROM POOL</span>}
+                                    {!ruledOut.includes(p.id)&&p.status==="returned"&&<span style={{fontSize:9,color:T.accent,marginLeft:6,textDecoration:"none",fontWeight:700}}>↩ RETURNED</span>}
+                                    {!ruledOut.includes(p.id)&&p.status==="snatched-out"&&<span style={{fontSize:9,color:T.purple,marginLeft:6,textDecoration:"none",fontWeight:700}}>SNATCHED</span>}
+                                    {!ruledOut.includes(p.id)&&p.status==="snatched-in"&&<span style={{fontSize:9,color:T.success,marginLeft:6,textDecoration:"none",fontWeight:700}}>ON LOAN</span>}
+                                    {!ruledOut.includes(p.id)&&p.status==="snatch-returned-in"&&<span style={{fontSize:9,color:T.muted,marginLeft:6,textDecoration:"none"}}>RETURNED</span>}
+                                    {!ruledOut.includes(p.id)&&p.status==="released"&&<span style={{fontSize:9,color:T.muted,marginLeft:6,textDecoration:"none"}}>RELEASED</span>}
+                                  </div>
+                                  <div style={{width:90}}><Badge label={p.role||"—"} color={ROLE_COLORS[p.role]||"#4A5E78"} /></div>
+                                  <div style={{width:70,textAlign:"right",fontWeight:700,
+                                    color:ruledOut.includes(p.id)?T.danger:p.status==="traded-in"?T.success:p.status==="returned"?T.accent:p.status==="traded-out"||p.status==="snatched-out"||p.status==="snatch-returned-in"?T.muted:p.total>0?T.text:T.muted,
+                                    fontFamily:fonts.display,fontSize:17}}>
+                                    {p.total}
+                                    {ruledOut.includes(p.id)&&<span style={{fontSize:9,display:"block",color:T.danger,letterSpacing:0.5}}>FROZEN</span>}
+                                    {!ruledOut.includes(p.id)&&p.status==="traded-in"&&<span style={{fontSize:9,display:"block",color:T.success,letterSpacing:0.5}}>RESET</span>}
+                                    {!ruledOut.includes(p.id)&&p.status==="returned"&&<span style={{fontSize:9,display:"block",color:T.accent,letterSpacing:0.5}}>BACK</span>}
+                                    {!ruledOut.includes(p.id)&&p.status==="traded-out"&&<span style={{fontSize:9,display:"block",color:T.danger,letterSpacing:0.5}}>FROZEN</span>}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {isOpen&&breakdown.length===0&&<div style={{padding:"16px 18px",color:T.muted,fontSize:13,borderTop:`1px solid ${T.border}`}}>No players assigned yet.</div>}
                         </div>
                       );
                     })}
                   </div>
-                  <div style={{fontWeight:700,color:T.muted,letterSpacing:2,fontSize:12,marginBottom:16}}>TEAM PLAYER BREAKDOWN</div>
-                  {leaderboard.map(team=>{
-                    const breakdown=getPlayerBreakdown(team.id),isOpen=expandedTeam===team.id;
-                    const activeCount=breakdown.filter(p=>p.status!=="traded-out"&&p.status!=="snatched-out"&&p.status!=="snatch-returned-in"&&p.status!=="released"&&!ruledOut.includes(p.id)).length;
-                    const safeCount=(safePlayers[team.id]||[]).length;
-                    const ruledOutCount=breakdown.filter(p=>ruledOut.includes(p.id)).length;
-                    return(
-                      <Card key={team.id} accent={team.color} sx={{marginBottom:12,overflow:"hidden"}}>
-                        <div style={{display:"flex",alignItems:"center",padding:"14px 18px",cursor:"pointer"}} onClick={()=>setExpandedTeam(isOpen?null:team.id)}>
-                          <div style={{flex:1}}>
-                            <span style={{fontWeight:700,color:team.color,fontFamily:"Rajdhani",fontSize:17,letterSpacing:1}}>{team.name}</span>
-                            <span style={{color:T.muted,marginLeft:10,fontSize:13}}>{activeCount} players</span>
-                            {ruledOutCount>0&&<span style={{color:"#FF3D5A",marginLeft:6,fontSize:11}}>({ruledOutCount} ruled out)</span>}
-                          </div>
-                          <span style={{color:T.accent,fontWeight:800,fontFamily:"Rajdhani",fontSize:22,marginRight:16}}>{team.total} pts</span>
-                          <span style={{color:team.color,fontSize:12,opacity:0.7}}>{isOpen?"▲":"▼"}</span>
-                        </div>
-                        {isOpen&&breakdown.length>0&&(
-                          <div style={{borderTop:`1px solid ${T.border}`,padding:"12px 18px"}}>
-                            <div style={{display:"flex",fontSize:11,color:T.muted,marginBottom:10,padding:"0 4px"}}><span style={{flex:1}}>PLAYER</span><span style={{width:90}}>ROLE</span><span style={{width:70,textAlign:"right"}}>POINTS</span></div>
-                            {breakdown.map((p,idx)=>(
-                              <div key={p.id} style={{display:"flex",alignItems:"center",padding:"9px 4px",borderBottom:`1px solid ${T.border}`,opacity:p.status==="snatched-out"||p.status==="snatch-returned-in"||p.status==="traded-out"||ruledOut.includes(p.id)?0.65:1}}>
-                                <div style={{flex:1,fontWeight:idx<3?700:400,fontSize:14,
-                                  color:ruledOut.includes(p.id)?"#FF3D5A":p.status==="traded-in"?"#2ECC71":p.status==="returned"?"#F5A623":p.status==="traded-out"?"#FF3D5A":idx===0&&p.status==="active"?"#F5A623":"#E2EAF4",
-                                  textDecoration:p.status==="snatched-out"||p.status==="snatch-returned-in"||p.status==="traded-out"||ruledOut.includes(p.id)?"line-through":"none"}}>
-                                  {p.status==="traded-out"&&<span style={{marginRight:4}}>⬇️</span>}
-                                  {p.status==="traded-in"&&<span style={{marginRight:4}}>⬆️</span>}
-                                  {p.status==="returned"&&<span style={{marginRight:4}}>↩️</span>}
-                                  {ruledOut.includes(p.id)&&<span style={{marginRight:4}}>🚫</span>}
-                                  {p.name}
-                                  {ruledOut.includes(p.id)&&<span style={{fontSize:9,color:"#FF3D5A",marginLeft:6,textDecoration:"none",fontWeight:700}}>RULED OUT</span>}
-                                  {!ruledOut.includes(p.id)&&p.status==="traded-out"&&<span style={{fontSize:9,color:T.danger,marginLeft:6,textDecoration:"none",fontWeight:700}}>→ {p.tradedFor}</span>}
-                                  {!ruledOut.includes(p.id)&&p.status==="traded-in"&&<span style={{fontSize:9,color:T.success,marginLeft:6,textDecoration:"none",fontWeight:700}}>FROM POOL</span>}
-                                  {!ruledOut.includes(p.id)&&p.status==="returned"&&<span style={{fontSize:9,color:T.accent,marginLeft:6,textDecoration:"none",fontWeight:700}}>↩ RETURNED</span>}
-                                  {!ruledOut.includes(p.id)&&p.status==="snatched-out"&&<span style={{fontSize:9,color:T.purple,marginLeft:6,textDecoration:"none",fontWeight:700}}> SNATCHED</span>}
-                                  {!ruledOut.includes(p.id)&&p.status==="snatched-in"&&<span style={{fontSize:9,color:T.success,marginLeft:6,textDecoration:"none",fontWeight:700}}> ON LOAN</span>}
-                                  {!ruledOut.includes(p.id)&&p.status==="snatch-returned-in"&&<span style={{fontSize:9,color:T.muted,marginLeft:6,textDecoration:"none"}}> RETURNED</span>}
-                                  {!ruledOut.includes(p.id)&&p.status==="released"&&<span style={{fontSize:9,color:T.muted,marginLeft:6,textDecoration:"none"}}> RELEASED</span>}
-                                </div>
-                                <div style={{width:90}}><Badge label={p.role||"—"} color={ROLE_COLORS[p.role]||"#4A5E78"} /></div>
-                                <div style={{width:70,textAlign:"right",fontWeight:700,
-                                  color:ruledOut.includes(p.id)?"#FF3D5A":p.status==="traded-in"?"#2ECC71":p.status==="returned"?"#F5A623":p.status==="traded-out"||p.status==="snatched-out"||p.status==="snatch-returned-in"?"#4A5E78":p.total>0?"#E2EAF4":"#4A5E78",
-                                  fontFamily:"Rajdhani",fontSize:17}}>
-                                  {p.total}
-                                  {ruledOut.includes(p.id)&&<span style={{fontSize:9,display:"block",color:"#FF3D5A",letterSpacing:0.5}}>FROZEN</span>}
-                                  {!ruledOut.includes(p.id)&&p.status==="traded-in"&&<span style={{fontSize:9,display:"block",color:T.success,letterSpacing:0.5}}>RESET</span>}
-                                  {!ruledOut.includes(p.id)&&p.status==="returned"&&<span style={{fontSize:9,display:"block",color:T.accent,letterSpacing:0.5}}>BACK</span>}
-                                  {!ruledOut.includes(p.id)&&p.status==="traded-out"&&<span style={{fontSize:9,display:"block",color:T.danger,letterSpacing:0.5}}>FROZEN</span>}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        {isOpen&&breakdown.length===0&&<div style={{padding:"16px 18px",color:T.muted,fontSize:13,borderTop:`1px solid ${T.border}`}}>No players assigned yet.</div>}
-                      </Card>
-                    );
-                  })}
                 </>
               )}
             </div>
