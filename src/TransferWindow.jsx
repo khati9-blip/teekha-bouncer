@@ -3,8 +3,6 @@ import React, { useState, useEffect, useCallback } from "react";
 
 const SB_URL = "https://rmcxhorijitrhqyrvvkn.supabase.co/rest/v1/league_data";
 const SB_KEY = "sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm";
-const sbGet = async (key) => { try { const res = await fetch(SB_URL+"?key=eq."+encodeURIComponent(key), {headers:{"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY}}); const d=await res.json(); return d[0]?.value; } catch { return null; } };
-const sbSet = async (key, value) => { try { await fetch(SB_URL, {method:"POST",headers:{"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY,"Content-Type":"application/json","Prefer":"resolution=merge-duplicates"},body:JSON.stringify({key,value,updated_at:new Date().toISOString()})}); } catch {} };
 
 const TIER_ORDER = { platinum:4, gold:3, silver:2, bronze:1, "":0 };
 const TIER_COLORS = { platinum:"#B0BEC5", gold:"#F5A623", silver:"#94A3B8", bronze:"#CD7F32", "":"#4A5E78" };
