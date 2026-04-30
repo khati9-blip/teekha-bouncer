@@ -126,6 +126,7 @@ export function GlobalStyles() {
       ::-webkit-scrollbar-thumb { background: #2A1A00; border-radius: 0; }
       ::-webkit-scrollbar-thumb:hover { background: #3D2500; }
       @keyframes tb-fadeUp   { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+      @keyframes tb-slideInLeft { from { transform:translateX(-100%); } to { transform:translateX(0); } }
       @keyframes tb-fadeIn   { from { opacity:0; } to { opacity:1; } }
       @keyframes tb-slideIn  { from { transform:translateX(100%); } to { transform:translateX(0); } }
       @keyframes tb-pulse    { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
@@ -134,6 +135,7 @@ export function GlobalStyles() {
       @keyframes tb-float    { 0%,100% { transform:translateY(0px); } 50% { transform:translateY(-10px); } }
       @keyframes tb-flash    { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
       .tb-fadeUp  { animation: tb-fadeUp  0.4s ease both; }
+      .slide-in-left { animation: tb-slideInLeft 0.3s cubic-bezier(0.25,0.46,0.45,0.94) both; }
       .tb-fadeIn  { animation: tb-fadeIn  0.25s ease both; }
       .tb-slideIn { animation: tb-slideIn 0.3s cubic-bezier(0.25,0.46,0.45,0.94) both; }
       .tb-pulse   { animation: tb-pulse   2s ease infinite; }
