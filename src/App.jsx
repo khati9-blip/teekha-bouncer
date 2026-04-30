@@ -5328,10 +5328,12 @@ ${aiMatchText.slice(0, 3000)}`;
           {page==="leaderboard"&&(
             <div className="fade-in">
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:8}}>
-                <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:T.accent,letterSpacing:2}}>LEADERBOARD</h2>
+                <div style={{display:"inline-block",background:T.accent,padding:"4px 16px 4px 12px",clipPath:"polygon(0 0,100% 0,calc(100% - 10px) 100%,0 100%)"}}>
+                  <h2 style={{fontFamily:fonts.display,fontSize:28,fontWeight:700,color:T.bg,letterSpacing:3,margin:0}}>LEADERBOARD</h2>
+                </div>
                 <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
 
-                  <button onClick={shareLeaderboard} style={{background:"#25D36622",border:"1px solid #25D36644",color:"#25D366",borderRadius:8,padding:"8px 14px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:13}}>
+                  <button onClick={shareLeaderboard} style={{background:"#25D366",border:"none",color:"#050F05",clipPath:"polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%)",padding:"9px 20px",cursor:"pointer",fontFamily:fonts.display,fontWeight:800,fontSize:13,letterSpacing:2,textTransform:"uppercase",filter:"drop-shadow(3px 3px 0 #0A5020)"}}>
                     📲 SHARE WHATSAPP
                   </button>
                 </div>
@@ -5344,15 +5346,15 @@ ${aiMatchText.slice(0, 3000)}`;
                     {leaderboard.map((team,i)=>{
                       const medals=["🥇","🥈","🥉"],mc=["#F5A623","#94A3B8","#CD7C2F"];
                       return(
-                        <div key={team.id} style={{display:"flex",alignItems:"center",gap:16,background:T.card,borderRadius:10,padding:"16px 20px",marginBottom:8,borderLeft:"4px solid "+team.color}}>
-                          <div style={{fontSize:28,minWidth:36}}>{medals[i]||("#"+(i+1))}</div>
+                        <div key={team.id} style={{display:"flex",alignItems:"center",gap:16,background:T.card,borderRadius:0,padding:"18px 20px",marginBottom:6,borderLeft:"5px solid "+team.color,borderBottom:`1px solid ${T.border}`}}>
+                          <div style={{fontFamily:fonts.display,fontSize:i===0?40:32,fontWeight:900,color:i===0?team.color:T.muted,minWidth:44,lineHeight:1}}>{medals[i]||("#"+(i+1))}</div>
                           <div style={{flex:1}}>
-                            <div style={{fontWeight:700,fontSize:18,color:team.color,fontFamily:"Rajdhani",letterSpacing:1}}>{team.name}</div>
-                            <div style={{fontSize:12,color:T.muted}}>{players.filter(p=>assignments[p.id]===team.id).length} players drafted</div>
+                            <div style={{fontWeight:900,fontSize:i===0?26:22,color:team.color,fontFamily:fonts.display,letterSpacing:2,textTransform:"uppercase",lineHeight:1}}>{team.name}</div>
+                            <div style={{fontSize:11,color:T.muted,letterSpacing:2,marginTop:3,textTransform:"uppercase"}}>{players.filter(p=>assignments[p.id]===team.id).length} PLAYERS</div>
                           </div>
                           <div style={{textAlign:"right"}}>
-                            <div style={{fontSize:32,fontWeight:800,color:i<3?mc[i]:"#E2EAF4",fontFamily:"Rajdhani"}}>{team.total}</div>
-                            <div style={{fontSize:11,color:T.muted,letterSpacing:2}}>POINTS</div>
+                            <div style={{fontSize:i===0?48:36,fontWeight:900,color:i===0?T.accent:T.text,fontFamily:fonts.display,lineHeight:1,letterSpacing:1}}>{team.total.toLocaleString()}</div>
+                            <div style={{fontSize:10,color:T.muted,letterSpacing:3,textTransform:"uppercase",marginTop:2}}>PTS</div>
                           </div>
                         </div>
                       );
