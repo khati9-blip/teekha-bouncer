@@ -5099,10 +5099,10 @@ ${aiMatchText.slice(0, 3000)}`;
           {page==="transfer" && (
             <div className="fade-in">
               {/* Sub-tabs */}
-              <div style={{display:"flex",gap:4,background:T.card,borderRadius:12,padding:4,marginBottom:16,border:`1px solid ${T.border}`}}>
-                {[["transfer","🔄 Transfer Window"],["snatch","⚡ Snatch Window"]].map(([id,label])=>(
+              <div style={{display:"flex",gap:0,marginBottom:16,borderBottom:`2px solid ${T.border}`}}>
+                {[["transfer","🔄 TRANSFER"],["snatch","⚡ SNATCH"]].map(([id,label])=>(
                   <button key={id} onClick={()=>setTransferSubTab(id)}
-                    style={{flex:1,padding:"10px",border:"none",borderRadius:9,background:transferSubTab===id?T.bg:"transparent",color:transferSubTab===id?T.accent:T.muted,fontFamily:fonts.display,fontWeight:700,fontSize:13,cursor:"pointer",letterSpacing:0.5,transition:"all 0.2s",boxShadow:transferSubTab===id?`0 2px 8px rgba(0,0,0,0.3)`:undefined}}>
+                    style={{flex:1,padding:"12px",border:"none",borderBottom:transferSubTab===id?`3px solid ${T.accent}`:"3px solid transparent",background:"transparent",color:transferSubTab===id?T.accent:T.muted,fontFamily:fonts.display,fontWeight:800,fontSize:14,cursor:"pointer",letterSpacing:2,transition:"all 0.2s",textTransform:"uppercase",marginBottom:-2}}>
                     {label}
                   </button>
                 ))}
