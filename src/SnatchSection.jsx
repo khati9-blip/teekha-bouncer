@@ -329,26 +329,26 @@ export default function SnatchSection({
             ? formatMins(windowStatus.minsLeft)
             : formatMins(windowStatus.minsUntil)}
         </div>
-        <div style={{fontSize:10,color:"#4A5E78",letterSpacing:2,marginTop:4}}>
+        <div style={{fontSize:10,color:"#8A7060",letterSpacing:2,marginTop:4}}>
           {windowStatus.open ? "UNTIL WINDOW CLOSES" : `UNTIL WINDOW OPENS · ${(pitchConfig?.snatchWindow?.split(" to ")[0] || "SAT 12:00 AM").toUpperCase()} IST`}
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:3,marginTop:10,padding:"8px 0",borderTop:"1px solid #1E2D4533"}}>
-          <div style={{fontSize:11,color:"#4A5E78"}}>🪟 Window: <span style={{color:"#E2EAF4",fontWeight:600}}>{pitchConfig?.snatchWindow ? pitchConfig.snatchWindow.replace(" to ", " → ") + " IST" : "Sat 12:00 AM → 12:00 PM IST"}</span></div>
-          <div style={{fontSize:11,color:"#4A5E78"}}>↩️ Return: <span style={{color:"#E2EAF4",fontWeight:600}}>{pitchConfig?.snatchReturn || "Friday 11:58 PM"} IST</span></div>
+          <div style={{fontSize:11,color:"#8A7060"}}>🪟 Window: <span style={{color:"#E2EAF4",fontWeight:600}}>{pitchConfig?.snatchWindow ? pitchConfig.snatchWindow.replace(" to ", " → ") + " IST" : "Sat 12:00 AM → 12:00 PM IST"}</span></div>
+          <div style={{fontSize:11,color:"#8A7060"}}>↩️ Return: <span style={{color:"#E2EAF4",fontWeight:600}}>{pitchConfig?.snatchReturn || "Friday 11:58 PM"} IST</span></div>
         </div>
       </div>
 
       {/* Eligibility */}
       <div style={{background:"#080C14",borderRadius:10,padding:"10px 14px",marginBottom:14}}>
-        <div style={{fontSize:10,color:"#4A5E78",letterSpacing:2,marginBottom:6}}>SNATCH RIGHTS THIS WEEK</div>
+        <div style={{fontSize:10,color:"#8A7060",letterSpacing:2,marginBottom:6}}>SNATCH RIGHTS THIS WEEK</div>
         {!elig ? (
-          <div style={{fontSize:12,color:"#4A5E78"}}>No matches with stats this week — snatch unavailable</div>
+          <div style={{fontSize:12,color:"#8A7060"}}>No matches with stats this week — snatch unavailable</div>
         ) : (
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             <div style={{width:10,height:10,borderRadius:"50%",background:elig.team?.color,flexShrink:0}} />
             <div>
               <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:16,fontWeight:700,color:elig.team?.color}}>{elig.team?.name}</div>
-              <div style={{fontSize:11,color:"#4A5E78"}}>Best single match: {elig.bestPts} base pts this week</div>
+              <div style={{fontSize:11,color:"#8A7060"}}>Best single match: {elig.bestPts} base pts this week</div>
             </div>
             {elig.team?.id === myTeamId && (
               <span style={{marginLeft:"auto",background:"#2ECC7122",border:"1px solid #2ECC7144",borderRadius:6,padding:"3px 8px",fontSize:11,color:"#2ECC71",fontWeight:700}}>YOU</span>
@@ -364,12 +364,12 @@ export default function SnatchSection({
           <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
             <div>
               <div style={{fontWeight:700,fontSize:14,color:"#E2EAF4"}}>{snatched?.name}</div>
-              <div style={{fontSize:11,color:"#4A5E78",marginTop:2}}>
+              <div style={{fontSize:11,color:"#8A7060",marginTop:2}}>
                 <span style={{color:snatchedBy?.color,fontWeight:700}}>{snatchedBy?.name}</span>
-                <span style={{margin:"0 6px",color:"#4A5E78"}}>snatched from</span>
+                <span style={{margin:"0 6px",color:"#8A7060"}}>snatched from</span>
                 <span style={{color:snatchedFrom?.color,fontWeight:700}}>{snatchedFrom?.name}</span>
               </div>
-              <div style={{fontSize:10,color:"#4A5E78",marginTop:2}}>Returns {pitchConfig?.snatchReturn || "Friday 11:58 PM"} IST</div>
+              <div style={{fontSize:10,color:"#8A7060",marginTop:2}}>Returns {pitchConfig?.snatchReturn || "Friday 11:58 PM"} IST</div>
               {returnCountdown && (
                 <div style={{marginTop:8,padding:"8px 12px",background:"#A855F711",border:"1px solid #A855F733",borderRadius:8,display:"inline-block"}}>
                   <div style={{fontSize:10,color:"#A855F7",letterSpacing:2,fontWeight:700,marginBottom:2}}>RETURNS IN</div>
@@ -398,7 +398,7 @@ export default function SnatchSection({
             <button onClick={()=>setSelectingPlayer(true)} style={{...sBtn("#A855F7","#A855F722"),width:"100%",marginBottom:8,cursor:"pointer",pointerEvents:"all"}}>⚡ ACTIVATE SNATCH</button>
           ) : (
             <div>
-              <div style={{fontSize:11,color:"#4A5E78",marginBottom:10}}>Select a team to snatch from:</div>
+              <div style={{fontSize:11,color:"#8A7060",marginBottom:10}}>Select a team to snatch from:</div>
               <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}}>
                 {teams.filter(t => t.id !== (myTeamId || elig?.team?.id)).map(t => (
                   <button key={t.id} onClick={()=>setSelectedVictimTeam(t.id === selectedVictimTeam ? null : t.id)}
@@ -409,7 +409,7 @@ export default function SnatchSection({
               </div>
               {selectedVictimTeam && (
                 <div>
-                  <div style={{fontSize:11,color:"#4A5E78",marginBottom:8}}>Select player to snatch:</div>
+                  <div style={{fontSize:11,color:"#8A7060",marginBottom:8}}>Select player to snatch:</div>
                   {players.filter(p => assignments[p.id] === selectedVictimTeam).map(p => {
                     const safeArr = Array.isArray(safePlayers) ? safePlayers : Object.values(safePlayers||{}).flat();
                     const isSafe = safeArr.includes(p.id);
@@ -422,10 +422,10 @@ export default function SnatchSection({
                           {isSafe && <span style={{fontSize:10,background:"#4A5E7833",border:"1px solid #4A5E7866",borderRadius:4,padding:"1px 6px",color:"#94A3B8",fontWeight:700}}>🛡 SAFE</span>}
                           {isRuledOut && <span style={{fontSize:10,background:"#FF3D5A22",border:"1px solid #FF3D5A44",borderRadius:4,padding:"1px 6px",color:"#FF3D5A",fontWeight:700}}>🚫 RULED OUT</span>}
                         </div>
-                        <div style={{fontSize:11,color:"#4A5E78"}}>{p.iplTeam} • {p.role}</div>
+                        <div style={{fontSize:11,color:"#8A7060"}}>{p.iplTeam} • {p.role}</div>
                       </div>
                       {isSafe ? (
-                        <div style={{fontSize:11,color:"#4A5E78",padding:"4px 12px"}}>🛡 Protected</div>
+                        <div style={{fontSize:11,color:"#8A7060",padding:"4px 12px"}}>🛡 Protected</div>
                       ) : isRuledOut ? (
                         <div style={{fontSize:11,color:"#FF3D5A",padding:"4px 12px"}}>🚫 Ruled Out</div>
                       ) : (
@@ -439,20 +439,20 @@ export default function SnatchSection({
                 </div>
               )}
               <button onClick={()=>{setSelectingPlayer(false);setSelectedVictimTeam(null);setPinInput("");setPinErr("");}}
-                style={{...sBtn("#4A5E78"),marginTop:8,width:"100%"}}>CANCEL</button>
+                style={{...sBtn("#8A7060"),marginTop:8,width:"100%"}}>CANCEL</button>
             </div>
           )}
         </div>
       )}
 
       {!hasActivSnatch && windowStatus.open && !isEligible && !unlocked && elig && (
-        <div style={{fontSize:12,color:"#4A5E78",textAlign:"center",padding:"10px 0"}}>
+        <div style={{fontSize:12,color:"#8A7060",textAlign:"center",padding:"10px 0"}}>
           Only <span style={{color:elig.team?.color,fontWeight:700}}>{elig.team?.name}</span> can snatch this week
         </div>
       )}
 
       {!hasActivSnatch && !windowStatus.open && (
-        <div style={{fontSize:12,color:"#4A5E78",textAlign:"center",padding:"8px 0"}}>Window opens Saturday 12:00 AM IST</div>
+        <div style={{fontSize:12,color:"#8A7060",textAlign:"center",padding:"8px 0"}}>Window opens Saturday 12:00 AM IST</div>
       )}
 
       {/* PIN Confirmation Modal */}
@@ -498,18 +498,18 @@ export default function SnatchSection({
       {/* Snatch history */}
       {(snatch.history || []).length > 0 && (
         <div style={{marginTop:14}}>
-          <div style={{fontSize:10,color:"#4A5E78",letterSpacing:2,marginBottom:8}}>SNATCH HISTORY</div>
+          <div style={{fontSize:10,color:"#8A7060",letterSpacing:2,marginBottom:8}}>SNATCH HISTORY</div>
           {[...(snatch.history || [])].reverse().slice(0, 5).map((h, i) => {
             const sp = players.find(p => p.id === h.pid);
             const bt = teams.find(t => t.id === h.byTeamId);
             const ft = teams.find(t => t.id === h.fromTeamId);
             return (
               <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 10px",background:"#080C14",borderRadius:8,marginBottom:4,fontSize:11}}>
-                <span style={{color:"#4A5E78"}}>Wk {h.week||i+1}</span>
+                <span style={{color:"#8A7060"}}>Wk {h.week||i+1}</span>
                 <span style={{fontWeight:700,color:"#E2EAF4"}}>{sp?.name}</span>
-                <span style={{color:"#4A5E78"}}>by</span>
+                <span style={{color:"#8A7060"}}>by</span>
                 <span style={{color:bt?.color,fontWeight:700}}>{bt?.name}</span>
-                <span style={{color:"#4A5E78"}}>from</span>
+                <span style={{color:"#8A7060"}}>from</span>
                 <span style={{color:ft?.color,fontWeight:700}}>{ft?.name}</span>
                 {h.snatchWeekPts != null && <span style={{marginLeft:"auto",color:"#F5A623",fontWeight:700}}>{h.snatchWeekPts} pts</span>}
               </div>
