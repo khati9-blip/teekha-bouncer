@@ -1013,7 +1013,7 @@ onUpdateTransfers({
               {phase}
             </span>
             {phase === "closed" && (
-              <span style={{fontSize:11,color:T.muted}}>Auto-opens {pitchConfig?.transferStart || "Sun 11:59 PM"} IST</span>
+              <span style={{fontSize:11,color:T.sub,fontFamily:fonts.display,letterSpacing:1,fontWeight:600}}>AUTO-OPENS {(pitchConfig?.transferStart || "Sun 11:59 PM").toUpperCase()} IST</span>
             )}
           </div>
         </div>
