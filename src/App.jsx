@@ -4911,23 +4911,23 @@ ${aiMatchText.slice(0, 3000)}`;
                       <div style={{display:"flex",gap:4}}>
                         <div style={{position:"relative",display:"inline-block"}} className="tooltip-wrap">
                           <button onClick={e=>{e.stopPropagation();withPassword(()=>fetchMatchesForTournament(tournament.id,tournament.name,tournament.seriesId));}}
-                            style={{background:T.accentBg,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:6,padding:"4px 8px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:10}}
-                            title="Cricbuzz — 100 req/month free. Resets monthly.">🟠 CB</button>
+  style={{background:T.accent,border:"none",color:T.bg,clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)",padding:"6px 10px",cursor:"pointer",fontFamily:fonts.display,fontWeight:800,fontSize:10,letterSpacing:1.5,filter:"drop-shadow(2px 2px 0 #8B4500)"}}
+  title="Cricbuzz — 100 req/month free. Resets monthly.">🟠 CB</button>
                         </div>
                         <div style={{position:"relative",display:"inline-block"}}>
                           <button onClick={e=>{e.stopPropagation();withPassword(()=>fetchFromCricketData(tournament.id,tournament.name));}}
-                            style={{background:T.successBg,border:`1px solid ${T.success}44`,color:T.success,borderRadius:6,padding:"4px 8px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:10}}
-                            title="CricketData — 100 req/day free. Resets daily.">🟢 CD</button>
+  style={{background:"#2ECC71",border:"none",color:"#050F05",clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)",padding:"6px 10px",cursor:"pointer",fontFamily:fonts.display,fontWeight:800,fontSize:10,letterSpacing:1.5,filter:"drop-shadow(2px 2px 0 #0A5020)"}}
+  title="CricketData — 100 req/day free. Resets daily.">🟢 CD</button>
                         </div>
                         <div style={{position:"relative",display:"inline-block"}}>
                           <button onClick={e=>{e.stopPropagation();withPassword(()=>setFetchPlayerModal({tournamentId:tournament.id,tournamentName:tournament.name}));}}
-                            style={{background:T.infoBg,border:`1px solid ${T.info}44`,color:T.info,borderRadius:6,padding:"4px 8px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:10}}
-                            title="Fetch players for this tournament">👥 PLAYERS</button>
+  style={{background:"#4F8EF7",border:"none",color:"#050F14",clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)",padding:"6px 10px",cursor:"pointer",fontFamily:fonts.display,fontWeight:800,fontSize:10,letterSpacing:1.5,filter:"drop-shadow(2px 2px 0 #1E3A5F)"}}
+  title="Fetch players for this tournament">👥 PLYR</button>
                         </div>
                         <div style={{position:"relative",display:"inline-block"}}>
                           <button onClick={e=>{e.stopPropagation();withPassword(()=>setAiMatchModal({tournamentId:tournament.id,tournamentName:tournament.name}));}}
-                            style={{background:T.purpleBg,border:`1px solid ${T.purple}44`,color:T.purple,borderRadius:6,padding:"4px 8px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:10}}
-                            title="Generate past matches using AI">🤖 AI MATCHES</button>
+  style={{background:"#A855F7",border:"none",color:"#050F14",clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)",padding:"6px 10px",cursor:"pointer",fontFamily:fonts.display,fontWeight:800,fontSize:10,letterSpacing:1.5,filter:"drop-shadow(2px 2px 0 #5B21B6)"}}
+  title="Generate past matches using AI">🤖 AI</button>
                         </div>
                         {tMatches.some(m=>m.aiGenerated) && (
                           <div style={{position:"relative",display:"inline-block"}}>
