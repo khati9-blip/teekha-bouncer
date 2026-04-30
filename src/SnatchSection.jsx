@@ -258,6 +258,7 @@ export default function SnatchSection({
     const h = Math.floor((secsLeft % 86400) / 3600);
     const m = Math.floor((secsLeft % 3600) / 60);
     const s = secsLeft % 60;
+    if (secsLeft === 0) return "00:00";
     if (d > 0) return `${d}d ${h}h ${m}m`;
     if (h > 0) return `${h}h ${m}m ${s}s`;
     if (m > 0) return `${m}m ${s}s`;
