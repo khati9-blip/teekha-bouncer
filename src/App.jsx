@@ -1170,6 +1170,8 @@ placeholder="Paste scorecard text here... (e.g. V Kohli c Maxwell b Bumrah 82 (5
                       <th style={{padding:"8px 4px",fontWeight:700,minWidth:65}}>CATCHES</th>
                       <th style={{padding:"8px 4px",fontWeight:700,minWidth:75}}>STUMPINGS</th>
                       <th style={{padding:"8px 4px",fontWeight:700,minWidth:70}}>RUN OUTS</th>
+                      <th style={{padding:"8px 4px",fontWeight:700,minWidth:45}}>MOM</th>
+                      <th style={{padding:"8px 4px",fontWeight:700,minWidth:45}}>XI</th>
                     </tr>
                   </thead>
                   <tbody>
