@@ -291,9 +291,18 @@ export default function SnatchSection({
   };
 
   const sBtn = (col, bg) => ({
-    background: bg || col + "22", border: "1px solid " + col + "44", borderRadius: 8,
-    padding: "8px 16px", color: col, fontFamily: "Barlow Condensed,sans-serif",
-    fontWeight: 700, fontSize: 13, cursor: "pointer",
+    background: bg || col,
+    border: "none",
+    padding: "9px 24px",
+    color: bg ? col : "#050F05",
+    fontFamily: fonts.display,
+    fontWeight: 800,
+    fontSize: 13,
+    letterSpacing: 3,
+    cursor: "pointer",
+    clipPath: "polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%)",
+    textTransform: "uppercase",
+    filter: `drop-shadow(3px 3px 0 ${col}88)`,
   });
 
   const snatched = snatch.active ? players.find(p => p.id === snatch.active.pid) : null;
@@ -301,9 +310,9 @@ export default function SnatchSection({
   const snatchedBy = snatch.active ? teams.find(t => t.id === snatch.active.byTeamId) : null;
 
   return (
-    <div style={{background:"#0E1521",borderRadius:14,border:"1px solid #A855F744",padding:16,marginTop:16}}>
-      <div style={{fontFamily:"Rajdhani,sans-serif",fontSize:18,fontWeight:700,color:"#A855F7",letterSpacing:2,marginBottom:4}}>
-        ⚡ SNATCH WINDOW
+    <div style={{background:T.card,borderRadius:0,border:`1px solid ${T.purple}44`,borderLeft:`4px solid ${T.purple}`,padding:16,marginTop:16}}>
+      <div style={{display:"inline-block",background:T.purple,padding:"4px 16px 4px 12px",marginBottom:12,clipPath:"polygon(0 0,100% 0,calc(100% - 10px) 100%,0 100%)"}}>
+        <div style={{fontFamily:fonts.display,fontSize:24,fontWeight:700,color:"#fff",letterSpacing:3,margin:0}}>⚡ SNATCH WINDOW</div>
       </div>
 
       {/* Window status */}
