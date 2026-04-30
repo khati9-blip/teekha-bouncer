@@ -1758,6 +1758,7 @@ onUpdateTransfers({
 
 function TransferHistory({ transfers, players, teams }) {
   const currentWeek = transfers.weekNum || 1;
+  const [expandedWeeks, setExpandedWeeks] = React.useState(new Set([0])); // First week expanded by default
   const getPlayer = (pid) => players.find(p => p.id === pid);
   const getTeam   = (tid) => teams.find(t => t.id === tid);
 
@@ -1808,93 +1809,113 @@ function TransferHistory({ transfers, players, teams }) {
         });
 
         return (
-          <div key={wi} style={{background:T.card,borderRadius:12,border:`1px solid ${T.border}`,overflow:"hidden"}}>
-            {/* Week header */}
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 18px",borderBottom:`1px solid ${T.border}`,background:T.bg}}>
-              <div style={{display:"flex",alignItems:"center",gap:12}}>
-                <div style={{background:T.accentBg,border:`1px solid ${T.accentBorder}`,borderRadius:8,padding:"4px 12px",fontFamily:fonts.display,fontWeight:800,fontSize:18,color:T.accent}}>
-                  W{weekNum}{week.isCurrent ? " 🔴" : ""}
-                </div>
-                <div>
-                  <div style={{fontFamily:fonts.display,fontWeight:700,fontSize:15,color:T.text,letterSpacing:1}}>
-                    WEEK {weekNum} TRANSFERS
-                  </div>
-                  {date && <div style={{fontSize:11,color:T.muted}}>{date}</div>}
-                </div>
+  <div key={wi} style={{background:T.card,borderRadius:0,border:`2px solid ${week.isCurrent?T.accent:T.border}`,overflow:"hidden",boxShadow:week.isCurrent?"3px 3px 0 "+T.accent+"44":"none"}}>
+    {/* Week header - CLICKABLE */}
+    <div 
+      onClick={() => {
+        const newExpanded = new Set(expandedWeeks);
+        if (newExpanded.has(wi)) {
+          newExpanded.delete(wi);
+        } else {
+          newExpanded.add(wi);
+        }
+        setExpandedWeeks(newExpanded);
+      }}
+      style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 18px",borderBottom:expandedWeeks.has(wi)?`2px solid ${week.isCurrent?T.accent:T.border}`:"none",background:T.bg,cursor:"pointer"}}>
+      <div style={{display:"flex",alignItems:"center",gap:12}}>
+        <div style={{background:week.isCurrent?T.accent:T.accentBg,border:`1px solid ${week.isCurrent?T.accent:T.accentBorder}`,borderRadius:0,padding:"6px 14px",fontFamily:fonts.display,fontWeight:900,fontSize:20,color:week.isCurrent?T.bg:T.accent,clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)",filter:week.isCurrent?"drop-shadow(2px 2px 0 #8B4500)":"none"}}>
+          W{weekNum}{week.isCurrent ? " 🔴" : ""}
+        </div>
+        <div>
+          <div style={{fontFamily:fonts.display,fontWeight:800,fontSize:16,color:T.text,letterSpacing:2,textTransform:"uppercase"}}>
+            WEEK {weekNum} TRANSFERS
+          </div>
+          {date && <div style={{fontSize:11,color:T.muted,marginTop:2,fontFamily:fonts.body}}>{date}</div>}
+        </div>
+      </div>
+      <div style={{display:"flex",alignItems:"center",gap:12}}>
+        <div style={{fontSize:12,color:T.muted,fontWeight:700,fontFamily:fonts.display,letterSpacing:1}}>
+          {pairs.length} TRADE{pairs.length!==1?"S":""}
+        </div>
+        <span style={{color:T.accent,fontSize:20,fontFamily:fonts.display,fontWeight:700,lineHeight:1}}>
+          {expandedWeeks.has(wi) ? "▲" : "▼"}
+        </span>
+      </div>
+    </div>
+
+    {/* Collapsible content */}
+    {expandedWeeks.has(wi) && (
+      <>
+        {!hadActivity && (
+          <div style={{padding:"16px 18px",fontSize:13,color:T.muted}}>No trades this window.</div>
+        )}
+
+        {/* Per-team breakdown */}
+        {hadActivity && teamIds.map(tid => {
+          const team = getTeam(tid);
+          if (!team) return null;
+          const teamPairs = pairs.filter(p=>p.teamId===tid);
+          const teamReleases = releases[tid]||[];
+          const tradedReleasedPids = new Set(teamPairs.map(p=>p.releasedPid));
+          const returnedPids = week.isCurrent ? [] : teamReleases.filter(pid => !tradedReleasedPids.has(pid));
+
+          if (teamPairs.length === 0 && returnedPids.length === 0) return null;
+
+          return (
+            <div key={tid} style={{padding:"14px 18px",borderBottom:`1px solid ${T.border}33`}}>
+              {/* Team name */}
+              <div style={{fontFamily:fonts.display,fontWeight:800,fontSize:14,color:team.color,letterSpacing:2,marginBottom:10,textTransform:"uppercase"}}>
+                {team.name}
               </div>
-              <div style={{fontSize:12,color:T.muted,fontWeight:700}}>
-                {pairs.length} trade{pairs.length!==1?"s":""}
-              </div>
-            </div>
 
-            {!hadActivity && (
-              <div style={{padding:"16px 18px",fontSize:13,color:T.muted}}>No trades this window.</div>
-            )}
-
-            {/* Per-team breakdown */}
-            {hadActivity && teamIds.map(tid => {
-              const team = getTeam(tid);
-              if (!team) return null;
-              const teamPairs = pairs.filter(p=>p.teamId===tid);
-              const teamReleases = releases[tid]||[];
-              const tradedReleasedPids = new Set(teamPairs.map(p=>p.releasedPid));
-              const returnedPids = week.isCurrent ? [] : teamReleases.filter(pid => !tradedReleasedPids.has(pid));
-
-              if (teamPairs.length === 0 && returnedPids.length === 0) return null;
-
-              return (
-                <div key={tid} style={{padding:"14px 18px",borderBottom:`1px solid ${T.border}33`}}>
-                  {/* Team name */}
-                  <div style={{fontFamily:fonts.display,fontWeight:700,fontSize:13,color:team.color,letterSpacing:1,marginBottom:10}}>
-                    {team.name}
+              {/* Traded pairs */}
+              {teamPairs.map((pr, i) => {
+                const out = getPlayer(pr.releasedPid);
+                const inn = getPlayer(pr.pickedPid);
+                return (
+                  <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,flexWrap:"wrap"}}>
+                    {/* Player out */}
+                    <div style={{display:"flex",alignItems:"center",gap:6,background:T.dangerBg,border:`1px solid ${T.danger}33`,borderRadius:0,padding:"6px 12px",minWidth:0}}>
+                      <span style={{fontSize:14}}>⬇️</span>
+                      <div>
+                        <div style={{fontWeight:700,fontSize:13,color:T.danger,textDecoration:"line-through"}}>{out?.name||pr.releasedPid}</div>
+                        <div style={{fontSize:10,color:T.muted}}>{out?.role} • {out?.iplTeam}</div>
+                      </div>
+                    </div>
+                    <span style={{color:T.muted,fontSize:18,fontWeight:300}}>→</span>
+                    {/* Player in */}
+                    <div style={{display:"flex",alignItems:"center",gap:6,background:"#2ECC7111",border:`1px solid ${T.success}33`,borderRadius:0,padding:"6px 12px",minWidth:0}}>
+                      <span style={{fontSize:14}}>⬆️</span>
+                      <div>
+                        <div style={{fontWeight:700,fontSize:13,color:T.success}}>{inn?.name||pr.pickedPid}</div>
+                        <div style={{fontSize:10,color:T.muted}}>{inn?.role} • {inn?.iplTeam}</div>
+                      </div>
+                    </div>
                   </div>
+                );
+              })}
 
-                  {/* Traded pairs */}
-                  {teamPairs.map((pr, i) => {
-                    const out = getPlayer(pr.releasedPid);
-                    const inn = getPlayer(pr.pickedPid);
+              {/* Players who were released but returned (no trade) */}
+              {returnedPids.length > 0 && (
+                <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:4}}>
+                  {returnedPids.map(pid => {
+                    const p = getPlayer(pid);
                     return (
-                      <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8,flexWrap:"wrap"}}>
-                        {/* Player out */}
-                        <div style={{display:"flex",alignItems:"center",gap:6,background:T.dangerBg,border:`1px solid ${T.danger}33`,borderRadius:8,padding:"6px 12px",minWidth:0}}>
-                          <span style={{fontSize:14}}>⬇️</span>
-                          <div>
-                            <div style={{fontWeight:700,fontSize:13,color:T.danger,textDecoration:"line-through"}}>{out?.name||pr.releasedPid}</div>
-                            <div style={{fontSize:10,color:T.muted}}>{out?.role} • {out?.iplTeam}</div>
-                          </div>
-                        </div>
-                        <span style={{color:T.muted,fontSize:18,fontWeight:300}}>→</span>
-                        {/* Player in */}
-                        <div style={{display:"flex",alignItems:"center",gap:6,background:"#2ECC7111",border:`1px solid ${T.success}33`,borderRadius:8,padding:"6px 12px",minWidth:0}}>
-                          <span style={{fontSize:14}}>⬆️</span>
-                          <div>
-                            <div style={{fontWeight:700,fontSize:13,color:T.success}}>{inn?.name||pr.pickedPid}</div>
-                            <div style={{fontSize:10,color:T.muted}}>{inn?.role} • {inn?.iplTeam}</div>
-                          </div>
-                        </div>
+                      <div key={pid} style={{display:"flex",alignItems:"center",gap:5,background:T.accentBg,border:`1px solid ${T.accentBorder}`,borderRadius:0,padding:"4px 10px"}}>
+                        <span style={{fontSize:11}}>↩️</span>
+                        <span style={{fontSize:12,color:T.accent,fontWeight:700}}>{p?.name||pid}</span>
+                        <span style={{fontSize:10,color:T.muted}}>returned</span>
                       </div>
                     );
                   })}
-
-                  {/* Players who were released but returned (no trade) */}
-                  {returnedPids.length > 0 && (
-                    <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:4}}>
-                      {returnedPids.map(pid => {
-                        const p = getPlayer(pid);
-                        return (
-                          <div key={pid} style={{display:"flex",alignItems:"center",gap:5,background:T.accentBg,border:`1px solid ${T.accentBorder}`,borderRadius:8,padding:"4px 10px"}}>
-                            <span style={{fontSize:11}}>↩️</span>
-                            <span style={{fontSize:12,color:T.accent,fontWeight:700}}>{p?.name||pid}</span>
-                            <span style={{fontSize:10,color:T.muted}}>returned</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
                 </div>
-              );
-            })}
-          </div>
+              )}
+            </div>
+          );
+        })}
+      </>
+    )}
+  </div>
         );
       })}
     </div>
