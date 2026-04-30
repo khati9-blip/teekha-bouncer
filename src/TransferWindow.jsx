@@ -38,15 +38,20 @@ function Timer({ deadline, label = "REMAINING", onExpire }) {
     const t = setInterval(tick, 1000);
     return () => clearInterval(t);
   }, [deadline]);
-  const h = Math.floor(left / 3600);
+  const d = Math.floor(left / 86400);
+  const h = Math.floor((left % 86400) / 3600);
   const m = Math.floor((left % 3600) / 60);
   const s = left % 60;
   const urgent = left < 300;
+  const display = left === 0 ? "OPENING..."
+    : d > 0 ? `${d}d ${h}h ${m}m`
+    : h > 0 ? `${h}h ${m}m`
+    : `${m}:${String(s).padStart(2,"0")}`;
   return (
-    <div style={{fontFamily:fonts.display,fontSize:32,fontWeight:700,
-      color:left===0?"#4A5E78":urgent?"#FF3D5A":"#F5A623",textAlign:"center",letterSpacing:2}}>
-      {left === 0 ? "OPENING..." : h > 0 ? `${h}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}` : `${m}:${String(s).padStart(2,"0")}`}
-      <div style={{fontSize:10,color:T.muted,letterSpacing:2,marginTop:2}}>{left===0?"JUST A SEC...":label}</div>
+    <div style={{fontFamily:fonts.display,fontSize:d>0?28:32,fontWeight:900,
+      color:left===0?"#4A5E78":urgent?T.danger:T.accent,textAlign:"center",letterSpacing:2}}>
+      {display}
+      <div style={{fontSize:10,color:T.muted,letterSpacing:3,marginTop:2,fontWeight:700}}>{left===0?"JUST A SEC...":label}</div>
     </div>
   );
 }
