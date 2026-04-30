@@ -1897,7 +1897,9 @@ function adminBtn(color) {
   return {
     background: color,
     border: "none",
-    padding: "9px 20px",
+    padding: "9px 28px",
+    clipPath: "polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%)",
+    filter: `drop-shadow(3px 3px 0 ${color}88)`,
     color: color === "#FF3D5A" || color === "#A855F7" || color === "#4F8EF7" ? "#fff" : "#0F0800",
     fontFamily: fonts.display,
     fontWeight: 800,
