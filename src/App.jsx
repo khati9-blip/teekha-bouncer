@@ -5888,7 +5888,22 @@ ${aiMatchText.slice(0, 3000)}`;
                 style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 14px",color:T.text,fontSize:14,fontFamily:fonts.body,outline:"none",marginBottom:8,boxSizing:"border-box"}} />
               <input type="password" inputMode="numeric" value={adminPinConfirm}
                 onChange={e=>{setAdminPinConfirm(e.target.value);setAdminPinErr('');}}
-                onKeyDown={async e=>{if(e.key==="Enter") await doAdminClaim();}}
+                onKeyDown={async e=>{if(e.key==="Enter"){
+                  if(adminPin.length<4){setAdminPinErr("PIN must be at least 4 digits");return;}
+                  if(adminPin!==adminPinConfirm){setAdminPinErr("PINs don't match");return;}
+                  const hashBuf = await crypto.subtle.digest("SHA-256",new TextEncoder().encode(adminPin));
+                  const pinHash = Array.from(new Uint8Array(hashBuf)).map(b=>b.toString(16).padStart(2,"0")).join("");
+                  const identity = await storeGet("teamIdentity") || {};
+                  const key = adminClaimTeam.id;
+                  identity[key] = {...(identity[key]||{}), claimedBy: user.email, pinHash, teamRef: adminClaimTeam.id};
+                  await storeSet("teamIdentity", identity);
+                  setTeamIdentity(identity);
+                  const teamData = {...adminClaimTeam};
+                  try { localStorage.setItem('tb_myteam_'+pitch.id, JSON.stringify(teamData)); localStorage.setItem('tb_pinHash_'+pitch.id, pinHash); } catch {}
+                  setAdminClaimModal(false); setAdminClaimTeam(null);
+                  alert("✅ You've claimed "+adminClaimTeam.name+"! Reloading to apply changes.");
+                  window.location.reload();
+                }}}
                 placeholder="Confirm PIN"
                 style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 14px",color:T.text,fontSize:14,fontFamily:fonts.body,outline:"none",marginBottom:8,boxSizing:"border-box"}} />
               {adminPinErr && <div style={{color:T.danger,fontSize:12,marginBottom:8}}>{adminPinErr}</div>}
