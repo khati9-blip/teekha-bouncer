@@ -64,24 +64,25 @@ async function fetchLiveScorecard(matchId) {
   return data;
 }
 
-async function fetchRecentIPLMatches() {
-  // Fetch both recent and upcoming matches
-  const extractIPL = (data) => {
-    const ipl = [];
-    if (data && data.typeMatches) {
-      for (const type of data.typeMatches) {
-        for (const series of (type.seriesMatches || [])) {
-          const sm = series.seriesAdWrapper || series;
-          if (sm.seriesName && sm.seriesName.includes("Indian Premier League")) {
-            for (const match of (sm.matches || [])) {
-              ipl.push(match.matchInfo);
-            }
+function extractIPL(data) {
+  const ipl = [];
+  if (data && data.typeMatches) {
+    for (const type of data.typeMatches) {
+      for (const series of (type.seriesMatches || [])) {
+        const sm = series.seriesAdWrapper || series;
+        if (sm.seriesName && sm.seriesName.includes("Indian Premier League")) {
+          for (const match of (sm.matches || [])) {
+            ipl.push(match.matchInfo);
           }
         }
       }
     }
-    return ipl;
-  };
+  }
+  return ipl;
+}
+
+async function fetchRecentIPLMatches() {
+  // Fetch both recent and upcoming matches
 
   try {
     // Fetch recent + upcoming in parallel
