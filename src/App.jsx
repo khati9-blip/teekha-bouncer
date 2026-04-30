@@ -4484,49 +4484,49 @@ ${aiMatchText.slice(0, 3000)}`;
         {showPwModal&&<PasswordModal storedHash={pwHash} recoveryHash={recoveryHash} onSuccess={handlePwSuccess} onClose={()=>{setShowPwModal(false);setPendingAction(null);}} />}
 
         {/* TOP BAR */}
-        <div style={{background:"linear-gradient(180deg,#0E1521 0%,#080C14 100%)",borderBottom:`1px solid ${T.border}`,padding:"10px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:50}}>
-          <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <button onClick={()=>setDrawerOpen(true)} style={{background:"transparent",border:"none",cursor:"pointer",padding:"6px 4px",display:"flex",flexDirection:"column",justifyContent:"center",gap:4,flexShrink:0,position:"relative"}}>
-              <span style={{display:"block",width:20,height:2,background:"#E2EAF4",borderRadius:2}} />
-              <span style={{display:"block",width:20,height:2,background:"#E2EAF4",borderRadius:2}} />
-              <span style={{display:"block",width:20,height:2,background:"#E2EAF4",borderRadius:2}} />
-              {(pendingVote || unreadNotifCount > 0) && <span style={{position:"absolute",top:2,right:2,width:8,height:8,background:"#FF3D5A",borderRadius:"50%"}} />}
-            </button>
-            <div style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={onLeave} title="Back to pitches">
-            <img src="/logo.png" alt="Teekha Bouncer" style={{height:36,width:36,objectFit:"contain",borderRadius:6}} />
-            <div>
-              <div style={{fontFamily:fonts.display,fontWeight:700,fontSize:14,color:T.accent,letterSpacing:1,lineHeight:1}}>TEEKHA BOUNCER LEAGUE</div>
-              <div style={{fontSize:9,color:T.muted,letterSpacing:1,marginTop:2}}>{pitch ? pitch.name : ""} {user ? "• "+user.email.split("@")[0] : ""}</div>
-            </div>
-          </div>
-          </div>
-          <div style={{display:"flex",alignItems:"center",gap:6}}>
-            <button onClick={onLeave} style={{background:"#4F8EF722",border:"1px solid #4F8EF744",color:"#4F8EF7",fontSize:13,borderRadius:6,padding:"6px 12px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700}}>
-              <span className="desk-only">🏠 HOME</span>
-              <span className="mob-only">🏠</span>
-            </button>
-            <button onClick={()=>{if(unlocked)setUnlocked(false);else{setPendingAction(null);setShowPwModal(true);}}} style={{background:unlocked?"#2ECC7122":"transparent",border:"1px solid "+(unlocked?"#2ECC71":"#1E2D45"),color:unlocked?"#2ECC71":"#4A5E78",fontSize:13,borderRadius:6,padding:"6px 12px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700}}>
-              <span className="desk-only">{unlocked?"🔓 ON":"🔒 OFF"}</span>
-              <span className="mob-only">{unlocked?"🔓":"🔒"}</span>
-            </button>
-            <button onClick={()=>withPassword(()=>{if(!confirm("Reset ALL data? This cannot be undone!"))return;["teams","players","assignments","matches","captains","points","page","pwhash"].forEach(k=>storeDel(k));window.location.reload();})} style={{background:"transparent",border:`1px solid ${T.border}`,color:T.muted,fontSize:13,borderRadius:6,padding:"6px 10px",cursor:"pointer"}}>⚙️</button>
-            <button onClick={onLogout} style={{background:T.dangerBg,border:`1px solid ${T.danger}44`,color:T.danger,fontSize:13,borderRadius:6,padding:"6px 10px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700}}>
-              <span className="desk-only">LOGOUT</span>
-              <span className="mob-only" style={{fontSize:11}}>OUT</span>
-            </button>
-          </div>
-        </div>
+<div style={{background:T.bg,borderBottom:`2px solid ${T.accent}`,padding:"10px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:50,boxShadow:"0 2px 10px rgba(0,0,0,0.5)"}}>
+  <div style={{display:"flex",alignItems:"center",gap:8}}>
+    <button onClick={()=>setDrawerOpen(true)} style={{background:"transparent",border:"none",cursor:"pointer",padding:"6px 4px",display:"flex",flexDirection:"column",justifyContent:"center",gap:4,flexShrink:0,position:"relative"}}>
+      <span style={{display:"block",width:20,height:2,background:T.accent,borderRadius:2}} />
+      <span style={{display:"block",width:20,height:2,background:T.accent,borderRadius:2}} />
+      <span style={{display:"block",width:20,height:2,background:T.accent,borderRadius:2}} />
+      {(pendingVote || unreadNotifCount > 0) && <span style={{position:"absolute",top:2,right:2,width:8,height:8,background:"#FF3D5A",borderRadius:"50%"}} />}
+    </button>
+    <div style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={onLeave} title="Back to pitches">
+      <img src="/logo.png" alt="Teekha Bouncer" style={{height:36,width:36,objectFit:"contain",borderRadius:0}} />
+      <div>
+        <div style={{fontFamily:fonts.display,fontWeight:800,fontSize:15,color:T.accent,letterSpacing:2,lineHeight:1,textTransform:"uppercase"}}>TEEKHA BOUNCER</div>
+        <div style={{fontSize:9,color:T.muted,letterSpacing:1,marginTop:2,fontFamily:fonts.body}}>{pitch ? pitch.name : ""} {user ? "• "+user.email.split("@")[0] : ""}</div>
+      </div>
+    </div>
+  </div>
+  <div style={{display:"flex",alignItems:"center",gap:6}}>
+    <button onClick={onLeave} style={{background:"#4F8EF7",border:"none",color:"#050F14",clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)",padding:"7px 14px",cursor:"pointer",fontFamily:fonts.display,fontWeight:800,fontSize:11,letterSpacing:1.5,filter:"drop-shadow(2px 2px 0 #1E3A5F)"}}>
+      <span className="desk-only">🏠 HOME</span>
+      <span className="mob-only">🏠</span>
+    </button>
+    <button onClick={()=>{if(unlocked)setUnlocked(false);else{setPendingAction(null);setShowPwModal(true);}}} style={{background:unlocked?"#2ECC71":"transparent",border:unlocked?"none":`2px solid ${T.border}`,color:unlocked?"#050F05":T.muted,clipPath:unlocked?"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)":"none",padding:unlocked?"7px 14px":"5px 12px",cursor:"pointer",fontFamily:fonts.display,fontWeight:800,fontSize:11,letterSpacing:1.5,filter:unlocked?"drop-shadow(2px 2px 0 #0A5020)":"none"}}>
+      <span className="desk-only">{unlocked?"🔓 ON":"🔒 OFF"}</span>
+      <span className="mob-only">{unlocked?"🔓":"🔒"}</span>
+    </button>
+    <button onClick={()=>withPassword(()=>{if(!confirm("Reset ALL data? This cannot be undone!"))return;["teams","players","assignments","matches","captains","points","page","pwhash"].forEach(k=>storeDel(k));window.location.reload();})} style={{background:"transparent",border:`2px solid ${T.border}`,color:T.muted,padding:"6px 10px",cursor:"pointer"}}>⚙️</button>
+    <button onClick={onLogout} style={{background:"#FF3D5A",border:"none",color:"#FFFFFF",clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)",padding:"7px 14px",cursor:"pointer",fontFamily:fonts.display,fontWeight:800,fontSize:11,letterSpacing:1.5,filter:"drop-shadow(2px 2px 0 #8B0000)"}}>
+      <span className="desk-only">LOGOUT</span>
+      <span className="mob-only" style={{fontSize:11}}>OUT</span>
+    </button>
+  </div>
+</div>
 
         {/* BOTTOM NAV */}
-        <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:50,background:T.card,borderTop:`1px solid ${T.border}`,display:"flex",paddingBottom:"max(8px, env(safe-area-inset-bottom))"}}>
-          {navItems.map(n=>(
-            <button key={n.id} onClick={()=>!n.disabled&&nav(n.id)}
-              style={{flex:1,background:"transparent",border:"none",cursor:n.disabled?"not-allowed":"pointer",padding:"10px 2px 6px",display:"flex",flexDirection:"column",alignItems:"center",gap:3,opacity:n.disabled?0.25:1,borderTop:page===n.id?"2px solid #F5A623":"2px solid transparent",transition:"all .15s"}}>
-              <span style={{fontSize:22,lineHeight:1}}>{n.icon}</span>
-              <span style={{fontSize:9,fontFamily:fonts.body,fontWeight:700,letterSpacing:0.5,color:page===n.id?"#F5A623":"#4A5E78",textTransform:"uppercase"}}>{n.label}</span>
-            </button>
-          ))}
-        </div>
+<div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:50,background:T.bg,borderTop:`3px solid ${T.accent}`,display:"flex",paddingBottom:"max(8px, env(safe-area-inset-bottom))",boxShadow:"0 -2px 10px rgba(0,0,0,0.5)"}}>
+  {navItems.map(n=>(
+    <button key={n.id} onClick={()=>!n.disabled&&nav(n.id)}
+      style={{flex:1,background:page===n.id?T.accent:"transparent",border:"none",cursor:n.disabled?"not-allowed":"pointer",padding:"12px 2px 8px",display:"flex",flexDirection:"column",alignItems:"center",gap:4,opacity:n.disabled?0.25:1,clipPath:page===n.id?"polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)":"none",transition:"all .15s",filter:page===n.id?"drop-shadow(2px 2px 0 #8B4500)":"none"}}>
+      <span style={{fontSize:page===n.id?24:22,lineHeight:1}}>{n.icon}</span>
+      <span style={{fontSize:page===n.id?10:9,fontFamily:fonts.display,fontWeight:page===n.id?800:700,letterSpacing:page===n.id?1.5:0.5,color:page===n.id?T.bg:T.muted,textTransform:"uppercase"}}>{n.label}</span>
+    </button>
+  ))}
+</div>
 
         {loading&&(
           <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.92)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",zIndex:200,backdropFilter:"blur(4px)"}}>
