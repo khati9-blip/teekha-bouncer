@@ -1037,7 +1037,7 @@ onUpdateTransfers({
       <div style={{display:"flex",gap:6,marginBottom:20,background:T.bg,borderRadius:10,padding:4,border:`1px solid ${T.border}`}}>
         {[{id:"window",label:"🔄 Transfer Window"},{id:"history",label:"📜 History"}].map(tab=>(
           <button key={tab.id} onClick={()=>setTwTab(tab.id)}
-            style={{flex:1,padding:"9px 0",borderRadius:8,border:"none",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:14,letterSpacing:0.5,transition:"all 0.2s",
+            style={{flex:1,padding:"9px 0",borderRadius:0,border:"none",cursor:"pointer",fontFamily:fonts.display,fontWeight:800,fontSize:14,letterSpacing:2,textTransform:"uppercase",transition:"all 0.2s",
               background:twTab===tab.id?"#1E2D45":"transparent",
               color:twTab===tab.id?"#F5A623":"#4A5E78"}}>
             {tab.label}
@@ -1494,8 +1494,8 @@ onUpdateTransfers({
                       </div>
                     </div>
                     {canPick && (
-                      <button onClick={() => handlePickClick(p)}
-                        style={{background:"#2ECC71",border:"none",borderRadius:6,padding:"5px 10px",color:T.bg,fontSize:11,fontWeight:800,cursor:"pointer",flexShrink:0,fontFamily:fonts.body,letterSpacing:0.5}}>
+                     <button onClick={() => handlePickClick(p)}
+                        style={{background:"#2ECC71",border:"none",padding:"5px 14px",color:"#050F05",fontSize:11,fontWeight:800,cursor:"pointer",flexShrink:0,fontFamily:fonts.display,letterSpacing:2,clipPath:"polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%)",textTransform:"uppercase",filter:"drop-shadow(2px 2px 0 #0A5020)"}}>
                         PICK
                       </button>
                     )}
@@ -1895,15 +1895,17 @@ function TransferHistory({ transfers, players, teams }) {
 
 function adminBtn(color) {
   return {
-    background: color + "22",
-    border: "1px solid " + color + "44",
-    borderRadius: 8,
-    padding: "8px 16px",
-    color,
-    fontFamily: fonts.body,
-    fontWeight: 700,
+    background: color,
+    border: "none",
+    padding: "9px 20px",
+    color: color === "#FF3D5A" || color === "#A855F7" || color === "#4F8EF7" ? "#fff" : "#0F0800",
+    fontFamily: fonts.display,
+    fontWeight: 800,
     fontSize: 13,
+    letterSpacing: 3,
     cursor: "pointer",
-    letterSpacing: 0.5,
+    clipPath: "polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%)",
+    textTransform: "uppercase",
+    filter: `drop-shadow(3px 3px 0 ${color}88)`,
   };
 }
