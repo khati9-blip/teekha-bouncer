@@ -5077,19 +5077,7 @@ ${aiMatchText.slice(0, 3000)}`;
                                       </div>
                                     )}
                                       
-                                    {/* Expanded match actions */}
-                                    {expandedMatchId===match.id && completed && (
-                                      <div style={{borderTop:`1px solid ${T.border}`,padding:"10px 14px",display:"flex",gap:8,flexWrap:"wrap"}}>
-                                        <button onClick={()=>withPassword(()=>setSmartStatsMatch(match))}
-                                          style={{background:T.accentBg,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:7,padding:"6px 12px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:12}}>
-                                          📊 {isSynced?"EDIT STATS":"SYNC STATS"}
-                                        </button>
-                                        {!isGuest && <button onClick={()=>setCaptainMatch(match)}
-                                          style={{background:T.infoBg,border:`1px solid ${T.info}44`,color:T.info,borderRadius:7,padding:"6px 12px",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:12}}>
-                                          {captains[match.id+"_locked"]?"🔒 C/VC":"👑 SET C/VC"}
-                                        </button>}
-                                      </div>
-                                    )}
+                                   
                                   </div>
                                 );
                               });
