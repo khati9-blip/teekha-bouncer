@@ -5921,11 +5921,74 @@ ${aiMatchText.slice(0, 3000)}`;
         {drawerOpen && (
   <div onClick={()=>setDrawerOpen(false)} style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,0.85)",display:"flex"}}>
     <div onClick={e=>e.stopPropagation()} className="slide-in-left" style={{width:280,background:T.bg,borderRight:`3px solid ${T.accent}`,display:"flex",flexDirection:"column",height:"100%",boxShadow:"5px 0 20px rgba(0,0,0,0.5)"}}>
-              <div style={{padding:"16px",borderBottom:`2px solid ${T.accent}`,display:"flex",justifyContent:"space-between",alignItems:"center",background:T.card}}>
-  <div style={{display:"inline-block",background:T.accent,padding:"3px 14px 3px 10px",clipPath:"polygon(0 0,100% 0,calc(100% - 8px) 100%,0 100%)"}}>
-    <div style={{fontFamily:fonts.display,fontWeight:800,fontSize:18,color:T.bg,letterSpacing:3}}>MENU</div>
+              <div style={{padding:"16px",borderBottom:`2px solid ${T.accent}`,background:T.card}}>
+  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
+    <div style={{display:"inline-block",background:T.accent,padding:"3px 14px 3px 10px",clipPath:"polygon(0 0,100% 0,calc(100% - 8px) 100%,0 100%)"}}>
+      <div style={{fontFamily:fonts.display,fontWeight:800,fontSize:18,color:T.bg,letterSpacing:3}}>MENU</div>
+    </div>
+    <button onClick={()=>setDrawerOpen(false)} style={{background:"transparent",border:"none",color:T.accent,fontSize:28,cursor:"pointer",lineHeight:1,fontWeight:300}}>×</button>
   </div>
-  <button onClick={()=>setDrawerOpen(false)} style={{background:"transparent",border:"none",color:T.accent,fontSize:28,cursor:"pointer",lineHeight:1,fontWeight:300}}>×</button>
+  
+  {/* Team IDs toggle button */}
+  <button onClick={()=>setTeamIdsOpen(o=>!o)} style={{width:"100%",background:"transparent",border:`2px solid ${T.border}`,padding:"10px 14px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+    <div style={{display:"flex",alignItems:"center",gap:8}}>
+      <span style={{fontSize:18}}>🔑</span>
+      <div style={{fontFamily:fonts.display,fontSize:13,color:T.accent,letterSpacing:2,fontWeight:700,textTransform:"uppercase"}}>Team IDs</div>
+    </div>
+    <span style={{fontSize:14,color:T.accent,fontFamily:fonts.display,fontWeight:700}}>{teamIdsOpen?"▲":"▼"}</span>
+  </button>
+  
+  {/* Team IDs collapsible content */}
+  {teamIdsOpen && (
+    <div style={{marginTop:8,maxHeight:200,overflowY:"auto"}}>
+      {teams.map(t => {
+        const ti = teamIdentity[t.id] || {};
+        return (
+          <div key={t.id} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,padding:"8px 10px",background:T.bg,borderRadius:0,border:"1px solid "+t.color+"33"}}>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontWeight:700,fontSize:12,color:t.color,fontFamily:fonts.display,letterSpacing:1}}>{t.name}</div>
+              <div style={{fontSize:10,color:T.muted,marginTop:1}}>{ti.claimedBy ? ti.claimedBy.split("@")[0] : "Unclaimed"}</div>
+            </div>
+            {ti.claimedBy ? (
+              <div style={{display:"flex",alignItems:"center",gap:4}}>
+                <span style={{fontSize:10,color:T.success,fontWeight:700}}>✓ {ti.claimedBy.split("@")[0]}</span>
+                <button onClick={async()=>{
+                  if(!confirm("Reset claim for "+t.name+"?")) return;
+                  const updated = {...teamIdentity, [t.id]: {...ti, claimedBy:null, pinHash:null}};
+                  setTeamIdentity(updated);
+                  await storeSet("teamIdentity", updated);
+                }} style={{background:T.dangerBg,border:`1px solid ${T.danger}33`,color:T.danger,borderRadius:4,padding:"2px 5px",cursor:"pointer",fontSize:9,fontWeight:700}}>RESET</button>
+              </div>
+            ) : ti.teamId ? (
+              <div style={{display:"flex",alignItems:"center",gap:4}}>
+                <div style={{fontFamily:fonts.display,fontSize:14,fontWeight:800,color:T.accent,letterSpacing:2,background:T.accentBg,padding:"3px 8px",borderRadius:6}}>{ti.teamId}</div>
+                <button onClick={()=>{setAdminClaimTeam(t);setAdminClaimModal(true);setAdminPin('');setAdminPinConfirm('');setAdminPinErr('');}}
+                  style={{background:T.successBg,border:`1px solid ${T.success}44`,color:T.success,borderRadius:4,padding:"2px 5px",cursor:"pointer",fontSize:9,fontWeight:700}}>CLAIM</button>
+                <button onClick={()=>withPassword(async()=>{
+                  if(!confirm("Reset this Team ID?")) return;
+                  const newId = generateTeamId();
+                  const updated = {...teamIdentity, [t.id]: {teamId: newId}};
+                  setTeamIdentity(updated);
+                  await storeSet("teamIdentity", updated);
+                })} style={{background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:4,padding:"2px 5px",cursor:"pointer",fontSize:10}}>↺</button>
+              </div>
+            ) : (
+              <div style={{display:"flex",alignItems:"center",gap:4}}>
+                <button onClick={()=>withPassword(async()=>{
+                  const newId = generateTeamId();
+                  const updated = {...teamIdentity, [t.id]: {...ti, teamId: newId}};
+                  setTeamIdentity(updated);
+                  await storeSet("teamIdentity", updated);
+                })} style={{background:T.accentBg,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:11,fontFamily:fonts.body,fontWeight:700}}>GENERATE</button>
+                <button onClick={()=>{setAdminClaimTeam(t);setAdminClaimModal(true);setAdminPin('');setAdminPinConfirm('');setAdminPinErr('');}}
+                  style={{background:T.successBg,border:`1px solid ${T.success}44`,color:T.success,borderRadius:4,padding:"2px 5px",cursor:"pointer",fontSize:9,fontWeight:700}}>CLAIM</button>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  )}
 </div>
               <div style={{flex:1,padding:"12px 8px",overflowY:"auto"}}>
                 <button onClick={()=>{nav("form");setDrawerOpen(false);}} style={{width:"100%",background:page==="form"?T.accent:"transparent",border:page==="form"?"none":`2px solid ${T.border}`,clipPath:page==="form"?"polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)":"none",padding:"14px 16px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14,marginBottom:8,filter:page==="form"?"drop-shadow(3px 3px 0 #8B4500)":"none"}}>
@@ -6006,61 +6069,6 @@ ${aiMatchText.slice(0, 3000)}`;
                     </div>
                   )}
                 </div>
-
-                {/* Team IDs - collapsible */}
-                <div style={{marginTop:8,paddingTop:8,borderTop:`1px solid ${T.border}`}}>
-                  <button onClick={()=>setTeamIdsOpen(o=>!o)} style={{width:"100%",background:"transparent",border:"none",padding:"4px 6px 8px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                    <div style={{fontSize:10,color:T.accent,letterSpacing:2,fontWeight:700}}>🔑 TEAM IDs</div>
-                    <span style={{fontSize:10,color:T.muted}}>{teamIdsOpen?"▲":"▼"}</span>
-                  </button>
-                  {teamIdsOpen && teams.map(t => {
-                    const ti = teamIdentity[t.id] || {};
-                    return (
-                      <div key={t.id} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,padding:"8px 10px",background:T.bg,borderRadius:8,border:"1px solid "+t.color+"33"}}>
-                        <div style={{flex:1,minWidth:0}}>
-                          <div style={{fontWeight:700,fontSize:12,color:t.color}}>{t.name}</div>
-                          <div style={{fontSize:10,color:T.muted,marginTop:1}}>{ti.claimedBy ? ti.claimedBy.split("@")[0] : "Unclaimed"}</div>
-                        </div>
-                        {ti.claimedBy ? (
-                          <div style={{display:"flex",alignItems:"center",gap:4}}>
-                            <span style={{fontSize:10,color:T.success,fontWeight:700}}>✓ {ti.claimedBy.split("@")[0]}</span>
-                            <button onClick={async()=>{
-                              if(!confirm("Reset claim for "+t.name+"?")) return;
-                              const updated = {...teamIdentity, [t.id]: {...ti, claimedBy:null, pinHash:null}};
-                              setTeamIdentity(updated);
-                              await storeSet("teamIdentity", updated);
-                            }} style={{background:T.dangerBg,border:`1px solid ${T.danger}33`,color:T.danger,borderRadius:4,padding:"2px 5px",cursor:"pointer",fontSize:9,fontWeight:700}}>RESET</button>
-                          </div>
-                        ) : ti.teamId ? (
-                          <div style={{display:"flex",alignItems:"center",gap:4}}>
-                            <div style={{fontFamily:fonts.display,fontSize:14,fontWeight:800,color:T.accent,letterSpacing:2,background:T.accentBg,padding:"3px 8px",borderRadius:6}}>{ti.teamId}</div>
-                            <button onClick={()=>{setAdminClaimTeam(t);setAdminClaimModal(true);setAdminPin('');setAdminPinConfirm('');setAdminPinErr('');}}
-                              style={{background:T.successBg,border:`1px solid ${T.success}44`,color:T.success,borderRadius:4,padding:"2px 5px",cursor:"pointer",fontSize:9,fontWeight:700}}>CLAIM</button>
-                            <button onClick={()=>withPassword(async()=>{
-                              if(!confirm("Reset this Team ID?")) return;
-                              const newId = generateTeamId();
-                              const updated = {...teamIdentity, [t.id]: {teamId: newId}};
-                              setTeamIdentity(updated);
-                              await storeSet("teamIdentity", updated);
-                            })} style={{background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:4,padding:"2px 5px",cursor:"pointer",fontSize:10}}>↺</button>
-                          </div>
-                        ) : (
-                          <div style={{display:"flex",alignItems:"center",gap:4}}>
-                            <button onClick={()=>withPassword(async()=>{
-                              const newId = generateTeamId();
-                              const updated = {...teamIdentity, [t.id]: {...ti, teamId: newId}};
-                              setTeamIdentity(updated);
-                              await storeSet("teamIdentity", updated);
-                            })} style={{background:T.accentBg,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:11,fontFamily:fonts.body,fontWeight:700}}>GENERATE</button>
-                            <button onClick={()=>{setAdminClaimTeam(t);setAdminClaimModal(true);setAdminPin('');setAdminPinConfirm('');setAdminPinErr('');}}
-                              style={{background:T.successBg,border:`1px solid ${T.success}44`,color:T.success,borderRadius:4,padding:"2px 5px",cursor:"pointer",fontSize:9,fontWeight:700}}>CLAIM</button>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
 
               {/* Pending vote notification */}
               {pendingVote && (
