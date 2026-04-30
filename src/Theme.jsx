@@ -7,7 +7,7 @@ import React from "react";
 
 // ── GOOGLE FONTS ──────────────────────────────────────────────────────────
 export const FONT_URL =
-  "https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=Inter:wght@400;500;600&display=swap";
+  "https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap";
 
 // ── COLOR TOKENS ─────────────────────────────────────────────────────────
 export const T = {
@@ -38,7 +38,7 @@ export const T = {
 
 // ── FONT FAMILIES ─────────────────────────────────────────────────────────
 export const fonts = {
-  display: "'Barlow Condensed', sans-serif",
+  display: "'Oswald', sans-serif",
   body:    "'Inter', sans-serif",
 };
 
@@ -120,7 +120,7 @@ export function GlobalStyles() {
         line-height: 1.6;
         -webkit-font-smoothing: antialiased;
       }
-      h1, h2, h3, h4 { font-family: 'Barlow Condensed', sans-serif; }
+      h1, h2, h3, h4 { font-family: 'Oswald', sans-serif; }
       ::-webkit-scrollbar { width: 4px; height: 4px; }
       ::-webkit-scrollbar-track { background: #0F0800; }
       ::-webkit-scrollbar-thumb { background: #2A1A00; border-radius: 0; }
