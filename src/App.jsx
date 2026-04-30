@@ -6543,14 +6543,15 @@ function ProposeRulesForm({ teams, eligibleVoters, onPropose, withPassword, tour
     );
   };
 
+  const formRef = React.useRef(null);
   if (!open) return (
-    <button onClick={()=>withPassword(()=>setOpen(true))} style={{width:"100%",background:T.accentBg,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:14,color:T.accent,fontFamily:fonts.body,fontWeight:700,fontSize:15,cursor:"pointer"}}>
+    <button onClick={()=>withPassword(()=>{setOpen(true);setTimeout(()=>formRef.current?.scrollIntoView({behavior:"smooth",block:"start"}),50);})} style={{width:"100%",background:T.accentBg,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:14,color:T.accent,fontFamily:fonts.body,fontWeight:700,fontSize:15,cursor:"pointer"}}>
       ✏️ PROPOSE TIMING CHANGE (Admin)
     </button>
   );
 
   return (
-    <div style={{background:T.card,borderRadius:12,border:`1px solid ${T.accentBorder}`,padding:20}}>
+    <div ref={formRef} style={{background:T.card,borderRadius:12,border:`1px solid ${T.accentBorder}`,padding:20}}>
       <div style={{fontFamily:fonts.display,fontSize:18,fontWeight:700,color:T.accent,letterSpacing:2,marginBottom:4}}>PROPOSE RULE CHANGE</div>
       <div style={{fontSize:11,color:T.muted,marginBottom:16}}>All {eligibleVoters.length} claimed teams must approve for changes to take effect.</div>
 
