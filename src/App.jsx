@@ -5043,6 +5043,7 @@ ${aiMatchText.slice(0, 3000)}`;
     </div>
   </div>
 </div>
+);
                                     {/* Expandable actions for all matches */}
                                     {expandedMatchId===match.id && (
                                       <div style={{borderTop:`1px solid ${T.border}`,padding:"10px 14px",display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
