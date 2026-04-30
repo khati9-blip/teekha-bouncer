@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { T, fonts } from "./Theme";
 
 const IST_OFFSET = 5.5 * 60 * 60 * 1000;
 
@@ -310,7 +311,7 @@ export default function SnatchSection({
   const snatchedBy = snatch.active ? teams.find(t => t.id === snatch.active.byTeamId) : null;
 
   return (
-    <div style={{background:T.card,borderRadius:0,border:`1px solid ${T.purple}44`,borderLeft:`4px solid ${T.purple}`,padding:16,marginTop:16}}>
+    <div style={{background:"#1A0E00",borderRadius:0,border:"1px solid #A855F744",borderLeft:"4px solid #A855F7",padding:16,marginTop:16}}>
       <div style={{display:"inline-block",background:T.purple,padding:"4px 16px 4px 12px",marginBottom:12,clipPath:"polygon(0 0,100% 0,calc(100% - 10px) 100%,0 100%)"}}>
         <div style={{fontFamily:fonts.display,fontSize:24,fontWeight:700,color:"#fff",letterSpacing:3,margin:0}}>⚡ SNATCH WINDOW</div>
       </div>
