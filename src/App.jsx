@@ -4579,22 +4579,33 @@ ${aiMatchText.slice(0, 3000)}`;
             <div className="fade-in">
               <div style={{marginBottom:16}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12,flexWrap:"wrap",gap:8}}>
-                  <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:T.accent,letterSpacing:2}}>PLAYER DRAFT</h2>
-                  <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
-                    <Btn variant="blue" onClick={()=>withPassword(()=>setFetchPlayerModal({tournamentId:null,tournamentName:"General"}))} sx={{fontSize:13,padding:"8px 14px"}}>🌐 FETCH PLAYERS</Btn>
-                    <Btn variant="ghost" onClick={()=>withPassword(()=>setEditPlayer({name:"",iplTeam:"",role:"Batsman"}))} sx={{fontSize:13,padding:"8px 14px"}}>✚ ADD</Btn>
-                    <Btn variant={squadView?"primary":"ghost"} onClick={()=>setSquadView(v=>!v)} sx={{fontSize:13,padding:"8px 14px"}}>{squadView?"📋 LIST":"👥 SQUAD"}</Btn>
-                  </div>
+                  <div style={{display:"inline-block",background:T.accent,padding:"4px 16px 4px 12px",clipPath:"polygon(0 0,100% 0,calc(100% - 10px) 100%,0 100%)"}}>
+  <h2 style={{fontFamily:fonts.display,fontSize:28,fontWeight:700,color:T.bg,letterSpacing:3,margin:0}}>PLAYER DRAFT</h2>
+</div>
+                  <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+  <button onClick={()=>withPassword(()=>setFetchPlayerModal({tournamentId:null,tournamentName:"General"}))} 
+    style={{background:"#4F8EF7",border:"none",color:"#050F14",clipPath:"polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%)",padding:"9px 20px",cursor:"pointer",fontFamily:fonts.display,fontWeight:800,fontSize:13,letterSpacing:2,textTransform:"uppercase",filter:"drop-shadow(3px 3px 0 #1E3A5F)"}}>
+    🌐 FETCH PLAYERS
+  </button>
+  <button onClick={()=>withPassword(()=>setEditPlayer({name:"",iplTeam:"",role:"Batsman"}))} 
+    style={{background:"transparent",border:`2px solid ${T.accent}`,color:T.accent,clipPath:"polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%)",padding:"7px 18px",cursor:"pointer",fontFamily:fonts.display,fontWeight:800,fontSize:13,letterSpacing:2,textTransform:"uppercase"}}>
+    ✚ ADD
+  </button>
+  <button onClick={()=>setSquadView(v=>!v)} 
+    style={{background:squadView?T.accent:"transparent",border:`2px solid ${T.accent}`,color:squadView?T.bg:T.accent,clipPath:"polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%)",padding:"7px 18px",cursor:"pointer",fontFamily:fonts.display,fontWeight:800,fontSize:13,letterSpacing:2,textTransform:"uppercase"}}>
+    {squadView?"📋 LIST":"👥 SQUAD"}
+  </button>
+</div>
                 </div>
                 {/* Draft sub-tabs */}
-                <div style={{display:"flex",background:T.card,borderRadius:10,padding:4,gap:4}}>
-                  {[{id:"players",label:"📋 Players"},{id:"unsold",label:"🏷️ Unsold Pool"}].map(t=>(
-                    <button key={t.id} onClick={()=>setDraftTab(t.id)}
-                      style={{flex:1,padding:"8px",border:"none",borderRadius:8,cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:14,letterSpacing:1,background:draftTab===t.id?"#F5A623":"transparent",color:draftTab===t.id?"#080C14":"#4A5E78",transition:"all .15s"}}>
-                      {t.label}
-                    </button>
-                  ))}
-                </div>
+                <div style={{display:"flex",gap:8,marginTop:12}}>
+  {[{id:"players",label:"📋 PLAYERS"},{id:"unsold",label:"🏷️ UNSOLD POOL"}].map(t=>(
+    <button key={t.id} onClick={()=>setDraftTab(t.id)}
+      style={{flex:1,padding:"10px",border:draftTab===t.id?"none":`2px solid ${T.border}`,cursor:"pointer",fontFamily:fonts.display,fontWeight:800,fontSize:13,letterSpacing:2,textTransform:"uppercase",background:draftTab===t.id?T.accent:"transparent",color:draftTab===t.id?T.bg:T.muted,clipPath:draftTab===t.id?"polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%)":"none",transition:"all .15s"}}>
+      {t.label}
+    </button>
+  ))}
+</div>
               </div>
               {/* UNSOLD POOL TAB */}
               {draftTab==="unsold" && (
@@ -4855,18 +4866,20 @@ ${aiMatchText.slice(0, 3000)}`;
           {page==="matches"&&(
             <div className="fade-in">
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:12}}>
-                <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:T.accent,letterSpacing:2}}>MATCHES</h2>
+                <div style={{display:"inline-block",background:T.accent,padding:"4px 16px 4px 12px",clipPath:"polygon(0 0,100% 0,calc(100% - 10px) 100%,0 100%)"}}>
+  <h2 style={{fontFamily:fonts.display,fontSize:28,fontWeight:700,color:T.bg,letterSpacing:3,margin:0}}>MATCHES</h2>
+</div>
               </div>
 
               {/* Add tournament - always visible, password on click */}
               <button onClick={()=>withPassword(()=>setAddTournamentModal(true))}
-                style={{width:"100%",background:T.card,borderRadius:10,border:`1px solid ${T.border}`,padding:"12px 16px",marginBottom:16,cursor:"pointer",display:"flex",alignItems:"center",gap:10,fontFamily:fonts.body}}>
-                <span style={{fontSize:18}}>➕</span>
-                <div style={{textAlign:"left"}}>
-                  <div style={{fontWeight:700,fontSize:14,color:T.accent}}>ADD TOURNAMENT</div>
-                  <div style={{fontSize:11,color:T.muted,marginTop:1}}>Fetch from Cricbuzz or CricketData</div>
-                </div>
-              </button>
+  style={{width:"100%",background:T.card,border:`2px solid ${T.accent}`,padding:"14px 18px",marginBottom:16,cursor:"pointer",display:"flex",alignItems:"center",gap:12,fontFamily:fonts.display,clipPath:"polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%)"}}>
+  <span style={{fontSize:24,color:T.accent}}>➕</span>
+  <div style={{textAlign:"left"}}>
+    <div style={{fontWeight:800,fontSize:15,color:T.accent,letterSpacing:2,textTransform:"uppercase"}}>ADD TOURNAMENT</div>
+    <div style={{fontSize:10,color:T.muted,marginTop:2,fontFamily:fonts.body,letterSpacing:1,textTransform:"uppercase"}}>Fetch from Cricbuzz or CricketData</div>
+  </div>
+</button>
 
               {/* Source legend */}
               {unlocked && (
@@ -5169,7 +5182,9 @@ ${aiMatchText.slice(0, 3000)}`;
 
           {page==="results" && (
             <div className="fade-in">
-              <h2 style={{fontFamily:"Rajdhani",fontSize:28,color:T.accent,letterSpacing:2,marginBottom:24}}>MATCH RESULTS</h2>
+              <div style={{display:"inline-block",background:T.accent,padding:"4px 16px 4px 12px",clipPath:"polygon(0 0,100% 0,calc(100% - 10px) 100%,0 100%)",marginBottom:24}}>
+  <h2 style={{fontFamily:fonts.display,fontSize:28,fontWeight:700,color:T.bg,letterSpacing:3,margin:0}}>MATCH RESULTS</h2>
+</div>
 
               {matches.filter(m=>m.status==="completed"&&Object.keys(points).some(pid=>points[pid][m.id])).length===0 ? (
                 <div style={{textAlign:"center",padding:60,color:T.muted}}>
