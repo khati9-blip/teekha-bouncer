@@ -1047,7 +1047,8 @@ onUpdateTransfers({
             style={{flex:1,padding:"11px 0",border:"none",cursor:"pointer",fontFamily:fonts.display,fontWeight:700,fontSize:15,letterSpacing:2,textTransform:"uppercase",transition:"all 0.2s",
               background: twTab===tab.id ? T.accent : "transparent",
               color: twTab===tab.id ? T.bg : T.muted,
-              borderBottom: twTab===tab.id ? "none" : `2px solid ${T.border}`,
+               borderBottom: twTab===tab.id ? "none" : `2px solid ${T.border}`,
+            }}>
             {tab.label}
           </button>
         ))}
@@ -1914,8 +1915,6 @@ function adminBtn(color) {
     fontSize: 13,
     letterSpacing: 3,
     cursor: "pointer",
-    clipPath: "polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%)",
     textTransform: "uppercase",
-    filter: `drop-shadow(3px 3px 0 ${color}88)`,
   };
 }
