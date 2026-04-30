@@ -1004,7 +1004,9 @@ onUpdateTransfers({
       {/* HEADER */}
       <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",flexWrap:"wrap",gap:12,marginBottom:20}}>
         <div>
-          <h2 style={{fontFamily:fonts.display,fontSize:28,color:T.accent,letterSpacing:2,marginBottom:4}}>TRANSFER WINDOW</h2>
+          <div style={{display:"inline-block",background:T.accent,padding:"4px 16px 4px 12px",marginBottom:8,clipPath:"polygon(0 0,100% 0,calc(100% - 10px) 100%,0 100%)"}}>
+            <h2 style={{fontFamily:fonts.display,fontSize:28,fontWeight:700,color:T.bg,letterSpacing:3,margin:0}}>TRANSFER WINDOW</h2>
+          </div>
           <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
             <span style={{fontSize:11,color:T.muted}}>Week {transfers?.weekNum || 1}</span>
             <span style={{background:phaseBadge[phase]+"22",color:phaseBadge[phase],border:"1px solid "+phaseBadge[phase]+"44",padding:"2px 10px",borderRadius:20,fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>
