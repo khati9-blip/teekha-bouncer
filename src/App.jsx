@@ -5919,62 +5919,64 @@ ${aiMatchText.slice(0, 3000)}`;
         )}
 
         {drawerOpen && (
-          <div onClick={()=>setDrawerOpen(false)} style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,0.6)",display:"flex"}}>
-            <div onClick={e=>e.stopPropagation()} style={{width:260,background:T.card,borderRight:`1px solid ${T.border}`,display:"flex",flexDirection:"column",height:"100%"}}>
-              <div style={{padding:"20px 16px",borderBottom:`1px solid ${T.border}`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <div style={{fontFamily:fonts.display,fontWeight:700,fontSize:16,color:T.accent,letterSpacing:2}}>MENU</div>
-                <button onClick={()=>setDrawerOpen(false)} style={{background:"transparent",border:"none",color:T.muted,fontSize:20,cursor:"pointer",lineHeight:1}}>×</button>
-              </div>
+  <div onClick={()=>setDrawerOpen(false)} style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,0.85)",display:"flex"}}>
+    <div onClick={e=>e.stopPropagation()} className="slide-in-left" style={{width:280,background:T.bg,borderRight:`3px solid ${T.accent}`,display:"flex",flexDirection:"column",height:"100%",boxShadow:"5px 0 20px rgba(0,0,0,0.5)"}}>
+              <div style={{padding:"16px",borderBottom:`2px solid ${T.accent}`,display:"flex",justifyContent:"space-between",alignItems:"center",background:T.card}}>
+  <div style={{display:"inline-block",background:T.accent,padding:"3px 14px 3px 10px",clipPath:"polygon(0 0,100% 0,calc(100% - 8px) 100%,0 100%)"}}>
+    <div style={{fontFamily:fonts.display,fontWeight:800,fontSize:18,color:T.bg,letterSpacing:3}}>MENU</div>
+  </div>
+  <button onClick={()=>setDrawerOpen(false)} style={{background:"transparent",border:"none",color:T.accent,fontSize:28,cursor:"pointer",lineHeight:1,fontWeight:300}}>×</button>
+</div>
               <div style={{flex:1,padding:"12px 8px",overflowY:"auto"}}>
-                <button onClick={()=>{nav("form");setDrawerOpen(false);}} style={{width:"100%",background:page==="form"?"#F5A62322":"transparent",border:"1px solid "+(page==="form"?"#F5A62344":"transparent"),borderRadius:10,padding:"12px 14px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12,marginBottom:4}}>
-                  <span style={{fontSize:22}}>📈</span>
-                  <div>
-                    <div style={{fontFamily:fonts.body,fontWeight:700,fontSize:14,color:page==="form"?"#F5A623":"#E2EAF4"}}>Player Form Chart</div>
-                    <div style={{fontSize:11,color:T.muted,marginTop:1}}>Last 5 matches per player</div>
-                  </div>
-                </button>
-                <button onClick={()=>{nav("h2h");setDrawerOpen(false);}} style={{width:"100%",background:page==="h2h"?"#4F8EF722":"transparent",border:"1px solid "+(page==="h2h"?"#4F8EF744":"transparent"),borderRadius:10,padding:"12px 14px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12,marginBottom:4}}>
-                  <span style={{fontSize:22}}>⚔️</span>
-                  <div>
-                    <div style={{fontFamily:fonts.body,fontWeight:700,fontSize:14,color:page==="h2h"?"#4F8EF7":"#E2EAF4"}}>Head to Head</div>
-                    <div style={{fontSize:11,color:T.muted,marginTop:1}}>Compare two teams across matches</div>
-                  </div>
-                </button>
+                <button onClick={()=>{nav("form");setDrawerOpen(false);}} style={{width:"100%",background:page==="form"?T.accent:"transparent",border:page==="form"?"none":`2px solid ${T.border}`,clipPath:page==="form"?"polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)":"none",padding:"14px 16px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14,marginBottom:8,filter:page==="form"?"drop-shadow(3px 3px 0 #8B4500)":"none"}}>
+  <span style={{fontSize:26}}>📈</span>
+  <div>
+    <div style={{fontFamily:fonts.display,fontWeight:800,fontSize:15,color:page==="form"?T.bg:T.text,letterSpacing:1.5,textTransform:"uppercase"}}>Form Chart</div>
+    <div style={{fontSize:10,color:page==="form"?"rgba(8,12,20,0.7)":T.muted,marginTop:2,fontFamily:fonts.body,letterSpacing:0.5}}>Last 5 matches per player</div>
+  </div>
+</button>
+                <button onClick={()=>{nav("h2h");setDrawerOpen(false);}} style={{width:"100%",background:page==="h2h"?"#4F8EF7":"transparent",border:page==="h2h"?"none":`2px solid ${T.border}`,clipPath:page==="h2h"?"polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)":"none",padding:"14px 16px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14,marginBottom:8,filter:page==="h2h"?"drop-shadow(3px 3px 0 #1E3A5F)":"none"}}>
+  <span style={{fontSize:26}}>⚔️</span>
+  <div>
+    <div style={{fontFamily:fonts.display,fontWeight:800,fontSize:15,color:page==="h2h"?"#050F14":T.text,letterSpacing:1.5,textTransform:"uppercase"}}>Head to Head</div>
+    <div style={{fontSize:10,color:page==="h2h"?"rgba(5,15,20,0.7)":T.muted,marginTop:2,fontFamily:fonts.body,letterSpacing:0.5}}>Compare teams across matches</div>
+  </div>
+</button>
 
                 {/* Notifications */}
                 <div style={{marginTop:4}}>
-                <button onClick={()=>{setShowMVP(true);setDrawerOpen(false);}} style={{width:"100%",background:"transparent",border:"none",padding:"10px 14px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12}}>
-                  <span style={{fontSize:20}}>🏅</span>
-                  <div style={{flex:1}}>
-                    <div style={{fontFamily:fonts.body,fontWeight:600,fontSize:14,color:T.text}}>MVP Stats</div>
-                    <div style={{fontSize:11,color:T.muted}}>Weekly player performance</div>
-                  </div>
-                </button>
-                <button onClick={()=>{setShowAllTimeXI(true);setDrawerOpen(false);}} style={{width:"100%",background:"transparent",border:"none",padding:"10px 14px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12}}>
-                  <span style={{fontSize:20}}>🏏</span>
-                  <div style={{flex:1}}>
-                    <div style={{fontFamily:fonts.body,fontWeight:600,fontSize:14,color:T.text}}>All Time XI</div>
-                    <div style={{fontSize:11,color:T.muted}}>Top 11 per team by base points</div>
-                  </div>
-                </button>
-                <button onClick={()=>{setShowWeeklyReport(true);setDrawerOpen(false);}} style={{width:"100%",background:showWeeklyReport?"#2ECC7122":"transparent",border:"1px solid "+(showWeeklyReport?"#2ECC7144":"transparent"),borderRadius:10,padding:"10px 14px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12,marginBottom:4}}>
-                  <span style={{fontSize:20}}>📋</span>
-                  <div style={{flex:1}}>
-                    <div style={{fontFamily:fonts.body,fontWeight:600,fontSize:14,color:T.text}}>Weekly Report</div>
-                    <div style={{fontSize:11,color:T.muted}}>This week & last week summary</div>
-                  </div>
-                </button>
-                  <button onClick={()=>{setNotifOpen(o=>!o);if(!notifOpen)markNotifsRead();}} style={{width:"100%",background:"transparent",border:"none",padding:"10px 14px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12}}>
-                    <span style={{fontSize:20,position:"relative"}}>
-                      🔔
-                      {unreadNotifCount>0 && <span style={{position:"absolute",top:-4,right:-4,background:"#FF3D5A",borderRadius:"50%",width:14,height:14,display:"flex",alignItems:"center",justifyContent:"center",fontSize:8,fontWeight:700,color:"#fff"}}>{unreadNotifCount}</span>}
-                    </span>
-                    <div style={{flex:1}}>
-                      <div style={{fontFamily:fonts.body,fontWeight:600,fontSize:14,color:T.text}}>Notifications</div>
-                      <div style={{fontSize:11,color:T.muted,marginTop:1}}>{unreadNotifCount>0?unreadNotifCount+" unread":"All caught up"}</div>
-                    </div>
-                    <span style={{color:T.muted,fontSize:11}}>{notifOpen?"▲":"▼"}</span>
-                  </button>
+                <button onClick={()=>{setShowMVP(true);setDrawerOpen(false);}} style={{width:"100%",background:"transparent",border:`2px solid ${T.border}`,padding:"12px 16px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14,marginBottom:8}}>
+  <span style={{fontSize:24}}>🏅</span>
+  <div style={{flex:1}}>
+    <div style={{fontFamily:fonts.display,fontWeight:700,fontSize:14,color:T.text,letterSpacing:1.5,textTransform:"uppercase"}}>MVP Stats</div>
+    <div style={{fontSize:10,color:T.muted,fontFamily:fonts.body,letterSpacing:0.5}}>Weekly player performance</div>
+  </div>
+</button>
+                <button onClick={()=>{setShowAllTimeXI(true);setDrawerOpen(false);}} style={{width:"100%",background:"transparent",border:`2px solid ${T.border}`,padding:"12px 16px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14,marginBottom:8}}>
+  <span style={{fontSize:24}}>🏏</span>
+  <div style={{flex:1}}>
+    <div style={{fontFamily:fonts.display,fontWeight:700,fontSize:14,color:T.text,letterSpacing:1.5,textTransform:"uppercase"}}>All Time XI</div>
+    <div style={{fontSize:10,color:T.muted,fontFamily:fonts.body,letterSpacing:0.5}}>Top 11 per team by base points</div>
+  </div>
+</button>
+                <button onClick={()=>{setShowWeeklyReport(true);setDrawerOpen(false);}} style={{width:"100%",background:showWeeklyReport?"#2ECC71":"transparent",border:showWeeklyReport?"none":`2px solid ${T.border}`,clipPath:showWeeklyReport?"polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)":"none",padding:"14px 16px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14,marginBottom:8,filter:showWeeklyReport?"drop-shadow(3px 3px 0 #0A5020)":"none"}}>
+  <span style={{fontSize:26}}>📋</span>
+  <div style={{flex:1}}>
+    <div style={{fontFamily:fonts.display,fontWeight:800,fontSize:15,color:showWeeklyReport?"#050F05":T.text,letterSpacing:1.5,textTransform:"uppercase"}}>Weekly Report</div>
+    <div style={{fontSize:10,color:showWeeklyReport?"rgba(5,15,5,0.7)":T.muted,marginTop:2,fontFamily:fonts.body,letterSpacing:0.5}}>This week & last week summary</div>
+  </div>
+</button>
+                  <button onClick={()=>{setNotifOpen(o=>!o);if(!notifOpen)markNotifsRead();}} style={{width:"100%",background:"transparent",border:`2px solid ${T.border}`,padding:"12px 16px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14,marginBottom:8}}>
+  <span style={{fontSize:24,position:"relative"}}>
+    🔔
+    {unreadNotifCount>0 && <span style={{position:"absolute",top:-6,right:-6,background:"#FF3D5A",borderRadius:"50%",width:16,height:16,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:800,color:"#fff",border:"2px solid "+T.bg}}>{unreadNotifCount}</span>}
+  </span>
+  <div style={{flex:1}}>
+    <div style={{fontFamily:fonts.display,fontWeight:700,fontSize:14,color:T.text,letterSpacing:1.5,textTransform:"uppercase"}}>Notifications</div>
+    <div style={{fontSize:10,color:unreadNotifCount>0?T.accent:T.muted,fontWeight:unreadNotifCount>0?700:400,fontFamily:fonts.body,letterSpacing:0.5,marginTop:1}}>{unreadNotifCount>0?unreadNotifCount+" unread":"All caught up"}</div>
+  </div>
+  <span style={{color:T.accent,fontSize:14,fontFamily:fonts.display,fontWeight:700}}>{notifOpen?"▲":"▼"}</span>
+</button>
                   {notifOpen && (
                     <div style={{background:T.bg,borderRadius:10,margin:"0 8px 8px",border:`1px solid ${T.border}`,maxHeight:280,overflowY:"auto"}}>
                       {notifications.length===0 && <div style={{padding:16,textAlign:"center",color:"#2D3E52",fontSize:12}}>No notifications yet</div>}
