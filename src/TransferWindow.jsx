@@ -1042,11 +1042,12 @@ onUpdateTransfers({
 
       {/* TAB SWITCHER */}
       <div style={{display:"flex",gap:6,marginBottom:20,background:T.bg,borderRadius:10,padding:4,border:`1px solid ${T.border}`}}>
-        {[{id:"window",label:"🔄 Transfer Window"},{id:"history",label:"📜 History"}].map(tab=>(
+        {[{id:"window",label:"⚡ TRANSFER"},{id:"history",label:"📜 HISTORY"}].map(tab=>(
           <button key={tab.id} onClick={()=>setTwTab(tab.id)}
-            style={{flex:1,padding:"9px 0",borderRadius:0,border:"none",cursor:"pointer",fontFamily:fonts.display,fontWeight:800,fontSize:14,letterSpacing:2,textTransform:"uppercase",transition:"all 0.2s",
-              background:twTab===tab.id?"#1E2D45":"transparent",
-              color:twTab===tab.id?"#F5A623":"#4A5E78"}}>
+            style={{flex:1,padding:"11px 0",border:"none",cursor:"pointer",fontFamily:fonts.display,fontWeight:700,fontSize:15,letterSpacing:2,textTransform:"uppercase",transition:"all 0.2s",
+              background: twTab===tab.id ? T.accent : "transparent",
+              color: twTab===tab.id ? T.bg : T.muted,
+              borderBottom: twTab===tab.id ? "none" : `2px solid ${T.border}`,
             {tab.label}
           </button>
         ))}
@@ -1237,7 +1238,7 @@ onUpdateTransfers({
       {phase === "closed" && (
         <div style={{background:T.card,borderRadius:12,border:`1px solid ${T.border}`,padding:40,textAlign:"center"}}>
           <div style={{fontSize:48,marginBottom:12}}>🔒</div>
-          <div style={{fontFamily:fonts.display,fontSize:22,fontWeight:700,color:T.muted,letterSpacing:2,marginBottom:8}}>TRANSFER WINDOW CLOSED</div>
+          <div style={{fontFamily:fonts.display,fontSize:26,fontWeight:700,color:T.text,letterSpacing:3,marginBottom:8}}>TRANSFER WINDOW CLOSED</div>
           <div style={{fontSize:13,color:T.muted,marginBottom:12}}>Opens automatically every {pitchConfig?.transferStart || "Sunday at 11:59 PM IST"}</div>
           <div style={{display:"inline-flex",flexDirection:"column",gap:4,background:T.bg,borderRadius:10,padding:"10px 20px",border:`1px solid ${T.border}`}}>
             <div style={{fontSize:11,color:T.muted}}>🔄 Window: <span style={{color:T.text,fontWeight:600}}>{pitchConfig?.transferStart || "Sunday 11:59 PM"} → {pitchConfig?.transferEnd || "Monday 11:00 AM"} IST</span></div>
