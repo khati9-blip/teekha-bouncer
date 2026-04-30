@@ -53,12 +53,6 @@ async function cricbuzz(path) {
   return data;
 }
 
-async function fetchIPLMatches() {
-  // Get all series — find IPL 2026
-  const data = await cricbuzz("series/v1/get-matches?seriesId=7607");
-  return data;
-}
-
 async function fetchLiveScorecard(matchId) {
   const data = await cricbuzz(`mcenter/v1/${matchId}/full-scorecard`);
   return data;
@@ -79,33 +73,6 @@ function extractIPL(data) {
     }
   }
   return ipl;
-}
-
-async function fetchRecentIPLMatches() {
-  // Fetch both recent and upcoming matches
-
-  try {
-    // Fetch recent + upcoming in parallel
-    const [recentData, upcomingData] = await Promise.all([
-      cricbuzz("matches/v1/recent"),
-      cricbuzz("matches/v1/upcoming")
-    ]);
-
-    const recent = extractIPL(recentData);
-    const upcoming = extractIPL(upcomingData);
-
-    // Merge — avoid duplicates by matchId
-    const seen = new Set(recent.map(m => m.matchId));
-    const all = [...recent];
-    for (const m of upcoming) {
-      if (!seen.has(m.matchId)) { all.push(m); seen.add(m.matchId); }
-    }
-    return all;
-  } catch(e) {
-    // Fallback to just recent
-    const data = await cricbuzz("matches/v1/recent");
-    return extractIPL(data);
-  }
 }
 
 function parseScorecardToStats(scorecard, playerIndex) {
@@ -4513,7 +4480,6 @@ ${aiMatchText.slice(0, 3000)}`;
         />}
 
         {showPwModal&&<PasswordModal storedHash={pwHash} recoveryHash={recoveryHash} onSuccess={handlePwSuccess} onClose={()=>{setShowPwModal(false);setPendingAction(null);}} />}
-        {editPlayer&&<EditPlayerModal player={editPlayer} onSave={(updated)=>{const updated_players=players.map(p=>p.id===updated.id?updated:p);setPlayers(updated_players);storeSet("players",updated_players);setEditPlayer(null);}} onAdd={(np)=>{const all=[...players,np];setPlayers(all);storeSet("players",all);setEditPlayer(null);}} onClose={()=>setEditPlayer(null)} />}
 
         {/* TOP BAR */}
         <div style={{background:"linear-gradient(180deg,#0E1521 0%,#080C14 100%)",borderBottom:`1px solid ${T.border}`,padding:"10px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:50}}>
@@ -6434,7 +6400,8 @@ function Root() {
     if (screen === 'app') return (
       <App key={currentPitch.id} pitch={currentPitch} onLeave={handleLeave} user={currentUser}
         onLogout={handleLogout} myTeam={myTeam} myPinHash={myPinHash}
-        isGuest={isGuest} isAdmin={isAdmin} />
+        isGuest={isGuest} isAdmin={isAdmin}
+        onLeaveGuest={()=>{ setIsGuest(false); setMyTeam(null); setScreenAndSave('join'); }} />
     );
   } catch(e) {
     return <div style={{minHeight:"100vh",background:T.bg,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16,padding:24,fontFamily:fonts.body}}>
