@@ -11,11 +11,11 @@ export const FONT_URL =
 
 // ── COLOR TOKENS ─────────────────────────────────────────────────────────
 export const T = {
-  bg:          "#0F0800",
-  card:        "#1A0E00",
-  cardHover:   "#221200",
-  border:      "#2A1A00",
-  borderHi:    "#3D2500",
+  bg:          "#080808",
+  card:        "#111008",
+  cardHover:   "#1A1208",
+  border:      "#2A1E0A",
+  borderHi:    "#3D2E10",
   text:        "#F5EBD8",
   sub:         "#A08060",
   muted:       "#5A3A20",
