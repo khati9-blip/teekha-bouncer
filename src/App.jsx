@@ -5356,7 +5356,7 @@ ${aiMatchText.slice(0, 3000)}`;
                             <div style={{flex:1}}>
                               <div style={{fontWeight:900,fontSize:i===0?26:22,color:team.color,fontFamily:fonts.display,letterSpacing:2,textTransform:"uppercase",lineHeight:1}}>{team.name}</div>
                               <div style={{fontSize:11,color:T.muted,letterSpacing:2,marginTop:3,textTransform:"uppercase"}}>
-                                {players.filter(p=>assignments[p.id]===team.id).length} PLAYERS
+                                {players.filter(p=>assignments[p.id]===team.id && !ruledOut.includes(p.id)).length} PLAYERS
                                 {ruledOutCount>0&&<span style={{color:T.danger,marginLeft:8}}>· {ruledOutCount} RULED OUT</span>}
                               </div>
                             </div>
