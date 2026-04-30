@@ -2663,6 +2663,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   const [editingNote, setEditingNote] = useState(null);
   const [noteInput, setNoteInput] = useState(''); // manually managed unsold list
   const [draftTab, setDraftTab] = useState('players'); // players | unsold
+  const [teamRosterModal, setTeamRosterModal] = useState(null); // null or team.id
   // ownershipLog: {pid: [{teamId, from: isoDate, to: isoDate|null}]}
   const [ownershipLog, setOwnershipLog] = useState({});
   const [transfers, setTransfers] = useState({
@@ -4688,178 +4689,264 @@ ${aiMatchText.slice(0, 3000)}`;
               )}
 
               {/* PLAYERS TAB */}
-              {draftTab==="players" && <>
-              <div style={{background:unlocked?"#2ECC7112":"#F5A62310",border:"1px solid "+(unlocked?"#2ECC7133":"#F5A62333"),borderRadius:10,padding:"12px 16px",marginBottom:16,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
-                <div>
-                  <span style={{fontWeight:700,color:unlocked?"#2ECC71":"#F5A623",fontSize:14}}>{unlocked?"🔓 Squad changes unlocked":"🔒 Squad changes are locked"}</span>
-                  <span style={{color:T.muted,fontSize:12,marginLeft:10}}>{unlocked?"Assign, replace or remove freely":"Password required to modify squads"}</span>
-                </div>
-                <button onClick={()=>{if(unlocked)setUnlocked(false);else{setPendingAction(null);setShowPwModal(true);}}} style={{background:unlocked?"#FF3D5A22":"#F5A62322",border:"1px solid "+(unlocked?"#FF3D5A44":"#F5A62344"),color:unlocked?"#FF3D5A":"#F5A623",borderRadius:7,padding:"7px 16px",fontFamily:fonts.body,fontWeight:700,fontSize:13,cursor:"pointer"}}>
-                  {unlocked?"LOCK":"UNLOCK"}
-                </button>
+{draftTab==="players" && <>
+  {/* Lock/Unlock Banner */}
+  <div style={{background:unlocked?"#2ECC7115":"#F5A62315",border:`2px solid ${unlocked?"#2ECC71":"#F5A623"}`,borderRadius:0,padding:"14px 18px",marginBottom:20,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap",borderLeft:`5px solid ${unlocked?"#2ECC71":"#F5A623"}`}}>
+    <div>
+      <div style={{fontFamily:fonts.display,fontWeight:800,color:unlocked?"#2ECC71":"#F5A623",fontSize:16,letterSpacing:2,textTransform:"uppercase"}}>{unlocked?"🔓 Squad Changes Unlocked":"🔒 Squad Changes Locked"}</div>
+      <div style={{color:T.muted,fontSize:11,marginTop:3,fontFamily:fonts.body,letterSpacing:0.5}}>{unlocked?"Assign, replace or remove freely":"Password required to modify squads"}</div>
+    </div>
+    <button onClick={()=>{if(unlocked)setUnlocked(false);else{setPendingAction(null);setShowPwModal(true);}}} style={{background:unlocked?"#FF3D5A":"#F5A623",border:"none",color:unlocked?"#fff":T.bg,clipPath:"polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)",padding:"10px 20px",fontFamily:fonts.display,fontWeight:800,fontSize:13,letterSpacing:2,textTransform:"uppercase",cursor:"pointer",filter:unlocked?"drop-shadow(3px 3px 0 #8B0000)":"drop-shadow(3px 3px 0 #8B4500)"}}>
+      {unlocked?"LOCK":"UNLOCK"}
+    </button>
+  </div>
+
+  {/* TWO COLUMN LAYOUT */}
+  <div style={{display:"flex",gap:16,alignItems:"start"}}>
+    
+    {/* LEFT COLUMN - TEAM BOXES */}
+    <div style={{width:"30%",display:"flex",flexDirection:"column",gap:10,position:"sticky",top:80}}>
+      {teams.map(t => {
+        const cnt = players.filter(p=>assignments[p.id]===t.id).length;
+        const ruledOutCnt = players.filter(p=>assignments[p.id]===t.id&&ruledOut.includes(p.id)).length;
+        const activeCnt = cnt - ruledOutCnt;
+        
+        return (
+          <div 
+            key={t.id}
+            onClick={() => setTeamRosterModal(t.id)}
+            style={{
+              position:"relative",
+              background:T.bg,
+              border:`2px solid ${t.color}`,
+              borderLeft:`5px solid ${t.color}`,
+              borderRadius:0,
+              padding:"16px 18px",
+              cursor:"pointer",
+              transition:"all .2s",
+              overflow:"hidden",
+              boxShadow:"3px 3px 0 "+t.color+"44"
+            }}
+            onMouseEnter={e => e.currentTarget.style.transform = "translateY(-2px)"}
+            onMouseLeave={e => e.currentTarget.style.transform = "translateY(0)"}
+          >
+            {/* Team logo background */}
+            {teamLogos[t.id] && <img src={teamLogos[t.id]} style={{position:"absolute",right:-10,bottom:-10,height:80,opacity:0.1,objectFit:"contain",pointerEvents:"none"}} />}
+            
+            {/* Team name */}
+            <div style={{fontFamily:fonts.display,fontSize:18,fontWeight:900,color:t.color,letterSpacing:2,textTransform:"uppercase",lineHeight:1,marginBottom:8}}>
+              {t.name}
+            </div>
+            
+            {/* Player count */}
+            <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+              <span style={{fontFamily:fonts.display,fontSize:28,fontWeight:900,color:T.accent,letterSpacing:1}}>{activeCnt}</span>
+              <span style={{fontSize:11,color:T.muted,fontFamily:fonts.body,letterSpacing:1,textTransform:"uppercase"}}>Players</span>
+            </div>
+            
+            {/* Ruled out indicator */}
+            {ruledOutCnt > 0 && (
+              <div style={{fontSize:10,color:T.danger,fontFamily:fonts.display,fontWeight:700,letterSpacing:1.5}}>
+                🚫 {ruledOutCnt} RULED OUT
               </div>
-              <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
-                {teams.map(t=>{
-                  const cnt=players.filter(p=>assignments[p.id]===t.id).length;
-                  const ruledOutCnt=players.filter(p=>assignments[p.id]===t.id&&ruledOut.includes(p.id)).length;
-                  const activeCnt=cnt-ruledOutCnt;
-                  const active=teamFilter===t.id;
-                  return(
-                    <div key={t.id} style={{position:"relative",display:"flex",alignItems:"center",background:active?t.color+"22":"#0E1521",borderRadius:8,borderLeft:"3px solid "+t.color,fontSize:13,border:active?"1px solid "+t.color:"1px solid transparent",transition:"all .15s",overflow:"hidden"}}>
-                      {teamLogos[t.id]&&<img src={teamLogos[t.id]} style={{position:"absolute",right:0,top:0,height:"100%",opacity:0.15,objectFit:"contain",pointerEvents:"none"}} />}
-                      <div onClick={()=>setTeamFilter(active?null:t.id)} style={{padding:"7px 10px",cursor:"pointer",display:"flex",alignItems:"center",gap:6,flex:1}}>
-                        {teamLogos[t.id]&&<img src={teamLogos[t.id]} style={{width:22,height:22,objectFit:"contain",borderRadius:4}} />}
-                        <span style={{color:t.color,fontWeight:700}}>{t.name}</span>
-                        <span style={{color:T.muted}}>{activeCnt}p</span>
-                        {ruledOutCnt>0&&<span style={{color:"#FF3D5A",fontSize:11}}>🚫{ruledOutCnt}</span>}
-                        {active&&<span style={{color:t.color,fontSize:11}}>✓</span>}
-                      </div>
-                      <label title="Upload team logo" style={{padding:"7px 8px",cursor:"pointer",color:T.muted,fontSize:12,borderLeft:"1px solid #1E2D4555"}}>
-                        📷
-                        <input type="file" accept="image/*" style={{display:"none"}} onChange={e=>e.target.files[0]&&uploadTeamLogo(t.id,e.target.files[0])} />
-                      </label>
-                    </div>
-                  );
-                })}
-                <div onClick={()=>setTeamFilter("unassigned")}
-                  style={{background:teamFilter==="unassigned"?"#4A5E7833":"#0E1521",borderRadius:8,padding:"7px 14px",fontSize:13,cursor:"pointer",border:teamFilter==="unassigned"?"1px solid #4A5E78":"1px solid transparent",transition:"all .15s"}}>
-                  <span style={{color:T.muted}}>Unassigned: </span>
-                  <span style={{color:T.text}}>{players.filter(p=>!assignments[p.id]).length}</span>
-                  {teamFilter==="unassigned"&&<span style={{color:T.muted,marginLeft:6,fontSize:11}}>✓</span>}
-                </div>
-              </div>
-              {players.length===0?(
-                <Card sx={{padding:60,textAlign:"center"}}>
-                  <div style={{fontSize:56}}>🏏</div>
-                  <div style={{color:T.muted,marginTop:16,fontSize:16}}>Click "Fetch Players" to load squads</div>
-                  <div style={{color:T.muted,marginTop:8,fontSize:13}}>Choose from any cricket league — IPL, BBL, PSL, The Hundred and more</div>
-                </Card>
-              ):squadView?(
-                <div style={{display:"flex",flexDirection:"column",gap:12}}>
-                  {teams.map(team=>{
-                    const teamPlayers=players.filter(p=>assignments[p.id]===team.id);
-                    const activeCount=teamPlayers.filter(p=>!ruledOut.includes(p.id)).length;
-                    return(
-                      <Card key={team.id} accent={team.color} sx={{overflow:"hidden"}}>
-                        <div style={{padding:"14px 18px",borderBottom:`1px solid ${T.border}`,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-                          <div>
-                            <span style={{fontFamily:fonts.display,fontWeight:700,fontSize:18,color:team.color,letterSpacing:1}}>{team.name}</span>
-                            <span style={{color:T.muted,fontSize:13,marginLeft:10}}>{activeCount} active</span>
-                            {teamPlayers.filter(p=>ruledOut.includes(p.id)).length > 0 && (
-                              <span style={{color:"#FF3D5A",fontSize:12,marginLeft:6}}>({teamPlayers.filter(p=>ruledOut.includes(p.id)).length} ruled out)</span>
-                            )}
-                          </div>
-                        </div>
-                        {teamPlayers.length===0?(
-                          <div style={{padding:"16px 18px",color:T.muted,fontSize:13}}>No players assigned yet</div>
-                        ):(
-                          <div style={{padding:"8px 0"}}>
-                            {["Batsman","Wicket-Keeper","All-Rounder","Bowler"].map(role=>{
-                              const rp=teamPlayers.filter(p=>p.role===role);
-                              if(rp.length===0) return null;
-                              return(
-                                <div key={role}>
-                                  <div style={{padding:"6px 18px",fontSize:11,color:T.muted,letterSpacing:2,fontWeight:700,background:"#0E152188"}}>{role.toUpperCase()}S ({rp.length})</div>
-                                  {rp.map(p=>{
-                                    const isRuledOut = ruledOut.includes(p.id);
-                                    return(
-                                    <div key={p.id} style={{display:"flex",alignItems:"center",padding:"8px 18px",borderBottom:"1px solid #1E2D4522",gap:10,opacity:isRuledOut?0.5:1}}>
-                                      <div style={{flex:1}}>
-                                        <span style={{fontSize:14,fontWeight:600,color:isRuledOut?"#FF3D5A":T.text,textDecoration:isRuledOut?"line-through":"none"}}>{p.name}</span>
-                                        <span style={{fontSize:12,color:T.muted,marginLeft:8}}>{p.iplTeam}</span>
-                                        {isRuledOut && <span style={{marginLeft:8,fontSize:10,color:"#FF3D5A",fontWeight:700,background:"#FF3D5A22",padding:"2px 6px",borderRadius:4}}>RULED OUT</span>}
-                                      </div>
-                                      {isAdmin && (
-                                        <button onClick={()=>{
-                                          const updated = isRuledOut
-                                            ? ruledOut.filter(id=>id!==p.id)
-                                            : [...ruledOut, p.id];
-                                          setRuledOut(updated);
-                                          storeSet("ruledOut", updated);
-                                        }} style={{background:isRuledOut?"#2ECC7122":"#FF3D5A22",border:`1px solid ${isRuledOut?"#2ECC7144":"#FF3D5A44"}`,color:isRuledOut?"#2ECC71":"#FF3D5A",borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:11,fontWeight:700}}>
-                                          {isRuledOut?"✅ RESTORE":"🚫 RULE OUT"}
-                                        </button>
-                                      )}
-                                      {isAdmin && <button onClick={()=>withPassword(()=>setEditPlayer(p))} style={{background:T.infoBg,border:`1px solid ${T.info}44`,color:T.info,borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:12}}>✏️</button>}
-                                      <button onClick={()=>removePlayer(p.id)} style={{background:T.dangerBg,border:`1px solid ${T.danger}44`,color:T.danger,borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:12}}>✕</button>
-                                    </div>
-                                    );
-                                  })}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </Card>
-                    );
-                  })}
-                  <Card sx={{padding:16}}>
-                    <div style={{color:T.muted,fontSize:13,textAlign:"center"}}>
-                      <span style={{color:T.text,fontWeight:700}}>{players.filter(p=>!assignments[p.id]).length}</span> players unassigned
-                    </div>
-                  </Card>
-                </div>
-              ):(
-                <>
-                  <div style={{display:"flex",gap:10,marginBottom:14,flexWrap:"wrap"}}>
-                    <input placeholder="Search name or franchise…" value={search} onChange={e=>setSearch(e.target.value)} style={{flex:1,minWidth:180,background:T.card,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 14px",color:T.text,fontSize:14,fontFamily:fonts.body}} />
-                    <select value={roleFilter} onChange={e=>setRoleFilter(e.target.value)} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 14px",color:T.text,fontSize:14,fontFamily:fonts.body}}>
-                      {ROLES.map(r=><option key={r}>{r}</option>)}
-                    </select>
-                    <select value={sortOrder} onChange={e=>setSortOrder(e.target.value)} style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 14px",color:T.text,fontSize:14,fontFamily:fonts.body}}>
-                      <option value="default">Default</option>
-                      <option value="az">A → Z</option>
-                      <option value="za">Z → A</option>
-                    </select>
+            )}
+            
+            {/* View roster hint */}
+            <div style={{fontSize:10,color:t.color,fontFamily:fonts.display,fontWeight:700,letterSpacing:1.5,marginTop:8}}>
+              VIEW ROSTER →
+            </div>
+          </div>
+        );
+      })}
+    </div>
+
+    {/* RIGHT COLUMN - PLAYERS LIST */}
+    <div style={{flex:1}}>
+      {/* Search and filters */}
+      <div style={{marginBottom:16,display:"flex",gap:8,flexWrap:"wrap"}}>
+        <input
+          type="text"
+          placeholder="Search name or franchise..."
+          value={playerSearch}
+          onChange={e=>setPlayerSearch(e.target.value)}
+          style={{flex:1,minWidth:200,background:T.card,border:`2px solid ${T.border}`,borderRadius:0,padding:"10px 14px",color:T.text,fontSize:14,fontFamily:fonts.body,outline:"none"}}
+        />
+        <select value={roleFilter||"All"} onChange={e=>setRoleFilter(e.target.value==="All"?null:e.target.value)}
+          style={{background:T.card,border:`2px solid ${T.border}`,borderRadius:0,padding:"10px 14px",color:T.text,fontSize:13,fontFamily:fonts.display,fontWeight:700,letterSpacing:1,cursor:"pointer"}}>
+          <option>All</option>
+          <option>Batsman</option>
+          <option>Bowler</option>
+          <option>All-Rounder</option>
+          <option>Wicket-Keeper</option>
+        </select>
+        <select value={sortOrder||"Default"} onChange={e=>setSortOrder(e.target.value==="Default"?null:e.target.value)}
+          style={{background:T.card,border:`2px solid ${T.border}`,borderRadius:0,padding:"10px 14px",color:T.text,fontSize:13,fontFamily:fonts.display,fontWeight:700,letterSpacing:1,cursor:"pointer"}}>
+          <option>Default</option>
+          <option>Name (A-Z)</option>
+          <option>Total Points</option>
+        </select>
+      </div>
+
+      {/* Players list */}
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        {(() => {
+          let filtered = players.filter(p => {
+            if (playerSearch && !p.name.toLowerCase().includes(playerSearch.toLowerCase()) && !p.iplTeam.toLowerCase().includes(playerSearch.toLowerCase())) return false;
+            if (roleFilter && p.role !== roleFilter) return false;
+            return true;
+          });
+
+          if (sortOrder === "Name (A-Z)") filtered.sort((a,b) => a.name.localeCompare(b.name));
+          else if (sortOrder === "Total Points") {
+            const getTotal = p => getPlayerBreakdown(p.id).reduce((s,m)=>s+(m.total||0),0);
+            filtered.sort((a,b) => getTotal(b) - getTotal(a));
+          }
+
+          return filtered.map(p => {
+            const assignedTeam = assignments[p.id] ? teams.find(t=>t.id===assignments[p.id]) : null;
+            const isRuledOut = ruledOut.includes(p.id);
+            const total = getPlayerBreakdown(p.id).reduce((s,m)=>s+(m.total||0),0);
+            
+            return (
+              <div key={p.id} style={{
+                background:T.bg,
+                border:`2px solid ${isRuledOut?T.danger:assignedTeam?assignedTeam.color+"66":T.border}`,
+                borderLeft:`5px solid ${isRuledOut?T.danger:assignedTeam?assignedTeam.color:T.border}`,
+                borderRadius:0,
+                padding:"12px 16px",
+                display:"flex",
+                alignItems:"center",
+                gap:12,
+                flexWrap:"wrap"
+              }}>
+                {/* Player info */}
+                <div style={{flex:1,minWidth:200}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                    <span style={{fontFamily:fonts.display,fontSize:15,fontWeight:800,color:isRuledOut?T.danger:T.text,letterSpacing:1,textDecoration:isRuledOut?"line-through":"none"}}>
+                      {p.name}
+                    </span>
+                    {isRuledOut && <span style={{fontSize:10,background:T.dangerBg,color:T.danger,padding:"2px 6px",fontFamily:fonts.display,fontWeight:800,letterSpacing:1}}>🚫 RULED OUT</span>}
+                    {p.tier && <span style={{fontSize:9,fontWeight:800,letterSpacing:1,padding:"2px 6px",fontFamily:fonts.display,textTransform:"uppercase",background:p.tier==="platinum"?"#4A5E7833":p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":"#CD7F3222",border:"1px solid "+(p.tier==="platinum"?"#4A5E7866":p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":"#CD7F3255"),color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32"}}>{p.tier.toUpperCase()}</span>}
                   </div>
-                  <div style={{position:"relative",maxHeight:560,overflowY:"auto",display:"flex",flexDirection:"column",gap:5}}>
-                    {teamFilter&&teamFilter!=="unassigned"&&teamLogos[teamFilter]&&(
-                      <img src={teamLogos[teamFilter]} style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:280,opacity:0.06,pointerEvents:"none",zIndex:0,objectFit:"contain"}} />
-                    )}
-                    {unlocked && selectedBulk.length > 0 && (
-                      <div style={{background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:10,padding:"10px 14px",marginBottom:10,display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-                        <div style={{fontSize:12,color:T.accent,fontWeight:700,minWidth:60}}>{selectedBulk.length} selected</div>
-                        {[["platinum","PLATINUM","#B0BEC5","#4A5E7833","#4A5E7866"],["gold","GOLD","#F5A623","#F5A62322","#F5A62366"],["silver","SILVER","#94A3B8","#94A3B822","#94A3B855"],["bronze","BRONZE","#CD7F32","#CD7F3222","#CD7F3255"]].map(([t,label,col,bg,br])=>(
-                          <button key={t} onClick={()=>{const updated=players.map(p=>selectedBulk.includes(p.id)?{...p,tier:t}:p);setPlayers(updated);storeSet("players",updated);setSelectedBulk([]);}} style={{background:bg,border:"1px solid "+br,borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:11,fontWeight:800,fontFamily:fonts.body,color:col,letterSpacing:1}}>{label}</button>
-                        ))}
-                        <button onClick={()=>{const updated=players.map(p=>selectedBulk.includes(p.id)?{...p,tier:""}:p);setPlayers(updated);storeSet("players",updated);setSelectedBulk([]);}} style={{background:"transparent",border:`1px solid ${T.border}`,borderRadius:6,padding:"4px 10px",cursor:"pointer",fontSize:11,fontFamily:fonts.body,color:T.muted}}>CLEAR</button>
-                        <button onClick={()=>setSelectedBulk([])} style={{background:"transparent",border:"none",color:T.muted,cursor:"pointer",fontSize:11,marginLeft:"auto"}}>deselect all</button>
-                      </div>
-                    )}
-                    {filteredPlayers.map(p=>{
-                      const aTeam=teams.find(t=>t.id===assignments[p.id]);
-                      const isAssigned=!!assignments[p.id];
-                      return(
-                        <div key={p.id} style={{padding:"10px 14px",background:T.card,borderRadius:8,borderLeft:"3px solid "+(ruledOut.includes(p.id)?"#FF3D5A":aTeam?aTeam.color:"#1E2D45"),opacity:ruledOut.includes(p.id)?0.7:1}}>
-                          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:6}}>
-                            <div style={{minWidth:0,flex:1}}>
-                              <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap"}}>
-                                {unlocked&&<input type="checkbox" checked={selectedBulk.includes(p.id)} onChange={e=>setSelectedBulk(prev=>e.target.checked?[...prev,p.id]:prev.filter(x=>x!==p.id))} style={{width:14,height:14,cursor:"pointer",accentColor:T.accent,flexShrink:0}} />}
-                                <span style={{fontWeight:600,fontSize:14,color:ruledOut.includes(p.id)?"#FF3D5A":T.text,fontFamily:fonts.body,textDecoration:ruledOut.includes(p.id)?"line-through":"none"}}>{p.name}</span>
-                                {p.tier&&<span style={{fontSize:9,fontWeight:800,letterSpacing:1,padding:"1px 5px",borderRadius:4,fontFamily:fonts.body,textTransform:"uppercase",background:p.tier==="platinum"?"#4A5E7833":p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":"#CD7F3222",border:"1px solid "+(p.tier==="platinum"?"#4A5E7866":p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":"#CD7F3255"),color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32"}}>{p.tier==="platinum"?"PLAT":p.tier==="gold"?"GOLD":p.tier==="silver"?"SILV":"BRNZ"}</span>}
-                                {ruledOut.includes(p.id)&&<span style={{fontSize:9,color:"#FF3D5A",background:"#FF3D5A22",border:"1px solid #FF3D5A44",borderRadius:4,padding:"1px 6px",fontWeight:700}}>🚫 RULED OUT</span>}
-                                {!ruledOut.includes(p.id)&&isAssigned&&isPlayerSafeForTeam(assignments[p.id],p.id)&&<span style={{background:T.successBg,color:T.success,border:`1px solid ${T.success}44`,borderRadius:10,fontSize:9,padding:"1px 5px",fontWeight:700}}>🛡️</span>}
-                              </div>
-                              <div style={{fontSize:11,color:T.muted,marginTop:2}}>{p.iplTeam} • <span style={{color:ROLE_COLORS[p.role]||"#94A3B8"}}>{p.role}</span>{isAssigned&&<span style={{marginLeft:6,color:aTeam?.color,fontWeight:700}}>{aTeam?.name}</span>}</div>
+                  <div style={{fontSize:11,color:T.muted,fontFamily:fonts.body}}>
+                    {p.iplTeam} • {p.role} • {total} pts
+                  </div>
+                </div>
+
+                {/* Team assignment */}
+                <select
+                  value={assignments[p.id]||"unassigned"}
+                  onChange={e => {
+                    if (!unlocked) { alert("Unlock squads first"); return; }
+                    const newTeam = e.target.value === "unassigned" ? null : e.target.value;
+                    assignPlayer(p.id, newTeam);
+                  }}
+                  disabled={isRuledOut}
+                  style={{
+                    background:assignedTeam?assignedTeam.color+"22":T.card,
+                    border:`2px solid ${assignedTeam?assignedTeam.color:T.border}`,
+                    borderRadius:0,
+                    padding:"8px 12px",
+                    color:assignedTeam?assignedTeam.color:T.muted,
+                    fontSize:12,
+                    fontFamily:fonts.display,
+                    fontWeight:700,
+                    letterSpacing:1,
+                    cursor:isRuledOut?"not-allowed":"pointer",
+                    opacity:isRuledOut?0.5:1,
+                    minWidth:150
+                  }}
+                >
+                  <option value="unassigned">UNASSIGNED</option>
+                  {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                </select>
+
+                {/* Actions */}
+                <div style={{display:"flex",gap:6}}>
+                  <button
+                    onClick={async()=>{const u={...myHighlights};u[p.id]?delete u[p.id]:u[p.id]=true;await saveHighlights(u);}}
+                    style={{background:myHighlights[p.id]?"#F5A62333":"transparent",border:`2px solid ${myHighlights[p.id]?"#F5A623":T.border}`,padding:"6px 10px",cursor:"pointer",fontSize:16,borderRadius:0}}
+                  >
+                    {myHighlights[p.id]?"⭐":"☆"}
+                  </button>
+                  {unlocked && !isRuledOut && (
+                    <button
+                      onClick={() => withPassword(() => toggleRuledOut(p.id))}
+                      style={{background:T.dangerBg,border:`2px solid ${T.danger}`,color:T.danger,padding:"6px 10px",cursor:"pointer",fontSize:11,fontFamily:fonts.display,fontWeight:700,borderRadius:0}}
+                    >
+                      🚫
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          });
+        })()}
+      </div>
+    </div>
+  </div>
+
+  {/* TEAM ROSTER MODAL */}
+  {teamRosterModal && (() => {
+    const team = teams.find(t => t.id === teamRosterModal);
+    if (!team) return null;
+    
+    const roster = players.filter(p => assignments[p.id] === team.id);
+    const byRole = {
+      "Batsman": roster.filter(p => p.role === "Batsman"),
+      "Bowler": roster.filter(p => p.role === "Bowler"),
+      "All-Rounder": roster.filter(p => p.role === "All-Rounder"),
+      "Wicket-Keeper": roster.filter(p => p.role === "Wicket-Keeper")
+    };
+    
+    return (
+      <div onClick={() => setTeamRosterModal(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.9)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+        <div onClick={e => e.stopPropagation()} style={{background:T.bg,border:`3px solid ${team.color}`,borderRadius:0,maxWidth:600,width:"100%",maxHeight:"80vh",overflow:"hidden",boxShadow:"5px 5px 0 "+team.color+"66"}}>
+          {/* Modal header */}
+          <div style={{background:team.color,padding:"16px 20px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div style={{fontFamily:fonts.display,fontSize:22,fontWeight:900,color:T.bg,letterSpacing:3,textTransform:"uppercase"}}>
+              {team.name} ROSTER
+            </div>
+            <button onClick={() => setTeamRosterModal(null)} style={{background:"transparent",border:"none",color:T.bg,fontSize:28,cursor:"pointer",lineHeight:1,fontWeight:300}}>×</button>
+          </div>
+
+          {/* Modal content */}
+          <div style={{padding:"20px",overflowY:"auto",maxHeight:"calc(80vh - 70px)"}}>
+            {roster.length === 0 ? (
+              <div style={{textAlign:"center",padding:40,color:T.muted}}>No players assigned yet</div>
+            ) : (
+              Object.entries(byRole).map(([role, players]) => {
+                if (players.length === 0) return null;
+                return (
+                  <div key={role} style={{marginBottom:20}}>
+                    <div style={{fontFamily:fonts.display,fontSize:14,fontWeight:800,color:team.color,letterSpacing:2,textTransform:"uppercase",marginBottom:10,borderBottom:`2px solid ${team.color}`,paddingBottom:6}}>
+                      {role} ({players.length})
+                    </div>
+                    {players.map(p => {
+                      const isRuledOut = ruledOut.includes(p.id);
+                      const total = getPlayerBreakdown(p.id).reduce((s,m)=>s+(m.total||0),0);
+                      return (
+                        <div key={p.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 12px",marginBottom:6,background:isRuledOut?T.dangerBg:T.card,border:`1px solid ${isRuledOut?T.danger:T.border}`,borderRadius:0}}>
+                          <div>
+                            <div style={{fontWeight:700,fontSize:14,color:isRuledOut?T.danger:T.text,textDecoration:isRuledOut?"line-through":"none"}}>
+                              {p.name} {isRuledOut && <span style={{fontSize:10,color:T.danger}}>🚫</span>}
                             </div>
+                            <div style={{fontSize:11,color:T.muted,marginTop:2}}>{p.iplTeam}</div>
                           </div>
-                          <div style={{display:"flex",alignItems:"center",gap:6}}>
-                            <select value={assignments[p.id]||""} onChange={e=>assignPlayer(p.id,e.target.value)} style={{flex:1,background:T.card,border:"1px solid "+(aTeam?aTeam.color+"66":"#1E2D45"),borderRadius:6,padding:"6px 8px",color:aTeam?aTeam.color:T.muted,fontSize:12,fontFamily:fonts.body,fontWeight:600,cursor:"pointer",minWidth:0}}>
-                              <option value="">{isAssigned?"Move to…":"— Assign —"}</option>
-                              {teams.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
-                            </select>
-                            {isAssigned&&<button onClick={()=>removePlayer(p.id)} style={{background:T.dangerBg,border:`1px solid ${T.danger}44`,color:T.danger,borderRadius:6,padding:"6px 8px",cursor:"pointer",fontSize:13,flexShrink:0}}>✕</button>}
-                            <button onClick={()=>withPassword(()=>setEditPlayer(p))} style={{background:T.infoBg,border:`1px solid ${T.info}44`,color:T.info,borderRadius:6,padding:"6px 8px",cursor:"pointer",fontSize:13,flexShrink:0}}>✏️</button>
-                            {isAssigned&&<button onClick={()=>toggleSafePlayer(assignments[p.id],p.id)} style={{background:isPlayerSafeForTeam(assignments[p.id],p.id)?"#2ECC7133":"transparent",border:"1px solid "+(isPlayerSafeForTeam(assignments[p.id],p.id)?"#2ECC71":"#1E2D45"),color:isPlayerSafeForTeam(assignments[p.id],p.id)?"#2ECC71":"#4A5E78",borderRadius:6,padding:"6px 8px",cursor:"pointer",fontSize:13,flexShrink:0}}>🛡️</button>}
-                            <button onClick={()=>deletePlayer(p.id)} style={{background:T.dangerBg,border:`1px solid ${T.danger}44`,color:T.danger,borderRadius:6,padding:"6px 8px",cursor:"pointer",fontSize:11,flexShrink:0}}>🗑️</button>
-                          </div>
+                          <div style={{fontFamily:fonts.display,fontSize:18,fontWeight:800,color:T.accent}}>{total}</div>
                         </div>
                       );
                     })}
                   </div>
-                </>
-              )}
-              </> }
+                );
+              })
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  })()}
+</>}
             </div>
           )}
 
