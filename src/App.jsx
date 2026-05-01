@@ -6185,9 +6185,77 @@ onChange={e=>setPlayerSearch(e.target.value)}
 
           {page==="leaderboard"&&(
             <div className="fade-in">
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:8}}>
-                <div style={{display:"inline-block",background:T.accent,padding:"4px 16px 4px 12px",clipPath:"polygon(0 0,100% 0,calc(100% - 10px) 100%,0 100%)"}}>
-                  <h2 style={{fontFamily:fonts.display,fontSize:28,fontWeight:700,color:T.bg,letterSpacing:3,margin:0}}>LEADERBOARD</h2>
+              {/* LEADERBOARD WITH SIDE PANELS */}
+              <div style={{display:"flex",gap:16,alignItems:"flex-start"}}>
+                
+                {/* LEFT PANEL - MVP Card */}
+                <div className="desk-only" style={{width:220,flexShrink:0,position:"sticky",top:80}}>
+                  {(() => {
+                    const allPlayers = players.filter(p => assignments[p.id]);
+                    const topScorer = allPlayers.sort((a,b) => {
+                      const aTotal = Object.values(points[a.id] || {}).reduce((s,m) => s + (m.base || 0), 0);
+                      const bTotal = Object.values(points[b.id] || {}).reduce((s,m) => s + (m.base || 0), 0);
+                      return bTotal - aTotal;
+                    })[0];
+                    const topTeam = teams.find(t => t.id === assignments[topScorer?.id]);
+                    const topScore = topScorer ? Object.values(points[topScorer.id] || {}).reduce((s,m) => s + (m.base || 0), 0) : 0;
+                    const matchesPlayed = matches.filter(m => m.status === "completed").length;
+                    
+                    return (
+                      <div style={{background:T.card,border:`3px solid #F59E0B`,borderRadius:0,overflow:"hidden",boxShadow:"5px 5px 0 rgba(245,158,11,0.3)"}}>
+                        {/* MVP Header */}
+                        <div style={{background:"linear-gradient(135deg, #F59E0B 0%, #D97706 100%)",padding:"12px 14px",textAlign:"center"}}>
+                          <div style={{fontSize:28,marginBottom:4}}>🏆</div>
+                          <div style={{fontFamily:fonts.display,fontSize:16,fontWeight:900,color:"#0A0E14",letterSpacing:2,textShadow:"1px 1px 0 rgba(255,255,255,0.2)"}}>TOP SCORER</div>
+                        </div>
+                        
+                        {/* MVP Content */}
+                        {topScorer ? (
+                          <div style={{padding:"16px 14px"}}>
+                            <div style={{textAlign:"center",marginBottom:12}}>
+                              <div style={{fontSize:48,fontFamily:fonts.display,fontWeight:900,color:T.accent,lineHeight:1,marginBottom:4}}>{topScore.toLocaleString()}</div>
+                              <div style={{fontSize:10,color:T.muted,letterSpacing:2}}>TOTAL POINTS</div>
+                            </div>
+                            
+                            <div style={{background:T.bg,borderRadius:0,padding:"10px 12px",marginBottom:8,border:`2px solid ${topTeam?.color || T.border}`,borderLeft:`4px solid ${topTeam?.color || T.border}`}}>
+                              <div style={{fontFamily:fonts.display,fontSize:14,fontWeight:800,color:T.text,marginBottom:2}}>{topScorer.name}</div>
+                              <div style={{fontSize:10,color:T.muted}}>{topScorer.role} • {topScorer.iplTeam}</div>
+                            </div>
+                            
+                            {topTeam && (
+                              <div style={{textAlign:"center",padding:"8px",background:topTeam.color+"11",border:`1px solid ${topTeam.color}33`,borderRadius:0}}>
+                                <div style={{fontSize:11,fontFamily:fonts.display,fontWeight:700,color:topTeam.color,letterSpacing:1}}>{topTeam.name}</div>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div style={{padding:"20px",textAlign:"center",color:T.muted,fontSize:12}}>No stats yet</div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                  
+                  {/* Decorative Element */}
+                  <div style={{marginTop:20,opacity:0.3}}>
+                    <div style={{width:"100%",height:2,background:`linear-gradient(90deg, transparent, ${T.accent}, transparent)`,marginBottom:12}} />
+                    {[...Array(5)].map((_, i) => (
+                      <div key={i} style={{width:"100%",height:1,background:T.border,marginBottom:8,transform:`scaleX(${1 - i*0.15})`}} />
+                    ))}
+                  </div>
+                </div>
+
+                {/* CENTER - MAIN LEADERBOARD */}
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:8}}>
+                    <div style={{display:"inline-block",background:T.accent,padding:"4px 16px 4px 12px",clipPath:"polygon(0 0,100% 0,calc(100% - 10px) 100%,0 100%)"}}>
+                      <h2 style={{fontFamily:fonts.display,fontSize:28,fontWeight:700,color:T.bg,letterSpacing:3,margin:0}}>LEADERBOARD</h2>
+                    </div>
+                    <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                      <button onClick={shareLeaderboard} style={{background:"#25D366",border:"none",color:"#050F05",clipPath:"polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%)",padding:"9px 20px",cursor:"pointer",fontFamily:fonts.display,fontWeight:800,fontSize:13,letterSpacing:2,textTransform:"uppercase",filter:"drop-shadow(3px 3px 0 #0A5020)"}}>
+                        📲 SHARE WHATSAPP
+                      </button>
+                    </div>
+                  </div>
                 </div>
                 <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
 
@@ -6275,7 +6343,59 @@ onChange={e=>setPlayerSearch(e.target.value)}
                   </div>
                 </>
               )}
-            </div>
+{/* RIGHT PANEL - Stats */}
+                <div className="desk-only" style={{width:220,flexShrink:0,position:"sticky",top:80}}>
+                  {/* League Stats Card */}
+                  <div style={{background:T.card,border:`3px solid #4299E1`,borderRadius:0,overflow:"hidden",boxShadow:"5px 5px 0 rgba(66,153,225,0.3)",marginBottom:16}}>
+                    <div style={{background:"linear-gradient(135deg, #4299E1 0%, #3B82F6 100%)",padding:"12px 14px",textAlign:"center"}}>
+                      <div style={{fontSize:24,marginBottom:4}}>📊</div>
+                      <div style={{fontFamily:fonts.display,fontSize:14,fontWeight:900,color:"#0A0E14",letterSpacing:2,textShadow:"1px 1px 0 rgba(255,255,255,0.2)"}}>LEAGUE STATS</div>
+                    </div>
+                    
+                    <div style={{padding:"14px"}}>
+                      {[
+                        { label: "Total Points", value: leaderboard.reduce((s,t) => s + t.total, 0).toLocaleString(), icon: "🎯" },
+                        { label: "Matches Played", value: matches.filter(m => m.status === "completed").length, icon: "🏏" },
+                        { label: "Teams", value: teams.length, icon: "👥" },
+                        { label: "Total Players", value: players.filter(p => assignments[p.id]).length, icon: "⭐" },
+                      ].map((stat, i) => (
+                        <div key={i} style={{background:T.bg,borderRadius:0,padding:"10px 12px",marginBottom:8,border:`2px solid ${T.border}`,borderLeft:`4px solid #4299E1`}}>
+                          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                            <span style={{fontSize:18}}>{stat.icon}</span>
+                            <div style={{fontSize:10,color:T.muted,letterSpacing:1,textTransform:"uppercase"}}>{stat.label}</div>
+                          </div>
+                          <div style={{fontSize:24,fontFamily:fonts.display,fontWeight:900,color:T.accent,lineHeight:1}}>{stat.value}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Recent Activity */}
+                  {notifications.slice(0, 3).length > 0 && (
+                    <div style={{background:T.card,border:`2px solid ${T.purple}`,borderRadius:0,overflow:"hidden",boxShadow:"3px 3px 0 rgba(159,122,234,0.2)"}}>
+                      <div style={{background:T.purple+"22",padding:"10px 12px",borderBottom:`1px solid ${T.purple}33`}}>
+                        <div style={{fontFamily:fonts.display,fontSize:12,fontWeight:800,color:T.purple,letterSpacing:1.5}}>🔔 RECENT</div>
+                      </div>
+                      <div style={{padding:"8px 12px"}}>
+                        {notifications.slice(0, 3).map((n, i) => (
+                          <div key={i} style={{padding:"6px 0",borderBottom:i < 2 ? `1px solid ${T.border}33` : "none"}}>
+                            <div style={{fontSize:11,color:T.text,marginBottom:2}}>{n.emoji} {n.text.slice(0, 40)}{n.text.length > 40 ? "..." : ""}</div>
+                            <div style={{fontSize:9,color:T.muted}}>{new Date(n.ts).toLocaleDateString()}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Decorative Element */}
+                  <div style={{marginTop:20,opacity:0.2}}>
+                    {[...Array(5)].map((_, i) => (
+                      <div key={i} style={{width:"100%",height:1,background:T.border,marginBottom:8,transform:`scaleX(${0.4 + i*0.15})`}} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+              
           )}
         </div>
 
