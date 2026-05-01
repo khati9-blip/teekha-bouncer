@@ -2664,6 +2664,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   const [noteInput, setNoteInput] = useState(''); // manually managed unsold list
   const [draftTab, setDraftTab] = useState('players'); // players | unsold
   const [teamRosterModal, setTeamRosterModal] = useState(null); // null or team.id
+  const [playerSearch, setPlayerSearch] = useState('');
   // ownershipLog: {pid: [{teamId, from: isoDate, to: isoDate|null}]}
   const [ownershipLog, setOwnershipLog] = useState({});
   const [transfers, setTransfers] = useState({
