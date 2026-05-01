@@ -1046,35 +1046,35 @@ placeholder="Paste scorecard text here... (e.g. V Kohli c Maxwell b Bumrah 82 (5
   );
 
   const tabBtn = (tab, label) => (
-    <button onClick={()=>setActiveTab(tab)} style={{padding:"8px 16px",border:"none",cursor:"pointer",fontFamily:fonts.body,fontWeight:700,fontSize:13,letterSpacing:1,background:activeTab===tab?T.accent:"transparent",color:activeTab===tab?T.bg:T.muted,borderRadius:6}}>
-      {label}
-    </button>
-  );
+  <button onClick={()=>setActiveTab(tab)} style={{padding:"10px 18px",border:"none",cursor:"pointer",fontFamily:fonts.display,fontWeight:800,fontSize:13,letterSpacing:2,background:activeTab===tab?"#4299E1":"transparent",color:activeTab===tab?"#0A0E14":T.muted,borderRadius:0,clipPath:activeTab===tab?"polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%)":"none",boxShadow:activeTab===tab?"2px 2px 0 rgba(66,153,225,0.4)":"none",textShadow:activeTab===tab?"1px 1px 0 rgba(255,255,255,0.2)":"none",transition:"all .15s"}}>
+    {label}
+  </button>
+);
 
   const inp = {width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 4px",color:T.text,fontSize:14,fontFamily:fonts.body,textAlign:"center"};
 
   return (
     <><PasteModal />
-    <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,backdropFilter:"blur(6px)"}}>
-      <div style={{background:T.card,borderRadius:16,border:`1px solid ${T.border}`,width:"100%",maxWidth:720,margin:"0 12px",maxHeight:"92vh",display:"flex",flexDirection:"column"}}>
+    <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,backdropFilter:"blur(8px)"}}>
+  <div style={{background:T.bg,border:`3px solid #4299E1`,borderRadius:0,width:"100%",maxWidth:760,margin:"0 12px",maxHeight:"92vh",display:"flex",flexDirection:"column",boxShadow:"8px 8px 0 rgba(66,153,225,0.3)"}}>
 
-        {/* Header */}
-        <div style={{padding:"18px 24px",borderBottom:`1px solid ${T.border}`,flexShrink:0}}>
-          <div style={{fontFamily:fonts.display,fontSize:20,fontWeight:700,color:T.accent,letterSpacing:2}}>📊 MATCH STATS — M{match.matchNum}</div>
-          <div style={{color:T.muted,fontSize:13,marginTop:2}}>{match.team1} vs {match.team2} • {match.date} • {match.venue}</div>
+    {/* Header */}
+    <div style={{background:"linear-gradient(135deg, #4299E1 0%, #3B82F6 100%)",padding:"20px 28px",borderBottom:"none",flexShrink:0}}>
+      <div style={{fontFamily:fonts.display,fontSize:26,fontWeight:900,color:"#0A0E14",letterSpacing:4,textTransform:"uppercase",textShadow:"2px 2px 0 rgba(255,255,255,0.2)"}}>📊 MATCH STATS — M{match.matchNum}</div>
+      <div style={{color:"rgba(10,14,20,0.7)",fontSize:12,marginTop:4,fontFamily:fonts.body,letterSpacing:0.5}}>{match.team1} vs {match.team2} • {match.date} • {match.venue}</div>
           <div style={{marginTop:12,display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-            <button onClick={fetchFromCricketData} disabled={fetching}
-              style={{background:"linear-gradient(135deg,#2ECC71,#16a34a)",border:"none",borderRadius:8,padding:"9px 18px",color:"#fff",fontFamily:fonts.body,fontWeight:700,fontSize:13,cursor:fetching?"not-allowed":"pointer",opacity:fetching?0.6:1,letterSpacing:1}}>
-              {fetching?"⏳ FETCHING…":"🟢 SYNC FROM CRICKETDATA"}
-            </button>
-            <button onClick={fetchFromCricbuzz} disabled={fetching}
-              style={{background:"transparent",border:`1px solid ${T.info}44`,borderRadius:8,padding:"9px 14px",color:T.info,fontFamily:fonts.body,fontWeight:700,fontSize:12,cursor:fetching?"not-allowed":"pointer",opacity:fetching?0.6:1,letterSpacing:1}}>
-              🟠 CRICBUZZ
-            </button>
-            <button onClick={()=>setShowPasteModal(true)} disabled={fetching}
-              style={{background:"transparent",border:`1px solid ${T.purple}44`,borderRadius:8,padding:"9px 14px",color:T.purple,fontFamily:fonts.body,fontWeight:700,fontSize:12,cursor:"pointer",letterSpacing:1}}>
-              📋 PASTE SCORECARD
-            </button>
+            <button onClick={fetchFromCricketData} disabled={fetching}\
+  style={{background:"linear-gradient(135deg,#2ECC71,#16a34a)",border:"none",borderRadius:0,padding:"10px 20px",color:"#0A0E14",fontFamily:fonts.display,fontWeight:800,fontSize:13,cursor:fetching?"not-allowed":"pointer",opacity:fetching?0.6:1,letterSpacing:1.5,clipPath:"polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%)",boxShadow:"3px 3px 0 rgba(22,163,74,0.4)",textShadow:"1px 1px 0 rgba(255,255,255,0.2)"}}>
+  {fetching?"⏳ FETCHING…":"🟢 SYNC FROM CRICKETDATA"}
+</button>
+<button onClick={fetchFromCricbuzz} disabled={fetching}\
+  style={{background:"transparent",border:`2px solid #F59E0B`,borderRadius:0,padding:"9px 16px",color:"#F59E0B",fontFamily:fonts.display,fontWeight:800,fontSize:12,cursor:fetching?"not-allowed":"pointer",opacity:fetching?0.6:1,letterSpacing:1.5,clipPath:"polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%)"}}>
+  🟠 CRICBUZZ
+</button>
+<button onClick={()=>setShowPasteModal(true)} disabled={fetching}\
+  style={{background:"transparent",border:`2px solid #9F7AEA`,borderRadius:0,padding:"9px 16px",color:"#9F7AEA",fontFamily:fonts.display,fontWeight:800,fontSize:12,cursor:"pointer",letterSpacing:1.5,clipPath:"polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%)"}}>
+  📋 PASTE SCORECARD
+</button>
             {fetchStatus && <span style={{fontSize:12,color:fetchStatus.startsWith("✅")?"#2ECC71":fetchStatus.startsWith("❌")?"#FF3D5A":"#F5A623",marginTop:4,width:"100%"}}>{fetchStatus}</span>}
           </div>
         </div>
@@ -2472,15 +2472,23 @@ function CaptainModal({ match, teams, players, assignments, captains, points, my
   };
 
   return (
-    <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.96)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,padding:16,fontFamily:fonts.body}}>
-      <div style={{background:T.card,borderRadius:16,border:`1px solid ${T.border}`,padding:24,width:"100%",maxWidth:480,maxHeight:"85vh",overflowY:"auto"}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:4}}>
-          <div style={{fontFamily:fonts.display,fontSize:20,fontWeight:700,color:isLocked?"#FF3D5A":"#F5A623",letterSpacing:2}}>
-            {isLocked?"🔒 C/VC LOCKED":"👑 SET C / VC"}
+  <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,padding:16,fontFamily:fonts.body,backdropFilter:"blur(8px)"}}>
+    <div style={{background:T.bg,border:`3px solid ${isLocked?"#FF3D5A":"#F59E0B"}`,borderRadius:0,padding:0,width:"100%",maxWidth:500,maxHeight:"90vh",overflow:"hidden",boxShadow:`6px 6px 0 ${isLocked?"rgba(255,61,90,0.3)":"rgba(245,158,11,0.3)"}`}}>
+      {/* Header */}
+      <div style={{background:isLocked?"linear-gradient(135deg, #FF3D5A 0%, #DC2626 100%)":"linear-gradient(135deg, #F59E0B 0%, #D97706 100%)",padding:"18px 24px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div>
+          <div style={{fontFamily:fonts.display,fontSize:24,fontWeight:900,color:"#0A0E14",letterSpacing:3,textTransform:"uppercase",textShadow:"2px 2px 0 rgba(255,255,255,0.2)"}}>
+            {isLocked?"🔒 C/VC LOCKED":"👑 SET CAPTAIN & VC"}
           </div>
-          <button onClick={onClose} style={{background:"transparent",border:"none",color:T.muted,fontSize:18,cursor:"pointer"}}>✕</button>
+          <div style={{fontSize:11,color:"rgba(10,14,20,0.7)",marginTop:4,fontFamily:fonts.body,letterSpacing:1}}>
+            Match {match.matchNum} • {match.team1} vs {match.team2}
+          </div>
         </div>
-        <div style={{fontSize:12,color:T.muted,marginBottom:isLocked?8:16}}>M{match.matchNum} — {match.team1} vs {match.team2}</div>
+        <button onClick={onClose} style={{background:"rgba(10,14,20,0.3)",border:"none",color:"#0A0E14",fontSize:24,cursor:"pointer",width:36,height:36,borderRadius:0,fontWeight:300,clipPath:"polygon(3px 0%, 100% 0%, calc(100% - 3px) 100%, 0% 100%)"}}>×</button>
+      </div>
+
+      {/* Content wrapper */}
+      <div style={{padding:24,maxHeight:"calc(90vh - 140px)",overflowY:"auto"}}>
 
         {isLocked && <div style={{background:T.dangerBg,border:`1px solid ${T.danger}33`,borderRadius:8,padding:"8px 12px",marginBottom:14,fontSize:12,color:T.danger}}>🔒 Captain/VC selections are locked.</div>}
 
@@ -2502,7 +2510,7 @@ function CaptainModal({ match, teams, players, assignments, captains, points, my
           const isMyTeam = myTeam?.id === team.id;
 
           return (
-            <div key={team.id} style={{background:T.card,borderRadius:10,border:"2px solid "+(isMyTeam?team.color+"66":team.color+"22"),padding:14,marginBottom:10,opacity:(!editable&&!isLocked&&!unlocked&&myTeam&&!isMyTeam)?0.5:1}}>
+            <div key={team.id} style={{background:T.card,border:`3px solid ${isMyTeam?team.color:team.color+"44"}`,borderLeft:`6px solid ${team.color}`,borderRadius:0,padding:16,marginBottom:12,opacity:(!editable&&!isLocked&&!unlocked&&myTeam&&!isMyTeam)?0.5:1,boxShadow:isMyTeam?`3px 3px 0 ${team.color}33`:"none"}}>
               <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
                 <div style={{fontFamily:fonts.display,fontWeight:700,fontSize:14,color:team.color}}>{team.name}</div>
                 {isMyTeam && <span style={{fontSize:9,background:team.color+"22",color:team.color,border:"1px solid "+team.color+"44",borderRadius:10,padding:"1px 7px",fontWeight:700,letterSpacing:0.5}}>YOUR TEAM</span>}
@@ -2543,27 +2551,30 @@ function CaptainModal({ match, teams, players, assignments, captains, points, my
           );
         })}
 
-        <div style={{display:"flex",gap:8,marginTop:4}}>
-          {!isLocked && unlocked && (
-            <button onClick={()=>withPassword(()=>onSave({...captains,[match.id+"_locked"]:true}))}
-              style={{flex:1,background:T.dangerBg,border:`1px solid ${T.danger}44`,borderRadius:10,padding:12,color:T.danger,fontFamily:fonts.body,fontWeight:800,fontSize:14,cursor:"pointer"}}>
-              🔒 LOCK
-            </button>
-          )}
-          {isLocked && unlocked && (
-            <button onClick={()=>withPassword(()=>{const u={...captains};delete u[match.id+"_locked"];onSave(u);})}
-              style={{flex:1,background:T.successBg,border:`1px solid ${T.success}33`,borderRadius:10,padding:12,color:T.success,fontFamily:fonts.body,fontWeight:800,fontSize:14,cursor:"pointer"}}>
-              🔓 UNLOCK
-            </button>
-          )}
-          <button onClick={isLocked ? onClose : saveAndClose}
-            style={{flex:2,background:"#F5A623",border:"none",borderRadius:10,padding:12,color:T.bg,fontFamily:fonts.body,fontWeight:800,fontSize:15,cursor:"pointer"}}>
-            {isLocked?"CLOSE":"✅ SAVE & CLOSE"}
-          </button>
         </div>
+      
+      {/* Bottom buttons */}
+      <div style={{padding:"16px 24px",borderTop:`2px solid ${T.border}`,display:"flex",gap:10,background:T.card}}>
+        {!isLocked && unlocked && (
+          <button onClick={()=>withPassword(()=>onSave({...captains,[match.id+"_locked"]:true}))}\
+            style={{flex:1,background:T.dangerBg,border:`2px solid ${T.danger}`,borderRadius:0,padding:14,color:T.danger,fontFamily:fonts.display,fontWeight:800,fontSize:13,letterSpacing:1.5,cursor:"pointer",clipPath:"polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%)",transition:"all .2s"}}>
+            🔒 LOCK
+          </button>
+        )}
+        {isLocked && unlocked && (
+          <button onClick={()=>withPassword(()=>{const u={...captains};delete u[match.id+"_locked"];onSave(u);})}\
+            style={{flex:1,background:"#2ECC7133",border:`2px solid #2ECC71`,borderRadius:0,padding:14,color:"#2ECC71",fontFamily:fonts.display,fontWeight:800,fontSize:13,letterSpacing:1.5,cursor:"pointer",clipPath:"polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%)",transition:"all .2s"}}>
+            🔓 UNLOCK
+          </button>
+        )}
+        <button onClick={isLocked ? onClose : saveAndClose}\
+          style={{flex:2,background:"linear-gradient(135deg, #F59E0B 0%, #D97706 100%)",border:"none",borderRadius:0,padding:14,color:"#0A0E14",fontFamily:fonts.display,fontWeight:900,fontSize:15,letterSpacing:2,cursor:"pointer",clipPath:"polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%)",boxShadow:"3px 3px 0 rgba(217,119,6,0.4)",textShadow:"1px 1px 0 rgba(255,255,255,0.3)"}}>
+          {isLocked?"CLOSE":"✅ SAVE & CLOSE"}
+        </button>
       </div>
     </div>
-  );
+  </div>
+);
 }
 
 function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, isGuest, isAdmin }) {
