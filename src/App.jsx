@@ -4969,11 +4969,38 @@ ${aiMatchText.slice(0, 3000)}`;
                     {players.map(p => {
   const isRuledOut = ruledOut.includes(p.id);
   
-  // Calculate player total from points data directly
+  // Calculate player total - ONLY for matches while on THIS team
   let total = 0;
   let matchesPlayed = 0;
+  
   if (points[p.id]) {
+    // Get ownership periods for this player on this team
+    const periods = (ownershipLog[p.id] || []).filter(o => o.teamId === team.id);
+    const hasLog = periods.length > 0;
+    
     for (const [matchId, matchData] of Object.entries(points[p.id])) {
+      const match = matches.find(m => m.id === matchId);
+      if (!match) continue;
+      
+      // Check if match was during this team's ownership
+      const matchDate = match.date;
+      let owned = false;
+      
+      if (!hasLog) {
+        // No ownership log = original owner, count all
+        owned = true;
+      } else {
+        // Check if match falls within ownership periods
+        owned = periods.some(period => {
+          const fromDate = (period.from || "").split("T")[0];
+          const toDate = period.to ? period.to.split("T")[0] : "2099-01-01";
+          return matchDate >= fromDate && matchDate <= toDate;
+        });
+      }
+      
+      if (!owned) continue; // Skip matches not during this team's ownership
+      
+      // Calculate points with captain multiplier
       const cap = captains[`${matchId}_${team.id}`] || {};
       let pts = matchData.base || 0;
       if (cap.captain === p.id) pts *= 2;
@@ -5153,12 +5180,35 @@ ${aiMatchText.slice(0, 3000)}`;
     const p = playerStatsModal;
     const assignedTeam = assignments[p.id] ? teams.find(t=>t.id===assignments[p.id]) : null;
     
-    // Calculate stats from points data directly
+    // Calculate stats - ONLY for matches while on THIS team
     let total = 0;
     const breakdown = [];
     
     if (points[p.id] && assignedTeam) {
+      // Get ownership periods
+      const periods = (ownershipLog[p.id] || []).filter(o => o.teamId === assignedTeam.id);
+      const hasLog = periods.length > 0;
+      
       for (const [matchId, matchData] of Object.entries(points[p.id])) {
+        const match = matches.find(m => m.id === matchId);
+        if (!match) continue;
+        
+        // Check ownership
+        const matchDate = match.date;
+        let owned = false;
+        
+        if (!hasLog) {
+          owned = true; // Original owner
+        } else {
+          owned = periods.some(period => {
+            const fromDate = (period.from || "").split("T")[0];
+            const toDate = period.to ? period.to.split("T")[0] : "2099-01-01";
+            return matchDate >= fromDate && matchDate <= toDate;
+          });
+        }
+        
+        if (!owned) continue;
+        
         const cap = captains[`${matchId}_${assignedTeam.id}`] || {};
         let pts = matchData.base || 0;
         if (cap.captain === p.id) pts *= 2;
@@ -5168,6 +5218,7 @@ ${aiMatchText.slice(0, 3000)}`;
         breakdown.push({
           matchId: matchId,
           total: Math.round(pts),
+          opponent: match.team1 === assignedTeam.name ? match.team2 : match.team1,
           ...matchData
         });
       }
