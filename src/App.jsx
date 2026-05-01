@@ -4650,85 +4650,229 @@ ${aiMatchText.slice(0, 3000)}`;
   ))}
 </div>
               </div>
-              {/* UNSOLD POOL TAB */}
-              {draftTab==="unsold" && (
-                <div>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:14}}>
-                    <div style={{fontSize:13,color:T.muted}}>
-                      Players in the unsold pool can be picked up during the transfer window.
-                    </div>
-                    <span style={{background:T.accentBg,color:T.accent,border:`1px solid ${T.accentBorder}`,borderRadius:6,padding:"4px 10px",fontSize:12,fontWeight:700}}>{unsoldPool.length} players</span>
-                  </div>
+             {/* UNSOLD POOL TAB */}
+{draftTab==="unsold" && (
+  <div>
+    {/* Info banner */}
+    <div style={{background:"#6B46C133",border:`2px solid #6B46C1`,borderLeft:`5px solid #6B46C1`,borderRadius:0,padding:"14px 18px",marginBottom:20,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
+      <div>
+        <div style={{fontFamily:fonts.display,fontWeight:800,color:"#9F7AEA",fontSize:14,letterSpacing:1.5,textTransform:"uppercase"}}>📦 UNSOLD POOL</div>
+        <div style={{color:T.muted,fontSize:11,marginTop:3,fontFamily:fonts.body}}>Players available for pickup during transfer window</div>
+      </div>
+      <div style={{background:"#6B46C1",color:T.bg,clipPath:"polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)",padding:"8px 16px",fontFamily:fonts.display,fontWeight:800,fontSize:15,letterSpacing:2}}>
+        {unsoldPool.length}
+      </div>
+    </div>
 
-                  {/* Add unassigned players to pool */}
-                  <div style={{marginBottom:16}}>
-                    <div style={{fontSize:11,color:T.muted,letterSpacing:2,fontWeight:700,marginBottom:10}}>ADD FROM UNASSIGNED PLAYERS</div>
-                    <div style={{maxHeight:160,overflowY:"auto",display:"flex",flexWrap:"wrap",gap:6}}>
-                      {players.filter(p=>!assignments[p.id]&&!unsoldPool.includes(p.id)).map(p=>(
-                        <button key={p.id} onClick={()=>addToUnsoldPool(p.id)}
-                          style={{padding:"5px 12px",borderRadius:20,border:`1px solid ${T.border}`,background:"transparent",color:T.muted,fontSize:12,fontFamily:fonts.body,cursor:"pointer"}}>
-                          + {p.name} <span style={{opacity:0.5}}>({p.iplTeam})</span>
-                        </button>
-                      ))}
-                      {players.filter(p=>!assignments[p.id]&&!unsoldPool.includes(p.id)).length===0&&(
-                        <div style={{color:T.muted,fontSize:13}}>All unassigned players are already in the pool</div>
-                      )}
-                    </div>
-                  </div>
+    {/* Add from unassigned section */}
+    <div style={{marginBottom:24}}>
+      <div style={{background:"#4299E133",borderLeft:`4px solid #4299E1`,padding:"10px 16px",marginBottom:12,clipPath:"polygon(0% 0%,100% 0%,calc(100% - 8px) 100%,0% 100%)"}}>
+        <div style={{fontFamily:fonts.display,fontSize:13,fontWeight:800,color:"#4299E1",letterSpacing:2,textTransform:"uppercase"}}>
+          ➕ ADD FROM UNASSIGNED PLAYERS
+        </div>
+      </div>
+      <div style={{maxHeight:180,overflowY:"auto",display:"flex",flexWrap:"wrap",gap:8,padding:"12px 16px",background:T.card,border:`2px solid ${T.border}`,borderRadius:0}}>
+        {players.filter(p=>!assignments[p.id]&&!unsoldPool.includes(p.id)).map(p=>(
+          <button key={p.id} onClick={()=>addToUnsoldPool(p.id)}
+            style={{padding:"8px 14px",border:`2px solid #4299E1`,borderRadius:0,background:"transparent",color:"#4299E1",fontSize:13,fontFamily:fonts.display,fontWeight:700,letterSpacing:1,cursor:"pointer",transition:"all .2s",clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)"}}
+            onMouseEnter={e => e.currentTarget.style.background = "#4299E122"}
+            onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+          >
+            + {p.name} <span style={{opacity:0.6,fontWeight:400,fontSize:11}}>({p.iplTeam})</span>
+          </button>
+        ))}
+        {players.filter(p=>!assignments[p.id]&&!unsoldPool.includes(p.id)).length===0&&(
+          <div style={{color:T.muted,fontSize:13,padding:20,width:"100%",textAlign:"center"}}>All unassigned players are already in the pool</div>
+        )}
+      </div>
+    </div>
 
-                  {/* Current unsold pool */}
-                  <div style={{fontSize:11,color:T.muted,letterSpacing:2,fontWeight:700,marginBottom:10}}>CURRENT UNSOLD POOL</div>
-                  {unsoldPool.length===0 ? (
-                    <div style={{textAlign:"center",padding:"32px",color:T.muted,fontSize:14,background:T.card,borderRadius:10}}>
-                      Pool is empty — add players above
-                    </div>
-                  ) : (
-                    <div style={{display:"flex",flexDirection:"column",gap:6}}>
-                      {unsoldPool.map(pid=>{
-                        const p = players.find(x=>x.id===pid);
-                        if(!p) return null;
-                        // Check if released this window by a team
-                        const releasedByTeam = teams.find(t=>(transfers?.releases?.[t.id]||[]).includes(pid));
-                        const cardBg = releasedByTeam ? releasedByTeam.color+"0D" : myHighlights[pid] ? "#F5A62311" : "#0E1521";
-                        const cardBorder = releasedByTeam ? releasedByTeam.color+"44" : myHighlights[pid] ? "#F5A62344" : "#1E2D4566";
-                        const cardBorderLeft = releasedByTeam ? "3px solid "+releasedByTeam.color+"99" : "1px solid "+cardBorder;
-                        return (
-                          <div key={pid} style={{display:"flex",alignItems:"center",gap:8,padding:"10px 14px",background:cardBg,borderRadius:8,border:"1px solid "+cardBorder,borderLeft:cardBorderLeft,flexWrap:"wrap"}}>
-                            <div style={{flex:1,minWidth:0}}>
-                              <div style={{display:"flex",alignItems:"center",gap:5,flexWrap:"wrap"}}>
-                                <span style={{fontWeight:700,fontSize:14,color:myHighlights[pid]?"#F5A623":"#E2EAF4"}}>{p.name}</span>
-                                {p.tier&&<span style={{fontSize:9,fontWeight:800,letterSpacing:1,padding:"1px 5px",borderRadius:4,fontFamily:fonts.body,textTransform:"uppercase",background:p.tier==="platinum"?"#4A5E7833":p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":"#CD7F3222",border:"1px solid "+(p.tier==="platinum"?"#4A5E7866":p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":"#CD7F3255"),color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32"}}>{p.tier==="platinum"?"PLAT":p.tier==="gold"?"GOLD":p.tier==="silver"?"SILV":"BRNZ"}</span>}
-                                {releasedByTeam && (
-                                  <span style={{display:"flex",alignItems:"center",gap:3,fontSize:9,fontWeight:800,letterSpacing:0.5,color:releasedByTeam.color,background:releasedByTeam.color+"15",border:"1px solid "+releasedByTeam.color+"44",borderRadius:4,padding:"1px 6px"}}>
-                                    <span style={{width:5,height:5,borderRadius:"50%",background:releasedByTeam.color,display:"inline-block",flexShrink:0}}/>
-                                    {releasedByTeam.name.toUpperCase()}
-                                  </span>
-                                )}
-                              </div>
-                              <div style={{fontSize:11,color:T.muted}}>{p.iplTeam} • {p.role}{!releasedByTeam&&<span style={{marginLeft:6,fontSize:9,color:T.muted,background:"#1E2D4555",border:"1px solid #1E2D4599",borderRadius:3,padding:"0px 4px",fontWeight:700}}>UNSOLD</span>}</div>
-                              {myNotes[pid]&&editingNote!==pid&&<div style={{fontSize:11,color:T.accent,marginTop:4,fontStyle:"italic",background:T.accentBg,borderRadius:4,padding:"3px 8px",display:"inline-block"}}>"{myNotes[pid]}"</div>}
-                              {editingNote===pid&&(
-                                <div style={{display:"flex",gap:6,marginTop:6}}>
-                                  <input autoFocus value={noteInput} onChange={e=>setNoteInput(e.target.value)} onKeyDown={async e=>{if(e.key==="Enter"){const u={...myNotes,[pid]:noteInput.trim()};if(!noteInput.trim())delete u[pid];await saveNotes(u);setEditingNote(null);}if(e.key==="Escape")setEditingNote(null);}} placeholder="Private note..." maxLength={100} style={{flex:1,background:T.bg,border:`1px solid ${T.accentBorder}`,borderRadius:6,padding:"4px 8px",color:T.text,fontSize:12,fontFamily:fonts.body,outline:"none"}} />
-                                  <button onClick={async()=>{const u={...myNotes,[pid]:noteInput.trim()};if(!noteInput.trim())delete u[pid];await saveNotes(u);setEditingNote(null);}} style={{background:"#F5A623",border:"none",borderRadius:6,padding:"4px 10px",color:T.bg,fontWeight:800,fontSize:12,cursor:"pointer"}}>SAVE</button>
-                                  <button onClick={()=>setEditingNote(null)} style={{background:"transparent",border:`1px solid ${T.border}`,borderRadius:6,padding:"4px 8px",color:T.muted,fontSize:12,cursor:"pointer"}}>✕</button>
-                                </div>
-                              )}
-                            </div>
-                            <div style={{display:"flex",gap:6,alignItems:"center",flexShrink:0}}>
-                              <button onClick={async()=>{const u={...myHighlights};u[pid]?delete u[pid]:u[pid]=true;await saveHighlights(u);}} style={{background:myHighlights[pid]?"#F5A62333":"transparent",border:"1px solid "+(myHighlights[pid]?"#F5A62366":"#1E2D45"),borderRadius:6,padding:"5px 8px",cursor:"pointer",fontSize:14}}>
-                                {myHighlights[pid]?"⭐":"☆"}
-                              </button>
-                              <button onClick={()=>{setNoteInput(myNotes[pid]||"");setEditingNote(pid);}} style={{background:myNotes[pid]?"#4F8EF722":"transparent",border:"1px solid "+(myNotes[pid]?"#4F8EF744":"#1E2D45"),borderRadius:6,padding:"5px 8px",cursor:"pointer",fontSize:13}}>📝</button>
-                              {unlocked&&<button onClick={()=>removeFromUnsoldPool(pid)} style={{background:T.dangerBg,border:`1px solid ${T.danger}44`,color:T.danger,borderRadius:6,padding:"5px 8px",cursor:"pointer",fontSize:11,fontFamily:fonts.body,fontWeight:700}}>✕</button>}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+    {/* Current pool section */}
+    <div style={{background:"#9F7AEA33",borderLeft:`4px solid #9F7AEA`,padding:"10px 16px",marginBottom:12,clipPath:"polygon(0% 0%,100% 0%,calc(100% - 8px) 100%,0% 100%)"}}>
+      <div style={{fontFamily:fonts.display,fontSize:13,fontWeight:800,color:"#9F7AEA",letterSpacing:2,textTransform:"uppercase"}}>
+        🏊 CURRENT UNSOLD POOL
+      </div>
+    </div>
+
+    {unsoldPool.length===0 ? (
+      <div style={{textAlign:"center",padding:40,color:T.muted,fontSize:14,background:T.card,border:`2px solid ${T.border}`,borderRadius:0}}>
+        Pool is empty — add players above
+      </div>
+    ) : (
+      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+        {unsoldPool.map(pid=>{
+          const p = players.find(x=>x.id===pid);
+          if(!p) return null;
+          const releasedByTeam = teams.find(t=>(transfers?.releases?.[t.id]||[]).includes(pid));
+          
+          return (
+            <div key={pid} style={{
+              background:T.bg,
+              border:`2px solid ${releasedByTeam?releasedByTeam.color+"66":myHighlights[pid]?"#F5A62366":T.border}`,
+              borderLeft:`5px solid ${releasedByTeam?releasedByTeam.color:myHighlights[pid]?"#F5A623":T.border}`,
+              borderRadius:0,
+              padding:"14px 18px",
+              display:"flex",
+              alignItems:"center",
+              gap:12,
+              flexWrap:"wrap",
+              position:"relative",
+              overflow:"hidden"
+            }}>
+              {/* Player info */}
+              <div style={{flex:1,minWidth:0}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:6}}>
+                  <span style={{fontFamily:fonts.display,fontSize:16,fontWeight:900,color:myHighlights[pid]?"#F5A623":T.text,letterSpacing:1,textTransform:"uppercase"}}>
+                    {p.name}
+                  </span>
+                  
+                  {/* Tier badge - bigger & sportier */}
+                  {p.tier && (
+                    <span style={{
+                      fontSize:11,
+                      fontWeight:900,
+                      letterSpacing:2,
+                      padding:"4px 10px",
+                      fontFamily:fonts.display,
+                      textTransform:"uppercase",
+                      background:p.tier==="platinum"?"#4A5E7844":p.tier==="gold"?"#F5A62333":p.tier==="silver"?"#94A3B833":"#CD7F3233",
+                      border:`2px solid ${p.tier==="platinum"?"#4A5E78":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32"}`,
+                      color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32",
+                      clipPath:"polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%)",
+                      filter:"drop-shadow(2px 2px 0 rgba(0,0,0,0.5))"
+                    }}>
+                      {p.tier==="platinum"?"PLATINUM":p.tier==="gold"?"GOLD":p.tier==="silver"?"SILVER":"BRONZE"}
+                    </span>
+                  )}
+                  
+                  {/* Released by team badge */}
+                  {releasedByTeam && (
+                    <span style={{
+                      fontSize:11,
+                      fontWeight:900,
+                      letterSpacing:1.5,
+                      padding:"4px 10px",
+                      fontFamily:fonts.display,
+                      background:releasedByTeam.color+"22",
+                      border:`2px solid ${releasedByTeam.color}`,
+                      color:releasedByTeam.color,
+                      clipPath:"polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%)",
+                      display:"flex",
+                      alignItems:"center",
+                      gap:6
+                    }}>
+                      <span style={{width:6,height:6,borderRadius:"50%",background:releasedByTeam.color}}/>
+                      {releasedByTeam.name.toUpperCase()}
+                    </span>
+                  )}
+                  
+                  {/* Unsold badge */}
+                  {!releasedByTeam && (
+                    <span style={{
+                      fontSize:10,
+                      fontWeight:800,
+                      letterSpacing:1.5,
+                      padding:"3px 8px",
+                      fontFamily:fonts.display,
+                      background:"#6B46C122",
+                      border:`1px solid #6B46C144`,
+                      color:"#9F7AEA"
+                    }}>
+                      UNSOLD
+                    </span>
                   )}
                 </div>
-              )}
+                
+                <div style={{fontSize:11,color:T.muted,fontFamily:fonts.body,marginBottom:4}}>
+                  {p.iplTeam} • {p.role}
+                </div>
+                
+                {/* Note display/edit */}
+                {myNotes[pid]&&editingNote!==pid&&(
+                  <div style={{fontSize:11,color:"#4299E1",marginTop:6,fontStyle:"italic",background:"#4299E122",border:`1px solid #4299E144`,borderRadius:0,padding:"4px 10px",display:"inline-block"}}>
+                    📝 "{myNotes[pid]}"
+                  </div>
+                )}
+                {editingNote===pid&&(
+                  <div style={{display:"flex",gap:8,marginTop:8}}>
+                    <input autoFocus value={noteInput} onChange={e=>setNoteInput(e.target.value)} 
+                      onKeyDown={async e=>{
+                        if(e.key==="Enter"){const u={...myNotes,[pid]:noteInput.trim()};if(!noteInput.trim())delete u[pid];await saveNotes(u);setEditingNote(null);}
+                        if(e.key==="Escape")setEditingNote(null);
+                      }} 
+                      placeholder="Private note..." maxLength={100} 
+                      style={{flex:1,background:T.bg,border:`2px solid #4299E1`,borderRadius:0,padding:"6px 10px",color:T.text,fontSize:12,fontFamily:fonts.body,outline:"none"}} 
+                    />
+                    <button onClick={async()=>{const u={...myNotes,[pid]:noteInput.trim()};if(!noteInput.trim())delete u[pid];await saveNotes(u);setEditingNote(null);}} 
+                      style={{background:"#4299E1",border:"none",borderRadius:0,padding:"6px 14px",color:T.bg,fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:fonts.display,letterSpacing:1,clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)"}}>
+                      SAVE
+                    </button>
+                    <button onClick={()=>setEditingNote(null)} 
+                      style={{background:"transparent",border:`2px solid ${T.border}`,borderRadius:0,padding:"6px 10px",color:T.muted,fontSize:12,cursor:"pointer"}}>
+                      ✕
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Action buttons */}
+              <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
+                <button onClick={async()=>{const u={...myHighlights};u[pid]?delete u[pid]:u[pid]=true;await saveHighlights(u);}} 
+                  style={{
+                    background:myHighlights[pid]?"#F5A62333":"transparent",
+                    border:`2px solid ${myHighlights[pid]?"#F5A623":T.border}`,
+                    borderRadius:0,
+                    padding:"8px 12px",
+                    cursor:"pointer",
+                    fontSize:16,
+                    transition:"all .2s"
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.transform = "scale(1.1)"}
+                  onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+                >
+                  {myHighlights[pid]?"⭐":"☆"}
+                </button>
+                <button onClick={()=>{setNoteInput(myNotes[pid]||"");setEditingNote(pid);}} 
+                  style={{
+                    background:myNotes[pid]?"#4299E133":"transparent",
+                    border:`2px solid ${myNotes[pid]?"#4299E1":T.border}`,
+                    borderRadius:0,
+                    padding:"8px 12px",
+                    cursor:"pointer",
+                    fontSize:14,
+                    transition:"all .2s"
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.transform = "scale(1.1)"}
+                  onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+                >
+                  📝
+                </button>
+                {unlocked&&(
+                  <button onClick={()=>removeFromUnsoldPool(pid)} 
+                    style={{
+                      background:T.dangerBg,
+                      border:`2px solid ${T.danger}`,
+                      color:T.danger,
+                      borderRadius:0,
+                      padding:"8px 12px",
+                      cursor:"pointer",
+                      fontSize:12,
+                      fontFamily:fonts.display,
+                      fontWeight:800,
+                      letterSpacing:1,
+                      clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)"
+                    }}>
+                    ✕
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    )}
+  </div>
+)}
 
               {/* PLAYERS TAB */}
 {draftTab==="players" && <>
