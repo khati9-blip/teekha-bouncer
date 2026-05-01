@@ -6187,7 +6187,7 @@ onChange={e=>setPlayerSearch(e.target.value)}
   <div className="fade-in" style={{padding:"0 12px"}}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}}>
       <div style={{display:"inline-block",background:T.accent,padding:"6px 18px 6px 14px",clipPath:"polygon(0 0,100% 0,calc(100% - 10px) 100%,0 100%)"}}>
-        <h2 style={{fontFamily:fonts.display,fontSize:26,fontWeight:700,color:T.bg,letterSpacing:3,margin:0}}>LEADERBOARD</h2>
+        <h2 style={{fontFamily:fonts.display,fontSize:26,fontWeight:700,color:T.bg,letterSpacing:3,margin:0,textTransform:"uppercase"}}>LEADERBOARD</h2>
       </div>
       <button onClick={shareLeaderboard} style={{background:"#25D366",border:"none",color:"#050F05",clipPath:"polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%)",padding:"10px 20px",cursor:"pointer",fontFamily:fonts.display,fontWeight:800,fontSize:13.5,letterSpacing:2,textTransform:"uppercase",filter:"drop-shadow(3px 3px 0 #0A5020)"}}>
         📲 SHARE WHATSAPP
@@ -6222,7 +6222,7 @@ onChange={e=>setPlayerSearch(e.target.value)}
                 </div>
 
                 <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontWeight:900,fontSize:i===0?21:18.5,color:team.color,fontFamily:fonts.display,letterSpacing:1.5,lineHeight:1.1}}>
+                  <div style={{fontWeight:900,fontSize:i===0?21:18.5,color:team.color,fontFamily:fonts.display,letterSpacing:1.5,lineHeight:1.1,textTransform:"uppercase"}}>
                     {team.name}
                   </div>
                   <div style={{fontSize:12.5,color:T.muted,marginTop:4}}>
@@ -6239,15 +6239,22 @@ onChange={e=>setPlayerSearch(e.target.value)}
                 </div>
               </div>
 
-              {/* Expanded Breakdown */}
+              {/* Expanded Player Breakdown - Kept original logic */}
               {isOpen && breakdown.length > 0 && (
                 <div style={{borderTop:`1px solid ${T.border}`,padding:"12px 16px",background:"#0A0E14"}}>
+                  <div style={{display:"flex",fontSize:11,color:T.muted,marginBottom:10,letterSpacing:1}}>
+                    <span style={{flex:1}}>PLAYER</span>
+                    <span style={{width:80,textAlign:"right"}}>PTS</span>
+                  </div>
                   {breakdown.map((p,idx)=>(
-                    <div key={p.id} style={{display:"flex",alignItems:"center",padding:"10px 0",borderBottom:idx < breakdown.length-1 ? `1px solid ${T.border}44` : "none"}}>
-                      <div style={{flex:1,fontSize:14,color:ruledOut.includes(p.id)?T.danger:T.text}}>
+                    <div key={p.id} style={{display:"flex",alignItems:"center",padding:"10px 0",borderBottom:idx < breakdown.length-1 ? `1px solid ${T.border}44` : "none",opacity:(p.tradedOut||p.snatchedOut||ruledOut.includes(p.id))?0.65:1}}>
+                      <div style={{flex:1,fontSize:14}}>
                         {p.name}
+                        {p.tradedOut && <span style={{fontSize:10,color:T.danger,marginLeft:6}}>TRADED OUT</span>}
+                        {p.snatchedOut && <span style={{fontSize:10,color:"#9F7AEA",marginLeft:6}}>SNATCHED</span>}
+                        {ruledOut.includes(p.id) && <span style={{fontSize:10,color:T.danger,marginLeft:6}}>RULED OUT</span>}
                       </div>
-                      <div style={{width:70,textAlign:"right",fontWeight:700,fontSize:16,color:p.total>0?T.accent:T.muted}}>
+                      <div style={{width:80,textAlign:"right",fontWeight:700,fontSize:16,color:p.total>0?T.accent:T.muted}}>
                         {p.total}
                       </div>
                     </div>
@@ -6260,6 +6267,7 @@ onChange={e=>setPlayerSearch(e.target.value)}
       </div>
     )}
   </div>
+)}
 )}
         </div>
 
