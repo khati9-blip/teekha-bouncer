@@ -4968,9 +4968,22 @@ ${aiMatchText.slice(0, 3000)}`;
                     </div>
                     {players.map(p => {
   const isRuledOut = ruledOut.includes(p.id);
-  const total = getPlayerBreakdown(p.id).reduce((s,m)=>s+(m.total||0),0);
+  
+  // Calculate player total from points data directly
+  let total = 0;
+  let matchesPlayed = 0;
+  if (points[p.id]) {
+    for (const [matchId, matchData] of Object.entries(points[p.id])) {
+      const cap = captains[`${matchId}_${team.id}`] || {};
+      let pts = matchData.base || 0;
+      if (cap.captain === p.id) pts *= 2;
+      else if (cap.vc === p.id) pts *= 1.5;
+      total += Math.round(pts);
+      if (pts > 0) matchesPlayed++;
+    }
+  }
+  
   const isSafe = isPlayerSafeForTeam(team.id, p.id);
-  const matchesPlayed = getPlayerBreakdown(p.id).filter(m=>m.total>0).length;
   
   return (
     <div key={p.id} style={{
