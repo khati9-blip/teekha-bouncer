@@ -4814,9 +4814,6 @@ ${aiMatchText.slice(0, 3000)}`;
 
   {/* TWO COLUMN LAYOUT */}
   <div style={{display:"flex",gap:16,alignItems:"start"}}>
-
-  {/* TWO COLUMN LAYOUT */}
-  <div style={{display:"flex",gap:16,alignItems:"start"}}>
     
     {/* LEFT COLUMN - TEAM BOXES */}
     <div style={{width:"30%",display:"flex",flexDirection:"column",gap:10,position:"sticky",top:80}}>
