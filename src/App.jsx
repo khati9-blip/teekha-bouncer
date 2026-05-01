@@ -5353,9 +5353,9 @@ ${aiMatchText.slice(0, 3000)}`;
             onChange={e=>setSearch(e.target.value)}
             style={{flex:1,minWidth:200,background:T.bg,border:`2px solid ${T.border}`,borderRadius:0,padding:"10px 14px",color:T.text,fontSize:14,fontFamily:fonts.body,outline:"none"}}
           />
-          <select value={roleFilter} onChange={e=>setRoleFilter(e.target.value)} style={{background:T.bg,border:`2px solid ${T.border}`,borderRadius:0,padding:"10px 14px",color:T.text,fontSize:13,fontFamily:fonts.display,fontWeight:700,letterSpacing:1,cursor:"pointer"}}>
-            {ROLES.map(r=><option key={r}>{r}</option>)}
-          </select>
+          <select value={roleFilter||"All"} onChange={e=>setRoleFilter(e.target.value==="All"?null:e.target.value)} style={{background:T.bg,border:`2px solid ${T.border}`,borderRadius:0,padding:"10px 14px",color:T.text,fontSize:13,fontFamily:fonts.display,fontWeight:700,letterSpacing:1,cursor:"pointer"}}>
+  {ROLES.map(r=><option key={r}>{r}</option>)}
+</select>
           <select value={teamFilter||"All Teams"} onChange={e=>setTeamFilter(e.target.value==="All Teams"?null:e.target.value)} style={{background:T.bg,border:`2px solid ${T.border}`,borderRadius:0,padding:"10px 14px",color:T.text,fontSize:13,fontFamily:fonts.display,fontWeight:700,letterSpacing:1,cursor:"pointer"}}>
             <option>All Teams</option>
             {teams.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
