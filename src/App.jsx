@@ -4847,9 +4847,20 @@ ${aiMatchText.slice(0, 3000)}`;
           }
 
           return filtered.map(p => {
-            const assignedTeam = assignments[p.id] ? teams.find(t=>t.id===assignments[p.id]) : null;
-            const isRuledOut = ruledOut.includes(p.id);
-            const total = getPlayerBreakdown(p.id).reduce((s,m)=>s+(m.total||0),0);
+  const assignedTeam = assignments[p.id] ? teams.find(t=>t.id===assignments[p.id]) : null;
+  const isRuledOut = ruledOut.includes(p.id);
+  
+  // Calculate total from points data directly
+  let total = 0;
+  if (points[p.id] && assignedTeam) {
+    for (const [matchId, matchData] of Object.entries(points[p.id])) {
+      const cap = captains[`${matchId}_${assignedTeam.id}`] || {};
+      let pts = matchData.base || 0;
+      if (cap.captain === p.id) pts *= 2;
+      else if (cap.vc === p.id) pts *= 1.5;
+      total += Math.round(pts);
+    }
+  }
             
             return (
               <div key={p.id} style={{
