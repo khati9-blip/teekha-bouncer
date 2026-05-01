@@ -2705,8 +2705,25 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
 
         // ── Pass 1: Critical keys from Supabase ───────────────────────────
         const criticalKeys = ["teams","assignments","matches","captains","tnames","numteams","pwhash","transfers","snatch","teamIdentity","pointsConfig","tournaments","safePlayers","pitchConfig","ruledOut"];
-        const rawCritical = criticalKeys.map(k => _pitchId + "_" + k);
-        const critResults = await sbGetMany(rawCritical);
+        // ── Batched loading: 5 keys at a time with delays ───────────────
+        const batchLoad = async (keys, batchSize = 5) => {
+          const results = [];
+          for (let i = 0; i < keys.length; i += batchSize) {
+            const batch = keys.slice(i, i + batchSize);
+            const batchKeys = batch.map(k => _pitchId + "_" + k);
+            const batchResults = await sbGetMany(batchKeys);
+            results.push(...batchResults);
+            
+            // Delay between batches to respect rate limits
+            if (i + batchSize < keys.length) {
+              await new Promise(r => setTimeout(r, 300));
+            }
+          }
+          return results;
+        };
+
+        // Load critical keys in batches
+        const critResults = await batchLoad(criticalKeys, 5);
         const [t,a,m,c,tn,nt,ph,tr,sn,ti,pc,tv,sp,pcfg,ro] = critResults;
         if(t) setTeams(t);
         if(a) setAssignments(a);
@@ -2727,10 +2744,9 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
         if(ro && Array.isArray(ro)) setRuledOut(ro);
         setAppReady(true);
 
-        // ── Pass 2: Heavy keys in background ─────────────────────────────
+        // ── Pass 2: Heavy keys in batches ────────────────────────────────
         const heavyKeys = ["players","points","ownershipLog","recoveryHash","teamLogos","unsoldPool","ruleProposal"];
-        const rawHeavy = heavyKeys.map(k => _pitchId + "_" + k);
-        const heavyResults = await sbGetMany(rawHeavy);
+        const heavyResults = await batchLoad(heavyKeys, 3); // Smaller batches for heavy data
         const [p,pts,ol,rh,tl,up,rp] = heavyResults;
         if(p) setPlayers(p);
         if(pts) setPoints(pts);
