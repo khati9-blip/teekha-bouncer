@@ -6184,99 +6184,83 @@ onChange={e=>setPlayerSearch(e.target.value)}
           )}
 
           {page==="leaderboard"&&(
-            <div className="fade-in">
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:8}}>
-                <div style={{display:"inline-block",background:T.accent,padding:"4px 16px 4px 12px",clipPath:"polygon(0 0,100% 0,calc(100% - 10px) 100%,0 100%)"}}>
-                  <h2 style={{fontFamily:fonts.display,fontSize:28,fontWeight:700,color:T.bg,letterSpacing:3,margin:0}}>LEADERBOARD</h2>
-                </div>
-                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+  <div className="fade-in" style={{padding:"0 12px"}}>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:8}}>
+      <div style={{display:"inline-block",background:T.accent,padding:"6px 18px 6px 14px",clipPath:"polygon(0 0,100% 0,calc(100% - 10px) 100%,0 100%)"}}>
+        <h2 style={{fontFamily:fonts.display,fontSize:26,fontWeight:700,color:T.bg,letterSpacing:3,margin:0}}>LEADERBOARD</h2>
+      </div>
+      <button onClick={shareLeaderboard} style={{background:"#25D366",border:"none",color:"#050F05",clipPath:"polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%)",padding:"10px 20px",cursor:"pointer",fontFamily:fonts.display,fontWeight:800,fontSize:13.5,letterSpacing:2,textTransform:"uppercase",filter:"drop-shadow(3px 3px 0 #0A5020)"}}>
+        📲 SHARE WHATSAPP
+      </button>
+    </div>
 
-                  <button onClick={shareLeaderboard} style={{background:"#25D366",border:"none",color:"#050F05",clipPath:"polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%)",padding:"9px 20px",cursor:"pointer",fontFamily:fonts.display,fontWeight:800,fontSize:13,letterSpacing:2,textTransform:"uppercase",filter:"drop-shadow(3px 3px 0 #0A5020)"}}>
-                    📲 SHARE WHATSAPP
-                  </button>
+    {leaderboard.length===0 ? (
+      <Card sx={{padding:60,textAlign:"center"}}><div style={{fontSize:56}}>🏆</div><div style={{color:T.muted,marginTop:16}}>Set up your league first</div></Card>
+    ):(
+      <div style={{marginBottom:20}}>
+        {leaderboard.map((team,i)=>{
+          const medals=["🥇","🥈","🥉"];
+          const isOpen=expandedTeam===team.id;
+          const breakdown=getPlayerBreakdown(team.id);
+          const ruledOutCount=breakdown.filter(p=>ruledOut.includes(p.id)).length;
+
+          return (
+            <div key={team.id} style={{
+              background:T.card,
+              borderRadius:12,
+              marginBottom:12,
+              borderLeft:`6px solid ${team.color}`,
+              overflow:"hidden",
+              boxShadow:"0 4px 12px rgba(0,0,0,0.3)"
+            }}>
+              {/* Main Row */}
+              <div style={{display:"flex",alignItems:"center",gap:14,padding:"16px 16px",cursor:"pointer"}} 
+                   onClick={()=>setExpandedTeam(isOpen?null:team.id)}>
+                
+                <div style={{fontFamily:fonts.display,fontSize:i===0?42:34,fontWeight:900,color:i===0?team.color:T.muted,minWidth:48,lineHeight:1}}>
+                  {medals[i] || `#${i+1}`}
+                </div>
+
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontWeight:900,fontSize:i===0?21:18.5,color:team.color,fontFamily:fonts.display,letterSpacing:1.5,lineHeight:1.1}}>
+                    {team.name}
+                  </div>
+                  <div style={{fontSize:12.5,color:T.muted,marginTop:4}}>
+                    {players.filter(p=>assignments[p.id]===team.id && !ruledOut.includes(p.id)).length} PLAYERS
+                    {ruledOutCount>0 && <span style={{color:T.danger}}> • {ruledOutCount} RULED OUT</span>}
+                  </div>
+                </div>
+
+                <div style={{textAlign:"right"}}>
+                  <div style={{fontSize:i===0?38:32,fontWeight:900,color:i===0?"#F5A623":T.text,fontFamily:fonts.display,letterSpacing:1}}>
+                    {team.total.toLocaleString()}
+                  </div>
+                  <div style={{fontSize:11,color:T.muted,letterSpacing:1}}>PTS</div>
                 </div>
               </div>
-              {leaderboard.length===0?(
-                <Card sx={{padding:60,textAlign:"center"}}><div style={{fontSize:56}}>🏆</div><div style={{color:T.muted,marginTop:16}}>Set up your league first</div></Card>
-              ):(
-                <>
-                  <div style={{marginBottom:20}}>
-                    {leaderboard.map((team,i)=>{
-                      const medals=["🥇","🥈","🥉"],mc=["#F5A623","#94A3B8","#CD7C2F"];
-                      const breakdown=getPlayerBreakdown(team.id);
-                      const isOpen=expandedTeam===team.id;
-                      const ruledOutCount=breakdown.filter(p=>ruledOut.includes(p.id)).length;
-                      return(
-                        <div key={team.id} style={{background:T.card,borderRadius:0,marginBottom:6,borderLeft:"5px solid "+team.color,borderBottom:`1px solid ${T.border}`,overflow:"hidden"}}>
-                          {/* Main row — clickable to expand */}
-                          <div style={{display:"flex",alignItems:"center",gap:16,padding:"18px 20px",cursor:"pointer"}} onClick={()=>setExpandedTeam(isOpen?null:team.id)}>
-                            <div style={{fontFamily:fonts.display,fontSize:i===0?40:32,fontWeight:900,color:i===0?team.color:T.muted,minWidth:44,lineHeight:1}}>{medals[i]||("#"+(i+1))}</div>
-                            <div style={{flex:1}}>
-                              <div style={{fontWeight:900,fontSize:i===0?26:22,color:team.color,fontFamily:fonts.display,letterSpacing:2,textTransform:"uppercase",lineHeight:1}}>{team.name}</div>
-                              <div style={{fontSize:11,color:T.muted,letterSpacing:2,marginTop:3,textTransform:"uppercase"}}>
-                                {players.filter(p=>assignments[p.id]===team.id && !ruledOut.includes(p.id)).length} PLAYERS
-                                {ruledOutCount>0&&<span style={{color:T.danger,marginLeft:8}}>· {ruledOutCount} RULED OUT</span>}
-                              </div>
-                            </div>
-                            <div style={{textAlign:"right",display:"flex",alignItems:"center",gap:12}}>
-                              <div>
-                                <div style={{fontSize:i===0?48:36,fontWeight:900,color:i===0?T.accent:T.text,fontFamily:fonts.display,lineHeight:1,letterSpacing:1}}>{team.total.toLocaleString()}</div>
-                                <div style={{fontSize:10,color:T.muted,letterSpacing:3,textTransform:"uppercase",marginTop:2}}>PTS</div>
-                              </div>
-                              <span style={{color:team.color,fontSize:14,fontFamily:fonts.display,fontWeight:700}}>{isOpen?"▲":"▼"}</span>
-                            </div>
-                          </div>
 
-                          {/* Collapsible player breakdown */}
-                          {isOpen&&breakdown.length>0&&(
-                            <div style={{borderTop:`1px solid ${T.border}`,padding:"12px 18px"}}>
-                              <div style={{display:"flex",fontSize:11,color:T.muted,marginBottom:10,padding:"0 4px",letterSpacing:2,fontFamily:fonts.display}}>
-                                <span style={{flex:1}}>PLAYER</span>
-                                <span style={{width:90}}>ROLE</span>
-                                <span style={{width:70,textAlign:"right"}}>PTS</span>
-                              </div>
-                              {breakdown.map((p,idx)=>(
-                                <div key={p.id} style={{display:"flex",alignItems:"center",padding:"9px 4px",borderBottom:`1px solid ${T.border}`,opacity:p.status==="snatched-out"||p.status==="snatch-returned-in"||p.status==="traded-out"||ruledOut.includes(p.id)?0.65:1}}>
-                                  <div style={{flex:1,fontWeight:idx<3?700:400,fontSize:14,
-                                    color:ruledOut.includes(p.id)?T.danger:p.status==="traded-in"?T.success:p.status==="returned"?T.accent:p.status==="traded-out"?T.danger:idx===0&&p.status==="active"?T.accent:T.text,
-                                    textDecoration:p.status==="snatched-out"||p.status==="snatch-returned-in"||p.status==="traded-out"||ruledOut.includes(p.id)?"line-through":"none"}}>
-                                    {p.status==="traded-out"&&<span style={{marginRight:4}}>⬇️</span>}
-                                    {p.status==="traded-in"&&<span style={{marginRight:4}}>⬆️</span>}
-                                    {p.status==="returned"&&<span style={{marginRight:4}}>↩️</span>}
-                                    {ruledOut.includes(p.id)&&<span style={{marginRight:4}}>🚫</span>}
-                                    {p.name}
-                                    {ruledOut.includes(p.id)&&<span style={{fontSize:9,color:T.danger,marginLeft:6,textDecoration:"none",fontWeight:700}}>RULED OUT</span>}
-                                    {!ruledOut.includes(p.id)&&p.status==="traded-out"&&<span style={{fontSize:9,color:T.danger,marginLeft:6,textDecoration:"none",fontWeight:700}}>→ {p.tradedFor}</span>}
-                                    {!ruledOut.includes(p.id)&&p.status==="traded-in"&&<span style={{fontSize:9,color:T.success,marginLeft:6,textDecoration:"none",fontWeight:700}}>FROM POOL</span>}
-                                    {!ruledOut.includes(p.id)&&p.status==="returned"&&<span style={{fontSize:9,color:T.accent,marginLeft:6,textDecoration:"none",fontWeight:700}}>↩ RETURNED</span>}
-                                    {!ruledOut.includes(p.id)&&p.status==="snatched-out"&&<span style={{fontSize:9,color:T.purple,marginLeft:6,textDecoration:"none",fontWeight:700}}>SNATCHED</span>}
-                                    {!ruledOut.includes(p.id)&&p.status==="snatched-in"&&<span style={{fontSize:9,color:T.success,marginLeft:6,textDecoration:"none",fontWeight:700}}>ON LOAN</span>}
-                                    {!ruledOut.includes(p.id)&&p.status==="snatch-returned-in"&&<span style={{fontSize:9,color:T.muted,marginLeft:6,textDecoration:"none"}}>RETURNED</span>}
-                                    {!ruledOut.includes(p.id)&&p.status==="released"&&<span style={{fontSize:9,color:T.muted,marginLeft:6,textDecoration:"none"}}>RELEASED</span>}
-                                  </div>
-                                  <div style={{width:90}}><Badge label={p.role||"—"} color={ROLE_COLORS[p.role]||"#4A5E78"} /></div>
-                                  <div style={{width:70,textAlign:"right",fontWeight:700,
-                                    color:ruledOut.includes(p.id)?T.danger:p.status==="traded-in"?T.success:p.status==="returned"?T.accent:p.status==="traded-out"||p.status==="snatched-out"||p.status==="snatch-returned-in"?T.muted:p.total>0?T.text:T.muted,
-                                    fontFamily:fonts.display,fontSize:17}}>
-                                    {p.total}
-                                    {ruledOut.includes(p.id)&&<span style={{fontSize:9,display:"block",color:T.danger,letterSpacing:0.5}}>FROZEN</span>}
-                                    {!ruledOut.includes(p.id)&&p.status==="traded-in"&&<span style={{fontSize:9,display:"block",color:T.success,letterSpacing:0.5}}>RESET</span>}
-                                    {!ruledOut.includes(p.id)&&p.status==="returned"&&<span style={{fontSize:9,display:"block",color:T.accent,letterSpacing:0.5}}>BACK</span>}
-                                    {!ruledOut.includes(p.id)&&p.status==="traded-out"&&<span style={{fontSize:9,display:"block",color:T.danger,letterSpacing:0.5}}>FROZEN</span>}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                          {isOpen&&breakdown.length===0&&<div style={{padding:"16px 18px",color:T.muted,fontSize:13,borderTop:`1px solid ${T.border}`}}>No players assigned yet.</div>}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
+              {/* Expanded Breakdown */}
+              {isOpen && breakdown.length > 0 && (
+                <div style={{borderTop:`1px solid ${T.border}`,padding:"12px 16px",background:"#0A0E14"}}>
+                  {breakdown.map((p,idx)=>(
+                    <div key={p.id} style={{display:"flex",alignItems:"center",padding:"10px 0",borderBottom:idx < breakdown.length-1 ? `1px solid ${T.border}44` : "none"}}>
+                      <div style={{flex:1,fontSize:14,color:ruledOut.includes(p.id)?T.danger:T.text}}>
+                        {p.name}
+                      </div>
+                      <div style={{width:70,textAlign:"right",fontWeight:700,fontSize:16,color:p.total>0?T.accent:T.muted}}>
+                        {p.total}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
-          )}
+          );
+        })}
+      </div>
+    )}
+  </div>
+)}
         </div>
 
         {/* LEAGUE RULES PANEL */}
