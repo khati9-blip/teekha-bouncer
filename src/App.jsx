@@ -4741,6 +4741,80 @@ ${aiMatchText.slice(0, 3000)}`;
     </button>
   </div>
 
+  {/* TEAM FILTER CHIPS */}
+  <div style={{display:"flex",gap:8,flexWrap:"wrap",marginBottom:16}}>
+    {teams.map(t => {
+      const cnt = players.filter(p=>assignments[p.id]===t.id).length;
+      const ruledOutCnt = players.filter(p=>assignments[p.id]===t.id&&ruledOut.includes(p.id)).length;
+      const activeCnt = cnt - ruledOutCnt;
+      const active = teamFilter === t.id;
+      
+      return (
+        <div key={t.id} style={{
+          position:"relative",
+          display:"flex",
+          alignItems:"center",
+          background:active?t.color+"22":"#0E1521",
+          borderRadius:0,
+          borderLeft:`3px solid ${t.color}`,
+          fontSize:13,
+          border:active?`2px solid ${t.color}`:"2px solid transparent",
+          transition:"all .15s",
+          overflow:"hidden"
+        }}>
+          {teamLogos[t.id] && <img src={teamLogos[t.id]} style={{position:"absolute",right:0,top:0,height:"100%",opacity:0.15,objectFit:"contain",pointerEvents:"none"}} />}
+          
+          <div onClick={()=>setTeamFilter(active?null:t.id)} style={{
+            padding:"7px 10px",
+            cursor:"pointer",
+            display:"flex",
+            alignItems:"center",
+            gap:6,
+            flex:1
+          }}>
+            {teamLogos[t.id] && <img src={teamLogos[t.id]} style={{width:22,height:22,objectFit:"contain",borderRadius:4}} />}
+            <span style={{color:t.color,fontWeight:700,fontFamily:fonts.display,letterSpacing:1}}>{t.name}</span>
+            <span style={{color:T.muted,fontFamily:fonts.display}}>{activeCnt}p</span>
+            {ruledOutCnt > 0 && <span style={{color:"#FF3D5A",fontSize:11}}>🚫{ruledOutCnt}</span>}
+            {active && <span style={{color:t.color,fontSize:11}}>✓</span>}
+          </div>
+          
+          <label title="Upload team logo" style={{
+            padding:"7px 8px",
+            cursor:"pointer",
+            color:T.muted,
+            fontSize:12,
+            borderLeft:"2px solid #1E2D4555"
+          }}>
+            📷
+            <input type="file" accept="image/*" style={{display:"none"}} onChange={e => e.target.files[0] && uploadTeamLogo(t.id, e.target.files[0])} />
+          </label>
+        </div>
+      );
+    })}
+    
+    <div onClick={()=>setTeamFilter(teamFilter==="unassigned"?null:"unassigned")}
+      style={{
+        background:teamFilter==="unassigned"?"#4A5E7833":"#0E1521",
+        borderRadius:0,
+        padding:"7px 14px",
+        fontSize:13,
+        cursor:"pointer",
+        border:teamFilter==="unassigned"?"2px solid #4A5E78":"2px solid transparent",
+        transition:"all .15s",
+        fontFamily:fonts.display,
+        fontWeight:700,
+        letterSpacing:1
+      }}>
+      <span style={{color:T.muted}}>UNASSIGNED: </span>
+      <span style={{color:T.text}}>{players.filter(p=>!assignments[p.id]).length}</span>
+      {teamFilter==="unassigned" && <span style={{color:T.muted,marginLeft:6,fontSize:11}}>✓</span>}
+    </div>
+  </div>
+
+  {/* TWO COLUMN LAYOUT */}
+  <div style={{display:"flex",gap:16,alignItems:"start"}}>
+
   {/* TWO COLUMN LAYOUT */}
   <div style={{display:"flex",gap:16,alignItems:"start"}}>
     
