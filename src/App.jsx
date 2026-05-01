@@ -1695,29 +1695,31 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
       </div>
 
       {/* Header */}
-<div style={{position:"relative",zIndex:10,borderBottom:`1px solid ${T.border}`,backdropFilter:"blur(20px)",background:`${T.bg}CC`}}>
-  <div style={{maxWidth:680,margin:"0 auto",padding:"14px 24px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-    <div style={{display:"flex",alignItems:"center",gap:12}}>
-      <img src="/logo.png" alt="Teekha Bouncer" style={{width:36,height:36,borderRadius:10,objectFit:"contain",boxShadow:`0 0 20px ${T.accent}33`}} />
-      <div>
-        <div style={{fontFamily:fonts.display,fontSize:17,fontWeight:800,color:T.accent,letterSpacing:3,lineHeight:1}}>TEEKHA BOUNCER</div>
-        <div style={{fontFamily:fonts.body,fontSize:9,color:T.muted,letterSpacing:3,marginTop:2}}>FANTASY CRICKET LEAGUE</div>
+<div style={{position:"relative",zIndex:10,borderBottom:`4px solid ${T.accent}`,backdropFilter:"blur(20px)",background:"linear-gradient(135deg, #0A0E14 0%, #1A1F2E 100%)",boxShadow:"0 4px 20px rgba(245,158,11,0.3)"}}>
+        <div style={{maxWidth:680,margin:"0 auto",padding:"16px 24px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div style={{display:"flex",alignItems:"center",gap:14}}>
+            <div style={{width:48,height:48,background:`linear-gradient(135deg, ${T.accent} 0%, #D97706 100%)`,display:"flex",alignItems:"center",justifyContent:"center",clipPath:"polygon(5px 0%, 100% 0%, calc(100% - 5px) 100%, 0% 100%)",boxShadow:"4px 4px 0 rgba(217,119,6,0.4)"}}>
+              <img src="/logo.png" alt="Teekha Bouncer" style={{width:34,height:34,objectFit:"contain",filter:"drop-shadow(1px 1px 0 rgba(0,0,0,0.3))"}} />
+            </div>
+            <div>
+              <div style={{fontFamily:fonts.display,fontSize:20,fontWeight:900,color:T.accent,letterSpacing:4,lineHeight:1,textShadow:"2px 2px 0 rgba(245,158,11,0.2)"}}>TEEKHA BOUNCER</div>
+              <div style={{fontFamily:fonts.body,fontSize:9,color:T.muted,letterSpacing:3,marginTop:3,fontWeight:700}}>FANTASY CRICKET LEAGUE</div>
+            </div>
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:12}}>
+            <div style={{textAlign:"right"}}>
+              <div style={{fontFamily:fonts.display,fontSize:13,fontWeight:800,color:T.text,letterSpacing:1}}>{user?.email?.split("@")[0]}</div>
+              <div style={{fontFamily:fonts.body,fontSize:9,color:T.muted,letterSpacing:1}}>{user?.email?.split("@")[1]}</div>
+            </div>
+            <button onClick={onLogout}
+              style={{fontFamily:fonts.display,fontWeight:800,fontSize:11,letterSpacing:2,background:"#FF3D5A",border:"none",borderRadius:0,padding:"8px 16px",color:"#FFFFFF",cursor:"pointer",clipPath:"polygon(5px 0%, 100% 0%, calc(100% - 5px) 100%, 0% 100%)",boxShadow:"3px 3px 0 rgba(139,0,0,0.5)",transition:"all 0.2s"}}
+              onMouseEnter={e=>{e.currentTarget.style.transform="translate(-2px, -2px)";e.currentTarget.style.boxShadow="5px 5px 0 rgba(139,0,0,0.5)";}}
+              onMouseLeave={e=>{e.currentTarget.style.transform="translate(0, 0)";e.currentTarget.style.boxShadow="3px 3px 0 rgba(139,0,0,0.5)";}}>
+              LOGOUT
+            </button>
+          </div>
+        </div>
       </div>
-    </div>
-    <div style={{display:"flex",alignItems:"center",gap:12}}>
-      <div style={{textAlign:"right"}}>
-        <div style={{fontFamily:fonts.display,fontSize:12,fontWeight:700,color:T.text,letterSpacing:0.5}}>{user?.email?.split("@")[0]}</div>
-        <div style={{fontFamily:fonts.body,fontSize:9,color:T.muted,letterSpacing:1}}>{user?.email?.split("@")[1]}</div>
-      </div>
-      <button onClick={onLogout}
-        style={{fontFamily:fonts.display,fontWeight:700,fontSize:10,letterSpacing:1.5,background:"transparent",border:`1px solid ${T.border}`,borderRadius:8,padding:"6px 14px",color:T.sub,cursor:"pointer",transition:"all 0.2s"}}
-        onMouseEnter={e=>{e.currentTarget.style.borderColor=T.dangerBg;e.currentTarget.style.color=T.danger;}}
-        onMouseLeave={e=>{e.currentTarget.style.borderColor=T.border;e.currentTarget.style.color=T.sub;}}>
-        LOGOUT
-      </button>
-    </div>
-  </div>
-</div>
 
       {/* Hero */}
 <div style={{position:"relative",zIndex:10,maxWidth:680,margin:"0 auto",padding:"48px 24px 32px"}}>
