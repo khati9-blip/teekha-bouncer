@@ -5392,6 +5392,7 @@ onChange={e=>setPlayerSearch(e.target.value)}
     const aTeam = teams.find(t=>t.id===assignments[p.id]);
     const isAssigned = !!assignments[p.id];
     const isRuledOut = ruledOut.includes(p.id);
+    const isSafe = isAssigned && isPlayerSafeForTeam(assignments[p.id], p.id);
               
               return (
                 <div key={p.id} style={{
