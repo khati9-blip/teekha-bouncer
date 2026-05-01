@@ -5349,8 +5349,8 @@ ${aiMatchText.slice(0, 3000)}`;
           <input
             type="text"
             placeholder="Search name or franchise..."
-            value={search}
-            onChange={e=>setSearch(e.target.value)}
+            value={playerSearch}
+onChange={e=>setPlayerSearch(e.target.value)}
             style={{flex:1,minWidth:200,background:T.bg,border:`2px solid ${T.border}`,borderRadius:0,padding:"10px 14px",color:T.text,fontSize:14,fontFamily:fonts.body,outline:"none"}}
           />
           <select value={roleFilter||"All"} onChange={e=>setRoleFilter(e.target.value==="All"?null:e.target.value)} style={{background:T.bg,border:`2px solid ${T.border}`,borderRadius:0,padding:"10px 14px",color:T.text,fontSize:13,fontFamily:fonts.display,fontWeight:700,letterSpacing:1,cursor:"pointer"}}>
@@ -5378,11 +5378,20 @@ ${aiMatchText.slice(0, 3000)}`;
         {/* Players list */}
         <div style={{padding:"20px 24px",overflowY:"auto",maxHeight:"calc(90vh - 240px)"}}>
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
-            {filteredPlayers.map(p => {
-              const aTeam = teams.find(t=>t.id===assignments[p.id]);
-              const isAssigned = !!assignments[p.id];
-              const isRuledOut = ruledOut.includes(p.id);
-              const isSafe = isAssigned && isPlayerSafeForTeam(assignments[p.id], p.id);
+            {(() => {
+  // Filter players
+  let filteredPlayers = players.filter(p => {
+    if (playerSearch && !p.name.toLowerCase().includes(playerSearch.toLowerCase()) && !p.iplTeam.toLowerCase().includes(playerSearch.toLowerCase())) return false;
+    if (roleFilter && p.role !== roleFilter) return false;
+    if (teamFilter && teamFilter !== "unassigned" && assignments[p.id] !== teamFilter) return false;
+    if (teamFilter === "unassigned" && assignments[p.id]) return false;
+    return true;
+  });
+  
+  return filteredPlayers.map(p => {
+    const aTeam = teams.find(t=>t.id===assignments[p.id]);
+    const isAssigned = !!assignments[p.id];
+    const isRuledOut = ruledOut.includes(p.id);
               
               return (
                 <div key={p.id} style={{
@@ -5439,8 +5448,9 @@ ${aiMatchText.slice(0, 3000)}`;
                     </div>
                   )}
                 </div>
-              );
-            })}
+             );
+            });
+          })()}
           </div>
         </div>
       </div>
