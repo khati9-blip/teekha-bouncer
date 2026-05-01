@@ -2665,6 +2665,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   const [draftTab, setDraftTab] = useState('players'); // players | unsold
   const [teamRosterModal, setTeamRosterModal] = useState(null); // null or team.id
   const [playerSearch, setPlayerSearch] = useState('');
+  const [showAllPlayersModal, setShowAllPlayersModal] = useState(false);
   // ownershipLog: {pid: [{teamId, from: isoDate, to: isoDate|null}]}
   const [ownershipLog, setOwnershipLog] = useState({});
   const [transfers, setTransfers] = useState({
@@ -4632,7 +4633,7 @@ ${aiMatchText.slice(0, 3000)}`;
     style={{background:"transparent",border:`2px solid ${T.accent}`,color:T.accent,clipPath:"polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%)",padding:"7px 18px",cursor:"pointer",fontFamily:fonts.display,fontWeight:800,fontSize:13,letterSpacing:2,textTransform:"uppercase"}}>
     ✚ ADD
   </button>
-  <button onClick={()=>setSquadView(v=>!v)} 
+  <button onClick={()=>setShowAllPlayersModal(true)} 
     style={{background:squadView?T.accent:"transparent",border:`2px solid ${T.accent}`,color:squadView?T.bg:T.accent,clipPath:"polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%)",padding:"7px 18px",cursor:"pointer",fontFamily:fonts.display,fontWeight:800,fontSize:13,letterSpacing:2,textTransform:"uppercase"}}>
     {squadView?"📋 LIST":"👥 SQUAD"}
   </button>
@@ -4831,10 +4832,12 @@ ${aiMatchText.slice(0, 3000)}`;
       <div style={{display:"flex",flexDirection:"column",gap:8}}>
         {(() => {
           let filtered = players.filter(p => {
-            if (playerSearch && !p.name.toLowerCase().includes(playerSearch.toLowerCase()) && !p.iplTeam.toLowerCase().includes(playerSearch.toLowerCase())) return false;
-            if (roleFilter && p.role !== roleFilter) return false;
-            return true;
-          });
+  if (playerSearch && !p.name.toLowerCase().includes(playerSearch.toLowerCase()) && !p.iplTeam.toLowerCase().includes(playerSearch.toLowerCase())) return false;
+  if (roleFilter && p.role !== roleFilter) return false;
+  if (teamFilter && teamFilter !== "unassigned" && assignments[p.id] !== teamFilter) return false;
+  if (teamFilter === "unassigned" && assignments[p.id]) return false;
+  return true;
+});
 
           if (sortOrder === "Name (A-Z)") filtered.sort((a,b) => a.name.localeCompare(b.name));
           else if (sortOrder === "Total Points") {
@@ -4963,19 +4966,26 @@ ${aiMatchText.slice(0, 3000)}`;
                       {role} ({players.length})
                     </div>
                     {players.map(p => {
-                      const isRuledOut = ruledOut.includes(p.id);
-                      const total = getPlayerBreakdown(p.id).reduce((s,m)=>s+(m.total||0),0);
-                      return (
-                        <div key={p.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 12px",marginBottom:6,background:isRuledOut?T.dangerBg:T.card,border:`1px solid ${isRuledOut?T.danger:T.border}`,borderRadius:0}}>
-                          <div>
-                            <div style={{fontWeight:700,fontSize:14,color:isRuledOut?T.danger:T.text,textDecoration:isRuledOut?"line-through":"none"}}>
-                              {p.name} {isRuledOut && <span style={{fontSize:10,color:T.danger}}>🚫</span>}
-                            </div>
-                            <div style={{fontSize:11,color:T.muted,marginTop:2}}>{p.iplTeam}</div>
-                          </div>
-                          <div style={{fontFamily:fonts.display,fontSize:18,fontWeight:800,color:T.accent}}>{total}</div>
-                        </div>
-                      );
+  const isRuledOut = ruledOut.includes(p.id);
+  const total = getPlayerBreakdown(p.id).reduce((s,m)=>s+(m.total||0),0);
+  const isSafe = isPlayerSafeForTeam(team.id, p.id);
+  
+  return (
+    <div key={p.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 12px",marginBottom:6,background:isRuledOut?T.dangerBg:T.card,border:`1px solid ${isRuledOut?T.danger:T.border}`,borderRadius:0}}>
+      <div style={{flex:1}}>
+        <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:2}}>
+          <span style={{fontWeight:700,fontSize:14,color:isRuledOut?T.danger:T.text,textDecoration:isRuledOut?"line-through":"none"}}>
+            {p.name}
+          </span>
+          {p.tier && <span style={{fontSize:9,fontWeight:800,letterSpacing:1,padding:"2px 6px",fontFamily:fonts.display,textTransform:"uppercase",background:p.tier==="platinum"?"#4A5E7833":p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":"#CD7F3222",border:"1px solid "+(p.tier==="platinum"?"#4A5E7866":p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":"#CD7F3255"),color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32"}}>{p.tier.toUpperCase()}</span>}
+          {isRuledOut && <span style={{fontSize:10,color:T.danger}}>🚫</span>}
+          {isSafe && <span style={{fontSize:10}}>🛡️</span>}
+        </div>
+        <div style={{fontSize:11,color:T.muted,marginTop:2}}>{p.iplTeam}</div>
+      </div>
+      <div style={{fontFamily:fonts.display,fontSize:18,fontWeight:800,color:T.accent}}>{total}</div>
+    </div>
+  );
                     })}
                   </div>
                 );
