@@ -2665,6 +2665,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   const [draftTab, setDraftTab] = useState('players'); // players | unsold
   const [teamRosterModal, setTeamRosterModal] = useState(null); // null or team.id
   const [playerSearch, setPlayerSearch] = useState('');
+  const [playerStatsModal, setPlayerStatsModal] = useState(null); // player object
   const [showAllPlayersModal, setShowAllPlayersModal] = useState(false);
   // ownershipLog: {pid: [{teamId, from: isoDate, to: isoDate|null}]}
   const [ownershipLog, setOwnershipLog] = useState({});
@@ -5070,7 +5071,22 @@ ${aiMatchText.slice(0, 3000)}`;
         minWidth:120
       }}>
         {total > 0 ? (
-          <>
+          <button
+            onClick={() => setPlayerStatsModal(p)}
+            style={{
+              display:"flex",
+              flexDirection:"column",
+              alignItems:"flex-end",
+              gap:4,
+              background:"transparent",
+              border:"none",
+              cursor:"pointer",
+              padding:0,
+              transition:"all .2s"
+            }}
+            onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"}
+            onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
+          >
             <div style={{
               fontFamily:fonts.display,
               fontSize:24,
@@ -5079,7 +5095,7 @@ ${aiMatchText.slice(0, 3000)}`;
               letterSpacing:1,
               lineHeight:1
             }}>
-              {total}
+              {total} 📊
             </div>
             <div style={{
               fontSize:10,
@@ -5090,7 +5106,7 @@ ${aiMatchText.slice(0, 3000)}`;
             }}>
               {matchesPlayed} {matchesPlayed === 1 ? "match" : "matches"}
             </div>
-          </>
+          </button>
         ) : (
           <button
             onClick={() => {
@@ -5127,6 +5143,110 @@ ${aiMatchText.slice(0, 3000)}`;
       </div>
     );
   })()}
+{/* PLAYER STATS MODAL */}
+  {playerStatsModal && (() => {
+    const p = playerStatsModal;
+    const breakdown = getPlayerBreakdown(p.id);
+    const total = breakdown.reduce((s,m)=>s+(m.total||0),0);
+    const assignedTeam = assignments[p.id] ? teams.find(t=>t.id===assignments[p.id]) : null;
+    
+    return (
+      <div onClick={() => setPlayerStatsModal(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.92)",zIndex:400,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+        <div onClick={e => e.stopPropagation()} style={{background:T.bg,border:`3px solid ${assignedTeam?assignedTeam.color:T.accent}`,borderRadius:0,maxWidth:700,width:"100%",maxHeight:"85vh",overflow:"hidden",boxShadow:`8px 8px 0 ${assignedTeam?assignedTeam.color+"66":T.accent+"66"}`}}>
+          
+          {/* Header */}
+          <div style={{background:assignedTeam?assignedTeam.color:T.accent,padding:"20px 24px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div>
+              <div style={{fontFamily:fonts.display,fontSize:24,fontWeight:900,color:T.bg,letterSpacing:3,textTransform:"uppercase"}}>
+                {p.name}
+              </div>
+              <div style={{fontSize:12,color:T.bg+"CC",marginTop:4,fontFamily:fonts.body}}>
+                {p.iplTeam} • {p.role} {assignedTeam && `• ${assignedTeam.name}`}
+              </div>
+            </div>
+            <button onClick={() => setPlayerStatsModal(null)} style={{background:"transparent",border:"none",color:T.bg,fontSize:32,cursor:"pointer",lineHeight:1,fontWeight:300}}>×</button>
+          </div>
+
+          {/* Total Stats Summary */}
+          <div style={{background:assignedTeam?assignedTeam.color+"11":T.accentBg,padding:"16px 24px",borderBottom:`2px solid ${assignedTeam?assignedTeam.color:T.accent}`}}>
+            <div style={{display:"flex",gap:32,flexWrap:"wrap"}}>
+              <div>
+                <div style={{fontSize:11,color:T.muted,fontFamily:fonts.display,letterSpacing:2,textTransform:"uppercase"}}>Total Points</div>
+                <div style={{fontSize:32,fontWeight:900,color:assignedTeam?assignedTeam.color:T.accent,fontFamily:fonts.display,letterSpacing:1,marginTop:4}}>{total}</div>
+              </div>
+              <div>
+                <div style={{fontSize:11,color:T.muted,fontFamily:fonts.display,letterSpacing:2,textTransform:"uppercase"}}>Matches Played</div>
+                <div style={{fontSize:32,fontWeight:900,color:T.text,fontFamily:fonts.display,letterSpacing:1,marginTop:4}}>{breakdown.filter(m=>m.total>0).length}</div>
+              </div>
+              <div>
+                <div style={{fontSize:11,color:T.muted,fontFamily:fonts.display,letterSpacing:2,textTransform:"uppercase"}}>Average</div>
+                <div style={{fontSize:32,fontWeight:900,color:T.text,fontFamily:fonts.display,letterSpacing:1,marginTop:4}}>
+                  {breakdown.filter(m=>m.total>0).length > 0 ? Math.round(total / breakdown.filter(m=>m.total>0).length) : 0}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Match-by-Match Breakdown */}
+          <div style={{padding:"20px 24px",overflowY:"auto",maxHeight:"calc(85vh - 240px)"}}>
+            <div style={{fontSize:13,color:T.muted,fontFamily:fonts.display,letterSpacing:2,textTransform:"uppercase",marginBottom:16,fontWeight:700}}>
+              Match by Match Performance
+            </div>
+            
+            {breakdown.length === 0 ? (
+              <div style={{textAlign:"center",padding:40,color:T.muted}}>No match data yet</div>
+            ) : (
+              <div style={{display:"flex",flexDirection:"column",gap:10}}>
+                {breakdown.map((m, idx) => {
+                  const matchData = matches.find(match => match.id === m.matchId);
+                  return (
+                    <div key={idx} style={{
+                      background:m.total>0?T.card:T.bg,
+                      border:`2px solid ${m.total>0?(assignedTeam?assignedTeam.color+"44":T.accentBorder):T.border}`,
+                      borderLeft:`5px solid ${m.total>0?(assignedTeam?assignedTeam.color:T.accent):T.border}`,
+                      borderRadius:0,
+                      padding:"14px 18px"
+                    }}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
+                        <div>
+                          <div style={{fontFamily:fonts.display,fontSize:14,fontWeight:800,color:T.text,letterSpacing:1}}>
+                            {matchData ? `${matchData.team1} vs ${matchData.team2}` : `Match ${idx+1}`}
+                          </div>
+                          <div style={{fontSize:10,color:T.muted,marginTop:2}}>
+                            {matchData?.date || 'Date unknown'} • {m.opponent || 'Opponent'}
+                          </div>
+                        </div>
+                        <div style={{
+                          fontFamily:fonts.display,
+                          fontSize:28,
+                          fontWeight:900,
+                          color:m.total>0?(assignedTeam?assignedTeam.color:T.accent):T.muted,
+                          letterSpacing:1
+                        }}>
+                          {m.total || 0}
+                        </div>
+                      </div>
+                      
+                      {/* Performance breakdown */}
+                      <div style={{display:"flex",gap:16,fontSize:11,color:T.muted,flexWrap:"wrap"}}>
+                        {m.runs !== undefined && <span>🏏 {m.runs} runs</span>}
+                        {m.wickets !== undefined && <span>🎯 {m.wickets} wickets</span>}
+                        {m.catches !== undefined && <span>🧤 {m.catches} catches</span>}
+                        {m.stumpings !== undefined && <span>🧤 {m.stumpings} stumpings</span>}
+                        {m.runOuts !== undefined && <span>🏃 {m.runOuts} run outs</span>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  })()}
+</>}
+  
 </>}
             </div>
           )}
