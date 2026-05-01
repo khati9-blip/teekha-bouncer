@@ -5149,7 +5149,7 @@ ${aiMatchText.slice(0, 3000)}`;
     );
   })()}
 {/* PLAYER STATS MODAL */}
-  {{playerStatsModal && (() => {
+  {playerStatsModal && (() => {
     const p = playerStatsModal;
     const assignedTeam = assignments[p.id] ? teams.find(t=>t.id===assignments[p.id]) : null;
     
