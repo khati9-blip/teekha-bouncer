@@ -1470,11 +1470,11 @@ function FeedbackWidget({ pitches, user }) {
       {/* Feedback button — below pitch cards */}
       <div style={{textAlign:"center",marginTop:20,animation:"tb-fadeUp 0.5s ease 0.4s both"}}>
         <button onClick={()=>setOpen(true)}
-          style={{background:"transparent",border:`1px solid ${T.border}`,borderRadius:10,padding:"10px 24px",fontFamily:fonts.display,fontWeight:700,fontSize:13,color:T.sub,cursor:"pointer",letterSpacing:1,transition:"all 0.2s",display:"inline-flex",alignItems:"center",gap:8}}
-          onMouseEnter={e=>{e.currentTarget.style.borderColor=T.infoBg;e.currentTarget.style.color=T.info;e.currentTarget.style.background=T.infoBg;}}
-          onMouseLeave={e=>{e.currentTarget.style.borderColor=T.border;e.currentTarget.style.color=T.sub;e.currentTarget.style.background="transparent";}}>
-          💬 SEND FEEDBACK
-        </button>
+  style={{background:"linear-gradient(135deg, #6B46C1 0%, #9F7AEA 100%)",border:"none",borderRadius:0,padding:"12px 24px",fontFamily:fonts.display,fontWeight:800,fontSize:13,color:"#0A0E14",cursor:"pointer",letterSpacing:2,transition:"all 0.2s",display:"inline-flex",alignItems:"center",gap:8,clipPath:"polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%)",boxShadow:"4px 4px 0 rgba(107,70,193,0.3)",textShadow:"1px 1px 0 rgba(255,255,255,0.2)"}}
+  onMouseEnter={e=>{e.currentTarget.style.transform="translate(-2px, -2px)";e.currentTarget.style.boxShadow="6px 6px 0 rgba(107,70,193,0.3)";}}
+  onMouseLeave={e=>{e.currentTarget.style.transform="translate(0, 0)";e.currentTarget.style.boxShadow="4px 4px 0 rgba(107,70,193,0.3)";}}>
+  💬 SEND FEEDBACK
+</button>
         <div style={{fontFamily:fonts.body,fontSize:11,color:T.muted,marginTop:6}}>Suggestions, bug reports, feature requests — all welcome</div>
       </div>
 
@@ -1720,19 +1720,18 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
 </div>
 
       {/* Hero */}
-      <div style={{position:"relative",zIndex:10,maxWidth:680,margin:"0 auto",padding:"44px 24px 28px"}}>
-        <div style={{animation:"tb-fadeUp 0.6s ease both"}}>
-          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
-            <div style={{width:3,height:24,background:`linear-gradient(180deg,${T.accent},${T.accentDim})`,borderRadius:2}} />
-            <div style={{fontFamily:fonts.display,fontSize:9,fontWeight:700,color:T.accent,letterSpacing:4}}>DESIGN YOUR OWN LEAGUES</div>
-          </div>
-          <h1 style={{fontFamily:fonts.display,fontSize:40,fontWeight:900,color:T.text,letterSpacing:0,margin:0,lineHeight:1.05}}>
-            YOUR <span style={{color:T.accent}}>LEAGUES</span>
-          </h1>
-          <p style={{fontFamily:fonts.body,fontSize:13,color:T.muted,marginTop:8,letterSpacing:0.3}}>
-            Select a pitch to manage your squad, track points and dominate the leaderboard
-          </p>
-        </div>
+<div style={{position:"relative",zIndex:10,maxWidth:680,margin:"0 auto",padding:"48px 24px 32px"}}>
+  <div style={{animation:"tb-fadeUp 0.6s ease both"}}>
+    <div style={{display:"inline-block",background:`linear-gradient(135deg, ${T.accent} 0%, #D97706 100%)`,padding:"6px 20px 6px 14px",clipPath:"polygon(0 0, 100% 0, calc(100% - 12px) 100%, 0 100%)",marginBottom:16,boxShadow:"4px 4px 0 rgba(217,119,6,0.3)"}}>
+      <div style={{fontFamily:fonts.display,fontSize:11,fontWeight:900,color:"#0A0E14",letterSpacing:4,textShadow:"1px 1px 0 rgba(255,255,255,0.2)"}}>DESIGN YOUR OWN LEAGUES</div>
+    </div>
+    <h1 style={{fontFamily:fonts.display,fontSize:48,fontWeight:900,color:T.text,letterSpacing:1,margin:0,lineHeight:1.05,textShadow:"3px 3px 0 rgba(245,158,11,0.1)"}}>
+      YOUR <span style={{color:T.accent,background:`linear-gradient(135deg, ${T.accent} 0%, #D97706 100%)`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>LEAGUES</span>
+    </h1>
+    <p style={{fontFamily:fonts.body,fontSize:14,color:T.muted,marginTop:12,letterSpacing:0.5,lineHeight:1.6}}>
+      Select a pitch to manage your squad, track points and dominate the leaderboard
+    </p>
+  </div>
 
         {/* Pitch cards */}
         <div style={{display:"flex",flexDirection:"column",gap:10,marginTop:28}}>
@@ -1749,15 +1748,15 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
             const roleLabel = savedAdmin ? "🔑 Admin" : savedTeam ? "🏏 " + savedTeam.name : savedGuest ? "👁 Guest" : null;
             return (
               <div key={pitch.id}
-                style={{borderRadius:14,border:`1px solid ${isExpanded ? color+"55" : T.border}`,background:isExpanded ? color+"0A" : T.card,overflow:"hidden",animation:`tb-fadeUp 0.5s ease ${i*0.07}s both`,position:"relative",transition:"border-color 0.25s,background 0.25s"}}>
-                <div style={{height:2,background:`linear-gradient(90deg,${color},${color}33,transparent)`,opacity:isExpanded?1:0.25,transition:"opacity 0.3s"}} />
-                <div style={{padding:"14px 16px",display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={()=>setExpandedPitch(isExpanded?null:pitch.id)}>
-                  <div style={{width:46,height:46,borderRadius:11,background:color+"18",border:`1px solid ${color}33`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flexShrink:0,position:"relative"}}>
-                    <div style={{fontFamily:fonts.display,fontWeight:800,fontSize:12,color:color,letterSpacing:1}}>P{i+1}</div>
-                    {returning && <div style={{position:"absolute",top:-3,right:-3,width:7,height:7,borderRadius:"50%",background:color,boxShadow:`0 0 6px ${color}`}} />}
-                  </div>
-                  <div style={{flex:1,minWidth:0,overflow:"hidden"}}>
-                    <div style={{fontFamily:fonts.display,fontWeight:700,fontSize:15,color:T.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{pitch.name}</div>
+  style={{borderRadius:0,border:`3px solid ${isExpanded ? color : T.border}44`,borderLeft:`6px solid ${color}`,background:isExpanded ? color+"0D" : T.card,overflow:"hidden",animation:`tb-fadeUp 0.5s ease ${i*0.07}s both`,position:"relative",transition:"all 0.25s",boxShadow:isExpanded?`5px 5px 0 ${color}33`:"none"}}>
+  <div style={{height:3,background:`linear-gradient(90deg,${color},${color}55,transparent)`,opacity:isExpanded?1:0.4,transition:"opacity 0.3s"}} />
+  <div style={{padding:"16px 18px",display:"flex",alignItems:"center",gap:12,cursor:"pointer"}} onClick={()=>setExpandedPitch(isExpanded?null:pitch.id)}>
+    <div style={{width:52,height:52,borderRadius:0,background:color+"22",border:`2px solid ${color}`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",flexShrink:0,position:"relative",clipPath:"polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%)",boxShadow:`3px 3px 0 ${color}44`}}>
+      <div style={{fontFamily:fonts.display,fontWeight:900,fontSize:16,color:color,letterSpacing:1,textShadow:`1px 1px 0 ${color}33`}}>P{i+1}</div>
+      {returning && <div style={{position:"absolute",top:-4,right:-4,width:10,height:10,borderRadius:"50%",background:color,boxShadow:`0 0 10px ${color}`,border:"2px solid #0A0E14"}} />}
+    </div>
+    <div style={{flex:1,minWidth:0,overflow:"hidden"}}>
+      <div style={{fontFamily:fonts.display,fontWeight:800,fontSize:17,color:T.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",letterSpacing:0.5}}>{pitch.name}</div>
                     <div style={{display:"flex",alignItems:"center",gap:6,marginTop:3,flexWrap:"wrap"}}>
                       {roleLabel && <span style={{fontFamily:fonts.display,fontSize:9,fontWeight:700,letterSpacing:1,background:color+"18",border:`1px solid ${color}33`,color,borderRadius:4,padding:"1px 7px"}}>{roleLabel}</span>}
                       {pitch.isClone && <span style={{fontFamily:fonts.display,fontSize:9,fontWeight:700,letterSpacing:1,background:T.purpleBg,border:`1px solid ${T.purple}33`,color:T.purple,borderRadius:4,padding:"1px 6px"}}>CLONE</span>}
@@ -1792,11 +1791,11 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
         <div style={{marginTop:14,animation:"tb-fadeUp 0.5s ease 0.28s both"}}>
         {!creating ? (
           <button onClick={()=>setCreating(true)}
-            style={{width:"100%",background:"transparent",border:`1px dashed ${T.border}`,borderRadius:12,padding:"15px",fontFamily:fonts.display,fontWeight:700,fontSize:13,color:T.muted,cursor:"pointer",letterSpacing:2,display:"flex",alignItems:"center",justifyContent:"center",gap:8,transition:"all 0.2s"}}
-            onMouseEnter={e=>{e.currentTarget.style.borderColor=T.accentBorder;e.currentTarget.style.color=T.accent;e.currentTarget.style.background=T.accentBg;}}
-            onMouseLeave={e=>{e.currentTarget.style.borderColor=T.border;e.currentTarget.style.color=T.muted;e.currentTarget.style.background="transparent";}}>
-            ＋ CREATE NEW PITCH
-          </button>
+  style={{width:"100%",background:"transparent",border:`3px dashed ${T.border}`,borderRadius:0,padding:"18px",fontFamily:fonts.display,fontWeight:800,fontSize:14,color:T.muted,cursor:"pointer",letterSpacing:2,display:"flex",alignItems:"center",justifyContent:"center",gap:8,transition:"all 0.3s",clipPath:"polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%)"}}
+  onMouseEnter={e=>{e.currentTarget.style.borderColor=T.accent;e.currentTarget.style.color=T.accent;e.currentTarget.style.background=T.accent+"11";}}
+  onMouseLeave={e=>{e.currentTarget.style.borderColor=T.border;e.currentTarget.style.color=T.muted;e.currentTarget.style.background="transparent";}}>
+  ＋ CREATE NEW PITCH
+</button>
         ) : (
           <div style={{background:T.card,borderRadius:13,border:`1px solid ${T.accentBorder}`,padding:20,animation:"tb-fadeUp 0.3s ease both"}}>
             <div style={{fontFamily:fonts.display,fontSize:16,fontWeight:800,color:T.accent,letterSpacing:2,marginBottom:14}}>NEW PITCH</div>
