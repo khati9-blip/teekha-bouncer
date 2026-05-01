@@ -1063,15 +1063,15 @@ placeholder="Paste scorecard text here... (e.g. V Kohli c Maxwell b Bumrah 82 (5
       <div style={{fontFamily:fonts.display,fontSize:26,fontWeight:900,color:"#0A0E14",letterSpacing:4,textTransform:"uppercase",textShadow:"2px 2px 0 rgba(255,255,255,0.2)"}}>📊 MATCH STATS — M{match.matchNum}</div>
       <div style={{color:"rgba(10,14,20,0.7)",fontSize:12,marginTop:4,fontFamily:fonts.body,letterSpacing:0.5}}>{match.team1} vs {match.team2} • {match.date} • {match.venue}</div>
           <div style={{marginTop:12,display:"flex",gap:8,alignItems:"center",flexWrap:"wrap"}}>
-            <button onClick={fetchFromCricketData} disabled={fetching}\
+            <button onClick={fetchFromCricketData} disabled={fetching}
   style={{background:"linear-gradient(135deg,#2ECC71,#16a34a)",border:"none",borderRadius:0,padding:"10px 20px",color:"#0A0E14",fontFamily:fonts.display,fontWeight:800,fontSize:13,cursor:fetching?"not-allowed":"pointer",opacity:fetching?0.6:1,letterSpacing:1.5,clipPath:"polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%)",boxShadow:"3px 3px 0 rgba(22,163,74,0.4)",textShadow:"1px 1px 0 rgba(255,255,255,0.2)"}}>
   {fetching?"⏳ FETCHING…":"🟢 SYNC FROM CRICKETDATA"}
 </button>
-<button onClick={fetchFromCricbuzz} disabled={fetching}\
+<button onClick={fetchFromCricbuzz} disabled={fetching}
   style={{background:"transparent",border:`2px solid #F59E0B`,borderRadius:0,padding:"9px 16px",color:"#F59E0B",fontFamily:fonts.display,fontWeight:800,fontSize:12,cursor:fetching?"not-allowed":"pointer",opacity:fetching?0.6:1,letterSpacing:1.5,clipPath:"polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%)"}}>
   🟠 CRICBUZZ
 </button>
-<button onClick={()=>setShowPasteModal(true)} disabled={fetching}\
+<button onClick={()=>setShowPasteModal(true)} disabled={fetching}
   style={{background:"transparent",border:`2px solid #9F7AEA`,borderRadius:0,padding:"9px 16px",color:"#9F7AEA",fontFamily:fonts.display,fontWeight:800,fontSize:12,cursor:"pointer",letterSpacing:1.5,clipPath:"polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%)"}}>
   📋 PASTE SCORECARD
 </button>
@@ -2567,7 +2567,7 @@ function CaptainModal({ match, teams, players, assignments, captains, points, my
             🔓 UNLOCK
           </button>
         )}
-        <button onClick={isLocked ? onClose : saveAndClose}\
+        <button onClick={isLocked ? onClose : saveAndClose}
           style={{flex:2,background:"linear-gradient(135deg, #F59E0B 0%, #D97706 100%)",border:"none",borderRadius:0,padding:14,color:"#0A0E14",fontFamily:fonts.display,fontWeight:900,fontSize:15,letterSpacing:2,cursor:"pointer",clipPath:"polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%)",boxShadow:"3px 3px 0 rgba(217,119,6,0.4)",textShadow:"1px 1px 0 rgba(255,255,255,0.3)"}}>
           {isLocked?"CLOSE":"✅ SAVE & CLOSE"}
         </button>
