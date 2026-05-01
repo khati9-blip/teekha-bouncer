@@ -2047,7 +2047,7 @@ function ChatWindow({ myTeam, teams, unlocked, withPassword, storeGet, storeSet,
     if (!open) setUnread(msgs.filter(m => m.ts > lastSeen && m.senderId !== myTeam?.id).length);
   };
 
-  React.useEffect(() => { load(); const t = setInterval(load, 15000); return () => clearInterval(t); }, []);
+  React.useEffect(() => { load(); const t = setInterval(load, 60000); return () => clearInterval(t); }, []);
   React.useEffect(() => { if (open) { setUnread(0); try { localStorage.setItem('tb_chatLastSeen', Date.now().toString()); } catch {} setTimeout(() => endRef.current?.scrollIntoView({behavior:'smooth'}), 100); } }, [open, messages.length]);
 
   const send = async () => {
@@ -3310,7 +3310,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
 
   React.useEffect(() => {
     loadNotifications();
-    const t = setInterval(loadNotifications, 30000);
+    const t = setInterval(loadNotifications, 120000);
     return () => clearInterval(t);
   }, []);
 
