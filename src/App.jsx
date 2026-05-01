@@ -4888,51 +4888,6 @@ ${aiMatchText.slice(0, 3000)}`;
                   </div>
                 </div>
 
-                {/* Team assignment */}
-                <select
-                  value={assignments[p.id]||"unassigned"}
-                  onChange={e => {
-                    if (!unlocked) { alert("Unlock squads first"); return; }
-                    const newTeam = e.target.value === "unassigned" ? null : e.target.value;
-                    assignPlayer(p.id, newTeam);
-                  }}
-                  disabled={isRuledOut}
-                  style={{
-                    background:assignedTeam?assignedTeam.color+"22":T.card,
-                    border:`2px solid ${assignedTeam?assignedTeam.color:T.border}`,
-                    borderRadius:0,
-                    padding:"8px 12px",
-                    color:assignedTeam?assignedTeam.color:T.muted,
-                    fontSize:12,
-                    fontFamily:fonts.display,
-                    fontWeight:700,
-                    letterSpacing:1,
-                    cursor:isRuledOut?"not-allowed":"pointer",
-                    opacity:isRuledOut?0.5:1,
-                    minWidth:150
-                  }}
-                >
-                  <option value="unassigned">UNASSIGNED</option>
-                  {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                </select>
-
-                {/* Actions */}
-                <div style={{display:"flex",gap:6}}>
-                  <button
-                    onClick={async()=>{const u={...myHighlights};u[p.id]?delete u[p.id]:u[p.id]=true;await saveHighlights(u);}}
-                    style={{background:myHighlights[p.id]?"#F5A62333":"transparent",border:`2px solid ${myHighlights[p.id]?"#F5A623":T.border}`,padding:"6px 10px",cursor:"pointer",fontSize:16,borderRadius:0}}
-                  >
-                    {myHighlights[p.id]?"⭐":"☆"}
-                  </button>
-                  {unlocked && !isRuledOut && (
-                    <button
-                      onClick={() => withPassword(() => toggleRuledOut(p.id))}
-                      style={{background:T.dangerBg,border:`2px solid ${T.danger}`,color:T.danger,padding:"6px 10px",cursor:"pointer",fontSize:11,fontFamily:fonts.display,fontWeight:700,borderRadius:0}}
-                    >
-                      🚫
-                    </button>
-                  )}
-                </div>
               </div>
             );
           });
