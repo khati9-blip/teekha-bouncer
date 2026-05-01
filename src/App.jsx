@@ -2585,7 +2585,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   const [numTeams, setNumTeams] = useState(4);
   const [tNames, setTNames] = useState(Array.from({length:10},(_,i)=>"Team "+(i+1)));
   const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState("All");
+  const [roleFilter, setRoleFilter] = useState("null");
   const [expandedMatch, setExpandedMatch] = useState(null);
   const [expandedTeam, setExpandedTeam] = useState(null);
   const [pwHash, setPwHash] = useState(null);
@@ -2653,7 +2653,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   const [confirmAction, setConfirmAction] = useState(null); // {msg, fn}
   const [selectedBulk, setSelectedBulk] = useState([]); // toggle squad view
   const [teamFilter, setTeamFilter] = useState(null); // filter by fantasy team
-  const [sortOrder, setSortOrder] = useState('default'); // default | az | za
+  const [sortOrder, setSortOrder] = useState('null'); // default | az | za
   const [teamLogos, setTeamLogos] = useState({});
   const [safePlayers, setSafePlayers] = useState({}); // {teamId: [pid,pid,pid]}
   const [ruledOut, setRuledOut] = useState([]); // [pid, pid] — players ruled out for season
