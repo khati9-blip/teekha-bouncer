@@ -4969,21 +4969,152 @@ ${aiMatchText.slice(0, 3000)}`;
   const isRuledOut = ruledOut.includes(p.id);
   const total = getPlayerBreakdown(p.id).reduce((s,m)=>s+(m.total||0),0);
   const isSafe = isPlayerSafeForTeam(team.id, p.id);
+  const matchesPlayed = getPlayerBreakdown(p.id).filter(m=>m.total>0).length;
   
   return (
-    <div key={p.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 12px",marginBottom:6,background:isRuledOut?T.dangerBg:T.card,border:`1px solid ${isRuledOut?T.danger:T.border}`,borderRadius:0}}>
-      <div style={{flex:1}}>
-        <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:2}}>
-          <span style={{fontWeight:700,fontSize:14,color:isRuledOut?T.danger:T.text,textDecoration:isRuledOut?"line-through":"none"}}>
+    <div key={p.id} style={{
+      background:isRuledOut?"#1A0000":T.bg,
+      border:`2px solid ${isRuledOut?T.danger:team.color+"44"}`,
+      borderLeft:`5px solid ${isRuledOut?T.danger:team.color}`,
+      borderRadius:0,
+      padding:"12px 16px",
+      marginBottom:8,
+      display:"flex",
+      alignItems:"center",
+      gap:12,
+      position:"relative",
+      overflow:"hidden"
+    }}>
+      {/* Player name & badges */}
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:6}}>
+          <span style={{
+            fontFamily:fonts.display,
+            fontSize:16,
+            fontWeight:900,
+            color:isRuledOut?T.danger:T.text,
+            letterSpacing:1,
+            textDecoration:isRuledOut?"line-through":"none",
+            textTransform:"uppercase"
+          }}>
             {p.name}
           </span>
-          {p.tier && <span style={{fontSize:9,fontWeight:800,letterSpacing:1,padding:"2px 6px",fontFamily:fonts.display,textTransform:"uppercase",background:p.tier==="platinum"?"#4A5E7833":p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":"#CD7F3222",border:"1px solid "+(p.tier==="platinum"?"#4A5E7866":p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":"#CD7F3255"),color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32"}}>{p.tier.toUpperCase()}</span>}
-          {isRuledOut && <span style={{fontSize:10,color:T.danger}}>🚫</span>}
-          {isSafe && <span style={{fontSize:10}}>🛡️</span>}
+          
+          {/* Tier badge - bigger & sportier */}
+          {p.tier && (
+            <span style={{
+              fontSize:11,
+              fontWeight:900,
+              letterSpacing:2,
+              padding:"4px 10px",
+              fontFamily:fonts.display,
+              textTransform:"uppercase",
+              background:p.tier==="platinum"?"#4A5E7844":p.tier==="gold"?"#F5A62333":p.tier==="silver"?"#94A3B833":"#CD7F3233",
+              border:`2px solid ${p.tier==="platinum"?"#4A5E78":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32"}`,
+              color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32",
+              clipPath:"polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%)",
+              filter:"drop-shadow(2px 2px 0 rgba(0,0,0,0.5))"
+            }}>
+              {p.tier==="platinum"?"PLATINUM":p.tier==="gold"?"GOLD":p.tier==="silver"?"SILVER":"BRONZE"}
+            </span>
+          )}
+          
+          {/* Safe badge - bigger */}
+          {isSafe && !isRuledOut && (
+            <span style={{
+              fontSize:11,
+              fontWeight:900,
+              letterSpacing:1.5,
+              padding:"4px 10px",
+              fontFamily:fonts.display,
+              background:"#2ECC7133",
+              border:"2px solid #2ECC71",
+              color:"#2ECC71",
+              clipPath:"polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%)",
+              filter:"drop-shadow(2px 2px 0 rgba(0,0,0,0.5))"
+            }}>
+              🛡️ SAFE
+            </span>
+          )}
+          
+          {/* Ruled out badge - bigger */}
+          {isRuledOut && (
+            <span style={{
+              fontSize:11,
+              fontWeight:900,
+              letterSpacing:1.5,
+              padding:"4px 10px",
+              fontFamily:fonts.display,
+              background:T.dangerBg,
+              border:`2px solid ${T.danger}`,
+              color:T.danger,
+              clipPath:"polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%)",
+              filter:"drop-shadow(2px 2px 0 rgba(0,0,0,0.5))"
+            }}>
+              🚫 RULED OUT
+            </span>
+          )}
         </div>
-        <div style={{fontSize:11,color:T.muted,marginTop:2}}>{p.iplTeam}</div>
+        
+        <div style={{fontSize:11,color:T.muted,fontFamily:fonts.body}}>
+          {p.iplTeam} • {p.role}
+        </div>
       </div>
-      <div style={{fontFamily:fonts.display,fontSize:18,fontWeight:800,color:T.accent}}>{total}</div>
+      
+      {/* Performance stats - fills the empty space */}
+      <div style={{
+        display:"flex",
+        flexDirection:"column",
+        alignItems:"flex-end",
+        gap:4,
+        minWidth:120
+      }}>
+        {total > 0 ? (
+          <>
+            <div style={{
+              fontFamily:fonts.display,
+              fontSize:24,
+              fontWeight:900,
+              color:T.accent,
+              letterSpacing:1,
+              lineHeight:1
+            }}>
+              {total}
+            </div>
+            <div style={{
+              fontSize:10,
+              color:T.muted,
+              fontFamily:fonts.display,
+              letterSpacing:1,
+              textTransform:"uppercase"
+            }}>
+              {matchesPlayed} {matchesPlayed === 1 ? "match" : "matches"}
+            </div>
+          </>
+        ) : (
+          <button
+            onClick={() => {
+              // Show player breakdown modal or stats
+              alert(`Stats for ${p.name}:\n\nTotal Points: ${total}\nMatches Played: ${matchesPlayed}\n\n(Feature coming soon!)`);
+            }}
+            style={{
+              background:"transparent",
+              border:`2px solid ${team.color}`,
+              color:team.color,
+              padding:"6px 12px",
+              fontFamily:fonts.display,
+              fontWeight:700,
+              fontSize:11,
+              letterSpacing:1.5,
+              cursor:"pointer",
+              clipPath:"polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%)",
+              textTransform:"uppercase"
+            }}
+          >
+            📊 VIEW STATS
+          </button>
+        )}
+      </div>
     </div>
   );
                     })}
