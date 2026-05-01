@@ -1695,29 +1695,29 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin }) {
       </div>
 
       {/* Header */}
-      <div style={{position:"relative",zIndex:10,borderBottom:`1px solid ${T.border}`,backdropFilter:"blur(20px)",background:`${T.bg}CC`}}>
-        <div style={{maxWidth:680,margin:"0 auto",padding:"14px 24px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-          <div style={{display:"flex",alignItems:"center",gap:12}}>
-            <img src="/logo.png" alt="Teekha Bouncer" style={{width:36,height:36,borderRadius:10,objectFit:"contain",boxShadow:`0 0 20px ${T.accent}33`}} />
-            <div>
-              <div style={{fontFamily:fonts.display,fontSize:17,fontWeight:800,color:T.accent,letterSpacing:3,lineHeight:1}}>TEEKHA BOUNCER</div>
-              <div style={{fontFamily:fonts.body,fontSize:9,color:T.muted,letterSpacing:3,marginTop:2}}>FANTASY CRICKET LEAGUE</div>
-            </div>
-          </div>
-          <div style={{display:"flex",alignItems:"center",gap:12}}>
-            <div style={{textAlign:"right"}}>
-              <div style={{fontFamily:fonts.display,fontSize:12,fontWeight:700,color:T.text,letterSpacing:0.5}}>{user?.email?.split("@")[0]}</div>
-              <div style={{fontFamily:fonts.body,fontSize:9,color:T.muted,letterSpacing:1}}>{user?.email?.split("@")[1]}</div>
-            </div>
-            <button onClick={onLogout}
-              style={{fontFamily:fonts.display,fontWeight:700,fontSize:10,letterSpacing:1.5,background:"transparent",border:`1px solid ${T.border}`,borderRadius:8,padding:"6px 14px",color:T.sub,cursor:"pointer",transition:"all 0.2s"}}
-              onMouseEnter={e=>{e.currentTarget.style.borderColor=T.dangerBg;e.currentTarget.style.color=T.danger;}}
-              onMouseLeave={e=>{e.currentTarget.style.borderColor=T.border;e.currentTarget.style.color=T.sub;}}>
-              LOGOUT
-            </button>
-          </div>
-        </div>
+<div style={{position:"relative",zIndex:10,borderBottom:`1px solid ${T.border}`,backdropFilter:"blur(20px)",background:`${T.bg}CC`}}>
+  <div style={{maxWidth:680,margin:"0 auto",padding:"14px 24px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+    <div style={{display:"flex",alignItems:"center",gap:12}}>
+      <img src="/logo.png" alt="Teekha Bouncer" style={{width:36,height:36,borderRadius:10,objectFit:"contain",boxShadow:`0 0 20px ${T.accent}33`}} />
+      <div>
+        <div style={{fontFamily:fonts.display,fontSize:17,fontWeight:800,color:T.accent,letterSpacing:3,lineHeight:1}}>TEEKHA BOUNCER</div>
+        <div style={{fontFamily:fonts.body,fontSize:9,color:T.muted,letterSpacing:3,marginTop:2}}>FANTASY CRICKET LEAGUE</div>
       </div>
+    </div>
+    <div style={{display:"flex",alignItems:"center",gap:12}}>
+      <div style={{textAlign:"right"}}>
+        <div style={{fontFamily:fonts.display,fontSize:12,fontWeight:700,color:T.text,letterSpacing:0.5}}>{user?.email?.split("@")[0]}</div>
+        <div style={{fontFamily:fonts.body,fontSize:9,color:T.muted,letterSpacing:1}}>{user?.email?.split("@")[1]}</div>
+      </div>
+      <button onClick={onLogout}
+        style={{fontFamily:fonts.display,fontWeight:700,fontSize:10,letterSpacing:1.5,background:"transparent",border:`1px solid ${T.border}`,borderRadius:8,padding:"6px 14px",color:T.sub,cursor:"pointer",transition:"all 0.2s"}}
+        onMouseEnter={e=>{e.currentTarget.style.borderColor=T.dangerBg;e.currentTarget.style.color=T.danger;}}
+        onMouseLeave={e=>{e.currentTarget.style.borderColor=T.border;e.currentTarget.style.color=T.sub;}}>
+        LOGOUT
+      </button>
+    </div>
+  </div>
+</div>
 
       {/* Hero */}
       <div style={{position:"relative",zIndex:10,maxWidth:680,margin:"0 auto",padding:"44px 24px 28px"}}>
