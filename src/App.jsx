@@ -2556,13 +2556,13 @@ function CaptainModal({ match, teams, players, assignments, captains, points, my
       {/* Bottom buttons */}
       <div style={{padding:"16px 24px",borderTop:`2px solid ${T.border}`,display:"flex",gap:10,background:T.card}}>
         {!isLocked && unlocked && (
-          <button onClick={()=>withPassword(()=>onSave({...captains,[match.id+"_locked"]:true}))}\
+          <button onClick={()=>withPassword(()=>onSave({...captains,[match.id+"_locked"]:true}))}
             style={{flex:1,background:T.dangerBg,border:`2px solid ${T.danger}`,borderRadius:0,padding:14,color:T.danger,fontFamily:fonts.display,fontWeight:800,fontSize:13,letterSpacing:1.5,cursor:"pointer",clipPath:"polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%)",transition:"all .2s"}}>
             🔒 LOCK
           </button>
         )}
         {isLocked && unlocked && (
-          <button onClick={()=>withPassword(()=>{const u={...captains};delete u[match.id+"_locked"];onSave(u);})}\
+          <button onClick={()=>withPassword(()=>{const u={...captains};delete u[match.id+"_locked"];onSave(u);})}
             style={{flex:1,background:"#2ECC7133",border:`2px solid #2ECC71`,borderRadius:0,padding:14,color:"#2ECC71",fontFamily:fonts.display,fontWeight:800,fontSize:13,letterSpacing:1.5,cursor:"pointer",clipPath:"polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%)",transition:"all .2s"}}>
             🔓 UNLOCK
           </button>
