@@ -4977,7 +4977,7 @@ ${aiMatchText.slice(0, 3000)}`;
                     <div style={{fontFamily:fonts.display,fontSize:14,fontWeight:800,color:team.color,letterSpacing:2,textTransform:"uppercase",marginBottom:10,borderBottom:`2px solid ${team.color}`,paddingBottom:6}}>
                       {role} ({players.length})
                     </div>
-                    {filtered.map(p => {
+                    {players.map(p => {
   const isRuledOut = ruledOut.includes(p.id);
   
   // Calculate player total - ONLY for matches while on THIS team
