@@ -4966,7 +4966,7 @@ ${aiMatchText.slice(0, 3000)}`;
                     <div style={{fontFamily:fonts.display,fontSize:14,fontWeight:800,color:team.color,letterSpacing:2,textTransform:"uppercase",marginBottom:10,borderBottom:`2px solid ${team.color}`,paddingBottom:6}}>
                       {role} ({players.length})
                     </div>
-                    {players.map(p => {
+                    {filtered.map(p => {
   const isRuledOut = ruledOut.includes(p.id);
   
   // Calculate player total - ONLY for matches while on THIS team
@@ -5319,6 +5319,123 @@ ${aiMatchText.slice(0, 3000)}`;
       </div>
     );
   })()}
+
+{/* ALL PLAYERS MANAGEMENT MODAL */}
+  {showAllPlayersModal && (
+    <div onClick={() => setShowAllPlayersModal(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.92)",zIndex:500,display:"flex",alignItems:"center",justifyContent:"center",padding:20,overflowY:"auto"}}>
+      <div onClick={e => e.stopPropagation()} style={{background:T.bg,border:`3px solid ${T.accent}`,borderRadius:0,maxWidth:1200,width:"100%",maxHeight:"90vh",overflow:"hidden",boxShadow:`8px 8px 0 ${T.accent}66`}}>
+        
+        {/* Header */}
+        <div style={{background:T.accent,padding:"20px 24px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div style={{fontFamily:fonts.display,fontSize:24,fontWeight:900,color:T.bg,letterSpacing:3,textTransform:"uppercase"}}>
+            ALL PLAYERS MANAGEMENT
+          </div>
+          <button onClick={() => setShowAllPlayersModal(false)} style={{background:"transparent",border:"none",color:T.bg,fontSize:32,cursor:"pointer",lineHeight:1,fontWeight:300}}>×</button>
+        </div>
+
+        {/* Filters */}
+        <div style={{padding:"16px 24px",background:T.card,borderBottom:`2px solid ${T.border}`,display:"flex",gap:12,flexWrap:"wrap"}}>
+          <input
+            type="text"
+            placeholder="Search name or franchise..."
+            value={search}
+            onChange={e=>setSearch(e.target.value)}
+            style={{flex:1,minWidth:200,background:T.bg,border:`2px solid ${T.border}`,borderRadius:0,padding:"10px 14px",color:T.text,fontSize:14,fontFamily:fonts.body,outline:"none"}}
+          />
+          <select value={roleFilter} onChange={e=>setRoleFilter(e.target.value)} style={{background:T.bg,border:`2px solid ${T.border}`,borderRadius:0,padding:"10px 14px",color:T.text,fontSize:13,fontFamily:fonts.display,fontWeight:700,letterSpacing:1,cursor:"pointer"}}>
+            {ROLES.map(r=><option key={r}>{r}</option>)}
+          </select>
+          <select value={teamFilter||"All Teams"} onChange={e=>setTeamFilter(e.target.value==="All Teams"?null:e.target.value)} style={{background:T.bg,border:`2px solid ${T.border}`,borderRadius:0,padding:"10px 14px",color:T.text,fontSize:13,fontFamily:fonts.display,fontWeight:700,letterSpacing:1,cursor:"pointer"}}>
+            <option>All Teams</option>
+            {teams.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
+            <option value="unassigned">Unassigned</option>
+          </select>
+        </div>
+
+        {/* Bulk actions */}
+        {unlocked && selectedBulk.length > 0 && (
+          <div style={{background:T.accentBg,padding:"12px 24px",borderBottom:`2px solid ${T.accentBorder}`,display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+            <div style={{fontSize:13,color:T.accent,fontWeight:700,fontFamily:fonts.display,letterSpacing:1}}>{selectedBulk.length} SELECTED</div>
+            {[["platinum","PLATINUM","#B0BEC5","#4A5E7833","#4A5E7866"],["gold","GOLD","#F5A623","#F5A62322","#F5A62366"],["silver","SILVER","#94A3B8","#94A3B822","#94A3B855"],["bronze","BRONZE","#CD7F32","#CD7F3222","#CD7F3255"]].map(([t,label,col,bg,br])=>(
+              <button key={t} onClick={()=>{const updated=players.map(p=>selectedBulk.includes(p.id)?{...p,tier:t}:p);setPlayers(updated);storeSet("players",updated);setSelectedBulk([]);}} style={{background:bg,border:`2px solid ${br}`,borderRadius:0,padding:"6px 12px",cursor:"pointer",fontSize:11,fontWeight:800,fontFamily:fonts.display,color:col,letterSpacing:1.5,clipPath:"polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%)"}}>{label}</button>
+            ))}
+            <button onClick={()=>{const updated=players.map(p=>selectedBulk.includes(p.id)?{...p,tier:""}:p);setPlayers(updated);storeSet("players",updated);setSelectedBulk([]);}} style={{background:"transparent",border:`2px solid ${T.border}`,borderRadius:0,padding:"6px 12px",cursor:"pointer",fontSize:11,fontFamily:fonts.display,color:T.muted,letterSpacing:1.5}}>CLEAR TIER</button>
+            <button onClick={()=>setSelectedBulk([])} style={{background:"transparent",border:"none",color:T.muted,cursor:"pointer",fontSize:11,marginLeft:"auto",fontFamily:fonts.display,letterSpacing:1}}>DESELECT ALL</button>
+          </div>
+        )}
+
+        {/* Players list */}
+        <div style={{padding:"20px 24px",overflowY:"auto",maxHeight:"calc(90vh - 240px)"}}>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {filteredPlayers.map(p => {
+              const aTeam = teams.find(t=>t.id===assignments[p.id]);
+              const isAssigned = !!assignments[p.id];
+              const isRuledOut = ruledOut.includes(p.id);
+              const isSafe = isAssigned && isPlayerSafeForTeam(assignments[p.id], p.id);
+              
+              return (
+                <div key={p.id} style={{
+                  padding:"12px 16px",
+                  background:T.card,
+                  borderRadius:0,
+                  borderLeft:`5px solid ${isRuledOut?T.danger:aTeam?aTeam.color:T.border}`,
+                  border:`2px solid ${isRuledOut?T.danger+"44":aTeam?aTeam.color+"44":T.border}`,
+                  display:"flex",
+                  alignItems:"center",
+                  gap:12,
+                  flexWrap:"wrap"
+                }}>
+                  {/* Checkbox */}
+                  {unlocked && (
+                    <input type="checkbox" checked={selectedBulk.includes(p.id)} onChange={e=>setSelectedBulk(prev=>e.target.checked?[...prev,p.id]:prev.filter(x=>x!==p.id))} style={{width:16,height:16,cursor:"pointer",accentColor:T.accent,flexShrink:0}} />
+                  )}
+                  
+                  {/* Player info */}
+                  <div style={{flex:1,minWidth:200}}>
+                    <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:4}}>
+                      <span style={{fontFamily:fonts.display,fontSize:15,fontWeight:800,color:isRuledOut?T.danger:T.text,letterSpacing:1,textDecoration:isRuledOut?"line-through":"none"}}>{p.name}</span>
+                      {p.tier && <span style={{fontSize:9,fontWeight:800,letterSpacing:1,padding:"2px 6px",fontFamily:fonts.display,textTransform:"uppercase",background:p.tier==="platinum"?"#4A5E7833":p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":"#CD7F3222",border:`1px solid ${p.tier==="platinum"?"#4A5E7866":p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":"#CD7F3255"}`,color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32"}}>{p.tier.toUpperCase()}</span>}
+                      {isRuledOut && <span style={{fontSize:10,background:T.dangerBg,color:T.danger,padding:"2px 6px",fontFamily:fonts.display,fontWeight:800,letterSpacing:1}}>🚫 RULED OUT</span>}
+                      {isSafe && <span style={{fontSize:10,background:"#2ECC7122",border:"1px solid #2ECC7144",color:"#2ECC71",padding:"2px 6px",fontFamily:fonts.display,fontWeight:700,letterSpacing:1}}>🛡️ SAFE</span>}
+                    </div>
+                    <div style={{fontSize:11,color:T.muted,fontFamily:fonts.body}}>
+                      {p.iplTeam} • {p.role} {isAssigned && <span style={{marginLeft:8,color:aTeam?.color,fontWeight:700}}>→ {aTeam?.name}</span>}
+                    </div>
+                  </div>
+
+                  {/* Team assignment */}
+                  <select
+                    value={assignments[p.id]||""}
+                    onChange={e=>assignPlayer(p.id,e.target.value)}
+                    disabled={!unlocked}
+                    style={{background:aTeam?aTeam.color+"22":T.card,border:`2px solid ${aTeam?aTeam.color:T.border}`,borderRadius:0,padding:"8px 12px",color:aTeam?aTeam.color:T.muted,fontSize:12,fontFamily:fonts.display,fontWeight:700,letterSpacing:1,cursor:unlocked?"pointer":"not-allowed",minWidth:150,opacity:unlocked?1:0.6}}
+                  >
+                    <option value="">{isAssigned?"Move to…":"— Assign —"}</option>
+                    {teams.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
+                  </select>
+
+                  {/* Action buttons */}
+                  {unlocked && (
+                    <div style={{display:"flex",gap:6,flexShrink:0}}>
+                      {isAssigned && (
+                        <button onClick={()=>removePlayer(p.id)} style={{background:T.dangerBg,border:`2px solid ${T.danger}`,color:T.danger,borderRadius:0,padding:"6px 10px",cursor:"pointer",fontSize:12,fontFamily:fonts.display,fontWeight:700}}>✕</button>
+                      )}
+                      <button onClick={()=>withPassword(()=>setEditPlayer(p))} style={{background:T.infoBg,border:`2px solid ${T.info}`,color:T.info,borderRadius:0,padding:"6px 10px",cursor:"pointer",fontSize:12,fontFamily:fonts.display,fontWeight:700}}>✏️</button>
+                      {isAssigned && (
+                        <button onClick={()=>toggleSafePlayer(assignments[p.id],p.id)} style={{background:isSafe?"#2ECC7133":"transparent",border:`2px solid ${isSafe?"#2ECC71":T.border}`,color:isSafe?"#2ECC71":T.muted,borderRadius:0,padding:"6px 10px",cursor:"pointer",fontSize:12}}>🛡️</button>
+                      )}
+                      <button onClick={()=>deletePlayer(p.id)} style={{background:T.dangerBg,border:`2px solid ${T.danger}`,color:T.danger,borderRadius:0,padding:"6px 10px",cursor:"pointer",fontSize:11,fontFamily:fonts.display,fontWeight:700}}>🗑️</button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  )}
+  
 </>}
   
             </div>
