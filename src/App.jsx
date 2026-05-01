@@ -2753,6 +2753,29 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
     })();
   }, []);
 
+  // ── AUTO-BACKUP SYSTEM ─────────────────────────────────────────────────
+  useEffect(() => {
+    // Only backup when we have actual player data loaded
+    if (players.length > 0) {
+      const timestamp = Date.now();
+      const backupKey = `tb_backup_p1_${timestamp}`;
+      const currentData = localStorage.getItem('tb_appdata_p1');
+      
+      if (currentData && currentData !== 'null') {
+        localStorage.setItem(backupKey, currentData);
+        console.log(`✅ Auto-backup created: ${backupKey}`);
+        
+        // Keep only last 5 backups to save space
+        const allBackups = Object.keys(localStorage)
+          .filter(k => k.startsWith('tb_backup_p1_'))
+          .sort();
+        if (allBackups.length > 5) {
+          allBackups.slice(0, -5).forEach(k => localStorage.removeItem(k));
+        }
+      }
+    }
+  }, [players]);
+
   // Auto-navigate admin to setup when no teams exist
   useEffect(() => {
     if (!appReady) return;
