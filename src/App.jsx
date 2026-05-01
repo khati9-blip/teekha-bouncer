@@ -516,17 +516,18 @@ const css = `
   @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Barlow+Condensed:wght@400;600;700;800&display=swap');
   *{box-sizing:border-box;margin:0;padding:0;}
   :root{--bg:#0C0C0F;--surface:#111118;--card:#111118;--border:#222230;--gold:#C9A84C;--text:#E8E0CC;--muted:#3A3A52;--accent:#4F8EF7;}
-  body{font-family:'Barlow Condensed',sans-serif;background:var(--bg);color:var(--text); font-size:14px;}
-
-  table { width: 100%; overflow-x: auto; display: block; }
-  
-  @media (max-width: 600px) {
-    div[style*="maxWidth:760px"], div[style*="max-width:760px"] {
-      max-width: 96vw !important;
-      margin: 10px !important;
-    }
-    th, td { font-size: 13px !important; padding: 8px 4px !important; }
-    input, select, button, textarea { font-size: 15px !important; }
+  body{font-family:'Barlow Condensed',sans-serif;background:var(--bg);color:var(--text);}
+  select,input{font-family:inherit;}
+  ::-webkit-scrollbar{width:6px;}::-webkit-scrollbar-track{background:var(--surface);}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+  .fade-in{animation:fadeIn .3s ease;}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+  .desk-only{display:inline-flex}
+  .mob-only{display:none}
+  @media(max-width:600px){
+    .desk-only{display:none!important}
+    .mob-only{display:inline-flex!important}
   }
 `;
 
