@@ -4538,19 +4538,25 @@ ${aiMatchText.slice(0, 3000)}`;
         {showPwModal&&<PasswordModal storedHash={pwHash} recoveryHash={recoveryHash} onSuccess={handlePwSuccess} onClose={()=>{setShowPwModal(false);setPendingAction(null);}} />}
 
         {/* TOP BAR */}
-<div style={{background:T.bg,borderBottom:`2px solid ${T.accent}`,padding:"10px 16px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:50,boxShadow:"0 2px 10px rgba(0,0,0,0.5)"}}>
-  <div style={{display:"flex",alignItems:"center",gap:8}}>
-    <button onClick={()=>setDrawerOpen(true)} style={{background:"transparent",border:"none",cursor:"pointer",padding:"6px 4px",display:"flex",flexDirection:"column",justifyContent:"center",gap:4,flexShrink:0,position:"relative"}}>
-      <span style={{display:"block",width:20,height:2,background:T.accent,borderRadius:2}} />
-      <span style={{display:"block",width:20,height:2,background:T.accent,borderRadius:2}} />
-      <span style={{display:"block",width:20,height:2,background:T.accent,borderRadius:2}} />
-      {(pendingVote || unreadNotifCount > 0) && <span style={{position:"absolute",top:2,right:2,width:8,height:8,background:"#FF3D5A",borderRadius:"50%"}} />}
+<div style={{background:"linear-gradient(135deg, #0A0E14 0%, #1A1F2E 100%)",borderBottom:`4px solid ${T.accent}`,padding:"12px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:50,boxShadow:"0 4px 20px rgba(245,158,11,0.3)"}}>
+  <div style={{display:"flex",alignItems:"center",gap:10}}>
+    <button onClick={()=>setDrawerOpen(true)} style={{background:T.accent+"22",border:`2px solid ${T.accent}`,cursor:"pointer",padding:"8px",display:"flex",flexDirection:"column",justifyContent:"center",gap:4,flexShrink:0,position:"relative",borderRadius:0,clipPath:"polygon(3px 0%, 100% 0%, calc(100% - 3px) 100%, 0% 100%)"}}>
+      <span style={{display:"block",width:20,height:2,background:T.accent,borderRadius:1}} />
+      <span style={{display:"block",width:20,height:2,background:T.accent,borderRadius:1}} />
+      <span style={{display:"block",width:20,height:2,background:T.accent,borderRadius:1}} />
+      {(pendingVote || unreadNotifCount > 0) && <span style={{position:"absolute",top:-2,right:-2,width:10,height:10,background:"#FF3D5A",borderRadius:"50%",border:"2px solid #0A0E14",boxShadow:"0 0 8px #FF3D5A"}} />}
     </button>
-    <div style={{display:"flex",alignItems:"center",gap:10,cursor:"pointer"}} onClick={onLeave} title="Back to pitches">
-      <img src="/logo.png" alt="Teekha Bouncer" style={{height:36,width:36,objectFit:"contain",borderRadius:0}} />
+    <div style={{display:"flex",alignItems:"center",gap:12,cursor:"pointer"}} onClick={onLeave} title="Back to pitches">
+      <div style={{width:42,height:42,background:`linear-gradient(135deg, ${T.accent} 0%, #D97706 100%)`,display:"flex",alignItems:"center",justifyContent:"center",clipPath:"polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%)",boxShadow:`3px 3px 0 rgba(217,119,6,0.4)`}}>
+        <img src="/logo.png" alt="Teekha Bouncer" style={{height:30,width:30,objectFit:"contain",filter:"drop-shadow(1px 1px 0 rgba(0,0,0,0.3))"}} />
+      </div>
       <div>
-        <div style={{fontFamily:fonts.display,fontWeight:800,fontSize:15,color:T.accent,letterSpacing:2,lineHeight:1,textTransform:"uppercase"}}>TEEKHA BOUNCER</div>
-        <div style={{fontSize:9,color:T.muted,letterSpacing:1,marginTop:2,fontFamily:fonts.body}}>{pitch ? pitch.name : ""} {user ? "• "+user.email.split("@")[0] : ""}</div>
+        <div style={{fontFamily:fonts.display,fontWeight:900,fontSize:16,color:T.accent,letterSpacing:3,lineHeight:1,textTransform:"uppercase",textShadow:"2px 2px 0 rgba(245,158,11,0.2)"}}>TEEKHA BOUNCER</div>
+        <div style={{fontSize:10,color:T.muted,letterSpacing:1.5,marginTop:4,fontFamily:fonts.body,fontWeight:700}}>
+          <span style={{color:T.accent}}>{pitch ? pitch.name.toUpperCase() : ""}</span>
+          {pitch && user && <span style={{color:T.muted}}> • </span>}
+          {user && <span style={{color:T.sub}}>{user.email.split("@")[0]}</span>}
+        </div>
       </div>
     </div>
   </div>
