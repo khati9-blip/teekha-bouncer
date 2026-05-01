@@ -5121,27 +5121,19 @@ ${aiMatchText.slice(0, 3000)}`;
             </div>
           </button>
         ) : (
-          <button
-            onClick={() => {
-              // Show player breakdown modal or stats
-              alert(`Stats for ${p.name}:\n\nTotal Points: ${total}\nMatches Played: ${matchesPlayed}\n\n(Feature coming soon!)`);
-            }}
-            style={{
-              background:"transparent",
-              border:`2px solid ${team.color}`,
-              color:team.color,
-              padding:"6px 12px",
-              fontFamily:fonts.display,
-              fontWeight:700,
+          <div style={{
+            textAlign:"right"
+          }}>
+            <div style={{
               fontSize:11,
-              letterSpacing:1.5,
-              cursor:"pointer",
-              clipPath:"polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%)",
+              color:T.muted,
+              fontFamily:fonts.display,
+              letterSpacing:1,
               textTransform:"uppercase"
-            }}
-          >
-            📊 VIEW STATS
-          </button>
+            }}>
+              No Stats Yet
+            </div>
+          </div>
         )}
       </div>
     </div>
@@ -5157,11 +5149,29 @@ ${aiMatchText.slice(0, 3000)}`;
     );
   })()}
 {/* PLAYER STATS MODAL */}
-  {playerStatsModal && (() => {
+  {{playerStatsModal && (() => {
     const p = playerStatsModal;
-    const breakdown = getPlayerBreakdown(p.id);
-    const total = breakdown.reduce((s,m)=>s+(m.total||0),0);
     const assignedTeam = assignments[p.id] ? teams.find(t=>t.id===assignments[p.id]) : null;
+    
+    // Calculate stats from points data directly
+    let total = 0;
+    const breakdown = [];
+    
+    if (points[p.id] && assignedTeam) {
+      for (const [matchId, matchData] of Object.entries(points[p.id])) {
+        const cap = captains[`${matchId}_${assignedTeam.id}`] || {};
+        let pts = matchData.base || 0;
+        if (cap.captain === p.id) pts *= 2;
+        else if (cap.vc === p.id) pts *= 1.5;
+        total += Math.round(pts);
+        
+        breakdown.push({
+          matchId: matchId,
+          total: Math.round(pts),
+          ...matchData
+        });
+      }
+    }
     
     return (
       <div onClick={() => setPlayerStatsModal(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.92)",zIndex:400,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
