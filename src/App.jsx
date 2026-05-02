@@ -6490,7 +6490,6 @@ onChange={e=>setPlayerSearch(e.target.value)}
           </div>
         </div>         
       </div>             
-    )}  
 
         {/* LEAGUE RULES PANEL */}
         {showRulesPanel && (
