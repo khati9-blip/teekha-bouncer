@@ -6940,7 +6940,7 @@ onChange={e=>setPlayerSearch(e.target.value)}
               <button onClick={()=>{setShowRulesPanel(true);setDrawerOpen(false);}} style={{width:"100%",background:"transparent",border:"none",padding:"10px 14px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12}}>
                 <span style={{fontSize:20}}>📋</span>
                 <div style={{flex:1}}>
-                  <div style={{fontFamily:fonts.body,fontWeight:600,fontSize:14,color:T.text}}>Points & Rules</div>
+                  <div style={{fontFamily:fonts.display,fontWeight:800,fontSize:14,color:T.text,letterSpacing:1.5,textTransform:"uppercase"}}>Points & Rules</div>
                   <div style={{fontSize:11,color:T.muted}}>Points system & league timing</div>
                 </div>
                 {pendingVote && <span style={{width:8,height:8,background:"#FF3D5A",borderRadius:"50%",flexShrink:0}} />}
@@ -6951,7 +6951,7 @@ onChange={e=>setPlayerSearch(e.target.value)}
                 <button onClick={()=>{setShowFixOwnership(true);setDrawerOpen(false);}} style={{width:"100%",background:"transparent",border:"none",padding:"10px 14px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12}}>
                   <span style={{fontSize:20}}>🔧</span>
                   <div style={{flex:1}}>
-                    <div style={{fontFamily:fonts.body,fontWeight:600,fontSize:14,color:T.text}}>Fix Ownership Log</div>
+                    <div style={{fontFamily:fonts.display,fontWeight:800,fontSize:14,color:T.text,letterSpacing:1.5,textTransform:"uppercase"}}>Fix Ownership Log</div>
                     <div style={{fontSize:11,color:T.muted}}>Fix player points attribution errors</div>
                   </div>
                 </button>
@@ -6962,7 +6962,7 @@ onChange={e=>setPlayerSearch(e.target.value)}
                 <div style={{padding:"8px 14px 0"}}>
                   <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",background:T.bg,borderRadius:10,border:`1px solid ${T.border}`}}>
                     <div>
-                      <div style={{fontFamily:fonts.body,fontWeight:700,fontSize:13,color:T.text}}>👁 Guest Access</div>
+                      <div style={{fontFamily:fonts.display,fontWeight:800,fontSize:13,color:T.text,letterSpacing:1.5,textTransform:"uppercase"}}>👁 Guest Access</div>
                       <div style={{fontSize:10,color:T.muted,marginTop:2}}>Allow guests to view this pitch</div>
                     </div>
                     <button onClick={async()=>{

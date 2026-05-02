@@ -232,7 +232,7 @@ export default function AllTimeXI({ teams, players, assignments, points, snatch,
                       <PlayerImage player={p} size={36} borderRadius={9} teamColor={cardColor} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                          <span style={{ fontFamily: fonts.body, fontWeight: 700, fontSize: 14, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
+                          <span style={{ fontFamily: fonts.display, fontWeight: 900, fontSize: 16, letterSpacing: 1, textTransform: "uppercase", color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
                           {/* Show team badge in Best of League view */}
                           {isBestOfLeague && p.teamName && (
                             <span style={{ fontFamily: fonts.display, fontSize: 9, fontWeight: 700, color: p.teamColor, background: p.teamColor + "18", border: `1px solid ${p.teamColor}33`, borderRadius: 10, padding: "1px 7px" }}>{p.teamName}</span>
@@ -270,7 +270,7 @@ export default function AllTimeXI({ teams, players, assignments, points, snatch,
                         <div key={p.id} style={{ background: T.card, borderRadius: 8, border: `1px solid ${T.border}`, padding: "8px 14px", display: "flex", alignItems: "center", gap: 10, opacity: 0.65 }}>
                           <div style={{ fontFamily: fonts.display, fontSize: 11, color: T.muted, minWidth: 28, textAlign: "center" }}>#{i + 12}</div>
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontFamily: fonts.body, fontWeight: 600, fontSize: 13, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</div>
+                            <div style={{ fontFamily: fonts.display, fontWeight: 900, fontSize: 16, letterSpacing: 1, textTransform: "uppercase", color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</div>
                             <div style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 1 }}>
                               <span style={{ fontFamily: fonts.display, fontSize: 8, fontWeight: 700, color: roleColor, background: roleColor + "14", border: `1px solid ${roleColor}22`, borderRadius: 4, padding: "1px 4px" }}>{ROLE_SHORT[p.role] || p.role}</span>
                               {p.iplTeam && <span style={{ fontFamily: fonts.body, fontSize: 10, color: T.muted }}>{p.iplTeam}</span>}

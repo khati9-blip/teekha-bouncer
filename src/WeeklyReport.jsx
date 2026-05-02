@@ -236,7 +236,7 @@ function PlayerBreakdownDrawer({ player, weekMatches, points, captains, teams, a
           <div style={{ padding: "10px 20px 14px", display: "flex", alignItems: "center", gap: 12, borderBottom: `1px solid ${T.border}` }}>
             <PlayerImage player={player} size={46} borderRadius={12} teamColor={team?.color} />
             <div style={{ flex: 1 }}>
-              <div style={{ fontFamily: fonts.display, fontWeight: 700, fontSize: 16, color: T.text }}>{player.name}</div>
+              <div style={{ fontFamily: fonts.display, fontWeight: 900, fontSize: 16, letterSpacing: 1, textTransform: "uppercase", color: T.text }}>{player.name}</div>
               <div style={{ fontFamily: fonts.body, fontSize: 11, color: T.muted, marginTop: 1 }}>
                 {player.role}{team && <span style={{ color: team.color }}> · {team.name}</span>}
               </div>

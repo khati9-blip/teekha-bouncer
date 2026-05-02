@@ -75,7 +75,7 @@ function H2HStats({ teams, matches, points, assignments, players, captains, owne
       {playerRows.map(p => (
         <div key={p.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px 0", borderBottom: `1px solid ${T.border}22` }}>
           <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ fontFamily: fonts.body, fontSize: 12, color: T.text, fontWeight: p.role ? 700 : 400, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+            <div style={{ fontFamily: fonts.display, fontSize: 16, fontWeight: 900, letterSpacing: 1, textTransform: "uppercase", color: T.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {p.name}
               {p.role && <span style={{ fontFamily: fonts.display, fontSize: 9, color: T.accent, background: T.accentBg, borderRadius: 4, padding: "1px 4px", marginLeft: 4 }}>{p.role}</span>}
             </div>

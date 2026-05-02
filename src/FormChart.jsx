@@ -174,7 +174,7 @@ function FormChart({ players, assignments, points, teams, matches, snatch }) {
               <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                    <span style={{ fontFamily: fonts.body, fontWeight: 700, fontSize: 14, color: T.text }}>{p.name}</span>
+                    <span style={{ fontFamily: fonts.display, fontWeight: 900, fontSize: 16, letterSpacing: 1, textTransform: "uppercase", color: T.text }}>{p.name}</span>
                     <span style={{ fontFamily: fonts.body, fontSize: 11, color: p.tc, background: p.tc + "22", padding: "2px 8px", borderRadius: 10 }}>{p.tn}</span>
                     <SnatchBadge status={p.status} />
                   </div>

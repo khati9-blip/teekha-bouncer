@@ -233,7 +233,7 @@ export default function MVPStats({ players, teams, assignments, points, captains
                 <div style={{ width: 8, height: 8, borderRadius: "50%", background: row.team.color, flexShrink: 0 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                    <span style={{ fontFamily: fonts.body, fontWeight: 700, fontSize: 14, color: T.text }}>{row.player.name}</span>
+                    <span style={{ fontFamily: fonts.display, fontWeight: 900, fontSize: 16, letterSpacing: 1, textTransform: "uppercase", color: T.text }}>{row.player.name}</span>
                     <TierBadge tier={row.player.tier} />
                     <span style={{ fontFamily: fonts.display, fontSize: 10, color: row.team.color, fontWeight: 700 }}>{row.team.name}</span>
                   </div>
@@ -261,7 +261,7 @@ export default function MVPStats({ players, teams, assignments, points, captains
                 <div style={{ width: 8, height: 8, borderRadius: "50%", background: row.team.color, flexShrink: 0 }} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                    <span style={{ fontFamily: fonts.body, fontWeight: 700, fontSize: 14, color: T.text }}>{row.player.name}</span>
+                    <span style={{ fontFamily: fonts.display, fontWeight: 900, fontSize: 16, letterSpacing: 1, textTransform: "uppercase", color: T.text }}>{row.player.name}</span>
                     <TierBadge tier={row.player.tier} />
                     <span style={{ fontFamily: fonts.display, fontSize: 10, color: row.team.color, fontWeight: 700 }}>{row.team.name}</span>
                     {row.status === "away" && <span style={{ fontFamily: fonts.display, fontSize: 8, fontWeight: 700, color: T.purple, background: T.purpleBg, border: `1px solid ${T.purple}33`, borderRadius: 4, padding: "1px 5px" }}>⚡ SNATCHED</span>}
