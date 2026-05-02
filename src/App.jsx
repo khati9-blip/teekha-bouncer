@@ -6322,6 +6322,7 @@ onChange={e=>setPlayerSearch(e.target.value)}
                                     {p.status==="returned"&&<span style={{marginRight:4}}>↩️</span>}
                                     {ruledOut.includes(p.id)&&<span style={{marginRight:4}}>🚫</span>}
                                     {p.name}
+                                    {p.tier && <span style={{fontSize:9,fontWeight:800,letterSpacing:1,padding:"2px 6px",marginLeft:6,fontFamily:fonts.display,textTransform:"uppercase",background:p.tier==="platinum"?"#4A5E7833":p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":"#CD7F3222",border:`1px solid ${p.tier==="platinum"?"#4A5E7866":p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":"#CD7F3255"}`,color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32",clipPath:"polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%)"}}>{p.tier.toUpperCase()}</span>}
                                     {ruledOut.includes(p.id)&&<span style={{fontSize:9,color:T.danger,marginLeft:6,textDecoration:"none",fontWeight:700}}>RULED OUT</span>}
                                     {!ruledOut.includes(p.id)&&p.status==="traded-out"&&<span style={{fontSize:9,color:T.danger,marginLeft:6,textDecoration:"none",fontWeight:700}}>→ {p.tradedFor}</span>}
                                     {!ruledOut.includes(p.id)&&p.status==="traded-in"&&<span style={{fontSize:9,color:T.success,marginLeft:6,textDecoration:"none",fontWeight:700}}>FROM POOL</span>}
