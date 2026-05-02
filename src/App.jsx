@@ -4245,19 +4245,42 @@ ${aiMatchText.slice(0, 3000)}`;
 
   const shareLeaderboard = async () => {
     const element = document.getElementById('leaderboard-capture');
-    if (!element) return;
+    if (!element) {
+      alert('❌ Leaderboard not found');
+      return;
+    }
+    
+    // Load html2canvas dynamically if not already loaded
+    if (!window.html2canvas) {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+      document.head.appendChild(script);
+      
+      await new Promise((resolve, reject) => {
+        script.onload = resolve;
+        script.onerror = () => reject(new Error('Failed to load html2canvas'));
+        setTimeout(() => reject(new Error('Timeout loading html2canvas')), 5000);
+      });
+    }
     
     try {
-      const canvas = await html2canvas(element, {
+      const canvas = await window.html2canvas(element, {
         backgroundColor: '#0F0800',
         scale: 2,
         logging: false,
+        useCORS: true,
       });
       
       canvas.toBlob(async (blob) => {
+        if (!blob) {
+          alert('❌ Failed to create image');
+          return;
+        }
+        
         const file = new File([blob], 'leaderboard.png', { type: 'image/png' });
         
-        if (navigator.share && navigator.canShare({ files: [file] })) {
+        // Try Web Share API
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
           try {
             await navigator.share({
               files: [file],
@@ -4266,22 +4289,27 @@ ${aiMatchText.slice(0, 3000)}`;
             });
             return;
           } catch (err) {
-            console.log('Share cancelled');
+            if (err.name !== 'AbortError') {
+              console.error('Share failed:', err);
+            }
           }
         }
         
+        // Fallback: Download
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = 'teekha-bouncer-leaderboard.png';
+        document.body.appendChild(a);
         a.click();
+        document.body.removeChild(a);
         URL.revokeObjectURL(url);
         alert('📸 Leaderboard downloaded! Share it on WhatsApp.');
       }, 'image/png');
       
     } catch (err) {
-      console.error('Screenshot failed:', err);
-      alert('❌ Could not capture. Try again!');
+      console.error('Capture error:', err);
+      alert('❌ Screenshot failed: ' + err.message);
     }
   };
 
@@ -4521,7 +4549,6 @@ ${aiMatchText.slice(0, 3000)}`;
 
   if (!appReady) return (
     <>
-      <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
       <style>{css}</style>
       <div style={{minHeight:"100vh",background:"var(--bg)"}}>bg)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16}}>
         <img src="/logo.png" style={{width:80,height:80,objectFit:"contain",borderRadius:12,animation:"spin 2s linear infinite"}} />
