@@ -7054,7 +7054,6 @@ onChange={e=>setPlayerSearch(e.target.value)}
       })}
     </div>
   )}
-</div>
               <div style={{flex:1,padding:"12px 8px",overflowY:"auto"}}>
                 <button onClick={()=>{nav("form");setDrawerOpen(false);}} style={{width:"100%",background:page==="form"?T.accent:"transparent",border:page==="form"?"none":`2px solid ${T.border}`,clipPath:page==="form"?"polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)":"none",padding:"14px 16px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14,marginBottom:8,filter:page==="form"?"drop-shadow(3px 3px 0 #8B4500)":"none"}}>
   <span style={{fontSize:26}}>📈</span>
