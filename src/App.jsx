@@ -1253,7 +1253,7 @@ placeholder="Paste scorecard text here... (e.g. V Kohli c Maxwell b Bumrah 82 (5
           <button onClick={submit} style={{flex:2,background:`linear-gradient(135deg,${T.accent},${T.accentDim})`,border:"none",borderRadius:8,padding:11,color:T.bg,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>✅ SAVE POINTS ({playingPlayers.length} players)</button>
         </div>
       </div>
-    </div></>
+    </div>
   );
 }
 
@@ -4608,7 +4608,15 @@ ${aiMatchText.slice(0, 3000)}`;
   if (!appReady) return (
     <>
       <style>{css}</style>
-      <div style={{minHeight:"100vh",background:"var(--bg)"}}>bg)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16}}>
+      <div style={{
+        minHeight:"100vh",
+        background:"var(--bg)",
+        display:"flex",
+        flexDirection:"column",
+        alignItems:"center",
+        justifyContent:"center",
+        gap:16
+      }}>
         <img src="/logo.png" style={{width:80,height:80,objectFit:"contain",borderRadius:12,animation:"spin 2s linear infinite"}} />
         <div style={{fontFamily:fonts.display,fontSize:22,fontWeight:700,color:T.accent,letterSpacing:3}}>TEEKHA BOUNCER</div>
         <div style={{color:T.muted,fontSize:14,letterSpacing:1}}>Loading league data…</div>
