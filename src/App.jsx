@@ -4570,7 +4570,13 @@ ${aiMatchText.slice(0, 3000)}`;
       <span className="desk-only">{unlocked?"🔓 ON":"🔒 OFF"}</span>
       <span className="mob-only">{unlocked?"🔓":"🔒"}</span>
     </button>
-    <button onClick={()=>withPassword(()=>{if(!confirm("Reset ALL data? This cannot be undone!"))return;["teams","players","assignments","matches","captains","points","page","pwhash"].forEach(k=>storeDel(k));window.location.reload();})} style={{background:"transparent",border:`2px solid ${T.border}`,color:T.muted,padding:"6px 10px",cursor:"pointer"}}>⚙️</button>
+    <button 
+      onClick={()=>withPassword(()=>{if(!confirm("Reset ALL data? This cannot be undone!"))return;["teams","players","assignments","matches","captains","points","page","pwhash"].forEach(k=>storeDel(k));window.location.reload();})} 
+      title="Reset all pitch data (admin only)"
+      style={{background:"#7A6050",border:"none",color:"#F5EBD8",clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)",padding:"7px 14px",cursor:"pointer",fontFamily:fonts.display,fontWeight:800,fontSize:11,letterSpacing:1.5,filter:"drop-shadow(2px 2px 0 #3D2E10)"}}>
+      <span className="desk-only">⚙️ RESET</span>
+      <span className="mob-only">⚙️</span>
+    </button>
     <button onClick={onLogout} style={{background:"#FF3D5A",border:"none",color:"#FFFFFF",clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)",padding:"7px 14px",cursor:"pointer",fontFamily:fonts.display,fontWeight:800,fontSize:11,letterSpacing:1.5,filter:"drop-shadow(2px 2px 0 #8B0000)"}}>
       <span className="desk-only">LOGOUT</span>
       <span className="mob-only" style={{fontSize:11}}>OUT</span>
