@@ -1363,22 +1363,18 @@ function SplashScreen({ onLogin }) {
   if (mode === 'splash') return (
   <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#0A0E14 0%,#141A24 50%,#0A0E14 100%)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"20px",fontFamily:fonts.body,position:"relative",overflow:"hidden"}}>
     <style>{`*{box-sizing:border-box;margin:0;padding:0;}body{background:#0C0C0F;}`}</style>
-    
-    {/* Animated background glow */}
-    <div style={{position:"absolute",top:"-50%",left:"-50%",width:"200%",height:"200%",background:"radial-gradient(circle at center, #FF6B0015 0%, transparent 70%)",animation:"tb-spin 20s linear infinite",pointerEvents:"none"}}/>
 
     {/* Logo area */}
     <div style={{textAlign:"center",marginBottom:40,position:"relative",zIndex:1}}>
       <div style={{position:"relative",display:"inline-block",marginBottom:24}}>
         <img src="/logo.png" alt="Teekha Bouncer" 
           style={{width:140,height:140,objectFit:"contain",borderRadius:0,clipPath:"polygon(12px 0%, 100% 0%, calc(100% - 12px) 100%, 0% 100%)",boxShadow:"0 8px 32px rgba(255,107,0,0.4), 0 0 60px rgba(255,107,0,0.2)"}} />
-        <div style={{position:"absolute",inset:-8,background:"linear-gradient(135deg, #FF6B00 0%, #FF8C00 100%)",opacity:0.15,clipPath:"polygon(12px 0%, 100% 0%, calc(100% - 12px) 100%, 0% 100%)",filter:"blur(12px)",zIndex:-1}}/>
       </div>
       
-      <div style={{fontFamily:fonts.display,fontWeight:900,fontSize:56,background:"linear-gradient(135deg, #FF6B00 0%, #FF8C00 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:6,lineHeight:1,textTransform:"uppercase",textShadow:"0 4px 20px rgba(255,107,0,0.3)"}}>
+      <div style={{fontFamily:fonts.display,fontWeight:900,fontSize:56,background:"linear-gradient(135deg, #FF6B00 0%, #FF8C00 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:6,lineHeight:1,textTransform:"uppercase"}}>
         TEEKHA
       </div>
-      <div style={{fontFamily:fonts.display,fontWeight:900,fontSize:56,color:"#E2EAF4",letterSpacing:6,lineHeight:1,textTransform:"uppercase",textShadow:"0 2px 12px rgba(226,234,244,0.2)"}}>
+      <div style={{fontFamily:fonts.display,fontWeight:900,fontSize:56,color:"#E2EAF4",letterSpacing:6,lineHeight:1,textTransform:"uppercase"}}>
         BOUNCER
       </div>
       <div style={{fontSize:11,color:T.muted,letterSpacing:5,marginTop:12,textTransform:"uppercase",fontWeight:700}}>
@@ -1408,11 +1404,6 @@ function SplashScreen({ onLogin }) {
         onMouseLeave={e => {e.currentTarget.style.background="transparent";e.currentTarget.style.borderColor="rgba(255,107,0,0.4)";}}>
         🔑 I HAVE AN ACCOUNT
       </button>
-    </div>
-
-    {/* Decorative elements */}
-    <div style={{position:"absolute",bottom:20,left:0,right:0,textAlign:"center",fontSize:10,color:"rgba(184,197,214,0.3)",letterSpacing:2,fontWeight:700}}>
-      POWERED BY TEEKHA BOUNCER LEAGUE
     </div>
   </div>
 );
