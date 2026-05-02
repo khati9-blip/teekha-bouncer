@@ -452,7 +452,7 @@ function PasswordModal({ onSuccess, onClose, storedHash }) {
   const reset = () => { setPw(""); setErr(""); };
 
   return (
-    <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.95)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,backdropFilter:"blur(6px)"}}>
+    <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.95)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:600,backdropFilter:"blur(6px)"}}>
       <div style={{background:T.card,borderRadius:16,border:`1px solid ${T.border}`,padding:32,width:"100%",maxWidth:360,margin:"0 16px"}}>
 
         {mode==="login" && <>
