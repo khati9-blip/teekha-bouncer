@@ -2656,6 +2656,9 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   const [showPwModal, setShowPwModal] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
   const [editPlayer, setEditPlayer] = useState(null); // player being edited
+  useEffect(() => {
+  console.log("editPlayer state changed:", editPlayer);
+}, [editPlayer]);
   const [smartStatsMatch, setSmartStatsMatch] = useState(null);
   const [squadView, setSquadView] = useState(false);
   const [showMVP, setShowMVP] = useState(false);
