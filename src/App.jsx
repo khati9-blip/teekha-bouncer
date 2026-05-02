@@ -4938,7 +4938,7 @@ ${aiMatchText.slice(0, 3000)}`;
             {teamLogos[t.id] && <img src={teamLogos[t.id]} style={{position:"absolute",right:-10,bottom:-10,height:80,opacity:0.1,objectFit:"contain",pointerEvents:"none"}} />}
             
             {/* Team name */}
-            <div style={{fontFamily:fonts.display,fontSize:18,fontWeight:900,color:t.color,letterSpacing:2,textTransform:"uppercase",lineHeight:1,marginBottom:8}}>
+            <div className="draft-team-name" style={{fontFamily:fonts.display,fontSize:18,fontWeight:900,color:t.color,letterSpacing:2,textTransform:"uppercase",lineHeight:1,marginBottom:8}}>
               {t.name}
             </div>
             

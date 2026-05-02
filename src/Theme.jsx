@@ -208,6 +208,7 @@ export function GlobalStyles() {
 
       /* ── MOBILE OPTIMIZATIONS ─────────────────────────────────────────── */
       @media (max-width: 768px) {
+        /* Leaderboard: prevent points cutoff */
         .leaderboard-card {
           padding: 12px 8px !important;
         }
@@ -221,6 +222,14 @@ export function GlobalStyles() {
         }
         .leaderboard-team-name {
           font-size: 18px !important;
+        }
+
+        /* Draft page: prevent team name cutoff */
+        .draft-team-name {
+          font-size: 14px !important;
+          letter-spacing: 1px !important;
+          line-height: 1.2 !important;
+          word-break: break-word;
         }
       }
     `}</style>
