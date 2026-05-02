@@ -7194,7 +7194,7 @@ onChange={e=>setPlayerSearch(e.target.value)}
         </div>
       )}
     </div>
-  )
+  );
 }
 
 function AdminSetupScreen({ pitch, onDone, onBack, sbGet, sbSet, hashPw }) {
