@@ -1409,59 +1409,69 @@ function SplashScreen({ onLogin }) {
 );
 
   return (
-    <div style={{minHeight:"100vh",background:T.bg,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"20px",fontFamily:fonts.body}}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Barlow+Condensed:wght@400;600;700;800&display=swap');*{box-sizing:border-box;margin:0;padding:0;}body{background:#080C14;color:#E2EAF4;}`}</style>
+  <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#0A0E14 0%,#141A24 50%,#0A0E14 100%)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"20px",fontFamily:fonts.body}}>
+    <style>{`@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Barlow+Condensed:wght@400;600;700;800&display=swap');*{box-sizing:border-box;margin:0;padding:0;}body{background:#080C14;color:#E2EAF4;}`}</style>
 
-      <div style={{width:"100%",maxWidth:380}}>
-        {/* Header */}
-        <div style={{textAlign:"center",marginBottom:32}}>
-          <img src="/logo.png" alt="Teekha Bouncer" style={{width:64,height:64,objectFit:"contain",borderRadius:12,margin:"0 auto",display:"block"}} />
-          <div style={{fontFamily:fonts.display,fontWeight:700,fontSize:28,color:T.accent,letterSpacing:3,marginTop:8}}>
-            {mode==='login' ? "WELCOME BACK" : "CREATE ACCOUNT"}
+    <div style={{width:"100%",maxWidth:420}}>
+      {/* Header */}
+      <div style={{textAlign:"center",marginBottom:36}}>
+        <img src="/logo.png" alt="Teekha Bouncer" style={{width:80,height:80,objectFit:"contain",borderRadius:0,margin:"0 auto",display:"block",marginBottom:20,clipPath:"polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%)",boxShadow:"0 8px 24px rgba(255,107,0,0.3)"}} />
+        <div style={{fontFamily:fonts.display,fontWeight:900,fontSize:32,background:"linear-gradient(135deg, #FF6B00 0%, #FF8C00 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:4,marginTop:8,textTransform:"uppercase"}}>
+          {mode==='login' ? "WELCOME BACK" : "CREATE ACCOUNT"}
+        </div>
+        <div style={{fontSize:13,color:T.muted,marginTop:6,fontWeight:500}}>
+          {mode==='login' ? "Sign in to your Teekha Bouncer account" : "Join Teekha Bouncer League"}
+        </div>
+      </div>
+
+      {/* Form */}
+      <div style={{background:"rgba(255,107,0,0.03)",borderRadius:0,border:"2px solid rgba(255,107,0,0.2)",borderLeft:"5px solid #FF6B00",padding:32,clipPath:"polygon(0% 0%, 100% 0%, calc(100% - 16px) 100%, 0% 100%)"}}>
+        <input type="email" value={email} onChange={e=>{setEmail(e.target.value);setErr('');}} placeholder="Email address" 
+          style={{width:"100%",background:"#0A0E14",border:err&&!pw?"2px solid #FF3D5A":"2px solid rgba(255,107,0,0.3)",borderRadius:0,padding:"14px 18px",color:T.text,fontSize:15,fontFamily:fonts.body,outline:"none",marginBottom:14,boxSizing:"border-box",clipPath:"polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%)"}} />
+        
+        <input type="password" value={pw} onChange={e=>{setPw(e.target.value);setErr('');}} onKeyDown={e=>e.key==="Enter"&&(mode==='login'?handleLogin():null)} placeholder="Password" 
+          style={{width:"100%",background:"#0A0E14",border:err&&pw&&!pw2?"2px solid #FF3D5A":"2px solid rgba(255,107,0,0.3)",borderRadius:0,padding:"14px 18px",color:T.text,fontSize:15,fontFamily:fonts.body,outline:"none",marginBottom:14,boxSizing:"border-box",clipPath:"polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%)"}} />
+        
+        {mode==='signup' && (
+          <input type="password" value={pw2} onChange={e=>{setPw2(e.target.value);setErr('');}} onKeyDown={e=>e.key==="Enter"&&handleSignup()} placeholder="Confirm password" 
+            style={{width:"100%",background:"#0A0E14",border:"2px solid rgba(255,107,0,0.3)",borderRadius:0,padding:"14px 18px",color:T.text,fontSize:15,fontFamily:fonts.body,outline:"none",marginBottom:14,boxSizing:"border-box",clipPath:"polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%)"}} />
+        )}
+        
+        {err && <div style={{color:"#FF3D5A",fontSize:13,marginBottom:16,textAlign:"center",fontWeight:600,background:"rgba(255,61,90,0.1)",padding:"10px",borderLeft:"3px solid #FF3D5A"}}>{err}</div>}
+        
+        <button onClick={mode==='login' ? handleLogin : handleSignup} disabled={loading}
+          style={{width:"100%",background:"linear-gradient(135deg, #FF6B00 0%, #FF8C00 100%)",border:"none",borderRadius:0,padding:16,color:"#0A0E14",fontFamily:fonts.display,fontWeight:900,fontSize:15,cursor:loading?"not-allowed":"pointer",opacity:loading?0.7:1,letterSpacing:2,textTransform:"uppercase",clipPath:"polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%)",boxShadow:"4px 4px 0 rgba(255,107,0,0.3)",textShadow:"1px 1px 0 rgba(255,255,255,0.2)",transition:"all 0.2s"}}
+          onMouseEnter={e=>!loading&&(e.currentTarget.style.transform="translate(-2px, -2px)",e.currentTarget.style.boxShadow="6px 6px 0 rgba(255,107,0,0.3)")}
+          onMouseLeave={e=>!loading&&(e.currentTarget.style.transform="translate(0, 0)",e.currentTarget.style.boxShadow="4px 4px 0 rgba(255,107,0,0.3)")}>
+          {loading ? "PLEASE WAIT..." : mode==='login' ? "SIGN IN" : "CREATE ACCOUNT"}
+        </button>
+        
+        {mode==='login' && (
+          <div style={{textAlign:"center",marginTop:16}}>
+            <button onClick={()=>{setMode('forgot');setErr('');setPw('');setCodeSent(false);setResetCode('');}}
+              style={{background:"none",border:"none",color:"#FF3D5A",fontSize:12,cursor:"pointer",textDecoration:"underline",fontFamily:fonts.body,fontWeight:600}}>
+              Forgot password?
+            </button>
           </div>
-          <div style={{fontSize:13,color:T.muted,marginTop:4}}>
-            {mode==='login' ? "Sign in to your Teekha Bouncer account" : "Join Teekha Bouncer League"}
-          </div>
-        </div>
+        )}
+      </div>
 
-        {/* Form */}
-        <div style={{background:T.card,borderRadius:16,border:`1px solid ${T.border}`,padding:28}}>
-          <input type="email" value={email} onChange={e=>{setEmail(e.target.value);setErr('');}} placeholder="Email address" style={inputStyle(err && !pw)} />
-          <input type="password" value={pw} onChange={e=>{setPw(e.target.value);setErr('');}} onKeyDown={e=>e.key==="Enter"&&(mode==='login'?handleLogin():null)} placeholder="Password" style={inputStyle(err && pw && !pw2)} />
-          {mode==='signup' && (
-            <input type="password" value={pw2} onChange={e=>{setPw2(e.target.value);setErr('');}} onKeyDown={e=>e.key==="Enter"&&handleSignup()} placeholder="Confirm password" style={inputStyle(false)} />
-          )}
-          {err && <div style={{color:T.danger,fontSize:13,marginBottom:12,textAlign:"center"}}>{err}</div>}
-          <button onClick={mode==='login' ? handleLogin : handleSignup} disabled={loading}
-            style={{width:"100%",background:`linear-gradient(135deg,${T.accent},${T.accentDim})`,border:"none",borderRadius:8,padding:14,color:T.bg,fontFamily:fonts.body,fontWeight:800,fontSize:16,cursor:loading?"not-allowed":"pointer",opacity:loading?0.7:1,letterSpacing:1}}>
-            {loading ? "PLEASE WAIT..." : mode==='login' ? "SIGN IN" : "CREATE ACCOUNT"}
-          </button>
-          {mode==='login' && (
-            <div style={{textAlign:"center",marginTop:12}}>
-              <button onClick={()=>{setMode('forgot');setErr('');setPw('');setCodeSent(false);setResetCode('');}}
-                style={{background:"none",border:"none",color:T.danger,fontSize:12,cursor:"pointer",textDecoration:"underline",fontFamily:fonts.body}}>
-                Forgot password?
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Toggle */}
-        <div style={{textAlign:"center",marginTop:20,fontSize:14,color:T.muted}}>
-          {mode==='login' ? "Don't have an account? " : "Already have an account? "}
-          <button onClick={()=>{setMode(mode==='login'?'signup':'login');setErr('');setPw('');setPw2('');}}
-            style={{background:"none",border:"none",color:T.accent,fontSize:14,cursor:"pointer",fontFamily:fonts.body,fontWeight:700,textDecoration:"underline"}}>
-            {mode==='login' ? "Sign up" : "Sign in"}
-          </button>
-        </div>
-
-        <button onClick={() => setMode('splash')}
-          style={{display:"block",margin:"16px auto 0",background:"none",border:"none",color:T.muted,fontSize:12,cursor:"pointer"}}>
-          ← Back
+      {/* Toggle */}
+      <div style={{textAlign:"center",marginTop:24,fontSize:14,color:T.muted}}>
+        {mode==='login' ? "Don't have an account? " : "Already have an account? "}
+        <button onClick={()=>{setMode(mode==='login'?'signup':'login');setErr('');setPw('');setPw2('');}}
+          style={{background:"none",border:"none",color:"#FF6B00",fontSize:14,cursor:"pointer",fontFamily:fonts.body,fontWeight:800,textDecoration:"underline"}}>
+          {mode==='login' ? "Sign up" : "Sign in"}
         </button>
       </div>
+
+      <button onClick={() => setMode('splash')}
+        style={{display:"block",margin:"20px auto 0",background:"transparent",border:"2px solid rgba(255,107,0,0.3)",borderRadius:0,color:"#FF6B00",fontSize:12,cursor:"pointer",padding:"8px 16px",fontFamily:fonts.display,fontWeight:700,letterSpacing:1,clipPath:"polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%)"}}>
+        ← BACK
+      </button>
     </div>
-  );
+  </div>
+);
 }
 
 
