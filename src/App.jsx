@@ -3671,7 +3671,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
       ? ruledOut.filter(id => id !== pid) 
       : [...ruledOut, pid];
     setRuledOut(newRuledOut);
-    await sbSet(pitchId + "_ruledOut", newRuledOut);
+    storeSet("ruledOut", newRuledOut);
     pushNotif("system", ruledOut.includes(pid) ? "✅ Player reinstated" : "🚫 Player ruled out for season", "🚫");
   };
 
