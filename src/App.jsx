@@ -4909,7 +4909,7 @@ ${aiMatchText.slice(0, 3000)}`;
   <div style={{display:"flex",gap:16,alignItems:"start"}}>
     
     {/* LEFT COLUMN - TEAM BOXES */}
-    <div style={{width:"30%",display:"flex",flexDirection:"column",gap:10,position:"sticky",top:80}}>
+    <div className="draft-left-column" style={{width:"30%",display:"flex",flexDirection:"column",gap:10,overflowY:"auto",maxHeight:"calc(100vh - 160px)"}}>
       {teams.map(t => {
         const cnt = players.filter(p=>assignments[p.id]===t.id).length;
         const ruledOutCnt = players.filter(p=>assignments[p.id]===t.id&&ruledOut.includes(p.id)).length;
