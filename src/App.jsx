@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import FormChart from "./FormChart";
+import MVPSlideshow from './MVPSlideshow';
 import H2HStats from "./H2HStats";
 import MVPStats from "./MVPStats";
 import TransferWindowComponent from "./TransferWindow";
@@ -6257,20 +6258,41 @@ onChange={e=>setPlayerSearch(e.target.value)}
             </div>
           )}
 
-          {page==="leaderboard"&&(
-            <div className="fade-in">
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:8}}>
-                <div style={{display:"inline-block",background:T.accent,padding:"4px 16px 4px 12px",clipPath:"polygon(0 0,100% 0,calc(100% - 10px) 100%,0 100%)"}}>
-                  <h2 style={{fontFamily:fonts.display,fontSize:28,fontWeight:700,color:T.bg,letterSpacing:3,margin:0}}>LEADERBOARD</h2>
-                </div>
-                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+        {page==="leaderboard"&&(
+  <div className="fade-in">
+    {/* Desktop: Two-column layout with MVP slideshow */}
+    <div style={{
+      display: "grid",
+      gridTemplateColumns: window.innerWidth >= 1024 ? "380px 1fr" : "1fr",
+      gap: 24,
+      alignItems: "start"
+    }}>
+      {/* MVP Slideshow - Desktop only */}
+      {window.innerWidth >= 1024 && leaderboard.length > 0 && (
+        <MVPSlideshow 
+          players={players}
+          assignments={assignments}
+          teams={teams}
+          points={points}
+          fonts={fonts}
+          T={T}
+          PALETTE={PALETTE}
+        />
+      )}
 
-                  <button onClick={shareLeaderboard} style={{background:"#25D366",border:"none",color:"#050F05",clipPath:"polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%)",padding:"9px 20px",cursor:"pointer",fontFamily:fonts.display,fontWeight:800,fontSize:13,letterSpacing:2,textTransform:"uppercase",filter:"drop-shadow(3px 3px 0 #0A5020)"}}>
-                    📲 SHARE WHATSAPP
-                  </button>
-                </div>
-              </div>
-              {leaderboard.length===0?(
+      {/* Main leaderboard content */}
+      <div>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:8}}>
+          <div style={{display:"inline-block",background:T.accent,padding:"4px 16px 4px 12px",clipPath:"polygon(0 0,100% 0,calc(100% - 10px) 100%,0 100%)"}}>
+            <h2 style={{fontFamily:fonts.display,fontSize:28,fontWeight:700,color:T.bg,letterSpacing:3,margin:0}}>LEADERBOARD</h2>
+          </div>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            <button onClick={shareLeaderboard} style={{background:"#25D366",border:"none",color:"#050F05",clipPath:"polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%)",padding:"9px 20px",cursor:"pointer",fontFamily:fonts.display,fontWeight:800,fontSize:13,letterSpacing:2,textTransform:"uppercase",filter:"drop-shadow(3px 3px 0 #0A5020)"}}>
+              📲 SHARE WHATSAPP
+            </button>
+          </div>
+        </div>
+        {leaderboard.length===0?(
                 <Card sx={{padding:60,textAlign:"center"}}><div style={{fontSize:56}}>🏆</div><div style={{color:T.muted,marginTop:16}}>Set up your league first</div></Card>
               ):(
                 <>
@@ -6469,6 +6491,9 @@ onChange={e=>setPlayerSearch(e.target.value)}
             </div>
           )}
         </div>
+        </div>         
+      </div>             
+    )}  
 
         {/* LEAGUE RULES PANEL */}
         {showRulesPanel && (
