@@ -5198,8 +5198,29 @@ ${aiMatchText.slice(0, 3000)}`;
             {roster.length === 0 ? (
               <div style={{textAlign:"center",padding:40,color:T.muted}}>No players assigned yet</div>
             ) : (
-              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill, minmax(200px, 1fr))",gap:16}}>
-                {roster.map(p => {
+  <div>
+    {Object.entries(byRole).map(([role, players]) => {
+      if (players.length === 0) return null;
+      return (
+        <div key={role} style={{marginBottom:32}}>
+          {/* Role Header */}
+          <div style={{
+            fontFamily:fonts.display,
+            fontSize:14,
+            fontWeight:800,
+            color:team.color,
+            letterSpacing:2,
+            textTransform:"uppercase",
+            marginBottom:16,
+            paddingBottom:8,
+            borderBottom:`2px solid ${team.color}`
+          }}>
+            {role} ({players.length})
+          </div>
+          
+          {/* Grid for this role */}
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill, minmax(200px, 1fr))",gap:16}}>
+            {players.map(p => {
                   const isRuledOut = ruledOut.includes(p.id);
                   
                   // Calculate player total
@@ -5250,8 +5271,9 @@ ${aiMatchText.slice(0, 3000)}`;
                       flexDirection: "column",
                       position: "relative",
                       transition: "transform 0.2s ease, box-shadow 0.2s ease",
-                      cursor: "pointer"
+                      cursor: total > 0 ? "pointer" : "default"
                     }}
+                    onClick={() => total > 0 && setPlayerStatsModal(p)}
                     onMouseEnter={e => {
                       e.currentTarget.style.transform = "translateY(-4px)";
                       e.currentTarget.style.boxShadow = `0 8px 20px ${team.color}44`;
@@ -5318,8 +5340,12 @@ ${aiMatchText.slice(0, 3000)}`;
                     </div>
                   );
                 })}
-              </div>
-            )}
+          </div>
+        </div>
+      );
+    })}
+  </div>
+)}
           </div>
         </div>
       </div>
