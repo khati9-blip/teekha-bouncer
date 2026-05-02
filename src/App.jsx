@@ -1254,6 +1254,7 @@ placeholder="Paste scorecard text here... (e.g. V Kohli c Maxwell b Bumrah 82 (5
         </div>
       </div>
     </div>
+    </>
   );
 }
 
@@ -7194,7 +7195,6 @@ onChange={e=>setPlayerSearch(e.target.value)}
         </div>
       )}
     </div>
-    </>
   );
 }
 
