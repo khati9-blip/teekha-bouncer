@@ -6244,14 +6244,14 @@ onChange={e=>setPlayerSearch(e.target.value)}
                           {/* Collapsible player breakdown */}
                           {isOpen&&breakdown.length>0&&(
                             <div style={{borderTop:`1px solid ${T.border}`,padding:"12px 18px"}}>
-                              <div style={{display:"flex",fontSize:11,color:T.muted,marginBottom:10,padding:"0 4px",letterSpacing:2,fontFamily:fonts.display}}>
-                                <span style={{flex:1}}>PLAYER</span>
-                                <span style={{width:90}}>ROLE</span>
-                                <span style={{width:70,textAlign:"right"}}>PTS</span>
+                              <div style={{display:"flex",gap:8,marginBottom:10}}>
+                                <div style={{flex:1,background:T.accent,color:T.bg,padding:"8px 12px",fontFamily:fonts.display,fontWeight:800,fontSize:11,letterSpacing:2,clipPath:"polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)"}}>PLAYER</div>
+                                <div style={{width:90,background:T.accent,color:T.bg,padding:"8px 12px",fontFamily:fonts.display,fontWeight:800,fontSize:11,letterSpacing:2,clipPath:"polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)"}}>ROLE</div>
+                                <div style={{width:70,background:T.accent,color:T.bg,padding:"8px 12px",fontFamily:fonts.display,fontWeight:800,fontSize:11,letterSpacing:2,textAlign:"right",clipPath:"polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)"}}>PTS</div>
                               </div>
                               {breakdown.map((p,idx)=>(
                                 <div key={p.id} style={{display:"flex",alignItems:"center",padding:"9px 4px",borderBottom:`1px solid ${T.border}`,opacity:p.status==="snatched-out"||p.status==="snatch-returned-in"||p.status==="traded-out"||ruledOut.includes(p.id)?0.65:1}}>
-                                  <div style={{flex:1,fontWeight:idx<3?700:400,fontSize:14,
+                                  <div style={{flex:1,fontFamily:fonts.display,fontWeight:800,fontSize:15,letterSpacing:1,
                                     color:ruledOut.includes(p.id)?T.danger:p.status==="traded-in"?T.success:p.status==="returned"?T.accent:p.status==="traded-out"?T.danger:idx===0&&p.status==="active"?T.accent:T.text,
                                     textDecoration:p.status==="snatched-out"||p.status==="snatch-returned-in"||p.status==="traded-out"||ruledOut.includes(p.id)?"line-through":"none"}}>
                                     {p.status==="traded-out"&&<span style={{marginRight:4}}>⬇️</span>}
