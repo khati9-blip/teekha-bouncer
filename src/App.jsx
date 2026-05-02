@@ -5072,8 +5072,8 @@ ${aiMatchText.slice(0, 3000)}`;
     };
     
     return (
-      <div onClick={() => setTeamRosterModal(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.9)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
-        <div onClick={e => e.stopPropagation()} style={{background:T.bg,border:`3px solid ${team.color}`,borderRadius:0,maxWidth:600,width:"100%",maxHeight:"80vh",overflow:"hidden",boxShadow:"5px 5px 0 "+team.color+"66"}}>
+      <div className="tb-modal-backdrop" onClick={() => setTeamRosterModal(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.9)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
+        <div className="tb-modal-slide" onClick={e => e.stopPropagation()} style={{background:T.bg,border:`3px solid ${team.color}`,borderRadius:0,maxWidth:600,width:"100%",maxHeight:"80vh",overflow:"hidden",boxShadow:"5px 5px 0 "+team.color+"66"}}>
           {/* Modal header */}
           <div style={{background:team.color,padding:"16px 20px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <div style={{fontFamily:fonts.display,fontSize:22,fontWeight:900,color:T.bg,letterSpacing:3,textTransform:"uppercase"}}>

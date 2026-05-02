@@ -128,6 +128,8 @@ export function GlobalStyles() {
       @keyframes tb-fadeUp   { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
       @keyframes tb-slideInLeft { from { transform:translateX(-100%); } to { transform:translateX(0); } }
       @keyframes tb-fadeIn   { from { opacity:0; } to { opacity:1; } }
+      @keyframes tb-slideInFromLeft { from { opacity:0; transform:translateX(-40px) scale(0.95); } to { opacity:1; transform:translateX(0) scale(1); } }
+      @keyframes tb-backdropFade { from { opacity:0; } to { opacity:1; } }
       @keyframes tb-slideIn  { from { transform:translateX(100%); } to { transform:translateX(0); } }
       @keyframes tb-pulse    { 0%,100% { opacity:1; } 50% { opacity:0.4; } }
       @keyframes tb-glow     { 0%,100% { filter:drop-shadow(0 0 6px #FF6B0066); } 50% { filter:drop-shadow(0 0 16px #FF6B00AA); } }
@@ -136,6 +138,8 @@ export function GlobalStyles() {
       @keyframes tb-flash    { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
       .tb-fadeUp  { animation: tb-fadeUp  0.4s ease both; }
       .slide-in-left { animation: tb-slideInLeft 0.3s cubic-bezier(0.25,0.46,0.45,0.94) both; }
+      .tb-modal-slide { animation: tb-slideInFromLeft 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+      .tb-modal-backdrop { animation: tb-backdropFade 0.25s ease both; }
       .tb-fadeIn  { animation: tb-fadeIn  0.25s ease both; }
       .tb-slideIn { animation: tb-slideIn 0.3s cubic-bezier(0.25,0.46,0.45,0.94) both; }
       .tb-pulse   { animation: tb-pulse   2s ease infinite; }
