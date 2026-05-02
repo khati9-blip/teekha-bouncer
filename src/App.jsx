@@ -7127,10 +7127,11 @@ onChange={e=>setPlayerSearch(e.target.value)}
   <button onClick={onLogout} style={{width:"100%",background:T.dangerBg,border:`1px solid ${T.danger}33`,borderRadius:8,padding:"10px",color:T.danger,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>
     LOGOUT
   </button>
-</div>
-</div>
+      </div>
+    </div>
   )}
 </div>
+
   );
 }
 
