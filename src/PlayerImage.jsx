@@ -9,7 +9,9 @@ function PlayerImage({ player, size = 100, borderRadius = 12, teamColor = T.acce
   
   // Handle both fixed size (number) and responsive size (string like "100%")
   const isResponsive = typeof size === "string";
-  const sizeStyle = isResponsive ? { width: size, height: "100%" } : { width: size, height: size };
+  const sizeStyle = isResponsive 
+  ? { width: size, height: "100%", aspectRatio: "2/3" } 
+  : { width: size, height: size };
 
   if (showFallback) {
     return (
