@@ -561,7 +561,7 @@ function EditPlayerModal({ player, onSave, onAdd, onClose }) {
 
   return (
     <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.95)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:300,backdropFilter:"blur(6px)"}}>
-      <div style={{background:T.card,borderRadius:16,border:`1px solid ${T.border}`,padding:32,width:"100%",maxWidth:400,margin:"0 16px"}}>
+      <div style={{background:"#FFFFFF",borderRadius:16,border:`3px solid ${T.accent}`,padding:32,width:"100%",maxWidth:400,margin:"0 16px",boxShadow:"0 20px 60px rgba(0,0,0,0.8)"}}>
         <div style={{fontFamily:fonts.display,fontSize:22,fontWeight:700,color:T.accent,letterSpacing:2,marginBottom:24}}>{isNew ? "✚ ADD PLAYER" : "✏️ EDIT PLAYER"}</div>
         <div style={{marginBottom:14}}>
           <div style={{fontSize:11,color:T.muted,letterSpacing:1,marginBottom:6}}>PLAYER NAME</div>
