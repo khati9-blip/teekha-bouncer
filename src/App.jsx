@@ -6361,7 +6361,7 @@ onChange={e=>setPlayerSearch(e.target.value)}
                   borderTop: `3px solid ${T.accent}`,
                   padding: '10px 0',
                   overflow: 'hidden',
-                  zIndex: 100,
+                  zIndex: 40,
                   boxShadow: `0 -4px 20px ${T.accent}33`
                 }}>
                   <div className="ticker-mobile-fast" style={{
