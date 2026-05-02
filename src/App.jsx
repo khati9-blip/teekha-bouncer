@@ -3665,6 +3665,16 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
     setLoading("");
   };
 
+  // ── Toggle Ruled Out ──────────────────────────────────────────────────────
+  const toggleRuledOut = async (pid) => {
+    const newRuledOut = ruledOut.includes(pid) 
+      ? ruledOut.filter(id => id !== pid) 
+      : [...ruledOut, pid];
+    setRuledOut(newRuledOut);
+    await sbSet(pitchId + "_ruledOut", newRuledOut);
+    pushNotif("system", ruledOut.includes(pid) ? "✅ Player reinstated" : "🚫 Player ruled out for season", "🚫");
+  };
+
   const assignPlayer=(pid,tid)=>withPassword(()=>{
     const a={...assignments};
     if(!tid) { delete a[pid]; }
