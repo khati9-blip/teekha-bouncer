@@ -6371,7 +6371,7 @@ onChange={e=>setPlayerSearch(e.target.value)}
                     display: 'flex',
                     alignItems: 'center',
                     gap: 40,
-                    animation: 'tb-ticker 40s linear infinite',
+                    animation: 'tb-ticker 15s linear infinite',
                     whiteSpace: 'nowrap'
                   }}>
                     {/* Duplicate items for seamless loop */}
