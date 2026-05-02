@@ -6251,7 +6251,7 @@ onChange={e=>setPlayerSearch(e.target.value)}
                               </div>
                               {breakdown.map((p,idx)=>(
                                 <div key={p.id} style={{display:"flex",alignItems:"center",padding:"9px 4px",borderBottom:`1px solid ${T.border}`,opacity:p.status==="snatched-out"||p.status==="snatch-returned-in"||p.status==="traded-out"||ruledOut.includes(p.id)?0.65:1}}>
-                                  <div style={{flex:1,fontFamily:fonts.display,fontWeight:800,fontSize:15,letterSpacing:1,
+                                  <div style={{flex:1,fontFamily:fonts.display,fontWeight:900,fontSize:16,letterSpacing:1,textTransform:"uppercase",
                                     color:ruledOut.includes(p.id)?T.danger:p.status==="traded-in"?T.success:p.status==="returned"?T.accent:p.status==="traded-out"?T.danger:idx===0&&p.status==="active"?T.accent:T.text,
                                     textDecoration:p.status==="snatched-out"||p.status==="snatch-returned-in"||p.status==="traded-out"||ruledOut.includes(p.id)?"line-through":"none"}}>
                                     {p.status==="traded-out"&&<span style={{marginRight:4}}>⬇️</span>}
