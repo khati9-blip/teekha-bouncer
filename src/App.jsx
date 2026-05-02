@@ -6485,12 +6485,13 @@ onChange={e=>setPlayerSearch(e.target.value)}
                       ));
                     })()}
                   </div>
-               </div>
-             )}
+                </div>
+              )}
+            </div>
           </div>
-        </div>         
-      </div>             
-
+        </div>
+      )}
+                  
         {/* LEAGUE RULES PANEL */}
         {showRulesPanel && (
           <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",zIndex:200,overflowY:"auto",padding:24,fontFamily:fonts.body}}>
