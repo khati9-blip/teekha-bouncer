@@ -550,14 +550,15 @@ function EditPlayerModal({ player, onSave, onAdd, onClose }) {
   const [name, setName] = useState(player.name || "");
   const [iplTeam, setIplTeam] = useState(player.iplTeam || "");
   const [role, setRole] = useState(player.role || "Batsman");
+  const [imageUrl, setImageUrl] = useState(player.imageUrl || "");
   const IPL_FRANCHISE = ["CSK","MI","RCB","KKR","SRH","RR","PBKS","DC","GT","LSG"];
 
   const submit = () => {
     if (!name.trim()) { alert("Enter player name"); return; }
     if (!iplTeam.trim()) { alert("Select IPL franchise"); return; }
     const id = name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") + "-" + Date.now();
-    if (isNew) onAdd({ id, name: name.trim(), iplTeam: iplTeam.trim(), role });
-    else onSave({ ...player, name: name.trim(), iplTeam: iplTeam.trim(), role });
+    if (isNew) onAdd({ id, name: name.trim(), iplTeam: iplTeam.trim(), role, imageUrl: imageUrl.trim() });
+    else onSave({ ...player, name: name.trim(), iplTeam: iplTeam.trim(), role, imageUrl: imageUrl.trim() });
   };
 
   return (
@@ -581,6 +582,38 @@ function EditPlayerModal({ player, onSave, onAdd, onClose }) {
             {["Batsman","Bowler","All-Rounder","Wicket-Keeper"].map(r=><option key={r} value={r}>{r}</option>)}
           </select>
         </div>
+{/* Image URL field */}
+      <div style={{marginBottom:24}}>
+        <div style={{fontSize:11,color:T.muted,letterSpacing:1,marginBottom:6,fontFamily:fonts.display,fontWeight:700}}>IMAGE URL (Optional)</div>
+        <input 
+          value={imageUrl} 
+          onChange={e=>setImageUrl(e.target.value)} 
+          placeholder="/players/player-id-12345.jpg" 
+          style={{
+            width:"100%",
+            background:T.bg,
+            border:`1px solid ${T.border}`,
+            borderRadius:8,
+            padding:"10px 14px",
+            color:T.text,
+            fontSize:15,
+            fontFamily:fonts.body,
+            outline:"none",
+            boxSizing:"border-box"
+          }} 
+        />
+        {imageUrl && (
+          <div style={{marginTop:12,textAlign:"center",padding:10,background:T.bg,borderRadius:8,border:`1px solid ${T.border}`}}>
+            <img 
+              src={imageUrl} 
+              alt="Preview" 
+              onError={(e)=>{e.target.style.display='none';e.target.nextSibling.style.display='block'}}
+              style={{maxWidth:120,maxHeight:120,borderRadius:12,border:`2px solid ${T.accent}`}} 
+            />
+            <div style={{display:'none',color:T.danger,fontSize:12,marginTop:8}}>⚠️ Invalid image URL</div>
+          </div>
+        )}
+      </div>
         <div style={{display:"flex",gap:10}}>
           <button onClick={onClose} style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:8,padding:11,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
           <button onClick={submit} style={{flex:2,background:`linear-gradient(135deg,${T.accent},${T.accentDim})`,border:"none",borderRadius:8,padding:11,color:T.bg,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>{isNew ? "ADD PLAYER" : "SAVE CHANGES"}</button>
