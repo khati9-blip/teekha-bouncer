@@ -7186,6 +7186,7 @@ onChange={e=>setPlayerSearch(e.target.value)}
         </div>
       )}
     </div>
+    </>
   );
 }
 
