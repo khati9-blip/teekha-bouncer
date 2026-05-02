@@ -205,6 +205,24 @@ export function GlobalStyles() {
         animation: tb-flash 1s ease infinite;
         flex-shrink: 0;
       }
+
+      /* ── MOBILE OPTIMIZATIONS ─────────────────────────────────────────── */
+      @media (max-width: 768px) {
+        .leaderboard-card {
+          padding: 12px 8px !important;
+        }
+        .leaderboard-points {
+          font-size: 32px !important;
+          min-width: 80px;
+          flex-shrink: 0 !important;
+        }
+        .leaderboard-points-first {
+          font-size: 38px !important;
+        }
+        .leaderboard-team-name {
+          font-size: 18px !important;
+        }
+      }
     `}</style>
   );
 }

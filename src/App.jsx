@@ -6209,10 +6209,10 @@ onChange={e=>setPlayerSearch(e.target.value)}
                       return(
                         <div key={team.id} style={{background:T.card,borderRadius:0,marginBottom:6,borderLeft:"5px solid "+team.color,borderBottom:`1px solid ${T.border}`,overflow:"hidden"}}>
                           {/* Main row — clickable to expand */}
-                          <div style={{display:"flex",alignItems:"center",gap:16,padding:"18px 20px",cursor:"pointer"}} onClick={()=>setExpandedTeam(isOpen?null:team.id)}>
+                          <div className="leaderboard-card" style={{display:"flex",alignItems:"center",gap:16,padding:"18px 20px",cursor:"pointer"}} onClick={()=>setExpandedTeam(isOpen?null:team.id)}>
                             <div style={{fontFamily:fonts.display,fontSize:i===0?40:32,fontWeight:900,color:i===0?team.color:T.muted,minWidth:44,lineHeight:1}}>{medals[i]||("#"+(i+1))}</div>
                             <div style={{flex:1}}>
-                              <div style={{fontWeight:900,fontSize:i===0?26:22,color:team.color,fontFamily:fonts.display,letterSpacing:2,textTransform:"uppercase",lineHeight:1}}>{team.name}</div>
+                              <div className="leaderboard-team-name" style={{fontWeight:900,fontSize:i===0?26:22,color:team.color,fontFamily:fonts.display,letterSpacing:2,textTransform:"uppercase",lineHeight:1}}>{team.name}</div>
                               <div style={{fontSize:11,color:T.muted,letterSpacing:2,marginTop:3,textTransform:"uppercase"}}>
                                 {players.filter(p=>assignments[p.id]===team.id && !ruledOut.includes(p.id)).length} PLAYERS
                                 {ruledOutCount>0&&<span style={{color:T.danger,marginLeft:8}}>· {ruledOutCount} RULED OUT</span>}
@@ -6220,7 +6220,7 @@ onChange={e=>setPlayerSearch(e.target.value)}
                             </div>
                             <div style={{textAlign:"right",display:"flex",alignItems:"center",gap:12}}>
                               <div>
-                                <div style={{fontSize:i===0?48:36,fontWeight:900,color:i===0?T.accent:T.text,fontFamily:fonts.display,lineHeight:1,letterSpacing:1}}>{team.total.toLocaleString()}</div>
+                                <div className={i===0?"leaderboard-points-first leaderboard-points":"leaderboard-points"} style={{fontSize:i===0?48:36,fontWeight:900,color:i===0?T.accent:T.text,fontFamily:fonts.display,lineHeight:1,letterSpacing:1}}>{team.total.toLocaleString()}</div>
                                 <div style={{fontSize:10,color:T.muted,letterSpacing:3,textTransform:"uppercase",marginTop:2}}>PTS</div>
                               </div>
                               <span style={{color:team.color,fontSize:14,fontFamily:fonts.display,fontWeight:700}}>{isOpen?"▲":"▼"}</span>
