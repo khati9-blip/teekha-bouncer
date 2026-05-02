@@ -7079,6 +7079,8 @@ onChange={e=>setPlayerSearch(e.target.value)}
   </div>
 )}
 
+</div>
+
 <div style={{flex:1,padding:"12px 8px",overflowY:"auto"}}>
   <button onClick={()=>{nav("form");setDrawerOpen(false);}} style={{width:"100%",background:page==="form"?T.accent:"transparent",border:page==="form"?"none":`2px solid ${T.border}`,padding:"14px 16px"}}>
     Form Chart
@@ -7095,7 +7097,6 @@ onChange={e=>setPlayerSearch(e.target.value)}
   </div>
 </div>
 
-</div>
 </div>
 </div>
 )}
