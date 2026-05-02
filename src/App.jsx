@@ -7002,6 +7002,111 @@ onChange={e=>setPlayerSearch(e.target.value)}
     </div>
     <span style={{fontSize:14,color:T.accent,fontFamily:fonts.display,fontWeight:700}}>{teamIdsOpen?"▲":"▼"}</span>
   </button>
+  
+ {/* Team IDs collapsible content */}
+{teamIdsOpen && (
+  <div style={{marginTop:8,maxHeight:200,overflowY:"auto"}}>
+    {teams.map(t => {
+      const ti = teamIdentity[t.id] || {};
+      return (
+        <div key={t.id} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,padding:"8px 10px",background:T.bg,borderRadius:0,border:"1px solid "+t.color+"33"}}>
+          
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontWeight:700,fontSize:12,color:t.color,fontFamily:fonts.display,letterSpacing:1}}>
+              {t.name}
+            </div>
+            <div style={{fontSize:10,color:T.muted,marginTop:1}}>
+              {ti.claimedBy ? ti.claimedBy.split("@")[0] : "Unclaimed"}
+            </div>
+          </div>
+
+          {ti.claimedBy ? (
+            <div style={{display:"flex",alignItems:"center",gap:4}}>
+              <span style={{fontSize:10,color:T.success,fontWeight:700}}>
+                ✓ {ti.claimedBy.split("@")[0]}
+              </span>
+              <button onClick={async()=>{
+                if(!confirm("Reset claim for "+t.name+"?")) return;
+                const updated = {...teamIdentity, [t.id]: {...ti, claimedBy:null, pinHash:null}};
+                setTeamIdentity(updated);
+                await storeSet("teamIdentity", updated);
+              }} style={{background:T.dangerBg,border:`1px solid ${T.danger}33`,color:T.danger,borderRadius:4,padding:"2px 5px",cursor:"pointer",fontSize:9,fontWeight:700}}>
+                RESET
+              </button>
+            </div>
+
+          ) : ti.teamId ? (
+            <div style={{display:"flex",alignItems:"center",gap:4}}>
+              <div style={{fontFamily:fonts.display,fontSize:14,fontWeight:800,color:T.accent,letterSpacing:2,background:T.accentBg,padding:"3px 8px",borderRadius:6}}>
+                {ti.teamId}
+              </div>
+              <button onClick={()=>{
+                setAdminClaimTeam(t);
+                setAdminClaimModal(true);
+                setAdminPin('');
+                setAdminPinConfirm('');
+                setAdminPinErr('');
+              }} style={{background:T.successBg,border:`1px solid ${T.success}44`,color:T.success,borderRadius:4,padding:"2px 5px",cursor:"pointer",fontSize:9,fontWeight:700}}>
+                CLAIM
+              </button>
+            </div>
+
+          ) : (
+            <div style={{display:"flex",alignItems:"center",gap:4}}>
+              <button onClick={()=>withPassword(async()=>{
+                const newId = generateTeamId();
+                const updated = {...teamIdentity, [t.id]: {...ti, teamId: newId}};
+                setTeamIdentity(updated);
+                await storeSet("teamIdentity", updated);
+              })} style={{background:T.accentBg,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:11,fontFamily:fonts.body,fontWeight:700}}>
+                GENERATE
+              </button>
+              <button onClick={()=>{
+                setAdminClaimTeam(t);
+                setAdminClaimModal(true);
+                setAdminPin('');
+                setAdminPinConfirm('');
+                setAdminPinErr('');
+              }} style={{background:T.successBg,border:`1px solid ${T.success}44`,color:T.success,borderRadius:4,padding:"2px 5px",cursor:"pointer",fontSize:9,fontWeight:700}}>
+                CLAIM
+              </button>
+            </div>
+          )}
+
+        </div>
+      );
+    })}
+  </div>
+)}
+
+</div>
+
+<div style={{flex:1,padding:"12px 8px",overflowY:"auto"}}>
+  <button onClick={()=>{nav("form");setDrawerOpen(false);}} style={{width:"100%",background:page==="form"?T.accent:"transparent",border:page==="form"?"none":`2px solid ${T.border}`,padding:"14px 16px"}}>
+    Form Chart
+  </button>
+
+  <button onClick={()=>{nav("h2h");setDrawerOpen(false);}} style={{width:"100%",background:page==="h2h"?"#4F8EF7":"transparent",border:page==="h2h"?"none":`2px solid ${T.border}`,padding:"14px 16px"}}>
+    Head to Head
+  </button>
+
+  <div style={{padding:"16px",borderTop:`1px solid ${T.border}`}}>
+    <button onClick={onLogout} style={{width:"100%",background:T.dangerBg,border:`1px solid ${T.danger}33`,borderRadius:8,padding:"10px"}}>
+      LOGOUT
+    </button>
+  </div>
+</div>
+
+</div>
+</div>
+</div>
+)}
+
+</div>
+</div>
+</div>
+  );
+}
 
 function AdminSetupScreen({ pitch, onDone, onBack, sbGet, sbSet, hashPw }) {
   const [pw, setPw] = useState("");
