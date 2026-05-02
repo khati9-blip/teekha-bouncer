@@ -5401,8 +5401,8 @@ ${aiMatchText.slice(0, 3000)}`;
     }
     
     return (
-      <div onClick={() => setPlayerStatsModal(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.92)",zIndex:400,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
-        <div onClick={e => e.stopPropagation()} style={{background:T.bg,border:`3px solid ${assignedTeam?assignedTeam.color:T.accent}`,borderRadius:0,maxWidth:700,width:"100%",maxHeight:"85vh",overflow:"hidden",boxShadow:`8px 8px 0 ${assignedTeam?assignedTeam.color+"66":T.accent+"66"}`}}>
+  <div onClick={() => setPlayerStatsModal(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.6)",backdropFilter:"blur(10px)",zIndex:400,display:"flex",alignItems:"center",justifyContent:"center",padding:20,animation:"tb-fadeIn 0.2s ease"}}>
+    <div onClick={e => e.stopPropagation()} style={{background:"rgba(10,14,22,0.95)",border:`3px solid ${assignedTeam?assignedTeam.color:T.accent}`,borderRadius:12,maxWidth:700,width:"100%",maxHeight:"85vh",overflow:"hidden",boxShadow:`0 20px 60px ${assignedTeam?assignedTeam.color+"44":T.accent+"44"}`,animation:"tb-scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)"}}>
           
           {/* Header */}
           <div style={{background:assignedTeam?assignedTeam.color:T.accent,padding:"20px 24px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>

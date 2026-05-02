@@ -136,6 +136,7 @@ export function GlobalStyles() {
       @keyframes tb-spin     { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
       @keyframes tb-float    { 0%,100% { transform:translateY(0px); } 50% { transform:translateY(-10px); } }
       @keyframes tb-flash    { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+      @keyframes tb-scaleIn { from { transform:scale(0.9); opacity:0; } to { transform:scale(1); opacity:1; } }
       @keyframes tb-ticker   { from { transform:translateX(0); } to { transform:translateX(-50%); } }
       @media (max-width: 768px) {
         .ticker-mobile-fast {
