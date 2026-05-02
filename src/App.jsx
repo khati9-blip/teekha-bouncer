@@ -9,6 +9,7 @@ import WeeklyReport from "./WeeklyReport";
 import AllTimeXI from "./AllTimeXI";
 import HomeHub from "./HomeHub";
 import RulesSheet from "./RulesSheet";
+import PlayerImage from "./PlayerImage";
 import { T, fonts, GlobalStyles } from "./Theme";
 
 async function callAI(userPrompt, system = "Return only valid JSON.") {
@@ -5150,7 +5151,7 @@ ${aiMatchText.slice(0, 3000)}`;
     
     return (
       <div className="tb-modal-backdrop" onClick={() => setTeamRosterModal(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.9)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:20}}>
-        <div className="tb-modal-slide" onClick={e => e.stopPropagation()} style={{background:T.bg,border:`3px solid ${team.color}`,borderRadius:0,maxWidth:600,width:"100%",maxHeight:"80vh",overflow:"hidden",boxShadow:"5px 5px 0 "+team.color+"66"}}>
+        <div className="tb-modal-slide" onClick={e => e.stopPropagation()} style={{background:T.bg,border:`3px solid ${team.color}`,borderRadius:0,maxWidth:800,width:"100%",maxHeight:"80vh",overflow:"hidden",boxShadow:"5px 5px 0 "+team.color+"66"}}>
           {/* Modal header */}
           <div style={{background:team.color,padding:"16px 20px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
             <div style={{fontFamily:fonts.display,fontSize:22,fontWeight:900,color:T.bg,letterSpacing:3,textTransform:"uppercase"}}>
@@ -5164,216 +5165,127 @@ ${aiMatchText.slice(0, 3000)}`;
             {roster.length === 0 ? (
               <div style={{textAlign:"center",padding:40,color:T.muted}}>No players assigned yet</div>
             ) : (
-              Object.entries(byRole).map(([role, players]) => {
-                if (players.length === 0) return null;
-                return (
-                  <div key={role} style={{marginBottom:20}}>
-                    <div style={{fontFamily:fonts.display,fontSize:14,fontWeight:800,color:team.color,letterSpacing:2,textTransform:"uppercase",marginBottom:10,borderBottom:`2px solid ${team.color}`,paddingBottom:6}}>
-                      {role} ({players.length})
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill, minmax(200px, 1fr))",gap:16}}>
+                {roster.map(p => {
+                  const isRuledOut = ruledOut.includes(p.id);
+                  
+                  // Calculate player total
+                  let total = 0;
+                  let matchesPlayed = 0;
+                  
+                  if (points[p.id]) {
+                    const periods = (ownershipLog[p.id] || []).filter(o => o.teamId === team.id);
+                    const hasLog = periods.length > 0;
+                    
+                    for (const [matchId, matchData] of Object.entries(points[p.id])) {
+                      const match = matches.find(m => m.id === matchId);
+                      if (!match) continue;
+                      
+                      const matchDate = match.date;
+                      let owned = false;
+                      
+                      if (!hasLog) {
+                        owned = true;
+                      } else {
+                        owned = periods.some(period => {
+                          const fromDate = (period.from || "").split("T")[0];
+                          const toDate = period.to ? period.to.split("T")[0] : "2099-01-01";
+                          return matchDate >= fromDate && matchDate <= toDate;
+                        });
+                      }
+                      
+                      if (!owned) continue;
+                      
+                      const cap = captains[`${matchId}_${team.id}`] || {};
+                      let pts = matchData.base || 0;
+                      if (cap.captain === p.id) pts *= 2;
+                      else if (cap.vc === p.id) pts *= 1.5;
+                      total += Math.round(pts);
+                      if (pts > 0) matchesPlayed++;
+                    }
+                  }
+                  
+                  const isSafe = isPlayerSafeForTeam(team.id, p.id);
+                  
+                  return (
+                    <div key={p.id} style={{
+                      background: isRuledOut ? "#1A0000" : T.card,
+                      border: `2px solid ${isRuledOut ? T.danger : team.color+"44"}`,
+                      borderRadius: 12,
+                      overflow: "hidden",
+                      display: "flex",
+                      flexDirection: "column",
+                      position: "relative",
+                      transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                      cursor: "pointer"
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.transform = "translateY(-4px)";
+                      e.currentTarget.style.boxShadow = `0 8px 20px ${team.color}44`;
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.transform = "translateY(0)";
+                      e.currentTarget.style.boxShadow = "none";
+                    }}>
+                      
+                      {/* Player Image */}
+                      <div style={{width:"100%",aspectRatio:"1/1"}}>
+  <PlayerImage player={p} size="100%" borderRadius={0} teamColor={team?.color} showBackground={true} />
+</div>
+                      
+                      {/* Player Info */}
+                      <div style={{padding: "12px"}}>
+                        <div style={{
+                          fontFamily: fonts.display,
+                          fontSize: 16,
+                          fontWeight: 900,
+                          color: isRuledOut ? T.danger : T.text,
+                          letterSpacing: 1,
+                          textTransform: "uppercase",
+                          textDecoration: isRuledOut ? "line-through" : "none",
+                          marginBottom: 6,
+                          lineHeight: 1.2
+                        }}>
+                          {p.name}
+                        </div>
+                        
+                        {/* Badges */}
+                        <div style={{display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 8}}>
+                          {p.tier && (
+                            <span style={{
+                              fontSize: 8, fontWeight: 800, letterSpacing: 1, padding: "2px 6px",
+                              fontFamily: fonts.display, textTransform: "uppercase",
+                              background: p.tier==="platinum"?"#4A5E7833":p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":"#CD7F3222",
+                              border: `1px solid ${p.tier==="platinum"?"#4A5E7866":p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":"#CD7F3255"}`,
+                              color: p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32",
+                              clipPath: "polygon(3px 0%, 100% 0%, calc(100% - 3px) 100%, 0% 100%)"
+                            }}>
+                              {p.tier==="platinum"?"PLAT":p.tier==="gold"?"GOLD":p.tier==="silver"?"SILV":"BRNZ"}
+                            </span>
+                          )}
+                          {isSafe && <span style={{fontSize:8,background:"#2ECC7122",border:"1px solid #2ECC7144",color:"#2ECC71",padding:"2px 6px",fontFamily:fonts.display,fontWeight:700,letterSpacing:1,clipPath:"polygon(3px 0%, 100% 0%, calc(100% - 3px) 100%, 0% 100%)"}}>🛡️</span>}
+                          {isRuledOut && <span style={{fontSize:8,background:T.dangerBg,color:T.danger,padding:"2px 6px",fontFamily:fonts.display,fontWeight:800,letterSpacing:1}}>🚫</span>}
+                        </div>
+                        
+                        {/* Role & IPL */}
+                        <div style={{fontSize:10,color:T.muted,marginBottom:8,fontFamily:fonts.body}}>{p.role} • {p.iplTeam}</div>
+                        
+                        {/* Stats */}
+                        <div style={{display:"flex",justifyContent:"space-between",paddingTop:8,borderTop:`1px solid ${T.border}44`}}>
+                          <div style={{textAlign:"center"}}>
+                            <div style={{fontFamily:fonts.display,fontSize:18,fontWeight:900,color:isRuledOut?T.danger:team.color,lineHeight:1}}>{total}</div>
+                            <div style={{fontFamily:fonts.display,fontSize:7,color:T.muted,letterSpacing:1,marginTop:2}}>PTS</div>
+                          </div>
+                          <div style={{textAlign:"center"}}>
+                            <div style={{fontFamily:fonts.display,fontSize:18,fontWeight:900,color:T.text,lineHeight:1}}>{matchesPlayed}</div>
+                            <div style={{fontFamily:fonts.display,fontSize:7,color:T.muted,letterSpacing:1,marginTop:2}}>MATCHES</div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    {players.map(p => {
-  const isRuledOut = ruledOut.includes(p.id);
-  
-  // Calculate player total - ONLY for matches while on THIS team
-  let total = 0;
-  let matchesPlayed = 0;
-  
-  if (points[p.id]) {
-    // Get ownership periods for this player on this team
-    const periods = (ownershipLog[p.id] || []).filter(o => o.teamId === team.id);
-    const hasLog = periods.length > 0;
-    
-    for (const [matchId, matchData] of Object.entries(points[p.id])) {
-      const match = matches.find(m => m.id === matchId);
-      if (!match) continue;
-      
-      // Check if match was during this team's ownership
-      const matchDate = match.date;
-      let owned = false;
-      
-      if (!hasLog) {
-        // No ownership log = original owner, count all
-        owned = true;
-      } else {
-        // Check if match falls within ownership periods
-        owned = periods.some(period => {
-          const fromDate = (period.from || "").split("T")[0];
-          const toDate = period.to ? period.to.split("T")[0] : "2099-01-01";
-          return matchDate >= fromDate && matchDate <= toDate;
-        });
-      }
-      
-      if (!owned) continue; // Skip matches not during this team's ownership
-      
-      // Calculate points with captain multiplier
-      const cap = captains[`${matchId}_${team.id}`] || {};
-      let pts = matchData.base || 0;
-      if (cap.captain === p.id) pts *= 2;
-      else if (cap.vc === p.id) pts *= 1.5;
-      total += Math.round(pts);
-      if (pts > 0) matchesPlayed++;
-    }
-  }
-  
-  const isSafe = isPlayerSafeForTeam(team.id, p.id);
-  
-  return (
-    <div key={p.id} style={{
-      background:isRuledOut?"#1A0000":T.bg,
-      border:`2px solid ${isRuledOut?T.danger:team.color+"44"}`,
-      borderLeft:`5px solid ${isRuledOut?T.danger:team.color}`,
-      borderRadius:0,
-      padding:"12px 16px",
-      marginBottom:8,
-      display:"flex",
-      alignItems:"center",
-      gap:12,
-      position:"relative",
-      overflow:"hidden"
-    }}>
-      {/* Player name & badges */}
-      <div style={{flex:1,minWidth:0}}>
-        <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:6}}>
-          <span style={{
-            fontFamily:fonts.display,
-            fontSize:16,
-            fontWeight:900,
-            color:isRuledOut?T.danger:T.text,
-            letterSpacing:1,
-            textDecoration:isRuledOut?"line-through":"none",
-            textTransform:"uppercase"
-          }}>
-            {p.name}
-          </span>
-          
-          {/* Tier badge - bigger & sportier */}
-          {p.tier && (
-            <span style={{
-              fontSize:11,
-              fontWeight:900,
-              letterSpacing:2,
-              padding:"4px 10px",
-              fontFamily:fonts.display,
-              textTransform:"uppercase",
-              background:p.tier==="platinum"?"#4A5E7844":p.tier==="gold"?"#F5A62333":p.tier==="silver"?"#94A3B833":"#CD7F3233",
-              border:`2px solid ${p.tier==="platinum"?"#4A5E78":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32"}`,
-              color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32",
-              clipPath:"polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%)",
-              filter:"drop-shadow(2px 2px 0 rgba(0,0,0,0.5))"
-            }}>
-              {p.tier==="platinum"?"PLATINUM":p.tier==="gold"?"GOLD":p.tier==="silver"?"SILVER":"BRONZE"}
-            </span>
-          )}
-          
-          {/* Safe badge - bigger */}
-          {isSafe && !isRuledOut && (
-            <span style={{
-              fontSize:11,
-              fontWeight:900,
-              letterSpacing:1.5,
-              padding:"4px 10px",
-              fontFamily:fonts.display,
-              background:"#2ECC7133",
-              border:"2px solid #2ECC71",
-              color:"#2ECC71",
-              clipPath:"polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%)",
-              filter:"drop-shadow(2px 2px 0 rgba(0,0,0,0.5))"
-            }}>
-              🛡️ SAFE
-            </span>
-          )}
-          
-          {/* Ruled out badge - bigger */}
-          {isRuledOut && (
-            <span style={{
-              fontSize:11,
-              fontWeight:900,
-              letterSpacing:1.5,
-              padding:"4px 10px",
-              fontFamily:fonts.display,
-              background:T.dangerBg,
-              border:`2px solid ${T.danger}`,
-              color:T.danger,
-              clipPath:"polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%)",
-              filter:"drop-shadow(2px 2px 0 rgba(0,0,0,0.5))"
-            }}>
-              🚫 RULED OUT
-            </span>
-          )}
-        </div>
-        
-        <div style={{fontSize:11,color:T.muted,fontFamily:fonts.body}}>
-          {p.iplTeam} • {p.role}
-        </div>
-      </div>
-      
-      {/* Performance stats - fills the empty space */}
-      <div style={{
-        display:"flex",
-        flexDirection:"column",
-        alignItems:"flex-end",
-        gap:4,
-        minWidth:120
-      }}>
-        {total > 0 ? (
-          <button
-            onClick={() => setPlayerStatsModal(p)}
-            style={{
-              display:"flex",
-              flexDirection:"column",
-              alignItems:"flex-end",
-              gap:4,
-              background:"transparent",
-              border:"none",
-              cursor:"pointer",
-              padding:0,
-              transition:"all .2s"
-            }}
-            onMouseEnter={e => e.currentTarget.style.transform = "scale(1.05)"}
-            onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
-          >
-            <div style={{
-              fontFamily:fonts.display,
-              fontSize:24,
-              fontWeight:900,
-              color:T.accent,
-              letterSpacing:1,
-              lineHeight:1
-            }}>
-              {total} 📊
-            </div>
-            <div style={{
-              fontSize:10,
-              color:T.muted,
-              fontFamily:fonts.display,
-              letterSpacing:1,
-              textTransform:"uppercase"
-            }}>
-              {matchesPlayed} {matchesPlayed === 1 ? "match" : "matches"}
-            </div>
-          </button>
-        ) : (
-          <div style={{
-            textAlign:"right"
-          }}>
-            <div style={{
-              fontSize:11,
-              color:T.muted,
-              fontFamily:fonts.display,
-              letterSpacing:1,
-              textTransform:"uppercase"
-            }}>
-              No Stats Yet
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-                    })}
-                  </div>
-                );
-              })
+                  );
+                })}
+              </div>
             )}
           </div>
         </div>
