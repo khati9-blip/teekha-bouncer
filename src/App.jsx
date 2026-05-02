@@ -6352,6 +6352,63 @@ onChange={e=>setPlayerSearch(e.target.value)}
                   </div>
                 </>
               )}
+{/* LIVE TICKER */}
+              {leaderboard.length > 0 && (
+                <div style={{
+                  position: 'fixed',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  background: `linear-gradient(90deg, ${T.bg} 0%, #1A0F00 50%, ${T.bg} 100%)`,
+                  borderTop: `3px solid ${T.accent}`,
+                  padding: '10px 0',
+                  overflow: 'hidden',
+                  zIndex: 100,
+                  boxShadow: `0 -4px 20px ${T.accent}33`
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 40,
+                    animation: 'tb-ticker 40s linear infinite',
+                    whiteSpace: 'nowrap'
+                  }}>
+                    {/* Duplicate items for seamless loop */}
+                    {[...notifications.slice(-10).reverse(), ...notifications.slice(-10).reverse()].map((n, idx) => (
+                      <div key={idx} style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: '6px 16px',
+                        background: T.accentBg,
+                        border: `1px solid ${T.accentBorder}`,
+                        clipPath: 'polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%)',
+                      }}>
+                        <span style={{ fontSize: 16, flexShrink: 0 }}>{n.emoji}</span>
+                        <span style={{
+                          fontFamily: fonts.display,
+                          fontSize: 12,
+                          fontWeight: 700,
+                          color: T.accent,
+                          letterSpacing: 1,
+                          textTransform: 'uppercase'
+                        }}>
+                          {n.text}
+                        </span>
+                        <span style={{
+                          fontFamily: fonts.body,
+                          fontSize: 9,
+                          color: T.muted,
+                          marginLeft: 4
+                        }}>
+                          {new Date(n.ts).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
             </div>
           )}
         </div>

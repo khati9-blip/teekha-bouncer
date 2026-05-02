@@ -136,6 +136,7 @@ export function GlobalStyles() {
       @keyframes tb-spin     { from { transform:rotate(0deg); } to { transform:rotate(360deg); } }
       @keyframes tb-float    { 0%,100% { transform:translateY(0px); } 50% { transform:translateY(-10px); } }
       @keyframes tb-flash    { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+      @keyframes tb-ticker   { from { transform:translateX(0); } to { transform:translateX(-50%); } }
       .tb-fadeUp  { animation: tb-fadeUp  0.4s ease both; }
       .slide-in-left { animation: tb-slideInLeft 0.3s cubic-bezier(0.25,0.46,0.45,0.94) both; }
       .tb-modal-slide { animation: tb-slideInFromLeft 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
