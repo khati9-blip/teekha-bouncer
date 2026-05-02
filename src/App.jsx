@@ -4768,7 +4768,7 @@ ${aiMatchText.slice(0, 3000)}`;
     style={{background:"transparent",border:`2px solid ${T.accent}`,color:T.accent,clipPath:"polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%)",padding:"7px 18px",cursor:"pointer",fontFamily:fonts.display,fontWeight:800,fontSize:13,letterSpacing:2,textTransform:"uppercase"}}>
     ✚ ADD
   </button>
-  <button onClick={()=>setShowAllPlayersModal(true)} 
+  <button onClick={()=>{setDraftTab("players");setShowAllPlayersModal(true);}} 
     style={{background:squadView?T.accent:"transparent",border:`2px solid ${T.accent}`,color:squadView?T.bg:T.accent,clipPath:"polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%)",padding:"7px 18px",cursor:"pointer",fontFamily:fonts.display,fontWeight:800,fontSize:13,letterSpacing:2,textTransform:"uppercase"}}>
     {squadView?"📋 LIST":"🏊 POOL"}
   </button>
