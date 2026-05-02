@@ -2523,7 +2523,7 @@ function CaptainModal({ match, teams, players, assignments, captains, points, my
       </div>
 
       {/* Content wrapper */}
-      <div style={{padding:24,maxHeight:"calc(90vh - 140px)",overflowY:"auto"}}>
+      <div style={{padding:24,maxHeight:"calc(90vh - 200px)",overflowY:"auto"}}>
 
         {isLocked && <div style={{background:T.dangerBg,border:`1px solid ${T.danger}33`,borderRadius:8,padding:"8px 12px",marginBottom:14,fontSize:12,color:T.danger}}>🔒 Captain/VC selections are locked.</div>}
 
