@@ -1361,35 +1361,61 @@ function SplashScreen({ onLogin }) {
   };
 
   if (mode === 'splash') return (
-    <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#080C14 0%,#0E1521 50%,#080C14 100%)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"20px",fontFamily:fonts.body}}>
-      <style>{`*{box-sizing:border-box;margin:0;padding:0;}body{background:#0C0C0F;}`}</style>
+  <div style={{minHeight:"100vh",background:"linear-gradient(160deg,#0A0E14 0%,#141A24 50%,#0A0E14 100%)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"20px",fontFamily:fonts.body,position:"relative",overflow:"hidden"}}>
+    <style>{`*{box-sizing:border-box;margin:0;padding:0;}body{background:#0C0C0F;}`}</style>
+    
+    {/* Animated background glow */}
+    <div style={{position:"absolute",top:"-50%",left:"-50%",width:"200%",height:"200%",background:"radial-gradient(circle at center, #FF6B0015 0%, transparent 70%)",animation:"tb-spin 20s linear infinite",pointerEvents:"none"}}/>
 
-      {/* Logo area */}
-      <div style={{textAlign:"center",marginBottom:48}}>
-        <img src="/logo.png" alt="Teekha Bouncer" style={{width:120,height:120,objectFit:"contain",borderRadius:20,marginBottom:16,boxShadow:"0 0 40px #F5A62344"}} />
-        <div style={{fontFamily:fonts.display,fontWeight:700,fontSize:42,color:T.accent,letterSpacing:4,lineHeight:1}}>TEEKHA</div>
-        <div style={{fontFamily:fonts.display,fontWeight:700,fontSize:42,color:T.text,letterSpacing:4,lineHeight:1}}>BOUNCER</div>
-        <div style={{fontSize:13,color:T.muted,letterSpacing:6,marginTop:8,textTransform:"uppercase"}}>Fantasy Cricket League</div>
+    {/* Logo area */}
+    <div style={{textAlign:"center",marginBottom:40,position:"relative",zIndex:1}}>
+      <div style={{position:"relative",display:"inline-block",marginBottom:24}}>
+        <img src="/logo.png" alt="Teekha Bouncer" 
+          style={{width:140,height:140,objectFit:"contain",borderRadius:0,clipPath:"polygon(12px 0%, 100% 0%, calc(100% - 12px) 100%, 0% 100%)",boxShadow:"0 8px 32px rgba(255,107,0,0.4), 0 0 60px rgba(255,107,0,0.2)"}} />
+        <div style={{position:"absolute",inset:-8,background:"linear-gradient(135deg, #FF6B00 0%, #FF8C00 100%)",opacity:0.15,clipPath:"polygon(12px 0%, 100% 0%, calc(100% - 12px) 100%, 0% 100%)",filter:"blur(12px)",zIndex:-1}}/>
       </div>
+      
+      <div style={{fontFamily:fonts.display,fontWeight:900,fontSize:56,background:"linear-gradient(135deg, #FF6B00 0%, #FF8C00 100%)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",letterSpacing:6,lineHeight:1,textTransform:"uppercase",textShadow:"0 4px 20px rgba(255,107,0,0.3)"}}>
+        TEEKHA
+      </div>
+      <div style={{fontFamily:fonts.display,fontWeight:900,fontSize:56,color:"#E2EAF4",letterSpacing:6,lineHeight:1,textTransform:"uppercase",textShadow:"0 2px 12px rgba(226,234,244,0.2)"}}>
+        BOUNCER
+      </div>
+      <div style={{fontSize:11,color:T.muted,letterSpacing:5,marginTop:12,textTransform:"uppercase",fontWeight:700}}>
+        Fantasy Cricket League
+      </div>
+    </div>
 
-      {/* Tagline */}
-      <div style={{background:T.card,border:`1px solid ${T.border}`,borderRadius:12,padding:"16px 24px",marginBottom:40,textAlign:"center",maxWidth:320}}>
-        <div style={{fontSize:14,color:T.sub,lineHeight:1.6}}>
-          Track fantasy points, manage squads, and compete with your friends across multiple leagues 🏆
-        </div>
+    {/* Tagline */}
+    <div style={{background:"rgba(255,107,0,0.05)",border:"2px solid rgba(255,107,0,0.2)",borderLeft:"5px solid #FF6B00",borderRadius:0,padding:"18px 28px",marginBottom:48,textAlign:"center",maxWidth:380,clipPath:"polygon(0% 0%, 100% 0%, calc(100% - 12px) 100%, 0% 100%)",position:"relative",zIndex:1}}>
+      <div style={{fontSize:15,color:"#B8C5D6",lineHeight:1.7,fontWeight:500}}>
+        Track fantasy points, manage squads, and compete with your friends across multiple leagues 🏆
       </div>
+    </div>
 
-      {/* Buttons */}
-      <div style={{width:"100%",maxWidth:320,display:"flex",flexDirection:"column",gap:12}}>
-        <button onClick={() => setMode('signup')}
-          style={{background:`linear-gradient(135deg,${T.accent},${T.accentDim})`,border:"none",borderRadius:12,padding:"16px",color:T.bg,fontFamily:fonts.body,fontWeight:800,fontSize:18,cursor:"pointer",letterSpacing:2}}>
-          GET STARTED
-        </button>
-        <button onClick={() => setMode('login')}
-          style={{background:"transparent",border:`2px solid ${T.border}`,borderRadius:12,padding:"14px",color:T.text,fontFamily:fonts.body,fontWeight:700,fontSize:16,cursor:"pointer",letterSpacing:1}}>
-          I HAVE AN ACCOUNT
-        </button>
-      </div>
+    {/* Buttons */}
+    <div style={{width:"100%",maxWidth:360,display:"flex",flexDirection:"column",gap:14,position:"relative",zIndex:1}}>
+      <button onClick={() => setMode('signup')}
+        style={{background:"linear-gradient(135deg, #FF6B00 0%, #FF8C00 100%)",border:"none",borderRadius:0,padding:"18px",color:"#0A0E14",fontFamily:fonts.display,fontWeight:900,fontSize:16,cursor:"pointer",letterSpacing:3,textTransform:"uppercase",clipPath:"polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%)",boxShadow:"5px 5px 0 rgba(255,107,0,0.3)",textShadow:"1px 1px 0 rgba(255,255,255,0.3)",transition:"all 0.2s"}}
+        onMouseEnter={e => {e.currentTarget.style.transform="translate(-2px, -2px)";e.currentTarget.style.boxShadow="7px 7px 0 rgba(255,107,0,0.3)";}}
+        onMouseLeave={e => {e.currentTarget.style.transform="translate(0, 0)";e.currentTarget.style.boxShadow="5px 5px 0 rgba(255,107,0,0.3)";}}>
+        ⚡ GET STARTED
+      </button>
+      
+      <button onClick={() => setMode('login')}
+        style={{background:"transparent",border:"3px solid rgba(255,107,0,0.4)",borderRadius:0,padding:"16px",color:"#FF6B00",fontFamily:fonts.display,fontWeight:800,fontSize:15,cursor:"pointer",letterSpacing:2,textTransform:"uppercase",clipPath:"polygon(10px 0%, 100% 0%, calc(100% - 10px) 100%, 0% 100%)",transition:"all 0.2s"}}
+        onMouseEnter={e => {e.currentTarget.style.background="rgba(255,107,0,0.08)";e.currentTarget.style.borderColor="#FF6B00";}}
+        onMouseLeave={e => {e.currentTarget.style.background="transparent";e.currentTarget.style.borderColor="rgba(255,107,0,0.4)";}}>
+        🔑 I HAVE AN ACCOUNT
+      </button>
+    </div>
+
+    {/* Decorative elements */}
+    <div style={{position:"absolute",bottom:20,left:0,right:0,textAlign:"center",fontSize:10,color:"rgba(184,197,214,0.3)",letterSpacing:2,fontWeight:700}}>
+      POWERED BY TEEKHA BOUNCER LEAGUE
+    </div>
+  </div>
+);
 
 
     </div>
