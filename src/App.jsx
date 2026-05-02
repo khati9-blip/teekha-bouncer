@@ -6356,7 +6356,7 @@ onChange={e=>setPlayerSearch(e.target.value)}
               {leaderboard.length > 0 && (
                 <div style={{
                   position: 'fixed',
-                  bottom: 0,
+                  bottom: 60,
                   left: 0,
                   right: 0,
                   background: `linear-gradient(90deg, ${T.bg} 0%, #1A0F00 50%, ${T.bg} 100%)`,
