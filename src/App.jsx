@@ -4989,7 +4989,7 @@ ${aiMatchText.slice(0, 3000)}`;
       <div style={{marginBottom:16,display:"flex",gap:8,flexWrap:"wrap"}}>
         <input
           type="text"
-          placeholder="Search name or franchise..."
+          placeholder="Search player name..."
           value={playerSearch}
           onChange={e=>setPlayerSearch(e.target.value)}
           style={{flex:1,minWidth:200,background:T.card,border:`2px solid ${T.border}`,borderRadius:0,padding:"10px 14px",color:T.text,fontSize:14,fontFamily:fonts.body,outline:"none"}}
@@ -5006,7 +5006,6 @@ ${aiMatchText.slice(0, 3000)}`;
           style={{background:T.card,border:`2px solid ${T.border}`,borderRadius:0,padding:"10px 14px",color:T.text,fontSize:13,fontFamily:fonts.display,fontWeight:700,letterSpacing:1,cursor:"pointer"}}>
           <option>Default</option>
           <option>Name (A-Z)</option>
-          <option>Total Points</option>
         </select>
       </div>
 
@@ -5022,10 +5021,6 @@ ${aiMatchText.slice(0, 3000)}`;
 });
 
           if (sortOrder === "Name (A-Z)") filtered.sort((a,b) => a.name.localeCompare(b.name));
-          else if (sortOrder === "Total Points") {
-            const getTotal = p => getPlayerBreakdown(p.id).reduce((s,m)=>s+(m.total||0),0);
-            filtered.sort((a,b) => getTotal(b) - getTotal(a));
-          }
 
           return filtered.map(p => {
   const assignedTeam = assignments[p.id] ? teams.find(t=>t.id===assignments[p.id]) : null;
@@ -5484,7 +5479,7 @@ ${aiMatchText.slice(0, 3000)}`;
         <div style={{padding:"16px 24px",background:T.card,borderBottom:`2px solid ${T.border}`,display:"flex",gap:12,flexWrap:"wrap"}}>
           <input
             type="text"
-            placeholder="Search name or franchise..."
+            placeholder="Search player name..."
             value={playerSearch}
 onChange={e=>setPlayerSearch(e.target.value)}
             style={{flex:1,minWidth:200,background:T.bg,border:`2px solid ${T.border}`,borderRadius:0,padding:"10px 14px",color:T.text,fontSize:14,fontFamily:fonts.body,outline:"none"}}
