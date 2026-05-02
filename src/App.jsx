@@ -4243,11 +4243,46 @@ ${aiMatchText.slice(0, 3000)}`;
     return { ...t, total };
   }).sort((a, b) => b.total - a.total);
 
-  const shareLeaderboard = () => {
-    const medals = ['🥇','🥈','🥉'];
-    const lines = leaderboard.map((t, i) => (medals[i] || ('#'+(i+1))) + ' ' + t.name + ': ' + t.total + ' pts');
-    const text = '🏏 Teekha Bouncer League\n' + (pitch ? pitch.name : '') + '\nLeaderboard\n\n' + lines.join('\n') + '\n\nteekha-bouncer.vercel.app';
-    window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+  const shareLeaderboard = async () => {
+    const element = document.getElementById('leaderboard-capture');
+    if (!element) return;
+    
+    try {
+      const canvas = await html2canvas(element, {
+        backgroundColor: '#0F0800',
+        scale: 2,
+        logging: false,
+      });
+      
+      canvas.toBlob(async (blob) => {
+        const file = new File([blob], 'leaderboard.png', { type: 'image/png' });
+        
+        if (navigator.share && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({
+              files: [file],
+              title: '🏏 Teekha Bouncer Leaderboard',
+              text: `${pitch?.name || 'League'} Leaderboard\n\nteekha-bouncer.vercel.app`,
+            });
+            return;
+          } catch (err) {
+            console.log('Share cancelled');
+          }
+        }
+        
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'teekha-bouncer-leaderboard.png';
+        a.click();
+        URL.revokeObjectURL(url);
+        alert('📸 Leaderboard downloaded! Share it on WhatsApp.');
+      }, 'image/png');
+      
+    } catch (err) {
+      console.error('Screenshot failed:', err);
+      alert('❌ Could not capture. Try again!');
+    }
   };
 
   const fetchLiveScores = async () => {
@@ -4486,8 +4521,9 @@ ${aiMatchText.slice(0, 3000)}`;
 
   if (!appReady) return (
     <>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
       <style>{css}</style>
-      <div style={{minHeight:"100vh",background:"var(--bg)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16}}>
+      <div style={{minHeight:"100vh",background:"var(--bg)"}}>bg)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16}}>
         <img src="/logo.png" style={{width:80,height:80,objectFit:"contain",borderRadius:12,animation:"spin 2s linear infinite"}} />
         <div style={{fontFamily:fonts.display,fontSize:22,fontWeight:700,color:T.accent,letterSpacing:3}}>TEEKHA BOUNCER</div>
         <div style={{color:T.muted,fontSize:14,letterSpacing:1}}>Loading league data…</div>
@@ -6214,7 +6250,7 @@ onChange={e=>setPlayerSearch(e.target.value)}
                 <Card sx={{padding:60,textAlign:"center"}}><div style={{fontSize:56}}>🏆</div><div style={{color:T.muted,marginTop:16}}>Set up your league first</div></Card>
               ):(
                 <>
-                  <div style={{marginBottom:20}}>
+                  <div id="leaderboard-capture" style={{marginBottom:20}}>
                     {leaderboard.map((team,i)=>{
                       const medals=["🥇","🥈","🥉"],mc=["#F5A623","#94A3B8","#CD7C2F"];
                       const breakdown=getPlayerBreakdown(team.id);
