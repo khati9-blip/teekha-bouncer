@@ -5574,7 +5574,7 @@ onChange={e=>setPlayerSearch(e.target.value)}
     {isAssigned && (
       <button onClick={()=>removePlayer(p.id)} style={{background:T.dangerBg,border:`2px solid ${T.danger}`,color:T.danger,borderRadius:0,padding:"6px 10px",cursor:"pointer",fontSize:12,fontFamily:fonts.display,fontWeight:700}}>✕</button>
     )}
-    <button onClick={()=>withPassword(()=>setEditPlayer(p))} style={{background:T.infoBg,border:`2px solid ${T.info}`,color:T.info,borderRadius:0,padding:"6px 10px",cursor:"pointer",fontSize:12,fontFamily:fonts.display,fontWeight:700}}>✏️</button>
+    <button onClick={()=>{console.log("Edit button clicked", p); setEditPlayer(p);}} style={{background:T.infoBg,border:`2px solid ${T.info}`,color:T.info,borderRadius:0,padding:"6px 10px",cursor:"pointer",fontSize:12,fontFamily:fonts.display,fontWeight:700}}>✏️</button>
     {isAssigned && (
       <button onClick={()=>toggleSafePlayer(assignments[p.id],p.id)} style={{background:isSafe?"#2ECC7133":"transparent",border:`2px solid ${isSafe?"#2ECC71":T.border}`,color:isSafe?"#2ECC71":T.muted,borderRadius:0,padding:"6px 10px",cursor:"pointer",fontSize:12}}>🛡️</button>
     )}
