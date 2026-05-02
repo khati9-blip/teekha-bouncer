@@ -7049,15 +7049,6 @@ onChange={e=>setPlayerSearch(e.target.value)}
               }} style={{background:T.successBg,border:`1px solid ${T.success}44`,color:T.success,borderRadius:4,padding:"2px 5px",cursor:"pointer",fontSize:9,fontWeight:700}}>
                 CLAIM
               </button>
-              <button onClick={()=>withPassword(async()=>{
-                if(!confirm("Reset this Team ID?")) return;
-                const newId = generateTeamId();
-                const updated = {...teamIdentity, [t.id]: {teamId: newId}};
-                setTeamIdentity(updated);
-                await storeSet("teamIdentity", updated);
-              })} style={{background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:4,padding:"2px 5px",cursor:"pointer",fontSize:10}}>
-                ↺
-              </button>
             </div>
 
           ) : (
@@ -7089,13 +7080,26 @@ onChange={e=>setPlayerSearch(e.target.value)}
 )}
 
 <div style={{flex:1,padding:"12px 8px",overflowY:"auto"}}>
-  {/* your buttons remain unchanged */}
-  
+  <button onClick={()=>{nav("form");setDrawerOpen(false);}} style={{width:"100%",background:page==="form"?T.accent:"transparent",border:page==="form"?"none":`2px solid ${T.border}`,padding:"14px 16px"}}>
+    Form Chart
+  </button>
+
+  <button onClick={()=>{nav("h2h");setDrawerOpen(false);}} style={{width:"100%",background:page==="h2h"?"#4F8EF7":"transparent",border:page==="h2h"?"none":`2px solid ${T.border}`,padding:"14px 16px"}}>
+    Head to Head
+  </button>
+
   <div style={{padding:"16px",borderTop:`1px solid ${T.border}`}}>
-    <button onClick={onLogout} style={{width:"100%",background:T.dangerBg,border:`1px solid ${T.danger}33`,borderRadius:8,padding:"10px",color:T.danger,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>
+    <button onClick={onLogout} style={{width:"100%",background:T.dangerBg,border:`1px solid ${T.danger}33`,borderRadius:8,padding:"10px"}}>
       LOGOUT
     </button>
   </div>
+</div>
+
+</div>
+</div>
+</div>
+)}
+
 </div>
 
   );
