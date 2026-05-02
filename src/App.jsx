@@ -4596,13 +4596,13 @@ ${aiMatchText.slice(0, 3000)}`;
     !ruleProposal.votes[myTeam.id];
 
   const navItems=[
-    ...(isAdmin && teams.length===0 ? [{id:"setup",label:"Setup",icon:"🏗️"}] : []),
-    {id:"draft",label:"Draft",icon:"📋"},
-    {id:"matches",label:"Matches",icon:"🏏"},
-    {id:"transfer",label:"Transfer",icon:"🔄",disabled:teams.length===0},
-    {id:"results",label:"Results",icon:"📊"},
-    {id:"leaderboard",label:"Board",icon:"🏆",disabled:teams.length===0},
-  ];
+  ...(isAdmin && teams.length===0 ? [{id:"setup",label:"Setup",icon:"⚙️"}] : []),
+  {id:"draft",label:"Draft",icon:"🎯"},
+  {id:"matches",label:"Matches",icon:"⚡"},
+  {id:"transfer",label:"Transfer",icon:"🔥",disabled:teams.length===0},
+  {id:"results",label:"Results",icon:"📊"},
+  {id:"leaderboard",label:"Board",icon:"👑",disabled:teams.length===0},
+];
 
   if (!appReady) return (
     <>
@@ -4718,12 +4718,15 @@ ${aiMatchText.slice(0, 3000)}`;
 </div>
 
         {/* BOTTOM NAV */}
-<div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:50,background:T.bg,borderTop:`3px solid ${T.accent}`,display:"flex",paddingBottom:"max(8px, env(safe-area-inset-bottom))",boxShadow:"0 -2px 10px rgba(0,0,0,0.5)"}}>
+<div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:50,background:"linear-gradient(180deg, #0A0E14 0%, #080C12 100%)",borderTop:`4px solid #FF6B00`,display:"flex",paddingBottom:"max(8px, env(safe-area-inset-bottom))",boxShadow:"0 -4px 20px rgba(255,107,0,0.2)"}}>
   {navItems.map(n=>(
     <button key={n.id} onClick={()=>!n.disabled&&nav(n.id)}
-      style={{flex:1,background:page===n.id?T.accent:"transparent",border:"none",cursor:n.disabled?"not-allowed":"pointer",padding:"12px 2px 8px",display:"flex",flexDirection:"column",alignItems:"center",gap:4,opacity:n.disabled?0.25:1,clipPath:page===n.id?"polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)":"none",transition:"all .15s",filter:page===n.id?"drop-shadow(2px 2px 0 #8B4500)":"none"}}>
-      <span style={{fontSize:page===n.id?24:22,lineHeight:1}}>{n.icon}</span>
-      <span style={{fontSize:page===n.id?10:9,fontFamily:fonts.display,fontWeight:page===n.id?800:700,letterSpacing:page===n.id?1.5:0.5,color:page===n.id?T.bg:T.muted,textTransform:"uppercase"}}>{n.label}</span>
+      style={{flex:1,background:page===n.id?"linear-gradient(135deg, #FF6B00 0%, #FF8C00 100%)":"transparent",border:"none",cursor:n.disabled?"not-allowed":"pointer",padding:"14px 4px 10px",display:"flex",flexDirection:"column",alignItems:"center",gap:5,opacity:n.disabled?0.25:1,clipPath:page===n.id?"polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%)":"none",transition:"all .2s",boxShadow:page===n.id?"inset 0 0 20px rgba(255,255,255,0.15), 4px 4px 0 rgba(139,69,0,0.4)":"none",position:"relative"}}
+      onMouseEnter={e=>!n.disabled&&page!==n.id&&(e.currentTarget.style.background="rgba(255,107,0,0.1)")}
+      onMouseLeave={e=>!n.disabled&&page!==n.id&&(e.currentTarget.style.background="transparent")}>
+      <span style={{fontSize:page===n.id?28:24,lineHeight:1,filter:page===n.id?"drop-shadow(0 2px 4px rgba(0,0,0,0.4))":"none",transition:"all .2s"}}>{n.icon}</span>
+      <span style={{fontSize:page===n.id?10.5:9.5,fontFamily:fonts.display,fontWeight:page===n.id?900:700,letterSpacing:page===n.id?2:1,color:page===n.id?"#0A0E14":T.muted,textTransform:"uppercase",textShadow:page===n.id?"1px 1px 0 rgba(255,255,255,0.2)":"none",transition:"all .2s"}}>{n.label}</span>
+      {page===n.id && <div style={{position:"absolute",top:0,left:"50%",transform:"translateX(-50%)",width:"60%",height:3,background:"linear-gradient(90deg, transparent 0%, #FFD700 50%, transparent 100%)",boxShadow:"0 0 8px #FFD700"}}/>}
     </button>
   ))}
 </div>
