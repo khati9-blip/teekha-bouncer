@@ -196,7 +196,7 @@ export default function SnatchSection({
 
   const confirmSnatch = async (pid) => {
     if (ruledOut.includes(pid)) { alert("This player is ruled out for the season and cannot be snatched."); return; }
-    const actingTeamId = myTeamId || elig?.team?.id;
+    const actingTeamId = unlocked ? elig?.team?.id : myTeamId;
     if (!unlocked) {
       const myIdentity = Object.values(teamIdentity || {}).find(t => t.claimedBy === user?.email);
       if (!myIdentity?.pinHash) { setPinErr("No PIN set for your team"); return; }
