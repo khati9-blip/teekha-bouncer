@@ -5087,8 +5087,8 @@ ${aiMatchText.slice(0, 3000)}`;
             
             {/* Player count */}
             <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
-              <span style={{fontFamily:fonts.display,fontSize:28,fontWeight:900,color:T.accent,letterSpacing:1}}>{activeCnt}</span>
-              <span style={{fontSize:11,color:T.muted,fontFamily:fonts.body,letterSpacing:1,textTransform:"uppercase"}}>Players</span>
+              <span style={{fontFamily:fonts.display,fontSize:"clamp(16px, 4vw, 28px)",fontWeight:900,color:T.accent,letterSpacing:1}}>{activeCnt}</span>
+              <span style={{fontSize:"clamp(8px, 2vw, 11px)",color:T.muted,fontFamily:fonts.body,letterSpacing:1,textTransform:"uppercase"}}>Players</span>
             </div>
             
             {/* Ruled out indicator */}
