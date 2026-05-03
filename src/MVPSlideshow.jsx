@@ -39,7 +39,7 @@ if (topPlayers.length === 0) return null;
   const rankLabels = ["1ST", "2ND", "3RD", "4TH", "5TH"];
 
   return (
-    <div className={`mvp-slideshow${inline ? "" : " desk-sidebar"}`} style={{
+    <div className={`mvp-slideshow${inline ? "" : " desk-sidebar"}`} onClick={() => setCurrentIndex(prev => (prev + 1) % topPlayers.length)} style={{
       position: inline ? "relative" : "fixed",
       top: inline ? "auto" : 80,
       bottom: inline ? "auto" : 160,
@@ -55,6 +55,7 @@ if (topPlayers.length === 0) return null;
       maxWidth: inline ? 340 : "none",
       margin: inline ? "0 auto" : 0,
       boxSizing: "border-box",
+      cursor: "pointer"
       display: "flex",
       flexDirection: "column",
       justifyContent: "center",
@@ -118,7 +119,7 @@ if (topPlayers.length === 0) return null;
         animation: "tb-scaleIn 0.6s ease both",
         zIndex: 1,
         cursor: "pointer"
-      }} key={`img-${currentIndex}`} onClick={() => setCurrentIndex(prev => (prev + 1) % topPlayers.length)}>
+      }} key={`img-${currentIndex}`}>
         <PlayerImage 
           player={currentPlayer} 
           size="100%" 
