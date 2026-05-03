@@ -7176,30 +7176,10 @@ onChange={e=>setPlayerSearch(e.target.value)}
     </div>
     </div>
 {showMvpModal && (
-  <div onClick={()=>setShowMvpModal(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:600,display:"flex",alignItems:"center",justifyContent:"center"}}>
-    <div onClick={e=>e.stopPropagation()} style={{width:"90vw",maxHeight:"85vh",overflowY:"auto",background:"#0A0E14",border:`3px solid ${T.accent}`,padding:16,position:"relative"}}>
-      <button onClick={()=>setShowMvpModal(false)} style={{position:"absolute",top:8,right:8,background:"transparent",border:"none",color:T.muted,fontSize:20,cursor:"pointer"}}>✕</button>
-      <div style={{color:"white",textAlign:"center",padding:20}}>
-        <div style={{fontSize:40,marginBottom:8}}>⭐</div>
-        <div style={{fontFamily:fonts.display,fontSize:20,fontWeight:900,color:T.accent,letterSpacing:2,marginBottom:16}}>ALL-TIME MVP</div>
-        {[...players].map(p=>({...p,total:Object.values(points[p.id]||{}).reduce((s,d)=>s+(d?.total||d?.base||0),0)}))
-          .filter(p=>p.total>0).sort((a,b)=>b.total-a.total).slice(0,5)
-          .map((p,i)=>{
-            const icons=["🥇","🥈","🥉","4️⃣","5️⃣"];
-            const t=teams.find(t=>t.id===assignments[p.id]);
-            return(
-              <div key={p.id} style={{background:T.card,border:`2px solid ${t?t.color:T.accent}`,padding:"12px 16px",marginBottom:8,display:"flex",alignItems:"center",gap:12}}>
-                <span style={{fontSize:24}}>{icons[i]}</span>
-                <div style={{flex:1,textAlign:"left"}}>
-                  <div style={{fontFamily:fonts.display,fontWeight:900,fontSize:16,color:T.text}}>{p.name}</div>
-                  <div style={{fontSize:12,color:t?t.color:T.accent}}>{t?t.name:""}</div>
-                </div>
-                <div style={{fontFamily:fonts.display,fontWeight:900,fontSize:20,color:t?t.color:T.accent}}>{p.total.toFixed(1)}</div>
-              </div>
-            );
-          })
-        }
-      </div>
+  <div onClick={()=>setShowMvpModal(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.9)",zIndex:600,display:"flex",alignItems:"flex-start",justifyContent:"center",overflowY:"auto",paddingTop:20,paddingBottom:20}}>
+    <div onClick={e=>e.stopPropagation()} style={{width:"90vw",maxWidth:360,position:"relative"}}>
+      <button onClick={()=>setShowMvpModal(false)} style={{position:"absolute",top:-36,right:0,background:"transparent",border:"none",color:T.muted,fontSize:22,cursor:"pointer",zIndex:10}}>✕</button>
+      <MVPSlideshow players={players} assignments={assignments} teams={teams} points={points} fonts={fonts} T={T} PALETTE={PALETTE} inline={true} />
     </div>
   </div>
 )}
