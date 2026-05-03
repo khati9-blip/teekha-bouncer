@@ -40,11 +40,11 @@ export default function MVPSlideshow({ players, assignments, teams, points, font
   return (
     <div className="mvp-slideshow" style={{
       position: inline ? "relative" : "fixed",
-      top: 80,
-      bottom: 160,
-      left: 50,
+      top: inline ? "auto" : 80,
+      bottom: inline ? "auto" : 160,
+      left: inline ? "auto" : 50,
       display: "flex",
-      width: 220,
+      width: inline ? "100%" : 220,
       background: `linear-gradient(160deg, ${T.bg} 0%, #0A0E14 100%)`,
       border: `3px solid ${teamColor}`,
       borderLeft: `6px solid ${teamColor}`,
