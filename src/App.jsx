@@ -4673,7 +4673,7 @@ ${aiMatchText.slice(0, 3000)}`;
         {showPwModal&&<PasswordModal storedHash={pwHash} recoveryHash={recoveryHash} onSuccess={handlePwSuccess} onClose={()=>{setShowPwModal(false);setPendingAction(null);}} />}
 
         {/* TOP BAR */}
-<div style={{background:"linear-gradient(135deg, #0A0E14 0%, #1A1F2E 100%)",borderBottom:`4px solid ${T.accent}`,padding:"12px 18px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:50,boxShadow:"0 4px 20px rgba(245,158,11,0.3)"}}>
+<div style={{background:"linear-gradient(135deg, #0A0E14 0%, #1A1F2E 100%)",borderBottom:`4px solid ${T.accent}`,padding:"8px 10px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:50,boxShadow:"0 4px 20px rgba(245,158,11,0.3)"}}>
   <div style={{display:"flex",alignItems:"center",gap:10}}>
     <button onClick={()=>setDrawerOpen(true)} style={{background:T.accent+"22",border:`2px solid ${T.accent}`,cursor:"pointer",padding:"8px",display:"flex",flexDirection:"column",justifyContent:"center",gap:4,flexShrink:0,position:"relative",borderRadius:0,clipPath:"polygon(3px 0%, 100% 0%, calc(100% - 3px) 100%, 0% 100%)"}}>
       <span style={{display:"block",width:20,height:2,background:T.accent,borderRadius:1}} />
@@ -4686,7 +4686,7 @@ ${aiMatchText.slice(0, 3000)}`;
         <img src="/logo.png" alt="Teekha Bouncer" style={{height:30,width:30,objectFit:"contain",filter:"drop-shadow(1px 1px 0 rgba(0,0,0,0.3))"}} />
       </div>
       <div>
-        <div style={{fontFamily:fonts.display,fontWeight:900,fontSize:16,color:T.accent,letterSpacing:3,lineHeight:1,textTransform:"uppercase",textShadow:"2px 2px 0 rgba(245,158,11,0.2)"}}>TEEKHA BOUNCER</div>
+        <div style={{fontFamily:fonts.display,fontWeight:900,fontSize:"clamp(11px, 3vw, 16px)",color:T.accent,letterSpacing:3,lineHeight:1,textTransform:"uppercase",textShadow:"2px 2px 0 rgba(245,158,11,0.2)"}}>TEEKHA BOUNCER</div>
         <div style={{fontSize:10,color:T.muted,letterSpacing:1.5,marginTop:4,fontFamily:fonts.body,fontWeight:700}}>
           <span style={{color:T.accent}}>{pitch ? pitch.name.toUpperCase() : ""}</span>
           {pitch && user && <span style={{color:T.muted}}> • </span>}
@@ -4695,7 +4695,7 @@ ${aiMatchText.slice(0, 3000)}`;
       </div>
     </div>
   </div>
-  <div style={{display:"flex",alignItems:"center",gap:6}}>
+  <div style={{display:"flex",alignItems:"center",gap:3}}>
     <button onClick={onLeave} style={{background:"#4F8EF7",border:"none",color:"#050F14",clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)",padding:"7px 14px",cursor:"pointer",fontFamily:fonts.display,fontWeight:800,fontSize:11,letterSpacing:1.5,filter:"drop-shadow(2px 2px 0 #1E3A5F)"}}>
       <span className="desk-only">🏠 HOME</span>
       <span className="mob-only">🏠</span>
