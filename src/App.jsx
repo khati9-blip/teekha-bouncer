@@ -5052,7 +5052,7 @@ ${aiMatchText.slice(0, 3000)}`;
   <div style={{display:"flex",gap:16,alignItems:"start"}}>
     
     {/* LEFT COLUMN - TEAM BOXES */}
-    <div className="draft-left-column" style={{width:"clamp(110px, 28%, 180px)",display:"flex",flexDirection:"column",gap:10,overflowY:"auto",maxHeight:"calc(100vh - 160px)"}}>
+    <div className="draft-left-column" style={{width:"clamp(110px, 28%, 180px)",minWidth:0,display:"flex",flexDirection:"column",gap:10,overflowY:"auto",maxHeight:"calc(100vh - 160px)"}}>
       {teams.map(t => {
         const cnt = players.filter(p=>assignments[p.id]===t.id).length;
         const ruledOutCnt = players.filter(p=>assignments[p.id]===t.id&&ruledOut.includes(p.id)).length;
@@ -5081,7 +5081,7 @@ ${aiMatchText.slice(0, 3000)}`;
             {teamLogos[t.id] && <img src={teamLogos[t.id]} style={{position:"absolute",right:-10,bottom:-10,height:80,opacity:0.1,objectFit:"contain",pointerEvents:"none"}} />}
             
             {/* Team name */}
-            <div className="draft-team-name" style={{fontFamily:fonts.display,fontSize:18,fontWeight:900,color:t.color,letterSpacing:2,textTransform:"uppercase",lineHeight:1,marginBottom:8}}>
+            <div className="draft-team-name" style={{fontFamily:fonts.display,fontSize:"clamp(11px, 3.5vw, 18px)",fontWeight:900,color:t.color,letterSpacing:2,textTransform:"uppercase",lineHeight:1,marginBottom:8}}>
               {t.name}
             </div>
             
