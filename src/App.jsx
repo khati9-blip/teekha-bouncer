@@ -525,6 +525,7 @@ const css = `
   @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
   @keyframes spin{to{transform:rotate(360deg)}}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+@keyframes tb-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
   .desk-only{display:inline-flex}
   .mob-only{display:none}
   @media(max-width:600px){
@@ -2652,11 +2653,17 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   const [transferSubTab, setTransferSubTab] = useState("transfer"); // "transfer" | "snatch"
   const [captains, setCaptains] = useState({});
   const [points, setPoints] = useState(() => {
-    try {
-      const cached = localStorage.getItem('tb_appdata_' + (window.location.pathname.split('/')[1] || 'p1'));
-      return JSON.parse(cached)?.points || {};
-    } catch { return {}; }
-  });
+  try {
+    const cached = localStorage.getItem('tb_appdata_' + (window.location.pathname.split('/')[1] || 'p1'));
+    return JSON.parse(cached)?.points || {};
+  } catch { return {}; }
+});
+const [pointsReady, setPointsReady] = useState(() => {
+  try {
+    const cached = localStorage.getItem('tb_appdata_' + (window.location.pathname.split('/')[1] || 'p1'));
+    return !!(JSON.parse(cached)?.points);
+  } catch { return false; }
+});
   const [loading, setLoading] = useState("");
   const [numTeams, setNumTeams] = useState(4);
   const [tNames, setTNames] = useState(Array.from({length:10},(_,i)=>"Team "+(i+1)));
@@ -2831,7 +2838,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
         const heavyResults = await batchLoad(heavyKeys, 3); // Smaller batches for heavy data
         const [p,pts,ol,rh,tl,up,rp] = heavyResults;
         if(p) setPlayers(p);
-        if(pts) setPoints(pts);
+        if(pts) { setPoints(pts); setPointsReady(true); }
         if(ol && typeof ol === 'object') setOwnershipLog(ol);
         if(rh) setRecoveryHash(rh);
         if(tl) setTeamLogos(tl);
@@ -6308,7 +6315,11 @@ onChange={e=>setPlayerSearch(e.target.value)}
                             </div>
                             <div style={{textAlign:"right",display:"flex",alignItems:"center",gap:12}}>
                               <div>
-                                <div className={i===0?"leaderboard-points-first leaderboard-points":"leaderboard-points"} style={{fontSize:i===0?48:36,fontWeight:900,color:i===0?T.accent:T.text,fontFamily:fonts.display,lineHeight:1,letterSpacing:1}}>{team.total.toLocaleString()}</div>
+                                {pointsReady ? (
+  <div className={i===0?"leaderboard-points-first leaderboard-points":"leaderboard-points"} style={{fontSize:i===0?48:36,fontWeight:900,color:i===0?T.accent:T.text,fontFamily:fonts.display,lineHeight:1,letterSpacing:1}}>{team.total.toLocaleString()}</div>
+) : (
+  <div style={{width:i===0?120:90,height:i===0?48:36,background:`linear-gradient(90deg,${T.border} 25%,${T.card} 50%,${T.border} 75%)`,backgroundSize:"200% 100%",animation:"tb-shimmer 1.2s infinite",borderRadius:4}} />
+)}
                                 <div style={{fontSize:10,color:T.muted,letterSpacing:3,textTransform:"uppercase",marginTop:2}}>PTS</div>
                               </div>
                               <span style={{color:team.color,fontSize:14,fontFamily:fonts.display,fontWeight:700}}>{isOpen?"▲":"▼"}</span>
