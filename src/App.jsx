@@ -12,7 +12,7 @@ import HomeHub from "./HomeHub";
 import RulesSheet from "./RulesSheet";
 import PlayerImage from "./PlayerImage";
 import { T, fonts, GlobalStyles } from "./Theme";
-import { parseJSON, cricbuzz, fetchLiveScorecard, extractIPL, parseScorecardToStats, DEFAULT_POINTS, calcPoints, calcBreakdown, sbGet, sbGetMany, sbSet, sbDel, generateTeamId, getSnatchWindowStatus, getUsers, saveUsers, hashPw } from './utils.js';
+import { parseJSON, cricbuzz, fetchLiveScorecard, extractIPL, parseScorecardToStats, DEFAULT_POINTS, calcPoints, calcBreakdown, sbGet, sbGetMany, sbSet, sbDel, generateTeamId, getSnatchWindowStatus, getUsers, saveUsers, hashPw, SUPABASE_URL, SB_HEADERS } from './utils.js';
 import SmartStatsModal from './SmartStatsModal.jsx';
 import SplashScreen from './SplashScreen.jsx';
 let _pitchId = "p1";

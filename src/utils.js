@@ -208,9 +208,9 @@ export function calcBreakdown(s) {
 }
 
 // ── SUPABASE ──────────────────────────────────────────────────────────────────
-const SUPABASE_URL = "https://rmcxhorijitrhqyrvvkn.supabase.co";
+export const SUPABASE_URL = "https://rmcxhorijitrhqyrvvkn.supabase.co";
 const SUPABASE_KEY = "sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm";
-const SB_HEADERS = {
+export const SB_HEADERS = {
   "Content-Type": "application/json",
   "apikey": SUPABASE_KEY,
   "Authorization": "Bearer " + SUPABASE_KEY,
