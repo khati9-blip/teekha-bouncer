@@ -2,10 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import PlayerImage from './PlayerImage';
 
 // ── ALL-TIME MVP SLIDESHOW ───────────────────────────────────────────────────
-export default function MVPSlideshow({ players, assignments, teams, points, fonts, T, PALETTE, inline, page }) {
+export default function MVPSlideshow({ players, assignments, teams, points, fonts, T, PALETTE, inline }) {
   const [currentIndex, setCurrentIndex] = useState(0);
-const [mounted, setMounted] = useState(false);
-useEffect(() => { setMounted(true); }, []);
   
   // Calculate top 5 players by total points
   const topPlayers = useMemo(() => {
@@ -29,6 +27,7 @@ useEffect(() => { setMounted(true); }, []);
     return () => clearInterval(interval);
   }, [topPlayers.length]);
 
+  console.log("topPlayers", topPlayers, "points keys", Object.keys(points).length, "players", players.length);
 if (topPlayers.length === 0) return null;
 
   const currentPlayer = topPlayers[currentIndex];
@@ -41,7 +40,6 @@ if (topPlayers.length === 0) return null;
 
   return (
     <div className={`mvp-slideshow${inline ? "" : " desk-sidebar"}`} onClick={() => setCurrentIndex(prev => (prev + 1) % topPlayers.length)} style={{
-      visibility: inline ? "visible" : mounted ? "visible" : "hidden",
       position: inline ? "relative" : "fixed",
       top: inline ? "auto" : 80,
       bottom: inline ? "auto" : 60,
@@ -66,12 +64,7 @@ if (topPlayers.length === 0) return null;
       alignItems: "center",
       gap: inline ? 6 : 12,
       boxShadow: `0 8px 32px ${teamColor}40, inset 0 0 60px ${teamColor}15`,
-      overflow: "visible",
-      opacity: inline ? 1 : page === "leaderboard" ? 1 : 0,
-      pointerEvents: inline ? "auto" : page === "leaderboard" ? "auto" : "none",
-      transition: "opacity 0.25s ease",
-      opacity: inline ? 1 : mounted ? 1 : 0,
-      transition: "opacity 0.2s ease",
+      overflow: inline ? "hidden" : "auto",
       zIndex: inline ? 1 : 10,
       boxSizing: "border-box"
     }}>
