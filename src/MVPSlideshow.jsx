@@ -115,7 +115,7 @@ if (topPlayers.length === 0) return null;
       <div style={{
         position: "relative",
         width: "100%",
-        maxWidth: inline ? 150 : 160,
+        maxWidth: inline ? 150 : 130,
         aspectRatio: "2/3",
         animation: "tb-scaleIn 0.6s ease both",
         zIndex: 1,
@@ -156,7 +156,7 @@ if (topPlayers.length === 0) return null;
         </div>
         <div style={{
           fontFamily: fonts.display,
-          fontSize: 18,
+          fontSize: inline ? 18 : 15,
           fontWeight: 900,
           color: T.text,
           letterSpacing: 2,
@@ -187,7 +187,7 @@ if (topPlayers.length === 0) return null;
         }}>
           <div style={{
             fontFamily: fonts.display,
-            fontSize: 24,
+            fontSize: inline ? 24 : 20,
             fontWeight: 900,
             color: teamColor,
             letterSpacing: 1
