@@ -42,7 +42,8 @@ if (topPlayers.length === 0) return null;
     <div className={`mvp-slideshow${inline ? "" : " desk-sidebar"}`} onClick={() => setCurrentIndex(prev => (prev + 1) % topPlayers.length)} style={{
       position: inline ? "relative" : "fixed",
       top: inline ? "auto" : 80,
-      bottom: inline ? "auto" : 160,
+      bottom: inline ? "auto" : 80,
+      overflowY: inline ? "visible" : "auto",
       left: inline ? "auto" : 50,
       width: inline ? "100%" : 220,
       height: inline ? "auto" : "auto",
