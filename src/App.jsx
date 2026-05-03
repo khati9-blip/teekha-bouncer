@@ -24,6 +24,7 @@ import CaptainModal from './CaptainModal.jsx';
 import FixOwnershipModal from './FixOwnershipModal.jsx';
 import AdminSetupScreen from './AdminSetupScreen.jsx';
 import EditPointsForm from './EditPointsForm.jsx';
+import ProposeRulesForm from './ProposeRulesForm.jsx';
 let _pitchId = "p1";
 const storeGet = (key) => sbGet(_pitchId + "_" + key);
 const storeSet = (key, val) => sbSet(_pitchId + "_" + key, val);
@@ -4050,82 +4051,97 @@ onChange={e=>setPlayerSearch(e.target.value)}
         {/* LEAGUE RULES PANEL */}
         {showRulesPanel && (
           <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",zIndex:200,overflowY:"auto",padding:24,fontFamily:fonts.body}}>
-            <div style={{maxWidth:500,margin:"0 auto"}}>
+            <div style={{maxWidth:900,margin:"0 auto"}}>
               <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:24}}>
                 <button onClick={()=>setShowRulesPanel(false)} style={{background:"transparent",border:"none",color:T.muted,fontSize:22,cursor:"pointer",padding:"0 4px"}}>←</button>
                 <div style={{fontFamily:fonts.display,fontSize:26,fontWeight:700,color:T.accent,letterSpacing:2}}>POINTS & RULES</div>
               </div>
 
-              {/* Points System */}
-              {/* Points System - Beautiful Display */}
+             {/* Points System - Tiled Grid */}
               <div style={{marginBottom:16}}>
-                {[
-                  {label:"🏏 BATTING",color:T.accent,items:[
-                    {name:"Per Run",val:pointsConfig.run,unit:"pt",pos:true},
-                    {name:"Per Four",val:pointsConfig.four,unit:"pts",pos:true},
-                    {name:"Per Six",val:pointsConfig.six,unit:"pts",pos:true},
-                    {name:"Half-Century (50+)",val:pointsConfig.fifty,unit:"pts",pos:true},
-                    {name:"Century (100+)",val:pointsConfig.century,unit:"pts",pos:true},
-                    {name:"SR Bonus (SR>"+pointsConfig.srBonusThreshold+")",val:pointsConfig.srBonus,unit:"pts",pos:true},
-                    {name:"Duck Penalty",val:pointsConfig.duckPenalty,unit:"pts",pos:false},
-                    {name:"SR Penalty (SR<"+pointsConfig.srPenaltyThreshold+")",val:pointsConfig.srPenalty,unit:"pts",pos:false},
-                  ]},
-                  {label:"🎳 BOWLING",color:T.info,items:[
-                    {name:"Per Wicket",val:pointsConfig.wicket,unit:"pts",pos:true},
-                    {name:"4-Wicket Haul",val:pointsConfig.fourWkt,unit:"pts",pos:true},
-                    {name:"5-Wicket Haul",val:pointsConfig.fiveWkt,unit:"pts",pos:true},
-                    {name:"Economy Bonus (<"+pointsConfig.ecoThreshold+")",val:pointsConfig.ecoBonus,unit:"pts",pos:true},
-                    {name:"Maiden Over",val:pointsConfig.maiden,unit:"pts",pos:true},
-                    {name:"Economy Penalty (>"+pointsConfig.ecoPenaltyThreshold+")",val:pointsConfig.ecoPenalty,unit:"pts",pos:false},
-                  ]},
-                  {label:"🧤 FIELDING",color:T.success,items:[
-                    {name:"Catch",val:pointsConfig.catch,unit:"pts",pos:true},
-                    {name:"Stumping",val:pointsConfig.stumping,unit:"pts",pos:true},
-                    {name:"Run-out",val:pointsConfig.runout,unit:"pts",pos:true},
-                  ]},
-                  {label:"⭐ BONUSES",color:T.purple,items:[
-                    {name:"All-round ("+pointsConfig.allRoundMinRuns+"+R & "+pointsConfig.allRoundMinWkts+"+W)",val:pointsConfig.allRoundBonus,unit:"pts",pos:true},
-                    {name:"Longest Six",val:pointsConfig.longestSix,unit:"pts",pos:true},
-                    {name:"Man of the Match",val:pointsConfig.momBonus,unit:"pts",pos:true},
-                    {name:"Playing XI",val:pointsConfig.playingXIBonus,unit:"pts",pos:true},
-                    {name:"Captain Multiplier",val:pointsConfig.captainMult,unit:"×",pos:true},
-                    {name:"VC Multiplier",val:pointsConfig.vcMult,unit:"×",pos:true},
-                  ]},
-                ].map(section=>(
-                  <div key={section.label} style={{background:T.card,borderRadius:12,border:`1px solid ${T.border}`,marginBottom:8,overflow:"hidden"}}>
-                    <div style={{background:section.color+"18",borderBottom:"1px solid "+section.color+"33",padding:"8px 14px"}}>
-                      <div style={{fontFamily:fonts.display,fontSize:14,fontWeight:700,color:section.color,letterSpacing:2}}>{section.label}</div>
+                <style>{`
+                  @media(min-width:600px){.pts-grid{display:grid!important;grid-template-columns:1fr 1fr;gap:10px;}}
+                  @media(max-width:599px){.pts-grid{display:flex!important;flex-direction:column;gap:8px;}}
+                `}</style>
+                <div className="pts-grid" style={{marginBottom:10}}>
+                  {[
+                    {label:"🏏 BATTING", color:T.accent, items:[
+                      {name:"Per Run", val:pointsConfig.run, unit:"pt", pos:true},
+                      {name:"Per Four", val:pointsConfig.four, unit:"pts", pos:true},
+                      {name:"Per Six", val:pointsConfig.six, unit:"pts", pos:true},
+                      {name:"Half-Century (50+)", val:pointsConfig.fifty, unit:"pts", pos:true},
+                      {name:"Century (100+)", val:pointsConfig.century, unit:"pts", pos:true},
+                      {name:"SR Bonus (SR>"+pointsConfig.srBonusThreshold+")", val:pointsConfig.srBonus, unit:"pts", pos:true},
+                      {name:"Duck Penalty", val:pointsConfig.duckPenalty, unit:"pts", pos:false},
+                      {name:"SR Penalty (SR<"+pointsConfig.srPenaltyThreshold+")", val:pointsConfig.srPenalty, unit:"pts", pos:false},
+                    ]},
+                    {label:"🎳 BOWLING", color:T.info, items:[
+                      {name:"Per Wicket", val:pointsConfig.wicket, unit:"pts", pos:true},
+                      {name:"4-Wicket Haul", val:pointsConfig.fourWkt, unit:"pts", pos:true},
+                      {name:"5-Wicket Haul", val:pointsConfig.fiveWkt, unit:"pts", pos:true},
+                      {name:"Economy Bonus (<"+pointsConfig.ecoThreshold+")", val:pointsConfig.ecoBonus, unit:"pts", pos:true},
+                      {name:"Maiden Over", val:pointsConfig.maiden, unit:"pts", pos:true},
+                      {name:"Economy Penalty (>"+pointsConfig.ecoPenaltyThreshold+")", val:pointsConfig.ecoPenalty, unit:"pts", pos:false},
+                    ]},
+                    {label:"🧤 FIELDING", color:T.success, items:[
+                      {name:"Catch", val:pointsConfig.catch, unit:"pts", pos:true},
+                      {name:"Stumping", val:pointsConfig.stumping, unit:"pts", pos:true},
+                      {name:"Run-out", val:pointsConfig.runout, unit:"pts", pos:true},
+                    ]},
+                    {label:"⭐ BONUSES", color:"#A855F7", items:[
+                      {name:"All-round ("+pointsConfig.allRoundMinRuns+"+R & "+pointsConfig.allRoundMinWkts+"+W)", val:pointsConfig.allRoundBonus, unit:"pts", pos:true},
+                      {name:"Longest Six", val:pointsConfig.longestSix, unit:"pts", pos:true},
+                      {name:"Man of the Match", val:pointsConfig.momBonus, unit:"pts", pos:true},
+                      {name:"Playing XI", val:pointsConfig.playingXIBonus, unit:"pts", pos:true},
+                      {name:"Captain Multiplier", val:pointsConfig.captainMult, unit:"×", pos:true},
+                      {name:"VC Multiplier", val:pointsConfig.vcMult, unit:"×", pos:true},
+                    ]},
+                  ].map(section => (
+                    <div key={section.label} style={{background:T.card,border:`2px solid ${section.color}33`,borderTop:`3px solid ${section.color}`,borderRadius:0,overflow:"hidden",clipPath:"polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,0 100%)"}}>
+                      <div style={{background:section.color+"18",padding:"10px 14px",borderBottom:`1px solid ${section.color}33`}}>
+                        <div style={{fontFamily:fonts.display,fontSize:16,fontWeight:900,color:section.color,letterSpacing:3,textTransform:"uppercase"}}>{section.label}</div>
+                      </div>
+                      <div style={{padding:"4px 14px 10px"}}>
+                        {section.items.map(item => (
+                          <div key={item.name} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 0",borderBottom:`1px solid ${T.border}22`,opacity:item.val===0?0.3:1}}>
+                            <div style={{fontFamily:fonts.body,fontSize:13,color:item.val===0?T.muted:T.text}}>
+                              {item.name}
+                              {item.val===0 && <span style={{fontSize:10,color:"#2D3E52",marginLeft:6,letterSpacing:1}}>DISABLED</span>}
+                            </div>
+                            <div style={{fontFamily:fonts.display,fontSize:20,fontWeight:900,color:item.val===0?"#2D3E52":item.pos?"#F5A623":"#FF3D5A",letterSpacing:1}}>
+                              {item.pos?"+":"-"}{item.val}
+                              <span style={{fontSize:11,color:T.muted,fontWeight:400,marginLeft:2}}>{item.unit}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                    <div style={{padding:"2px 14px 6px"}}>
-                      {section.items.map(item=>(
-                        <div key={item.name} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0",borderBottom:"1px solid #1E2D4222",opacity:item.val===0?0.3:1}}>
-                          <div style={{fontSize:12,color:T.sub}}>{item.name}{item.val===0&&<span style={{fontSize:10,color:"#2D3E52",marginLeft:6}}>disabled</span>}</div>
-                          <div style={{fontFamily:fonts.display,fontSize:16,fontWeight:800,color:item.val===0?"#2D3E52":item.pos?"#F5A623":"#FF3D5A"}}>{item.pos?"+":"-"}{item.val}<span style={{fontSize:10,color:T.muted,fontWeight:400,marginLeft:2}}>{item.unit}</span></div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
                 {(!ruleProposal || ruleProposal.status !== "pending") && (
-                  <button onClick={()=>withPassword(()=>setShowRulesPanel("points"))} style={{width:"100%",background:T.accentBg,border:`1px solid ${T.accentBorder}`,borderRadius:10,padding:10,color:T.accent,fontFamily:fonts.body,fontWeight:700,fontSize:13,cursor:"pointer"}}>
-                    ✏️ {(!tournamentStarted||!eligibleVoters.length)?"EDIT POINTS — Admin":"PROPOSE POINTS CHANGE — Needs Team Vote"}
+                  <button onClick={()=>withPassword(()=>setShowRulesPanel("points"))} style={{width:"100%",background:T.accentBg,border:`1px solid ${T.accentBorder}`,borderRadius:0,padding:12,color:T.accent,fontFamily:fonts.display,fontWeight:800,fontSize:14,letterSpacing:2,cursor:"pointer",clipPath:"polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%)"}}>
+                    ✏️ {(!tournamentStarted||!eligibleVoters.length)?"EDIT POINTS — ADMIN":"PROPOSE POINTS CHANGE — NEEDS TEAM VOTE"}
                   </button>
                 )}
               </div>
 
-              {/* Current Rules */}
-              <div style={{background:T.card,borderRadius:12,border:`1px solid ${T.border}`,padding:20,marginBottom:16}}>
-                <div style={{fontSize:11,color:T.muted,letterSpacing:2,fontWeight:700,marginBottom:12}}>⏰ TIMING RULES</div>
-                {[
-                  ["Transfer Window", `${pitchConfig?.transferStart || "Sunday 11:59 PM"} → ${pitchConfig?.transferEnd || "Monday 11:00 AM"} IST`],
-                  ["Snatch Window", pitchConfig?.snatchWindow ? pitchConfig.snatchWindow.replace(" to ", " → ") + " IST" : "Saturday 12:00 AM → 12:00 PM IST"],
-                  ["Snatch Return", `${pitchConfig?.snatchReturn || "Friday 11:58 PM"} IST`],
-                ].map(([label, val]) => (
-                  <div key={label} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"8px 0",borderBottom:`1px solid ${T.border}33`}}>
-                    <div style={{fontSize:13,color:T.muted}}>{label}</div>
-                    <div style={{fontSize:13,color:T.text,fontWeight:700}}>{val}</div>
-                  </div>
-                ))}
+              {/* Timing Rules */}
+              <div style={{background:T.card,border:`2px solid ${T.border}`,borderTop:`3px solid #4F8EF7`,borderRadius:0,marginBottom:16,overflow:"hidden",clipPath:"polygon(0 0,calc(100% - 8px) 0,100% 8px,100% 100%,0 100%)"}}>
+                <div style={{background:"#4F8EF718",padding:"10px 14px",borderBottom:"1px solid #4F8EF733"}}>
+                  <div style={{fontFamily:fonts.display,fontSize:16,fontWeight:900,color:"#4F8EF7",letterSpacing:3}}>⏰ TIMING RULES</div>
+                </div>
+                <div style={{padding:"4px 14px 10px"}}>
+                  {[
+                    ["Transfer Window", `${pitchConfig?.transferStart || "Sunday 11:59 PM"} → ${pitchConfig?.transferEnd || "Monday 11:00 AM"} IST`],
+                    ["Snatch Window", pitchConfig?.snatchWindow ? pitchConfig.snatchWindow.replace(" to ", " → ") + " IST" : "Saturday 12:00 AM → 12:00 PM IST"],
+                    ["Snatch Return", `${pitchConfig?.snatchReturn || "Friday 11:58 PM"} IST`],
+                  ].map(([label, val]) => (
+                    <div key={label} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:`1px solid ${T.border}22`}}>
+                      <div style={{fontFamily:fonts.body,fontSize:13,color:T.muted,letterSpacing:0.5}}>{label}</div>
+                      <div style={{fontFamily:fonts.display,fontSize:15,fontWeight:800,color:T.text,letterSpacing:1}}>{val}</div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
 
@@ -4135,21 +4151,28 @@ onChange={e=>setPlayerSearch(e.target.value)}
                   <div style={{fontSize:11,color:T.accent,letterSpacing:2,fontWeight:700,marginBottom:4}}>⏳ PENDING PROPOSAL</div>
                   <div style={{fontSize:11,color:T.muted,marginBottom:12}}>Proposed by {teams.find(t=>t.id===ruleProposal.proposedBy)?.name || "Admin"} • {new Date(ruleProposal.proposedAt).toLocaleDateString()}</div>
                   {Object.entries(ruleProposal.changes).map(([key, val]) => (
-                    <div key={key} style={{display:"flex",justifyContent:"space-between",padding:"6px 0",borderBottom:`1px solid ${T.border}33`}}>
-                      <div style={{fontSize:12,color:T.muted}}>{key}</div>
-                      <div style={{fontSize:12,color:T.accent,fontWeight:700,maxWidth:200,wordBreak:"break-all"}}>
-                        {key === "Points Change" ? (() => {
-                          try {
-                            const p = JSON.parse(val);
-                            return Object.entries(p).map(([k,v]) => (
-                              <div key={k} style={{display:"flex",justifyContent:"space-between",gap:8}}>
-                                <span style={{color:T.muted,fontSize:11}}>{k}</span>
-                                <span style={{fontWeight:700}}>{v}</span>
-                              </div>
-                            ));
-                          } catch { return val; }
-                        })() : val}
-                      </div>
+                    <div key={key} style={{padding:"6px 0",borderBottom:`1px solid ${T.border}33`}}>
+                      <div style={{fontSize:11,color:T.muted,marginBottom:key==="Points Change"?6:0}}>{key}</div>
+                      {key === "Points Change" ? (() => {
+                        try {
+                          const proposed = JSON.parse(val);
+                          return (
+                            <div style={{display:"flex",flexDirection:"column",gap:5}}>
+                              {Object.entries(proposed).filter(([k,v]) => pointsConfig[k] !== undefined && pointsConfig[k] !== v).map(([k,v]) => (
+                                <div key={k} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 10px",borderRadius:6,background:"#F5A62318",border:"1px solid #F5A62344"}}>
+                                  <span style={{fontSize:13,color:T.text,fontWeight:600}}>{k}</span>
+                                  <span style={{fontSize:14,fontWeight:800,color:"#F5A623"}}>
+                                    <span style={{fontSize:12,color:T.muted,fontWeight:400,marginRight:6}}>{pointsConfig[k]} →</span>
+                                    {v}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        } catch { return <span style={{fontSize:12,color:T.accent,fontWeight:700}}>{val}</span>; }
+                      })() : (
+                        <div style={{fontSize:12,color:T.accent,fontWeight:700,textAlign:"right"}}>{val}</div>
+                      )}
                     </div>
                   ))}
                   <div style={{marginTop:12}}>
@@ -4986,137 +5009,4 @@ function Root() {
 
 
 export default Root;
-
-
-
-// ── PROPOSE RULES FORM ───────────────────────────────────────────────────────
-
-function ProposeRulesForm({ teams, eligibleVoters, onPropose, withPassword, tournamentStarted, isAdmin, onApplyDirect }) {
-  const [open, setOpen] = useState(false);
-  const days = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
-  // Generate all times in 30-min intervals + key times
-  const times = (() => {
-    const t = [];
-    for (let h = 0; h < 24; h++) {
-      for (let m = 0; m < 60; m += 30) {
-        const ampm = h < 12 ? "AM" : "PM";
-        const hh = h === 0 ? 12 : h > 12 ? h - 12 : h;
-        const mm = m === 0 ? "00" : "30";
-        t.push(`${hh}:${mm} ${ampm}`);
-      }
-    }
-    // Add key times not in 30-min grid, inserted in correct position
-    const extras = ["11:45 AM","11:58 AM","11:59 AM","11:45 PM","11:58 PM","11:59 PM"];
-    extras.forEach(x => { if (!t.includes(x)) t.push(x); });
-    return t;
-  })();
-
-  const [tsDay, setTsDay] = useState("Sunday");
-  const [tsTime, setTsTime] = useState("11:30 PM");
-  const [teDay, setTeDay] = useState("Monday");
-  const [teTime, setTeTime] = useState("11:00 AM");
-  const [ssDay, setSsDay] = useState("Saturday");
-  const [ssTime, setSsTime] = useState("12:00 AM");
-  const [seDay, setSeDay] = useState("Saturday");
-  const [seTime, setSeTime] = useState("12:00 PM");
-  const [srDay, setSrDay] = useState("Friday");
-  const [srTime, setSrTime] = useState("11:58 PM");
-
-  const dayTime = (day, time) => day + " " + time;
-
-  const hours = ["12","1","2","3","4","5","6","7","8","9","10","11"];
-  const minutes = ["00","05","10","15","20","25","30","35","40","45","50","55","58","59"];
-
-  const parseTime = (t) => {
-    // Parse "11:30 PM" into {h:"11", m:"30", ampm:"PM"}
-    const parts = t.split(" ");
-    const ampm = parts[1] || "PM";
-    const [h, m] = (parts[0] || "12:00").split(":");
-    return { h: h || "12", m: m || "00", ampm };
-  };
-
-  const DayTimeRow = ({label, day, setDay, time, setTime}) => {
-    const parsed = parseTime(time);
-    const setH = h => setTime(`${h}:${parsed.m} ${parsed.ampm}`);
-    const setM = m => setTime(`${parsed.h}:${m} ${parsed.ampm}`);
-    const setAmpm = a => setTime(`${parsed.h}:${parsed.m} ${a}`);
-    return (
-      <div style={{marginBottom:12}}>
-        <div style={{fontSize:11,color:T.muted,marginBottom:6,letterSpacing:1}}>{label}</div>
-        <div style={{display:"flex",gap:6}}>
-          <select value={day} onChange={e=>setDay(e.target.value)} style={{flex:"0 0 108px",background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"8px 8px",color:T.text,fontSize:12,fontFamily:fonts.body,cursor:"pointer",outline:"none"}}>
-            {days.map(d=><option key={d} value={d}>{d}</option>)}
-          </select>
-          <select value={parsed.h} onChange={e=>setH(e.target.value)} style={{flex:1,background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"8px 6px",color:T.text,fontSize:13,fontFamily:fonts.body,cursor:"pointer",outline:"none"}}>
-            {hours.map(h=><option key={h} value={h}>{h}</option>)}
-          </select>
-          <select value={parsed.m} onChange={e=>setM(e.target.value)} style={{flex:1,background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"8px 6px",color:T.text,fontSize:13,fontFamily:fonts.body,cursor:"pointer",outline:"none"}}>
-            {minutes.map(m=><option key={m} value={m}>{m}</option>)}
-          </select>
-          <select value={parsed.ampm} onChange={e=>setAmpm(e.target.value)} style={{flex:"0 0 60px",background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"8px 6px",color:T.text,fontSize:13,fontFamily:fonts.body,cursor:"pointer",outline:"none"}}>
-            <option value="AM">AM</option>
-            <option value="PM">PM</option>
-          </select>
-        </div>
-      </div>
-    );
-  };
-
-  const formRef = React.useRef(null);
-  if (!open) return (
-    <button onClick={()=>withPassword(()=>{setOpen(true);setTimeout(()=>formRef.current?.scrollIntoView({behavior:"smooth",block:"start"}),50);})} style={{width:"100%",background:T.accentBg,border:`1px solid ${T.accentBorder}`,borderRadius:12,padding:14,color:T.accent,fontFamily:fonts.body,fontWeight:700,fontSize:15,cursor:"pointer"}}>
-      ✏️ PROPOSE TIMING CHANGE (Admin)
-    </button>
-  );
-
-  return (
-    <div ref={formRef} style={{background:T.card,borderRadius:12,border:`1px solid ${T.accentBorder}`,padding:20}}>
-      <div style={{fontFamily:fonts.display,fontSize:18,fontWeight:700,color:T.accent,letterSpacing:2,marginBottom:4}}>PROPOSE RULE CHANGE</div>
-      <div style={{fontSize:11,color:T.muted,marginBottom:16}}>All {eligibleVoters.length} claimed teams must approve for changes to take effect.</div>
-
-      {/* Transfer Window */}
-      <div style={{background:T.bg,borderRadius:10,padding:"12px 14px",marginBottom:12,border:`1px solid ${T.border}`}}>
-        <div style={{fontSize:11,color:"#4F8EF7",fontWeight:700,letterSpacing:1,marginBottom:10}}>🔄 TRANSFER WINDOW</div>
-        <DayTimeRow label="Opens" day={tsDay} setDay={setTsDay} time={tsTime} setTime={setTsTime} />
-        <DayTimeRow label="Closes" day={teDay} setDay={setTeDay} time={teTime} setTime={setTeTime} />
-      </div>
-
-      {/* Snatch Window */}
-      <div style={{background:T.bg,borderRadius:10,padding:"12px 14px",marginBottom:12,border:`1px solid ${T.border}`}}>
-        <div style={{fontSize:11,color:"#A855F7",fontWeight:700,letterSpacing:1,marginBottom:10}}>⚡ SNATCH WINDOW</div>
-        <DayTimeRow label="Opens" day={ssDay} setDay={setSsDay} time={ssTime} setTime={setSsTime} />
-        <DayTimeRow label="Closes" day={seDay} setDay={setSeDay} time={seTime} setTime={setSeTime} />
-        <DayTimeRow label="Player Returns" day={srDay} setDay={setSrDay} time={srTime} setTime={setSrTime} />
-      </div>
-
-      <div style={{display:"flex",gap:8,marginTop:4}}>
-        <button onClick={()=>setOpen(false)} style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:8,padding:10,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
-        {isAdmin && onApplyDirect && (
-          <button onClick={async ()=>{
-            await onApplyDirect({
-              "Transfer Start": dayTime(tsDay,tsTime),
-              "Transfer End": dayTime(teDay,teTime),
-              "Snatch Window": dayTime(ssDay,ssTime)+" to "+dayTime(seDay,seTime),
-              "Snatch Return": dayTime(srDay,srTime),
-            });
-            setOpen(false);
-          }} style={{flex:1,background:"#4F8EF722",border:"1px solid #4F8EF744",borderRadius:8,padding:10,color:"#4F8EF7",fontFamily:fonts.body,fontWeight:700,fontSize:13,cursor:"pointer"}}>
-            🔑 APPLY DIRECT
-          </button>
-        )}
-        <button onClick={()=>{
-          onPropose({
-            "Transfer Start": dayTime(tsDay,tsTime),
-            "Transfer End": dayTime(teDay,teTime),
-            "Snatch Window": dayTime(ssDay,ssTime)+" to "+dayTime(seDay,seTime),
-            "Snatch Return": dayTime(srDay,srTime),
-          });
-          setOpen(false);
-        }} style={{flex:2,background:"#F5A623",border:"none",borderRadius:8,padding:10,color:T.bg,fontFamily:fonts.body,fontWeight:800,fontSize:14,cursor:"pointer"}}>SUBMIT FOR VOTE</button>
-      </div>
-    </div>
-  );
-}
-
-
 
