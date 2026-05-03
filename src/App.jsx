@@ -2651,7 +2651,12 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   const [captainMatch, setCaptainMatch] = useState(null);
   const [transferSubTab, setTransferSubTab] = useState("transfer"); // "transfer" | "snatch"
   const [captains, setCaptains] = useState({});
-  const [points, setPoints] = useState({});
+  const [points, setPoints] = useState(() => {
+    try {
+      const cached = localStorage.getItem('tb_appdata_' + (window.location.pathname.split('/')[1] || 'p1'));
+      return JSON.parse(cached)?.points || {};
+    } catch { return {}; }
+  });
   const [loading, setLoading] = useState("");
   const [numTeams, setNumTeams] = useState(4);
   const [tNames, setTNames] = useState(Array.from({length:10},(_,i)=>"Team "+(i+1)));
@@ -2835,7 +2840,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
 
         // ── Save fresh data to localStorage for next instant load ─────────
         try {
-          const toCache = { teams: t, players: p, assignments: a, matches: m, captains: c, tournaments: tv };
+          const toCache = { teams: t, players: p, assignments: a, matches: m, captains: c, tournaments: tv, points: pts };
           localStorage.setItem('tb_appdata_' + _pitchId, JSON.stringify(toCache));
         } catch {}
 
