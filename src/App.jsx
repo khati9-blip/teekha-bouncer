@@ -6481,7 +6481,7 @@ onChange={e=>setPlayerSearch(e.target.value)}
           )}
         </div>
 {showMvpModal && (
-  <div onClick={()=>setShowMvpModal(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center"}}>
+  <div onClick={()=>setShowMvpModal(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:600,display:"flex",alignItems:"center",justifyContent:"center"}}>
     <div onClick={e=>e.stopPropagation()} style={{width:"90vw",maxHeight:"85vh",overflowY:"auto",background:"#0A0E14",border:`3px solid ${T.accent}`,padding:16,position:"relative"}}>
       <button onClick={()=>setShowMvpModal(false)} style={{position:"absolute",top:8,right:8,background:"transparent",border:"none",color:T.muted,fontSize:20,cursor:"pointer"}}>✕</button>
       <MVPSlideshow players={players} assignments={assignments} teams={teams} points={points} fonts={fonts} T={T} PALETTE={PALETTE} inline={true} />
