@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import PlayerImage from './PlayerImage';
 
 // ── ALL-TIME MVP SLIDESHOW ───────────────────────────────────────────────────
-export default function MVPSlideshow({ players, assignments, teams, points, fonts, T, PALETTE }) {
+export default function MVPSlideshow({ players, assignments, teams, points, fonts, T, PALETTE, inline }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   
   // Calculate top 5 players by total points
@@ -39,7 +39,7 @@ export default function MVPSlideshow({ players, assignments, teams, points, font
 
   return (
     <div className="mvp-slideshow" style={{
-      position: "fixed",
+      position: inline ? "relative" : "fixed",
       top: 80,
       bottom: 160,
       left: 50,

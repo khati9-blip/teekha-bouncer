@@ -2659,6 +2659,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   const [roleFilter, setRoleFilter] = useState(null);
   const [expandedMatch, setExpandedMatch] = useState(null);
   const [expandedTeam, setExpandedTeam] = useState(null);
+  const [showMvpModal, setShowMvpModal] = useState(false);
   const [pwHash, setPwHash] = useState(null);
   const [recoveryHash, setRecoveryHash] = useState(null);
   const [appReady, setAppReady] = useState(false);
@@ -6265,8 +6266,11 @@ onChange={e=>setPlayerSearch(e.target.value)}
               <MVPSlideshow players={players} assignments={assignments} teams={teams} points={points} fonts={fonts} T={T} PALETTE={PALETTE} />
               <div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:8}}>
+                <div style={{display:"flex",alignItems:"center",gap:8}}>
                 <div style={{display:"inline-block",background:T.accent,padding:"4px 16px 4px 12px",clipPath:"polygon(0 0,100% 0,calc(100% - 10px) 100%,0 100%)"}}>
                   <h2 style={{fontFamily:fonts.display,fontSize:28,fontWeight:700,color:T.bg,letterSpacing:3,margin:0}}>LEADERBOARD</h2>
+                </div>
+                <button className="mob-only" onClick={()=>setShowMvpModal(true)} style={{background:"linear-gradient(135deg,#FF6B00,#FF8C00)",border:"none",color:"#0A0E14",clipPath:"polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%)",padding:"4px 14px",cursor:"pointer",fontFamily:fonts.display,fontWeight:800,fontSize:13,letterSpacing:2}}>⭐ MVP</button>
                 </div>
                 <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
 
@@ -6476,7 +6480,14 @@ onChange={e=>setPlayerSearch(e.target.value)}
             </div>
           )}
         </div>
-
+{showMvpModal && (
+  <div onClick={()=>setShowMvpModal(false)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center"}}>
+    <div onClick={e=>e.stopPropagation()} style={{width:"90vw",maxHeight:"85vh",overflowY:"auto",background:"#0A0E14",border:`3px solid ${T.accent}`,padding:16,position:"relative"}}>
+      <button onClick={()=>setShowMvpModal(false)} style={{position:"absolute",top:8,right:8,background:"transparent",border:"none",color:T.muted,fontSize:20,cursor:"pointer"}}>✕</button>
+      <MVPSlideshow players={players} assignments={assignments} teams={teams} points={points} fonts={fonts} T={T} PALETTE={PALETTE} inline={true} />
+    </div>
+  </div>
+)}
         {/* LEAGUE RULES PANEL */}
         {showRulesPanel && (
           <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",zIndex:200,overflowY:"auto",padding:24,fontFamily:fonts.body}}>
