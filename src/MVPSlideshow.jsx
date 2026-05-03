@@ -61,7 +61,7 @@ if (topPlayers.length === 0) return null;
       flexDirection: "column",
       justifyContent: "center",
       alignItems: "center",
-      gap: inline ? 6 : 12,
+      gap: inline ? 6 : 6,
       boxShadow: `0 8px 32px ${teamColor}40, inset 0 0 60px ${teamColor}15`,
       overflow: "hidden",
       zIndex: inline ? 1 : 10,
@@ -115,7 +115,7 @@ if (topPlayers.length === 0) return null;
       <div style={{
         position: "relative",
         width: "100%",
-        maxWidth: inline ? 150 : 200,
+        maxWidth: inline ? 150 : 160,
         aspectRatio: "2/3",
         animation: "tb-scaleIn 0.6s ease both",
         zIndex: 1,
