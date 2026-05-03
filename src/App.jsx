@@ -15,6 +15,7 @@ import { T, fonts, GlobalStyles } from "./Theme";
 import { parseJSON, cricbuzz, fetchLiveScorecard, extractIPL, parseScorecardToStats, DEFAULT_POINTS, calcPoints, calcBreakdown, sbGet, sbGetMany, sbSet, sbDel, generateTeamId, getSnatchWindowStatus, getUsers, saveUsers, hashPw, SUPABASE_URL, SB_HEADERS } from './utils.js';
 import SmartStatsModal from './SmartStatsModal.jsx';
 import SplashScreen from './SplashScreen.jsx';
+import PasswordModal from './PasswordModal.jsx';
 let _pitchId = "p1";
 const storeGet = (key) => sbGet(_pitchId + "_" + key);
 const storeSet = (key, val) => sbSet(_pitchId + "_" + key, val);
@@ -35,117 +36,6 @@ async function callAI(userPrompt, system = "Return only valid JSON.") {
   const data = await res.json();
   if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
   return (data.content || []).filter((b) => b.type === "text").map((b) => b.text).join("");
-}
-
-function PasswordModal({ onSuccess, onClose, storedHash }) {
-  const [pw, setPw] = useState("");
-  const [err, setErr] = useState("");
-  const [mode, setMode] = useState("login"); // login | forgot | enterCode
-  const [sending, setSending] = useState(false);
-  const isFirstTime = !storedHash;
-
-  const inp = {width:"100%",background:T.bg,border:`1px solid ${err?"#FF3D5A":"#1E2D45"}`,borderRadius:8,padding:"12px 16px",color:T.text,fontSize:16,fontFamily:fonts.body,outline:"none",marginBottom:err?8:20,boxSizing:"border-box"};
-  const cancelBtn = {flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:8,padding:11,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"};
-  const primaryBtn = (col="#F5A623") => ({flex:2,background:`linear-gradient(135deg,${col},${col}bb)`,border:"none",borderRadius:8,padding:11,color:T.bg,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"});
-
-  const submit = async () => {
-    if (!pw.trim()) { setErr("Enter a password"); return; }
-    if (isFirstTime) { onSuccess(await hashPw(pw), true); }
-    else {
-      const h = await hashPw(pw);
-      if (h === storedHash) onSuccess(null, false);
-      else { setErr("❌ Wrong password"); setPw(""); }
-    }
-  };
-
-  const sendCode = async () => {
-    if (!pw.trim()) { setErr("Enter your admin email"); return; }
-    setSending(true); setErr("");
-    try {
-      const res = await fetch("/api/reset-password", {
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ email: pw.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed");
-      setPw(""); setMode("enterCode");
-    } catch(e) { setErr("❌ " + e.message); }
-    setSending(false);
-  };
-
-  const verifyCode = async () => {
-    if (!pw.trim()) { setErr("Enter the reset code"); return; }
-    try {
-      const res = await fetch("/api/reset-password", {
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ verifyCode: pw.trim() }),
-      });
-      const data = await res.json();
-      if (data.valid) {
-        const newPw = prompt("✅ Code verified! Enter your NEW password:");
-        if (!newPw) return;
-        onSuccess(await hashPw(newPw), true);
-        setMode("login"); setPw(""); setErr("");
-      } else { setErr("❌ Wrong code. Try again."); setPw(""); }
-    } catch(e) { setErr("❌ " + e.message); }
-  };
-
-  const reset = () => { setPw(""); setErr(""); };
-
-  return (
-    <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.95)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:600,backdropFilter:"blur(6px)"}}>
-      <div style={{background:T.card,borderRadius:16,border:`1px solid ${T.border}`,padding:32,width:"100%",maxWidth:360,margin:"0 16px"}}>
-
-        {mode==="login" && <>
-          <div style={{fontSize:36,textAlign:"center",marginBottom:8}}>🔐</div>
-          <div style={{fontFamily:fonts.display,fontSize:22,fontWeight:700,color:T.accent,textAlign:"center",letterSpacing:2,marginBottom:4}}>
-            {isFirstTime ? "SET ADMIN PASSWORD" : "ADMIN PASSWORD"}
-          </div>
-          <div style={{fontSize:13,color:T.muted,textAlign:"center",marginBottom:24}}>
-            {isFirstTime ? "Choose a password to protect squad changes" : "Enter password to modify squads"}
-          </div>
-          <input type="password" value={pw} onChange={e=>{setPw(e.target.value);setErr("");}} onKeyDown={e=>e.key==="Enter"&&submit()} placeholder={isFirstTime?"Choose admin password…":"Admin password…"} autoFocus style={inp} />
-          {err && <div style={{color:T.danger,fontSize:13,marginBottom:16,textAlign:"center"}}>{err}</div>}
-          <div style={{display:"flex",gap:10}}>
-            <button onClick={onClose} style={cancelBtn}>CANCEL</button>
-            <button onClick={submit} style={primaryBtn()}>{isFirstTime?"SET PASSWORD":"UNLOCK"}</button>
-          </div>
-          {!isFirstTime && (
-            <div style={{marginTop:16,textAlign:"center",display:"flex",justifyContent:"center",gap:20}}>
-              <button onClick={async()=>{const p=prompt("Enter NEW password:");if(!p)return;onSuccess(await hashPw(p),true);}} style={{background:"none",border:"none",color:T.muted,fontSize:12,cursor:"pointer",textDecoration:"underline"}}>Change password</button>
-              <button onClick={()=>{reset();setMode("forgot");}} style={{background:"none",border:"none",color:T.danger,fontSize:12,cursor:"pointer",textDecoration:"underline"}}>Forgot password?</button>
-            </div>
-          )}
-        </>}
-
-        {mode==="forgot" && <>
-          <div style={{fontSize:36,textAlign:"center",marginBottom:8}}>📧</div>
-          <div style={{fontFamily:fonts.display,fontSize:22,fontWeight:700,color:T.accent,textAlign:"center",letterSpacing:2,marginBottom:4}}>RESET PASSWORD</div>
-          <div style={{fontSize:13,color:T.muted,textAlign:"center",marginBottom:24}}>Enter the admin email — we'll send a reset code</div>
-          <input type="email" value={pw} onChange={e=>{setPw(e.target.value);setErr("");}} onKeyDown={e=>e.key==="Enter"&&sendCode()} placeholder="Admin email address…" autoFocus style={inp} />
-          {err && <div style={{color:T.danger,fontSize:13,marginBottom:16,textAlign:"center"}}>{err}</div>}
-          <div style={{display:"flex",gap:10}}>
-            <button onClick={()=>{reset();setMode("login");}} style={cancelBtn}>BACK</button>
-            <button onClick={sendCode} disabled={sending} style={{...primaryBtn("#4F8EF7"),color:"#fff",opacity:sending?0.6:1}}>{sending?"SENDING…":"SEND CODE"}</button>
-          </div>
-        </>}
-
-        {mode==="enterCode" && <>
-          <div style={{fontSize:36,textAlign:"center",marginBottom:8}}>✉️</div>
-          <div style={{fontFamily:fonts.display,fontSize:22,fontWeight:700,color:T.accent,textAlign:"center",letterSpacing:2,marginBottom:4}}>ENTER CODE</div>
-          <div style={{fontSize:13,color:T.success,textAlign:"center",marginBottom:24}}>Reset code sent! Check your email inbox.</div>
-          <input type="text" value={pw} onChange={e=>{setPw(e.target.value);setErr("");}} onKeyDown={e=>e.key==="Enter"&&verifyCode()} placeholder="Paste reset code…" autoFocus
-            style={{...inp,letterSpacing:4,textAlign:"center"}} />
-          {err && <div style={{color:T.danger,fontSize:13,marginBottom:16,textAlign:"center"}}>{err}</div>}
-          <div style={{display:"flex",gap:10}}>
-            <button onClick={()=>{reset();setMode("forgot");}} style={cancelBtn}>BACK</button>
-            <button onClick={verifyCode} style={primaryBtn()}>VERIFY & RESET</button>
-          </div>
-        </>}
-
-      </div>
-    </div>
-  );
 }
 
 const PALETTE = ["#FF3D5A","#4F8EF7","#2ECC71","#F5A623","#A855F7","#06B6D4","#FF6B35","#EC4899","#84CC16","#64748B"];
@@ -3457,7 +3347,7 @@ ${aiMatchText.slice(0, 3000)}`;
           onClose={()=>setSmartStatsMatch(null)}
         />}
 
-        {showPwModal&&<PasswordModal storedHash={pwHash} recoveryHash={recoveryHash} onSuccess={handlePwSuccess} onClose={()=>{setShowPwModal(false);setPendingAction(null);}} />}
+        {showPwModal&&<PasswordModal storedHash={pwHash} recoveryHash={recoveryHash} onSuccess={handlePwSuccess} onClose={()=>{setShowPwModal(false);setPendingAction(null);}} T={T} fonts={fonts} />}
 
         {/* TOP BAR */}
 <div style={{background:"linear-gradient(135deg, #0A0E14 0%, #1A1F2E 100%)",borderBottom:`4px solid ${T.accent}`,padding:"8px 10px",display:"flex",alignItems:"center",justifyContent:"space-between",position:"sticky",top:0,zIndex:50,boxShadow:"0 4px 20px rgba(245,158,11,0.3)"}}>
