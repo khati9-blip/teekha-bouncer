@@ -39,7 +39,7 @@ if (topPlayers.length === 0) return null;
   const rankLabels = ["1ST", "2ND", "3RD", "4TH", "5TH"];
 
   return (
-    <div className="mvp-slideshow" style={{
+    <div className={`mvp-slideshow${inline ? "" : " desk-sidebar"}`} style={{
       position: inline ? "relative" : "fixed",
       top: inline ? "auto" : 80,
       bottom: inline ? "auto" : 160,
