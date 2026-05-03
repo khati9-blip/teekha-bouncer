@@ -116,8 +116,9 @@ if (topPlayers.length === 0) return null;
         maxWidth: inline ? 150 : 280,
         aspectRatio: "2/3",
         animation: "tb-scaleIn 0.6s ease both",
-        zIndex: 1
-      }} key={`img-${currentIndex}`}>
+        zIndex: 1,
+        cursor: "pointer"
+      }} key={`img-${currentIndex}`} onClick={() => setCurrentIndex(prev => (prev + 1) % topPlayers.length)}>
         <PlayerImage 
           player={currentPlayer} 
           size="100%" 
