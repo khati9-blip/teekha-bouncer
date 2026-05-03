@@ -2144,10 +2144,10 @@ ${aiMatchText.slice(0, 3000)}`;
   {id:"leaderboard",label:"Board",icon:"👑",disabled:teams.length===0},
 ];
 
-  if (!appReady) return (
+ if (!appReady) return (
     <>
       <style>{css}</style>
-      <div style={{minHeight:"100vh",background:"var(--bg)"}}>bg)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16}}>
+      <div style={{minHeight:"100vh",background:"var(--bg)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16}}>
         <img src="/logo.png" style={{width:80,height:80,objectFit:"contain",borderRadius:12,animation:"spin 2s linear infinite"}} />
         <div style={{fontFamily:fonts.display,fontSize:22,fontWeight:700,color:T.accent,letterSpacing:3}}>TEEKHA BOUNCER</div>
         <div style={{color:T.muted,fontSize:14,letterSpacing:1}}>Loading league data…</div>
