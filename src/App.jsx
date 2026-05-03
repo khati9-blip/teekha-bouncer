@@ -25,6 +25,7 @@ import FixOwnershipModal from './FixOwnershipModal.jsx';
 import AdminSetupScreen from './AdminSetupScreen.jsx';
 import EditPointsForm from './EditPointsForm.jsx';
 import ProposeRulesForm from './ProposeRulesForm.jsx';
+import EditPlayerModal from './EditPlayerModal.jsx';
 let _pitchId = "p1";
 const storeGet = (key) => sbGet(_pitchId + "_" + key);
 const storeSet = (key, val) => sbSet(_pitchId + "_" + key, val);
@@ -85,84 +86,7 @@ function Card({ children, style:sx={}, accent }) {
 }
 
 
-// ── EDIT PLAYER MODAL ────────────────────────────────────────────────────────
-function EditPlayerModal({ player, onSave, onAdd, onClose }) {
-  const isNew = !player.id;
-  const [name, setName] = useState(player.name || "");
-  const [iplTeam, setIplTeam] = useState(player.iplTeam || "");
-  const [role, setRole] = useState(player.role || "Batsman");
-  const [imageUrl, setImageUrl] = useState(player.imageUrl || "");
-  const IPL_FRANCHISE = ["CSK","MI","RCB","KKR","SRH","RR","PBKS","DC","GT","LSG"];
 
-  const submit = () => {
-    if (!name.trim()) { alert("Enter player name"); return; }
-    if (!iplTeam.trim()) { alert("Select IPL franchise"); return; }
-    const id = name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") + "-" + Date.now();
-    if (isNew) onAdd({ id, name: name.trim(), iplTeam: iplTeam.trim(), role, imageUrl: imageUrl.trim() });
-    else onSave({ ...player, name: name.trim(), iplTeam: iplTeam.trim(), role, imageUrl: imageUrl.trim() });
-  };
-
-  return (
-    <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.95)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:600,backdropFilter:"blur(6px)"}}>
-      <div style={{background:T.card,borderRadius:16,border:`1px solid ${T.border}`,padding:32,width:"100%",maxWidth:400,margin:"0 16px"}}>
-        <div style={{fontFamily:fonts.display,fontSize:22,fontWeight:700,color:T.accent,letterSpacing:2,marginBottom:24}}>{isNew ? "✚ ADD PLAYER" : "✏️ EDIT PLAYER"}</div>
-        <div style={{marginBottom:14}}>
-          <div style={{fontSize:11,color:T.muted,letterSpacing:1,marginBottom:6}}>PLAYER NAME</div>
-          <input value={name} onChange={e=>setName(e.target.value)} placeholder="Full Name" style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 14px",color:T.text,fontSize:15,fontFamily:fonts.body,outline:"none",boxSizing:"border-box"}} />
-        </div>
-        <div style={{marginBottom:14}}>
-          <div style={{fontSize:11,color:T.muted,letterSpacing:1,marginBottom:6}}>IPL FRANCHISE</div>
-          <select value={iplTeam} onChange={e=>setIplTeam(e.target.value)} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 14px",color:T.text,fontSize:15,fontFamily:fonts.body,outline:"none"}}>
-            <option value="">— Select Franchise —</option>
-            {IPL_FRANCHISE.map(t=><option key={t} value={t}>{t}</option>)}
-          </select>
-        </div>
-        <div style={{marginBottom:24}}>
-          <div style={{fontSize:11,color:T.muted,letterSpacing:1,marginBottom:6}}>ROLE</div>
-          <select value={role} onChange={e=>setRole(e.target.value)} style={{width:"100%",background:T.bg,border:`1px solid ${T.border}`,borderRadius:8,padding:"10px 14px",color:T.text,fontSize:15,fontFamily:fonts.body,outline:"none"}}>
-            {["Batsman","Bowler","All-Rounder","Wicket-Keeper"].map(r=><option key={r} value={r}>{r}</option>)}
-          </select>
-        </div>
-{/* Image URL field */}
-      <div style={{marginBottom:24}}>
-        <div style={{fontSize:11,color:T.muted,letterSpacing:1,marginBottom:6,fontFamily:fonts.display,fontWeight:700}}>IMAGE URL (Optional)</div>
-        <input 
-          value={imageUrl} 
-          onChange={e=>setImageUrl(e.target.value)} 
-          placeholder="/players/player-id-12345.jpg" 
-          style={{
-            width:"100%",
-            background:T.bg,
-            border:`1px solid ${T.border}`,
-            borderRadius:8,
-            padding:"10px 14px",
-            color:T.text,
-            fontSize:15,
-            fontFamily:fonts.body,
-            outline:"none",
-            boxSizing:"border-box"
-          }} 
-        />
-        {imageUrl && (
-          <div style={{marginTop:12,textAlign:"center",padding:10,background:T.bg,borderRadius:8,border:`1px solid ${T.border}`}}>
-            <img 
-              src={imageUrl} 
-              alt="Preview" 
-              onError={(e)=>{e.target.style.display='none';e.target.nextSibling.style.display='block'}}
-              style={{maxWidth:120,maxHeight:120,borderRadius:12,border:`2px solid ${T.accent}`}} 
-            />
-            <div style={{display:'none',color:T.danger,fontSize:12,marginTop:8}}>⚠️ Invalid image URL</div>
-          </div>
-        )}
-      </div>
-        <div style={{display:"flex",gap:10}}>
-          <button onClick={onClose} style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:8,padding:11,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
-          <button onClick={submit} style={{flex:2,background:`linear-gradient(135deg,${T.accent},${T.accentDim})`,border:"none",borderRadius:8,padding:11,color:T.bg,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>{isNew ? "ADD PLAYER" : "SAVE CHANGES"}</button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 
 function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, isGuest, isAdmin }) {
