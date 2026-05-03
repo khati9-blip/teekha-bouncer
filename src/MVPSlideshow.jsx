@@ -100,7 +100,7 @@ if (topPlayers.length === 0) return null;
 
       {/* Rank Badge */}
       <div style={{
-        fontSize: 48,
+        fontSize: 36,
         lineHeight: 1,
         animation: "tb-scaleIn 0.5s ease both",
         filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.4))",
@@ -114,7 +114,7 @@ if (topPlayers.length === 0) return null;
       <div style={{
         position: "relative",
         width: "100%",
-        maxWidth: inline ? 150 : 280,
+        maxWidth: inline ? 150 : 200,
         aspectRatio: "2/3",
         animation: "tb-scaleIn 0.6s ease both",
         zIndex: 1,
