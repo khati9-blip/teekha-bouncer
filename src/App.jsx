@@ -4754,6 +4754,30 @@ ${aiMatchText.slice(0, 3000)}`;
           </div>
         )}
 
+        {page==="leaderboard" && <MVPSlideshow players={players} assignments={assignments} teams={teams} points={points} fonts={fonts} T={T} PALETTE={PALETTE} page={page} />}
+        {page==="leaderboard" && leaderboard.length > 0 && (
+          <div style={{position:'fixed',bottom:80,left:0,right:0,background:`linear-gradient(90deg,${T.bg} 0%,#1A0F00 50%,${T.bg} 100%)`,borderTop:`3px solid ${T.accent}`,padding:'10px 0',overflow:'hidden',zIndex:40,boxShadow:`0 -4px 20px ${T.accent}33`}}>
+            <div className="ticker-mobile-fast" style={{display:'flex',alignItems:'center',gap:40,animation:'tb-ticker 20s linear infinite',whiteSpace:'nowrap',willChange:'transform',transform:'translateZ(0)'}}>
+              {(()=>{
+                const activities=[];
+                matches.filter(m=>m.status==='completed').slice(-2).forEach(m=>{
+                  const matchPts=teams.map(t=>{let total=0;players.forEach(p=>{if(assignments[p.id]===t.id&&points[p.id]?.[m.id]){total+=points[p.id][m.id].base||0;}});return{team:t,total};}).sort((a,b)=>b.total-a.total);
+                  if(matchPts[0]?.total>0){activities.push({emoji:'🏏',text:`M${m.matchNum}: ${matchPts[0].team.name} leads with ${matchPts[0].total} pts`});}
+                });
+                if(leaderboard[0]){const topTeam=leaderboard[0];const topPs=players.filter(p=>assignments[p.id]===topTeam.id).map(p=>({...p,total:Object.values(points[p.id]||{}).reduce((s,m)=>s+(m.base||0),0)})).sort((a,b)=>b.total-a.total);if(topPs[0]){activities.push({emoji:'⭐',text:`Current MVP: ${topPs[0].name.toUpperCase()} (${topPs[0].total} pts)`});}}
+                if(snatch?.active){const p=players.find(x=>x.id===snatch.active.pid);const from=teams.find(t=>t.id===snatch.active.fromTeamId);const by=teams.find(t=>t.id===snatch.active.byTeamId);if(p&&from&&by){activities.push({emoji:'⚡',text:`SNATCH: ${by.name} borrowed ${p.name.toUpperCase()} from ${from.name}`});}}
+                notifications.slice(-3).reverse().forEach(n=>{activities.push({emoji:n.emoji,text:n.text.toUpperCase()});});
+                const doubled=[...activities,...activities];
+                return doubled.map((item,idx)=>(
+                  <div key={idx} style={{display:'inline-flex',alignItems:'center',gap:8,padding:'6px 16px',background:T.accentBg,border:`1px solid ${T.accentBorder}`,clipPath:'polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%)'}}>
+                    <span style={{fontSize:16,flexShrink:0}}>{item.emoji}</span>
+                    <span style={{fontFamily:fonts.display,fontSize:12,fontWeight:700,color:T.accent,letterSpacing:1}}>{item.text}</span>
+                  </div>
+                ));
+              })()}
+            </div>
+          </div>
+        )}
         <div style={{maxWidth:860,margin:"0 auto",padding:"20px 16px 90px"}}>
 
           {page==="setup"&&(
@@ -6275,7 +6299,6 @@ onChange={e=>setPlayerSearch(e.target.value)}
           {page==="leaderboard"&&(
             <div className="fade-in">
               <div style={{position:"relative"}}>
-              <MVPSlideshow players={players} assignments={assignments} teams={teams} points={points} fonts={fonts} T={T} PALETTE={PALETTE} />
               <div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:8}}>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
@@ -6375,8 +6398,8 @@ onChange={e=>setPlayerSearch(e.target.value)}
                   </div>
                 </>
               )}
-{/* LIVE TICKER */}
-              {leaderboard.length > 0 && (
+{/* LIVE TICKER - moved outside maxWidth wrapper */}
+              {false && leaderboard.length > 0 && (
                 <div style={{
                   position: 'fixed',
                   bottom: 80,
