@@ -188,7 +188,7 @@ if (topPlayers.length === 0) return null;
         }}>
           <div style={{
             fontFamily: fonts.display,
-            fontSize: inline ? 24 : 14,
+            fontSize: inline ? 24 : 18,
             fontWeight: 900,
             color: teamColor,
             letterSpacing: 1
