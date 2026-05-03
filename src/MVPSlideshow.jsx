@@ -38,12 +38,12 @@ export default function MVPSlideshow({ players, assignments, teams, points, font
   const rankLabels = ["1ST", "2ND", "3RD", "4TH", "5TH"];
 
   return (
-    <div style={{
+    <div className="mvp-slideshow" style={{
       position: "fixed",
       top: 80,
       bottom: 160,
       left: 50,
-      display: window.innerWidth < 768 ? "none" : "flex",
+      display: "flex",
       width: 220,
       background: `linear-gradient(160deg, ${T.bg} 0%, #0A0E14 100%)`,
       border: `3px solid ${teamColor}`,

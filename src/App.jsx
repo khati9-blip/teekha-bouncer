@@ -530,6 +530,7 @@ const css = `
   @media(max-width:600px){
     .desk-only{display:none!important}
     .mob-only{display:inline-flex!important}
+    .mvp-slideshow{display:none!important}
   }
 `;
 
