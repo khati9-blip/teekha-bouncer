@@ -44,9 +44,8 @@ if (topPlayers.length === 0) return null;
       top: inline ? "auto" : 80,
       bottom: inline ? "auto" : 160,
       left: inline ? "auto" : 50,
-      display: "flex",
       width: inline ? "100%" : 220,
-height: inline ? "70vh" : undefined,
+      height: inline ? "70vh" : "auto",
       background: `linear-gradient(160deg, ${T.bg} 0%, #0A0E14 100%)`,
       border: `3px solid ${teamColor}`,
       borderLeft: `6px solid ${teamColor}`,
@@ -60,7 +59,7 @@ height: inline ? "70vh" : undefined,
       gap: 12,
       boxShadow: `0 8px 32px ${teamColor}40, inset 0 0 60px ${teamColor}15`,
       overflow: "hidden",
-      zIndex: 10,
+      zIndex: inline ? 1 : 10,
       boxSizing: "border-box"
     }}>
       {/* Background glow */}
