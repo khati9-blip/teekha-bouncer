@@ -183,12 +183,12 @@ if (topPlayers.length === 0) return null;
           border: `2px solid ${teamColor}`,
           borderRadius: 0,
           clipPath: "polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%)",
-          padding: "10px 20px",
+          padding: inline ? "10px 20px" : "4px 10px",
           display: "inline-block"
         }}>
           <div style={{
             fontFamily: fonts.display,
-            fontSize: 24,
+            fontSize: inline ? 24 : 14,
             fontWeight: 900,
             color: teamColor,
             letterSpacing: 1
@@ -197,7 +197,7 @@ if (topPlayers.length === 0) return null;
           </div>
           <div style={{
             fontFamily: fonts.body,
-            fontSize: 10,
+            fontSize: inline ? 10 : 8,
             color: T.muted,
             letterSpacing: 2,
             textTransform: "uppercase",
