@@ -51,7 +51,7 @@ if (topPlayers.length === 0) return null;
       borderLeft: `6px solid ${teamColor}`,
       borderRadius: 0,
       clipPath: inline ? "none" : "polygon(0% 0%, 100% 0%, calc(100% - 12px) 100%, 0% 100%)",
-      padding: inline ? "10px 12px" : "6px 16px 0px 16px",
+      padding: inline ? "10px 12px" : "0px 16px 0px 16px",
       maxWidth: inline ? 340 : "none",
       margin: inline ? "0 auto" : 0,
       boxSizing: "border-box",
