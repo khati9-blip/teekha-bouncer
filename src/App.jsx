@@ -5099,7 +5099,7 @@ ${aiMatchText.slice(0, 3000)}`;
             )}
             
             {/* View roster hint */}
-            <div style={{"clamp(8px, 1.8vw, 10px)",color:t.color,fontFamily:fonts.display,fontWeight:700,letterSpacing:1.5,marginTop:4}}>
+            <div style={{fontSize:"clamp(8px, 1.8vw, 10px)",color:t.color,fontFamily:fonts.display,fontWeight:700,letterSpacing:1.5,marginTop:4}}>
               VIEW ROSTER →
             </div>
           </div>
