@@ -59,7 +59,7 @@ if (topPlayers.length === 0) return null;
       cursor: "pointer",
       display: "flex",
       flexDirection: "column",
-      justifyContent: "center",
+      justifyContent: "flex-start",
       alignItems: "center",
       gap: inline ? 6 : 12,
       boxShadow: `0 8px 32px ${teamColor}40, inset 0 0 60px ${teamColor}15`,
