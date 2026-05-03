@@ -27,7 +27,8 @@ export default function MVPSlideshow({ players, assignments, teams, points, font
     return () => clearInterval(interval);
   }, [topPlayers.length]);
 
-  if (topPlayers.length === 0) return null;
+  console.log("topPlayers", topPlayers, "points keys", Object.keys(points).length, "players", players.length);
+if (topPlayers.length === 0) return null;
 
   const currentPlayer = topPlayers[currentIndex];
   const teamId = assignments[currentPlayer.id];
