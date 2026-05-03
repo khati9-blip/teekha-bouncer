@@ -55,7 +55,7 @@ if (topPlayers.length === 0) return null;
       maxWidth: inline ? 340 : "none",
       margin: inline ? "0 auto" : 0,
       boxSizing: "border-box",
-      cursor: "pointer"
+      cursor: "pointer",
       display: "flex",
       flexDirection: "column",
       justifyContent: "center",
