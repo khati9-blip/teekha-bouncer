@@ -46,6 +46,7 @@ if (topPlayers.length === 0) return null;
       left: inline ? "auto" : 50,
       display: "flex",
       width: inline ? "100%" : 220,
+height: inline ? "70vh" : undefined,
       background: `linear-gradient(160deg, ${T.bg} 0%, #0A0E14 100%)`,
       border: `3px solid ${teamColor}`,
       borderLeft: `6px solid ${teamColor}`,
