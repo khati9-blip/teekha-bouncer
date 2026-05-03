@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import FormChart from "./FormChart";
-import MVPSlideshow from './MVPSlideshow';
 import H2HStats from "./H2HStats";
 import MVPStats from "./MVPStats";
 import TransferWindowComponent from "./TransferWindow";
@@ -1253,8 +1252,7 @@ placeholder="Paste scorecard text here... (e.g. V Kohli c Maxwell b Bumrah 82 (5
           <button onClick={submit} style={{flex:2,background:`linear-gradient(135deg,${T.accent},${T.accentDim})`,border:"none",borderRadius:8,padding:11,color:T.bg,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>✅ SAVE POINTS ({playingPlayers.length} players)</button>
         </div>
       </div>
-    </div>
-    </>
+    </div></>
   );
 }
 
@@ -4609,15 +4607,7 @@ ${aiMatchText.slice(0, 3000)}`;
   if (!appReady) return (
     <>
       <style>{css}</style>
-      <div style={{
-        minHeight:"100vh",
-        background:"var(--bg)",
-        display:"flex",
-        flexDirection:"column",
-        alignItems:"center",
-        justifyContent:"center",
-        gap:16
-      }}>
+      <div style={{minHeight:"100vh",background:"var(--bg)"}}>bg)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16}}>
         <img src="/logo.png" style={{width:80,height:80,objectFit:"contain",borderRadius:12,animation:"spin 2s linear infinite"}} />
         <div style={{fontFamily:fonts.display,fontSize:22,fontWeight:700,color:T.accent,letterSpacing:3}}>TEEKHA BOUNCER</div>
         <div style={{color:T.muted,fontSize:14,letterSpacing:1}}>Loading league data…</div>
@@ -6267,241 +6257,220 @@ onChange={e=>setPlayerSearch(e.target.value)}
             </div>
           )}
 
-        {page==="leaderboard"&&(
+          {page==="leaderboard"&&(
             <div className="fade-in">
-              {/* Desktop: Two-column layout with MVP slideshow */}
-              <div style={{
-                display: "grid",
-                gridTemplateColumns: window.innerWidth >= 1024 ? "380px 1fr" : "1fr",
-                gap: 24,
-                alignItems: "start"
-              }}>
-                {/* MVP Slideshow - Desktop only */}
-                {window.innerWidth >= 1024 && leaderboard.length > 0 && (
-                  <MVPSlideshow 
-                    players={players}
-                    assignments={assignments}
-                    teams={teams}
-                    points={points}
-                    fonts={fonts}
-                    T={T}
-                    PALETTE={PALETTE}
-                  />
-                )}
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:8}}>
+                <div style={{display:"inline-block",background:T.accent,padding:"4px 16px 4px 12px",clipPath:"polygon(0 0,100% 0,calc(100% - 10px) 100%,0 100%)"}}>
+                  <h2 style={{fontFamily:fonts.display,fontSize:28,fontWeight:700,color:T.bg,letterSpacing:3,margin:0}}>LEADERBOARD</h2>
+                </div>
+                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
 
-                {/* Main leaderboard content */}
-                <div>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:8}}>
-                    <div style={{display:"inline-block",background:T.accent,padding:"4px 16px 4px 12px",clipPath:"polygon(0 0,100% 0,calc(100% - 10px) 100%,0 100%)"}}>
-                      <h2 style={{fontFamily:fonts.display,fontSize:28,fontWeight:700,color:T.bg,letterSpacing:3,margin:0}}>LEADERBOARD</h2>
-                    </div>
-                    <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                      <button onClick={shareLeaderboard} style={{background:"#25D366",border:"none",color:"#050F05",clipPath:"polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%)",padding:"9px 20px",cursor:"pointer",fontFamily:fonts.display,fontWeight:800,fontSize:13,letterSpacing:2,textTransform:"uppercase",filter:"drop-shadow(3px 3px 0 #0A5020)"}}>
-                        📲 SHARE WHATSAPP
-                      </button>
-                    </div>
-                  </div>
-                  {leaderboard.length===0?(
-                    <Card sx={{padding:60,textAlign:"center"}}><div style={{fontSize:56}}>🏆</div><div style={{color:T.muted,marginTop:16}}>Set up your league first</div></Card>
-                  ):(
-                    <>
-                      <div id="leaderboard-capture" style={{marginBottom:20}}>
-                        {leaderboard.map((team,i)=>{
-                          const medals=["🥇","🥈","🥉"],mc=["#F5A623","#94A3B8","#CD7C2F"];
-                          const breakdown=getPlayerBreakdown(team.id);
-                          const isOpen=expandedTeam===team.id;
-                          const ruledOutCount=breakdown.filter(p=>ruledOut.includes(p.id)).length;
-                          return(
-                            <div key={team.id} style={{background:T.card,borderRadius:0,marginBottom:6,borderLeft:"5px solid "+team.color,borderBottom:`1px solid ${T.border}`,overflow:"hidden"}}>
-                              {/* Main row — clickable to expand */}
-                              <div className="leaderboard-card" style={{display:"flex",alignItems:"center",gap:16,padding:"18px 20px",cursor:"pointer"}} onClick={()=>setExpandedTeam(isOpen?null:team.id)}>
-                                <div style={{fontFamily:fonts.display,fontSize:i===0?40:32,fontWeight:900,color:i===0?team.color:T.muted,minWidth:44,lineHeight:1}}>{medals[i]||("#"+(i+1))}</div>
-                                <div style={{flex:1}}>
-                                  <div className="leaderboard-team-name" style={{fontWeight:900,fontSize:i===0?26:22,color:team.color,fontFamily:fonts.display,letterSpacing:2,textTransform:"uppercase",lineHeight:1}}>{team.name}</div>
-                                  <div style={{fontSize:11,color:T.muted,letterSpacing:2,marginTop:3,textTransform:"uppercase"}}>
-                                    {players.filter(p=>assignments[p.id]===team.id && !ruledOut.includes(p.id)).length} PLAYERS
-                                    {ruledOutCount>0&&<span style={{color:T.danger,marginLeft:8}}>· {ruledOutCount} RULED OUT</span>}
-                                  </div>
-                                </div>
-                                <div style={{textAlign:"right",display:"flex",alignItems:"center",gap:12}}>
-                                  <div>
-                                    <div className={i===0?"leaderboard-points-first leaderboard-points":"leaderboard-points"} style={{fontSize:i===0?48:36,fontWeight:900,color:i===0?T.accent:T.text,fontFamily:fonts.display,lineHeight:1,letterSpacing:1}}>{team.total.toLocaleString()}</div>
-                                    <div style={{fontSize:10,color:T.muted,letterSpacing:3,textTransform:"uppercase",marginTop:2}}>PTS</div>
-                                  </div>
-                                  <span style={{color:team.color,fontSize:14,fontFamily:fonts.display,fontWeight:700}}>{isOpen?"▲":"▼"}</span>
-                                </div>
-                              </div>
-
-                              {/* Collapsible player breakdown */}
-                              {isOpen&&breakdown.length>0&&(
-                                <div style={{borderTop:`1px solid ${T.border}`,padding:"12px 18px"}}>
-                                  <div style={{display:"flex",gap:8,marginBottom:10}}>
-                                    <div style={{flex:1,background:T.accent,color:T.bg,padding:"8px 12px",fontFamily:fonts.display,fontWeight:800,fontSize:11,letterSpacing:2,clipPath:"polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)"}}>PLAYER</div>
-                                    <div style={{width:90,background:T.accent,color:T.bg,padding:"8px 12px",fontFamily:fonts.display,fontWeight:800,fontSize:11,letterSpacing:2,clipPath:"polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)"}}>ROLE</div>
-                                    <div style={{width:70,background:T.accent,color:T.bg,padding:"8px 12px",fontFamily:fonts.display,fontWeight:800,fontSize:11,letterSpacing:2,textAlign:"right",clipPath:"polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)"}}>PTS</div>
-                                  </div>
-                                  {breakdown.map((p,idx)=>(
-                                    <div key={p.id} style={{display:"flex",alignItems:"center",padding:"9px 4px",borderBottom:`1px solid ${T.border}`,opacity:p.status==="snatched-out"||p.status==="snatch-returned-in"||p.status==="traded-out"||ruledOut.includes(p.id)?0.65:1}}>
-                                      <div style={{flex:1,fontFamily:fonts.display,fontWeight:900,fontSize:16,letterSpacing:1,textTransform:"uppercase",
-                                        color:ruledOut.includes(p.id)?T.danger:p.status==="traded-in"?T.success:p.status==="returned"?T.accent:p.status==="traded-out"?T.danger:idx===0&&p.status==="active"?T.accent:T.text,
-                                        textDecoration:p.status==="snatched-out"||p.status==="snatch-returned-in"||p.status==="traded-out"||ruledOut.includes(p.id)?"line-through":"none"}}>
-                                        {p.status==="traded-out"&&<span style={{marginRight:4}}>⬇️</span>}
-                                        {p.status==="traded-in"&&<span style={{marginRight:4}}>⬆️</span>}
-                                        {p.status==="returned"&&<span style={{marginRight:4}}>↩️</span>}
-                                        {ruledOut.includes(p.id)&&<span style={{marginRight:4}}>🚫</span>}
-                                        {p.name}
-                                        {p.tier && <span style={{fontSize:9,fontWeight:800,letterSpacing:1,padding:"2px 6px",marginLeft:6,fontFamily:fonts.display,textTransform:"uppercase",background:p.tier==="platinum"?"#4A5E7833":p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":"#CD7F3222",border:`1px solid ${p.tier==="platinum"?"#4A5E7866":p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":"#CD7F3255"}`,color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32",clipPath:"polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%)"}}>{p.tier.toUpperCase()}</span>}
-                                        {ruledOut.includes(p.id)&&<span style={{fontSize:9,color:T.danger,marginLeft:6,textDecoration:"none",fontWeight:700}}>RULED OUT</span>}
-                                        {!ruledOut.includes(p.id)&&p.status==="traded-out"&&<span style={{fontSize:9,color:T.danger,marginLeft:6,textDecoration:"none",fontWeight:700}}>→ {p.tradedFor}</span>}
-                                        {!ruledOut.includes(p.id)&&p.status==="traded-in"&&<span style={{fontSize:9,color:T.success,marginLeft:6,textDecoration:"none",fontWeight:700}}>FROM POOL</span>}
-                                        {!ruledOut.includes(p.id)&&p.status==="returned"&&<span style={{fontSize:9,color:T.accent,marginLeft:6,textDecoration:"none",fontWeight:700}}>↩ RETURNED</span>}
-                                        {!ruledOut.includes(p.id)&&p.status==="snatched-out"&&<span style={{fontSize:9,color:T.purple,marginLeft:6,textDecoration:"none",fontWeight:700}}>SNATCHED</span>}
-                                        {!ruledOut.includes(p.id)&&p.status==="snatched-in"&&<span style={{fontSize:9,color:T.success,marginLeft:6,textDecoration:"none",fontWeight:700}}>ON LOAN</span>}
-                                        {!ruledOut.includes(p.id)&&p.status==="snatch-returned-in"&&<span style={{fontSize:9,color:T.muted,marginLeft:6,textDecoration:"none"}}>RETURNED</span>}
-                                        {!ruledOut.includes(p.id)&&p.status==="released"&&<span style={{fontSize:9,color:T.muted,marginLeft:6,textDecoration:"none"}}>RELEASED</span>}
-                                      </div>
-                                      <div style={{width:90}}><Badge label={p.role||"—"} color={ROLE_COLORS[p.role]||"#4A5E78"} /></div>
-                                      <div style={{width:70,textAlign:"right",fontWeight:700,
-                                        color:ruledOut.includes(p.id)?T.danger:p.status==="traded-in"?T.success:p.status==="returned"?T.accent:p.status==="traded-out"||p.status==="snatched-out"||p.status==="snatch-returned-in"?T.muted:p.total>0?T.text:T.muted,
-                                        fontFamily:fonts.display,fontSize:17}}>
-                                        {p.total}
-                                        {ruledOut.includes(p.id)&&<span style={{fontSize:9,display:"block",color:T.danger,letterSpacing:0.5}}>FROZEN</span>}
-                                        {!ruledOut.includes(p.id)&&p.status==="traded-in"&&<span style={{fontSize:9,display:"block",color:T.success,letterSpacing:0.5}}>RESET</span>}
-                                        {!ruledOut.includes(p.id)&&p.status==="returned"&&<span style={{fontSize:9,display:"block",color:T.accent,letterSpacing:0.5}}>BACK</span>}
-                                        {!ruledOut.includes(p.id)&&p.status==="traded-out"&&<span style={{fontSize:9,display:"block",color:T.danger,letterSpacing:0.5}}>FROZEN</span>}
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                              {isOpen&&breakdown.length===0&&<div style={{padding:"16px 18px",color:T.muted,fontSize:13,borderTop:`1px solid ${T.border}`}}>No players assigned yet.</div>}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </>
-                  )}
-                  {/* LIVE TICKER */}
-                  {leaderboard.length > 0 && (
-                    <div style={{
-                      position: 'fixed',
-                      bottom: 60,
-                      left: 0,
-                      right: 0,
-                      background: `linear-gradient(90deg, ${T.bg} 0%, #1A0F00 50%, ${T.bg} 100%)`,
-                      borderTop: `3px solid ${T.accent}`,
-                      padding: '10px 0',
-                      overflow: 'hidden',
-                      zIndex: 40,
-                      boxShadow: `0 -4px 20px ${T.accent}33`
-                    }}>
-                      <div className="ticker-mobile-fast" style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 40,
-                        animation: 'tb-ticker 20s linear infinite',
-                        whiteSpace: 'nowrap',
-                        willChange: 'transform',
-                        transform: 'translateZ(0)'
-                      }}>
-                        {(() => {
-                          const activities = [];
-                          
-                          // Recent match scores (limit to 2 for mobile performance)
-                          matches.filter(m => m.status === 'completed').slice(-2).forEach(m => {
-                            const matchPts = teams.map(t => {
-                              let total = 0;
-                              players.forEach(p => {
-                                if (assignments[p.id] === t.id && points[p.id]?.[m.id]) {
-                                  total += points[p.id][m.id].base || 0;
-                                }
-                              });
-                              return { team: t, total };
-                            }).sort((a, b) => b.total - a.total);
-                            
-                            if (matchPts[0]?.total > 0) {
-                              activities.push({
-                                emoji: '🏏',
-                                text: `M${m.matchNum}: ${matchPts[0].team.name} leads with ${matchPts[0].total} pts`
-                              });
-                            }
-                          });
-                          
-                          // Current MVP
-                          if (leaderboard[0]) {
-                            const topTeam = leaderboard[0];
-                            const topPlayers = players
-                              .filter(p => assignments[p.id] === topTeam.id)
-                              .map(p => ({
-                                ...p,
-                                total: Object.values(points[p.id] || {}).reduce((s, m) => s + (m.base || 0), 0)
-                              }))
-                              .sort((a, b) => b.total - a.total);
-                            
-                            if (topPlayers[0]) {
-                              activities.push({
-                                emoji: '⭐',
-                                text: `Current MVP: ${topPlayers[0].name.toUpperCase()} (${topPlayers[0].total} pts)`
-                              });
-                            }
-                          }
-                          
-                          // Snatch activity
-                          if (snatch?.active) {
-                            const p = players.find(x => x.id === snatch.active.pid);
-                            const from = teams.find(t => t.id === snatch.active.fromTeamId);
-                            const by = teams.find(t => t.id === snatch.active.byTeamId);
-                            if (p && from && by) {
-                              activities.push({
-                                emoji: '⚡',
-                                text: `SNATCH: ${by.name} borrowed ${p.name.toUpperCase()} from ${from.name}`
-                              });
-                            }
-                          }
-                          
-                          // Recent notifications (limit to 3 for mobile)
-                          notifications.slice(-3).reverse().forEach(n => {
-                            activities.push({
-                              emoji: n.emoji,
-                              text: n.text.toUpperCase()
-                            });
-                          });
-                          
-                          // Duplicate for seamless loop
-                          const doubled = [...activities, ...activities];
-                          
-                          return doubled.map((item, idx) => (
-                            <div key={idx} style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: 8,
-                              padding: '6px 16px',
-                              background: T.accentBg,
-                              border: `1px solid ${T.accentBorder}`,
-                              clipPath: 'polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%)',
-                            }}>
-                              <span style={{ fontSize: 16, flexShrink: 0 }}>{item.emoji}</span>
-                              <span style={{
-                                fontFamily: fonts.display,
-                                fontSize: 12,
-                                fontWeight: 700,
-                                color: T.accent,
-                                letterSpacing: 1
-                              }}>
-                                {item.text}
-                              </span>
-                            </div>
-                          ));
-                        })()}
-                      </div>
-                    </div>
-                  )}
+                  <button onClick={shareLeaderboard} style={{background:"#25D366",border:"none",color:"#050F05",clipPath:"polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%)",padding:"9px 20px",cursor:"pointer",fontFamily:fonts.display,fontWeight:800,fontSize:13,letterSpacing:2,textTransform:"uppercase",filter:"drop-shadow(3px 3px 0 #0A5020)"}}>
+                    📲 SHARE WHATSAPP
+                  </button>
                 </div>
               </div>
+              {leaderboard.length===0?(
+                <Card sx={{padding:60,textAlign:"center"}}><div style={{fontSize:56}}>🏆</div><div style={{color:T.muted,marginTop:16}}>Set up your league first</div></Card>
+              ):(
+                <>
+                  <div id="leaderboard-capture" style={{marginBottom:20}}>
+                    {leaderboard.map((team,i)=>{
+                      const medals=["🥇","🥈","🥉"],mc=["#F5A623","#94A3B8","#CD7C2F"];
+                      const breakdown=getPlayerBreakdown(team.id);
+                      const isOpen=expandedTeam===team.id;
+                      const ruledOutCount=breakdown.filter(p=>ruledOut.includes(p.id)).length;
+                      return(
+                        <div key={team.id} style={{background:T.card,borderRadius:0,marginBottom:6,borderLeft:"5px solid "+team.color,borderBottom:`1px solid ${T.border}`,overflow:"hidden"}}>
+                          {/* Main row — clickable to expand */}
+                          <div className="leaderboard-card" style={{display:"flex",alignItems:"center",gap:16,padding:"18px 20px",cursor:"pointer"}} onClick={()=>setExpandedTeam(isOpen?null:team.id)}>
+                            <div style={{fontFamily:fonts.display,fontSize:i===0?40:32,fontWeight:900,color:i===0?team.color:T.muted,minWidth:44,lineHeight:1}}>{medals[i]||("#"+(i+1))}</div>
+                            <div style={{flex:1}}>
+                              <div className="leaderboard-team-name" style={{fontWeight:900,fontSize:i===0?26:22,color:team.color,fontFamily:fonts.display,letterSpacing:2,textTransform:"uppercase",lineHeight:1}}>{team.name}</div>
+                              <div style={{fontSize:11,color:T.muted,letterSpacing:2,marginTop:3,textTransform:"uppercase"}}>
+                                {players.filter(p=>assignments[p.id]===team.id && !ruledOut.includes(p.id)).length} PLAYERS
+                                {ruledOutCount>0&&<span style={{color:T.danger,marginLeft:8}}>· {ruledOutCount} RULED OUT</span>}
+                              </div>
+                            </div>
+                            <div style={{textAlign:"right",display:"flex",alignItems:"center",gap:12}}>
+                              <div>
+                                <div className={i===0?"leaderboard-points-first leaderboard-points":"leaderboard-points"} style={{fontSize:i===0?48:36,fontWeight:900,color:i===0?T.accent:T.text,fontFamily:fonts.display,lineHeight:1,letterSpacing:1}}>{team.total.toLocaleString()}</div>
+                                <div style={{fontSize:10,color:T.muted,letterSpacing:3,textTransform:"uppercase",marginTop:2}}>PTS</div>
+                              </div>
+                              <span style={{color:team.color,fontSize:14,fontFamily:fonts.display,fontWeight:700}}>{isOpen?"▲":"▼"}</span>
+                            </div>
+                          </div>
+
+                          {/* Collapsible player breakdown */}
+                          {isOpen&&breakdown.length>0&&(
+                            <div style={{borderTop:`1px solid ${T.border}`,padding:"12px 18px"}}>
+                              <div style={{display:"flex",gap:8,marginBottom:10}}>
+                                <div style={{flex:1,background:T.accent,color:T.bg,padding:"8px 12px",fontFamily:fonts.display,fontWeight:800,fontSize:11,letterSpacing:2,clipPath:"polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)"}}>PLAYER</div>
+                                <div style={{width:90,background:T.accent,color:T.bg,padding:"8px 12px",fontFamily:fonts.display,fontWeight:800,fontSize:11,letterSpacing:2,clipPath:"polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)"}}>ROLE</div>
+                                <div style={{width:70,background:T.accent,color:T.bg,padding:"8px 12px",fontFamily:fonts.display,fontWeight:800,fontSize:11,letterSpacing:2,textAlign:"right",clipPath:"polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)"}}>PTS</div>
+                              </div>
+                              {breakdown.map((p,idx)=>(
+                                <div key={p.id} style={{display:"flex",alignItems:"center",padding:"9px 4px",borderBottom:`1px solid ${T.border}`,opacity:p.status==="snatched-out"||p.status==="snatch-returned-in"||p.status==="traded-out"||ruledOut.includes(p.id)?0.65:1}}>
+                                  <div style={{flex:1,fontFamily:fonts.display,fontWeight:900,fontSize:16,letterSpacing:1,textTransform:"uppercase",
+                                    color:ruledOut.includes(p.id)?T.danger:p.status==="traded-in"?T.success:p.status==="returned"?T.accent:p.status==="traded-out"?T.danger:idx===0&&p.status==="active"?T.accent:T.text,
+                                    textDecoration:p.status==="snatched-out"||p.status==="snatch-returned-in"||p.status==="traded-out"||ruledOut.includes(p.id)?"line-through":"none"}}>
+                                    {p.status==="traded-out"&&<span style={{marginRight:4}}>⬇️</span>}
+                                    {p.status==="traded-in"&&<span style={{marginRight:4}}>⬆️</span>}
+                                    {p.status==="returned"&&<span style={{marginRight:4}}>↩️</span>}
+                                    {ruledOut.includes(p.id)&&<span style={{marginRight:4}}>🚫</span>}
+                                    {p.name}
+                                    {p.tier && <span style={{fontSize:9,fontWeight:800,letterSpacing:1,padding:"2px 6px",marginLeft:6,fontFamily:fonts.display,textTransform:"uppercase",background:p.tier==="platinum"?"#4A5E7833":p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":"#CD7F3222",border:`1px solid ${p.tier==="platinum"?"#4A5E7866":p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":"#CD7F3255"}`,color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32",clipPath:"polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%)"}}>{p.tier.toUpperCase()}</span>}
+                                    {ruledOut.includes(p.id)&&<span style={{fontSize:9,color:T.danger,marginLeft:6,textDecoration:"none",fontWeight:700}}>RULED OUT</span>}
+                                    {!ruledOut.includes(p.id)&&p.status==="traded-out"&&<span style={{fontSize:9,color:T.danger,marginLeft:6,textDecoration:"none",fontWeight:700}}>→ {p.tradedFor}</span>}
+                                    {!ruledOut.includes(p.id)&&p.status==="traded-in"&&<span style={{fontSize:9,color:T.success,marginLeft:6,textDecoration:"none",fontWeight:700}}>FROM POOL</span>}
+                                    {!ruledOut.includes(p.id)&&p.status==="returned"&&<span style={{fontSize:9,color:T.accent,marginLeft:6,textDecoration:"none",fontWeight:700}}>↩ RETURNED</span>}
+                                    {!ruledOut.includes(p.id)&&p.status==="snatched-out"&&<span style={{fontSize:9,color:T.purple,marginLeft:6,textDecoration:"none",fontWeight:700}}>SNATCHED</span>}
+                                    {!ruledOut.includes(p.id)&&p.status==="snatched-in"&&<span style={{fontSize:9,color:T.success,marginLeft:6,textDecoration:"none",fontWeight:700}}>ON LOAN</span>}
+                                    {!ruledOut.includes(p.id)&&p.status==="snatch-returned-in"&&<span style={{fontSize:9,color:T.muted,marginLeft:6,textDecoration:"none"}}>RETURNED</span>}
+                                    {!ruledOut.includes(p.id)&&p.status==="released"&&<span style={{fontSize:9,color:T.muted,marginLeft:6,textDecoration:"none"}}>RELEASED</span>}
+                                  </div>
+                                  <div style={{width:90}}><Badge label={p.role||"—"} color={ROLE_COLORS[p.role]||"#4A5E78"} /></div>
+                                  <div style={{width:70,textAlign:"right",fontWeight:700,
+                                    color:ruledOut.includes(p.id)?T.danger:p.status==="traded-in"?T.success:p.status==="returned"?T.accent:p.status==="traded-out"||p.status==="snatched-out"||p.status==="snatch-returned-in"?T.muted:p.total>0?T.text:T.muted,
+                                    fontFamily:fonts.display,fontSize:17}}>
+                                    {p.total}
+                                    {ruledOut.includes(p.id)&&<span style={{fontSize:9,display:"block",color:T.danger,letterSpacing:0.5}}>FROZEN</span>}
+                                    {!ruledOut.includes(p.id)&&p.status==="traded-in"&&<span style={{fontSize:9,display:"block",color:T.success,letterSpacing:0.5}}>RESET</span>}
+                                    {!ruledOut.includes(p.id)&&p.status==="returned"&&<span style={{fontSize:9,display:"block",color:T.accent,letterSpacing:0.5}}>BACK</span>}
+                                    {!ruledOut.includes(p.id)&&p.status==="traded-out"&&<span style={{fontSize:9,display:"block",color:T.danger,letterSpacing:0.5}}>FROZEN</span>}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {isOpen&&breakdown.length===0&&<div style={{padding:"16px 18px",color:T.muted,fontSize:13,borderTop:`1px solid ${T.border}`}}>No players assigned yet.</div>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+{/* LIVE TICKER */}
+              {leaderboard.length > 0 && (
+                <div style={{
+                  position: 'fixed',
+                  bottom: 60,
+                  left: 0,
+                  right: 0,
+                  background: `linear-gradient(90deg, ${T.bg} 0%, #1A0F00 50%, ${T.bg} 100%)`,
+                  borderTop: `3px solid ${T.accent}`,
+                  padding: '10px 0',
+                  overflow: 'hidden',
+                  zIndex: 40,
+                  boxShadow: `0 -4px 20px ${T.accent}33`
+                }}>
+                  <div className="ticker-mobile-fast" style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 40,
+                    animation: 'tb-ticker 20s linear infinite',
+                    whiteSpace: 'nowrap',
+                    willChange: 'transform',
+                    transform: 'translateZ(0)'
+                  }}>
+                    {(() => {
+                      const activities = [];
+                      
+                      // Recent match scores (limit to 2 for mobile performance)
+                      matches.filter(m => m.status === 'completed').slice(-2).forEach(m => {
+                        const matchPts = teams.map(t => {
+                          let total = 0;
+                          players.forEach(p => {
+                            if (assignments[p.id] === t.id && points[p.id]?.[m.id]) {
+                              total += points[p.id][m.id].base || 0;
+                            }
+                          });
+                          return { team: t, total };
+                        }).sort((a, b) => b.total - a.total);
+                        
+                        if (matchPts[0]?.total > 0) {
+                          activities.push({
+                            emoji: '🏏',
+                            text: `M${m.matchNum}: ${matchPts[0].team.name} leads with ${matchPts[0].total} pts`
+                          });
+                        }
+                      });
+                      
+                      // Current MVP
+                      if (leaderboard[0]) {
+                        const topTeam = leaderboard[0];
+                        const topPlayers = players
+                          .filter(p => assignments[p.id] === topTeam.id)
+                          .map(p => ({
+                            ...p,
+                            total: Object.values(points[p.id] || {}).reduce((s, m) => s + (m.base || 0), 0)
+                          }))
+                          .sort((a, b) => b.total - a.total);
+                        
+                        if (topPlayers[0]) {
+                          activities.push({
+                            emoji: '⭐',
+                            text: `Current MVP: ${topPlayers[0].name.toUpperCase()} (${topPlayers[0].total} pts)`
+                          });
+                        }
+                      }
+                      
+                      // Snatch activity
+                      if (snatch?.active) {
+                        const p = players.find(x => x.id === snatch.active.pid);
+                        const from = teams.find(t => t.id === snatch.active.fromTeamId);
+                        const by = teams.find(t => t.id === snatch.active.byTeamId);
+                        if (p && from && by) {
+                          activities.push({
+                            emoji: '⚡',
+                            text: `SNATCH: ${by.name} borrowed ${p.name.toUpperCase()} from ${from.name}`
+                          });
+                        }
+                      }
+                      
+                      // Recent notifications (limit to 3 for mobile)
+                      notifications.slice(-3).reverse().forEach(n => {
+                        activities.push({
+                          emoji: n.emoji,
+                          text: n.text.toUpperCase()
+                        });
+                      });
+                      
+                      // Duplicate for seamless loop
+                      const doubled = [...activities, ...activities];
+                      
+                      return doubled.map((item, idx) => (
+                        <div key={idx} style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          padding: '6px 16px',
+                          background: T.accentBg,
+                          border: `1px solid ${T.accentBorder}`,
+                          clipPath: 'polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%)',
+                        }}>
+                          <span style={{ fontSize: 16, flexShrink: 0 }}>{item.emoji}</span>
+                          <span style={{
+                            fontFamily: fonts.display,
+                            fontSize: 12,
+                            fontWeight: 700,
+                            color: T.accent,
+                            letterSpacing: 1
+                          }}>
+                            {item.text}
+                          </span>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                </div>
+              )}
+
             </div>
           )}
+        </div>
 
-  {/* LEAGUE RULES PANEL */}
+        {/* LEAGUE RULES PANEL */}
         {showRulesPanel && (
           <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",zIndex:200,overflowY:"auto",padding:24,fontFamily:fonts.body}}>
             <div style={{maxWidth:500,margin:"0 auto"}}>
@@ -7003,103 +6972,199 @@ onChange={e=>setPlayerSearch(e.target.value)}
     <span style={{fontSize:14,color:T.accent,fontFamily:fonts.display,fontWeight:700}}>{teamIdsOpen?"▲":"▼"}</span>
   </button>
   
- {/* Team IDs collapsible content */}
-{teamIdsOpen && (
-  <div style={{marginTop:8,maxHeight:200,overflowY:"auto"}}>
-    {teams.map(t => {
-      const ti = teamIdentity[t.id] || {};
-      return (
-        <div key={t.id} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,padding:"8px 10px",background:T.bg,borderRadius:0,border:"1px solid "+t.color+"33"}}>
-          
-          <div style={{flex:1,minWidth:0}}>
-            <div style={{fontWeight:700,fontSize:12,color:t.color,fontFamily:fonts.display,letterSpacing:1}}>
-              {t.name}
+  {/* Team IDs collapsible content */}
+  {teamIdsOpen && (
+    <div style={{marginTop:8,maxHeight:200,overflowY:"auto"}}>
+      {teams.map(t => {
+        const ti = teamIdentity[t.id] || {};
+        return (
+          <div key={t.id} style={{display:"flex",alignItems:"center",gap:8,marginBottom:6,padding:"8px 10px",background:T.bg,borderRadius:0,border:"1px solid "+t.color+"33"}}>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontWeight:700,fontSize:12,color:t.color,fontFamily:fonts.display,letterSpacing:1}}>{t.name}</div>
+              <div style={{fontSize:10,color:T.muted,marginTop:1}}>{ti.claimedBy ? ti.claimedBy.split("@")[0] : "Unclaimed"}</div>
             </div>
-            <div style={{fontSize:10,color:T.muted,marginTop:1}}>
-              {ti.claimedBy ? ti.claimedBy.split("@")[0] : "Unclaimed"}
+            {ti.claimedBy ? (
+              <div style={{display:"flex",alignItems:"center",gap:4}}>
+                <span style={{fontSize:10,color:T.success,fontWeight:700}}>✓ {ti.claimedBy.split("@")[0]}</span>
+                <button onClick={async()=>{
+                  if(!confirm("Reset claim for "+t.name+"?")) return;
+                  const updated = {...teamIdentity, [t.id]: {...ti, claimedBy:null, pinHash:null}};
+                  setTeamIdentity(updated);
+                  await storeSet("teamIdentity", updated);
+                }} style={{background:T.dangerBg,border:`1px solid ${T.danger}33`,color:T.danger,borderRadius:4,padding:"2px 5px",cursor:"pointer",fontSize:9,fontWeight:700}}>RESET</button>
+              </div>
+            ) : ti.teamId ? (
+              <div style={{display:"flex",alignItems:"center",gap:4}}>
+                <div style={{fontFamily:fonts.display,fontSize:14,fontWeight:800,color:T.accent,letterSpacing:2,background:T.accentBg,padding:"3px 8px",borderRadius:6}}>{ti.teamId}</div>
+                <button onClick={()=>{setAdminClaimTeam(t);setAdminClaimModal(true);setAdminPin('');setAdminPinConfirm('');setAdminPinErr('');}}
+                  style={{background:T.successBg,border:`1px solid ${T.success}44`,color:T.success,borderRadius:4,padding:"2px 5px",cursor:"pointer",fontSize:9,fontWeight:700}}>CLAIM</button>
+                <button onClick={()=>withPassword(async()=>{
+                  if(!confirm("Reset this Team ID?")) return;
+                  const newId = generateTeamId();
+                  const updated = {...teamIdentity, [t.id]: {teamId: newId}};
+                  setTeamIdentity(updated);
+                  await storeSet("teamIdentity", updated);
+                })} style={{background:"transparent",border:`1px solid ${T.border}`,color:T.muted,borderRadius:4,padding:"2px 5px",cursor:"pointer",fontSize:10}}>↺</button>
+              </div>
+            ) : (
+              <div style={{display:"flex",alignItems:"center",gap:4}}>
+                <button onClick={()=>withPassword(async()=>{
+                  const newId = generateTeamId();
+                  const updated = {...teamIdentity, [t.id]: {...ti, teamId: newId}};
+                  setTeamIdentity(updated);
+                  await storeSet("teamIdentity", updated);
+                })} style={{background:T.accentBg,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:11,fontFamily:fonts.body,fontWeight:700}}>GENERATE</button>
+                <button onClick={()=>{setAdminClaimTeam(t);setAdminClaimModal(true);setAdminPin('');setAdminPinConfirm('');setAdminPinErr('');}}
+                  style={{background:T.successBg,border:`1px solid ${T.success}44`,color:T.success,borderRadius:4,padding:"2px 5px",cursor:"pointer",fontSize:9,fontWeight:700}}>CLAIM</button>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  )}
+</div>
+              <div style={{flex:1,padding:"12px 8px",overflowY:"auto"}}>
+                <button onClick={()=>{nav("form");setDrawerOpen(false);}} style={{width:"100%",background:page==="form"?T.accent:"transparent",border:page==="form"?"none":`2px solid ${T.border}`,clipPath:page==="form"?"polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)":"none",padding:"14px 16px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14,marginBottom:8,filter:page==="form"?"drop-shadow(3px 3px 0 #8B4500)":"none"}}>
+  <span style={{fontSize:26}}>📈</span>
+  <div>
+    <div style={{fontFamily:fonts.display,fontWeight:800,fontSize:15,color:page==="form"?T.bg:T.text,letterSpacing:1.5,textTransform:"uppercase"}}>Form Chart</div>
+    <div style={{fontSize:10,color:page==="form"?"rgba(8,12,20,0.7)":T.muted,marginTop:2,fontFamily:fonts.body,letterSpacing:0.5}}>Last 5 matches per player</div>
+  </div>
+</button>
+                <button onClick={()=>{nav("h2h");setDrawerOpen(false);}} style={{width:"100%",background:page==="h2h"?"#4F8EF7":"transparent",border:page==="h2h"?"none":`2px solid ${T.border}`,clipPath:page==="h2h"?"polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)":"none",padding:"14px 16px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14,marginBottom:8,filter:page==="h2h"?"drop-shadow(3px 3px 0 #1E3A5F)":"none"}}>
+  <span style={{fontSize:26}}>⚔️</span>
+  <div>
+    <div style={{fontFamily:fonts.display,fontWeight:800,fontSize:15,color:page==="h2h"?"#050F14":T.text,letterSpacing:1.5,textTransform:"uppercase"}}>Head to Head</div>
+    <div style={{fontSize:10,color:page==="h2h"?"rgba(5,15,20,0.7)":T.muted,marginTop:2,fontFamily:fonts.body,letterSpacing:0.5}}>Compare teams across matches</div>
+  </div>
+</button>
+
+                {/* Notifications */}
+                <div style={{marginTop:4}}>
+                <button onClick={()=>{setShowMVP(true);setDrawerOpen(false);}} style={{width:"100%",background:"transparent",border:`2px solid ${T.border}`,padding:"12px 16px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14,marginBottom:8}}>
+  <span style={{fontSize:24}}>🏅</span>
+  <div style={{flex:1}}>
+    <div style={{fontFamily:fonts.display,fontWeight:700,fontSize:14,color:T.text,letterSpacing:1.5,textTransform:"uppercase"}}>MVP Stats</div>
+    <div style={{fontSize:10,color:T.muted,fontFamily:fonts.body,letterSpacing:0.5}}>Weekly player performance</div>
+  </div>
+</button>
+                <button onClick={()=>{setShowAllTimeXI(true);setDrawerOpen(false);}} style={{width:"100%",background:"transparent",border:`2px solid ${T.border}`,padding:"12px 16px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14,marginBottom:8}}>
+  <span style={{fontSize:24}}>🏏</span>
+  <div style={{flex:1}}>
+    <div style={{fontFamily:fonts.display,fontWeight:700,fontSize:14,color:T.text,letterSpacing:1.5,textTransform:"uppercase"}}>All Time XI</div>
+    <div style={{fontSize:10,color:T.muted,fontFamily:fonts.body,letterSpacing:0.5}}>Top 11 per team by base points</div>
+  </div>
+</button>
+                <button onClick={()=>{setShowWeeklyReport(true);setDrawerOpen(false);}} style={{width:"100%",background:showWeeklyReport?"#2ECC71":"transparent",border:showWeeklyReport?"none":`2px solid ${T.border}`,clipPath:showWeeklyReport?"polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)":"none",padding:"14px 16px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14,marginBottom:8,filter:showWeeklyReport?"drop-shadow(3px 3px 0 #0A5020)":"none"}}>
+  <span style={{fontSize:26}}>📋</span>
+  <div style={{flex:1}}>
+    <div style={{fontFamily:fonts.display,fontWeight:800,fontSize:15,color:showWeeklyReport?"#050F05":T.text,letterSpacing:1.5,textTransform:"uppercase"}}>Weekly Report</div>
+    <div style={{fontSize:10,color:showWeeklyReport?"rgba(5,15,5,0.7)":T.muted,marginTop:2,fontFamily:fonts.body,letterSpacing:0.5}}>This week & last week summary</div>
+  </div>
+</button>
+                  <button onClick={()=>{setNotifOpen(o=>!o);if(!notifOpen)markNotifsRead();}} style={{width:"100%",background:"transparent",border:`2px solid ${T.border}`,padding:"12px 16px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:14,marginBottom:8}}>
+  <span style={{fontSize:24,position:"relative"}}>
+    🔔
+    {unreadNotifCount>0 && <span style={{position:"absolute",top:-6,right:-6,background:"#FF3D5A",borderRadius:"50%",width:16,height:16,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:800,color:"#fff",border:"2px solid "+T.bg}}>{unreadNotifCount}</span>}
+  </span>
+  <div style={{flex:1}}>
+    <div style={{fontFamily:fonts.display,fontWeight:700,fontSize:14,color:T.text,letterSpacing:1.5,textTransform:"uppercase"}}>Notifications</div>
+    <div style={{fontSize:10,color:unreadNotifCount>0?T.accent:T.muted,fontWeight:unreadNotifCount>0?700:400,fontFamily:fonts.body,letterSpacing:0.5,marginTop:1}}>{unreadNotifCount>0?unreadNotifCount+" unread":"All caught up"}</div>
+  </div>
+  <span style={{color:T.accent,fontSize:14,fontFamily:fonts.display,fontWeight:700}}>{notifOpen?"▲":"▼"}</span>
+</button>
+                  {notifOpen && (
+                    <div style={{background:T.bg,borderRadius:10,margin:"0 8px 8px",border:`1px solid ${T.border}`,maxHeight:280,overflowY:"auto"}}>
+                      {notifications.length===0 && <div style={{padding:16,textAlign:"center",color:"#2D3E52",fontSize:12}}>No notifications yet</div>}
+                      {[...notifications].reverse().map(n=>(
+                        <div key={n.id} style={{padding:"10px 14px",borderBottom:"1px solid #1E2D4433",background:n.ts>notifLastRead?"#F5A62308":"transparent"}}>
+                          <div style={{display:"flex",alignItems:"flex-start",gap:8}}>
+                            <span style={{fontSize:14,flexShrink:0}}>{n.emoji}</span>
+                            <div style={{flex:1}}>
+                              <div style={{fontSize:12,color:T.text,lineHeight:1.4}}>{n.text}</div>
+                              <div style={{fontSize:10,color:"#2D3E52",marginTop:3}}>{new Date(n.ts).toLocaleString("en-IN",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})}</div>
+                            </div>
+                            {n.ts>notifLastRead && <span style={{width:6,height:6,borderRadius:"50%",background:"#F5A623",flexShrink:0,marginTop:4}} />}
+                          </div>
+                        </div>
+                      ))}
+                      {unlocked && (
+                        <div style={{padding:"8px 10px",borderTop:`1px solid ${T.border}`}}>
+                          <div style={{display:"flex",gap:6,marginBottom:6}}>
+                            <input value={broadcastInput} onChange={e=>setBroadcastInput(e.target.value)} placeholder="Broadcast message..."
+                              onKeyDown={e=>e.key==="Enter"&&broadcastNotif()}
+                              style={{flex:1,background:T.card,border:`1px solid ${T.border}`,borderRadius:6,padding:"6px 10px",color:T.text,fontSize:12,fontFamily:fonts.body,outline:"none"}} />
+                            <button onClick={broadcastNotif} style={{background:T.accentBg,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:6,padding:"5px 8px",cursor:"pointer",fontSize:12,fontFamily:fonts.body,fontWeight:700}}>📢</button>
+                          </div>
+                          <button onClick={()=>withPassword(clearNotifications)} style={{width:"100%",background:"transparent",border:`1px solid ${T.border}`,borderRadius:6,padding:"5px",color:T.muted,fontSize:11,cursor:"pointer",fontFamily:fonts.body}}>Clear all notifications</button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+              {/* Pending vote notification */}
+              {pendingVote && (
+                <div style={{margin:"0 8px 8px",background:T.dangerBg,border:`1px solid ${T.danger}33`,borderRadius:10,padding:"12px 14px"}}>
+                  <div style={{fontSize:11,color:T.danger,fontWeight:700,letterSpacing:1,marginBottom:4}}>⚡ VOTE NEEDED</div>
+                  <div style={{fontSize:11,color:T.text,marginBottom:8}}>A rule change has been proposed and needs your vote.</div>
+                  <button onClick={()=>{setShowRulesPanel(true);setDrawerOpen(false);}} style={{width:"100%",background:T.dangerBg,border:"1px solid #FF3D5A",borderRadius:6,padding:"7px",color:T.danger,fontFamily:fonts.body,fontWeight:700,fontSize:12,cursor:"pointer"}}>VIEW & VOTE →</button>
+                </div>
+              )}
+
+              {/* Points & Rules button */}
+              <button onClick={()=>{setShowRulesPanel(true);setDrawerOpen(false);}} style={{width:"100%",background:"transparent",border:"none",padding:"10px 14px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12}}>
+                <span style={{fontSize:20}}>📋</span>
+                <div style={{flex:1}}>
+                  <div style={{fontFamily:fonts.display,fontWeight:800,fontSize:14,color:T.text,letterSpacing:1.5,textTransform:"uppercase"}}>Points & Rules</div>
+                  <div style={{fontSize:11,color:T.muted}}>Points system & league timing</div>
+                </div>
+                {pendingVote && <span style={{width:8,height:8,background:"#FF3D5A",borderRadius:"50%",flexShrink:0}} />}
+              </button>
+
+              {/* Fix Ownership — admin only */}
+              {isAdmin && (
+                <button onClick={()=>{setShowFixOwnership(true);setDrawerOpen(false);}} style={{width:"100%",background:"transparent",border:"none",padding:"10px 14px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:12}}>
+                  <span style={{fontSize:20}}>🔧</span>
+                  <div style={{flex:1}}>
+                    <div style={{fontFamily:fonts.display,fontWeight:800,fontSize:14,color:T.text,letterSpacing:1.5,textTransform:"uppercase"}}>Fix Ownership Log</div>
+                    <div style={{fontSize:11,color:T.muted}}>Fix player points attribution errors</div>
+                  </div>
+                </button>
+              )}
+
+              {/* Guest Access toggle - always visible to admin */}
+              {isAdmin && (
+                <div style={{padding:"8px 14px 0"}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",background:T.bg,borderRadius:10,border:`1px solid ${T.border}`}}>
+                    <div>
+                      <div style={{fontFamily:fonts.display,fontWeight:800,fontSize:13,color:T.text,letterSpacing:1.5,textTransform:"uppercase"}}>👁 Guest Access</div>
+                      <div style={{fontSize:10,color:T.muted,marginTop:2}}>Allow guests to view this pitch</div>
+                    </div>
+                    <button onClick={async()=>{
+                      const now = !guestAllowed;
+                      const pws = await sbGet("pitches") || [];
+                      const updated = pws.map(p=>p.id===pitch.id?{...p,guestAllowed:now}:p);
+                      await sbSet("pitches", updated);
+                      setGuestAllowed(now);
+                    }} style={{background:"none",border:"none",cursor:"pointer",padding:0,flexShrink:0}}>
+                      <span style={{width:44,height:24,borderRadius:12,background:guestAllowed?"#2ECC71":"#1E2D45",position:"relative",transition:"background 0.2s",display:"inline-block"}}>
+                        <span style={{position:"absolute",top:3,left:guestAllowed?23:3,width:18,height:18,borderRadius:"50%",background:"#fff",transition:"left 0.2s",display:"block"}} />
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              )}
+              <div style={{padding:"16px",borderTop:`1px solid ${T.border}`}}>
+                <button onClick={onLogout} style={{width:"100%",background:T.dangerBg,border:`1px solid ${T.danger}33`,borderRadius:8,padding:"10px",color:T.danger,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>LOGOUT</button>
+              </div>
             </div>
           </div>
-
-          {ti.claimedBy ? (
-            <div style={{display:"flex",alignItems:"center",gap:4}}>
-              <span style={{fontSize:10,color:T.success,fontWeight:700}}>
-                ✓ {ti.claimedBy.split("@")[0]}
-              </span>
-              <button onClick={async()=>{
-                if(!confirm("Reset claim for "+t.name+"?")) return;
-                const updated = {...teamIdentity, [t.id]: {...ti, claimedBy:null, pinHash:null}};
-                setTeamIdentity(updated);
-                await storeSet("teamIdentity", updated);
-              }} style={{background:T.dangerBg,border:`1px solid ${T.danger}33`,color:T.danger,borderRadius:4,padding:"2px 5px",cursor:"pointer",fontSize:9,fontWeight:700}}>
-                RESET
-              </button>
-            </div>
-
-          ) : ti.teamId ? (
-            <div style={{display:"flex",alignItems:"center",gap:4}}>
-              <div style={{fontFamily:fonts.display,fontSize:14,fontWeight:800,color:T.accent,letterSpacing:2,background:T.accentBg,padding:"3px 8px",borderRadius:6}}>
-                {ti.teamId}
-              </div>
-              <button onClick={()=>{
-                setAdminClaimTeam(t);
-                setAdminClaimModal(true);
-                setAdminPin('');
-                setAdminPinConfirm('');
-                setAdminPinErr('');
-              }} style={{background:T.successBg,border:`1px solid ${T.success}44`,color:T.success,borderRadius:4,padding:"2px 5px",cursor:"pointer",fontSize:9,fontWeight:700}}>
-                CLAIM
-              </button>
-            </div>
-
-          ) : (
-            <div style={{display:"flex",alignItems:"center",gap:4}}>
-              <button onClick={()=>withPassword(async()=>{
-                const newId = generateTeamId();
-                const updated = {...teamIdentity, [t.id]: {...ti, teamId: newId}};
-                setTeamIdentity(updated);
-                await storeSet("teamIdentity", updated);
-              })} style={{background:T.accentBg,border:`1px solid ${T.accentBorder}`,color:T.accent,borderRadius:6,padding:"4px 8px",cursor:"pointer",fontSize:11,fontFamily:fonts.body,fontWeight:700}}>
-                GENERATE
-              </button>
-              <button onClick={()=>{
-                setAdminClaimTeam(t);
-                setAdminClaimModal(true);
-                setAdminPin('');
-                setAdminPinConfirm('');
-                setAdminPinErr('');
-              }} style={{background:T.successBg,border:`1px solid ${T.success}44`,color:T.success,borderRadius:4,padding:"2px 5px",cursor:"pointer",fontSize:9,fontWeight:700}}>
-                CLAIM
-              </button>
-            </div>
-          )}
-
         </div>
-      );
-    })}
-  </div>
-)}
-
-</div>
-
-<div style={{flex:1,padding:"12px 8px",overflowY:"auto"}}>
-  <button onClick={()=>{nav("form");setDrawerOpen(false);}} style={{width:"100%",background:page==="form"?T.accent:"transparent",border:page==="form"?"none":`2px solid ${T.border}`,padding:"14px 16px"}}>
-    Form Chart
-  </button>
-
-  <button onClick={()=>{nav("h2h");setDrawerOpen(false);}} style={{width:"100%",background:page==="h2h"?"#4F8EF7":"transparent",border:page==="h2h"?"none":`2px solid ${T.border}`,padding:"14px 16px"}}>
-    Head to Head
-  </button>
-
-  <div style={{padding:"16px",borderTop:`1px solid ${T.border}`}}>
-    <button onClick={onLogout} style={{width:"100%",background:T.dangerBg,border:`1px solid ${T.danger}33`,borderRadius:8,padding:"10px"}}>
-      LOGOUT
-    </button>
-  </div>
-</div>
-
-</div>
-</div>
-)}
+      )}
+    </div>
+    </>
   );
 }
 
