@@ -5052,7 +5052,7 @@ ${aiMatchText.slice(0, 3000)}`;
   <div style={{display:"flex",gap:16,alignItems:"start"}}>
     
     {/* LEFT COLUMN - TEAM BOXES */}
-    <div className="draft-left-column" style={{width:"30%",display:"flex",flexDirection:"column",gap:10,overflowY:"auto",maxHeight:"calc(100vh - 160px)"}}>
+    <div className="draft-left-column" style={{width:"clamp(110px, 28%, 180px)",display:"flex",flexDirection:"column",gap:10,overflowY:"auto",maxHeight:"calc(100vh - 160px)"}}>
       {teams.map(t => {
         const cnt = players.filter(p=>assignments[p.id]===t.id).length;
         const ruledOutCnt = players.filter(p=>assignments[p.id]===t.id&&ruledOut.includes(p.id)).length;
@@ -5116,7 +5116,7 @@ ${aiMatchText.slice(0, 3000)}`;
           placeholder="Search player name..."
           value={playerSearch}
           onChange={e=>setPlayerSearch(e.target.value)}
-          style={{flex:1,minWidth:200,background:T.card,border:`2px solid ${T.border}`,borderRadius:0,padding:"10px 14px",color:T.text,fontSize:14,fontFamily:fonts.body,outline:"none"}}
+          style={{flex:1,minWidth:120,background:T.card,border:`2px solid ${T.border}`,borderRadius:0,padding:"10px 14px",color:T.text,fontSize:14,fontFamily:fonts.body,outline:"none"}}
         />
         <select value={roleFilter||"All"} onChange={e=>setRoleFilter(e.target.value==="All"?null:e.target.value)}
           style={{background:T.card,border:`2px solid ${T.border}`,borderRadius:0,padding:"10px 14px",color:T.text,fontSize:13,fontFamily:fonts.display,fontWeight:700,letterSpacing:1,cursor:"pointer"}}>
