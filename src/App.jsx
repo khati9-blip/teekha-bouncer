@@ -6270,7 +6270,7 @@ onChange={e=>setPlayerSearch(e.target.value)}
                 <div style={{display:"inline-block",background:T.accent,padding:"4px 16px 4px 12px",clipPath:"polygon(0 0,100% 0,calc(100% - 10px) 100%,0 100%)"}}>
                   <h2 style={{fontFamily:fonts.display,fontSize:28,fontWeight:700,color:T.bg,letterSpacing:3,margin:0}}>LEADERBOARD</h2>
                 </div>
-                <button className="mob-only" onClick={()=>setShowMvpModal(true)} style={{background:"linear-gradient(135deg,#FF6B00,#FF8C00)",border:"none",color:"#0A0E14",clipPath:"polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%)",padding:"4px 14px",cursor:"pointer",fontFamily:fonts.display,fontWeight:800,fontSize:13,letterSpacing:2}}>⭐ MVP</button>
+                <button className="mob-only" onClick={()=>{console.log("MVP clicked", showMvpModal); setShowMvpModal(true); console.log("set to true");}} style={{background:"linear-gradient(135deg,#FF6B00,#FF8C00)",border:"none",color:"#0A0E14",clipPath:"polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%)",padding:"4px 14px",cursor:"pointer",fontFamily:fonts.display,fontWeight:800,fontSize:13,letterSpacing:2}}>⭐ MVP</button>
                 </div>
                 <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
 
