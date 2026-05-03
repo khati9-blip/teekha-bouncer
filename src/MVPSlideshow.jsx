@@ -43,6 +43,7 @@ export default function MVPSlideshow({ players, assignments, teams, points, font
       top: 80,
       bottom: 160,
       left: 50,
+      display: window.innerWidth < 768 ? "none" : "flex",
       width: 220,
       background: `linear-gradient(160deg, ${T.bg} 0%, #0A0E14 100%)`,
       border: `3px solid ${teamColor}`,
