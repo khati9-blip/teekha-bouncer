@@ -50,7 +50,7 @@ if (topPlayers.length === 0) return null;
       border: `3px solid ${teamColor}`,
       borderLeft: `6px solid ${teamColor}`,
       borderRadius: 0,
-      clipPath: "polygon(0% 0%, 100% 0%, calc(100% - 12px) 100%, 0% 100%)",
+      clipPath: inline ? "none" : "polygon(0% 0%, 100% 0%, calc(100% - 12px) 100%, 0% 100%)",
       padding: 16,
       display: "flex",
       flexDirection: "column",
