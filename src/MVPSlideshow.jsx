@@ -60,6 +60,7 @@ if (topPlayers.length === 0) return null;
       display: "flex",
       flexDirection: "column",
       justifyContent: "flex-start",
+      paddingTop: inline ? 0 : 12,
       alignItems: "center",
       gap: inline ? 6 : 12,
       boxShadow: `0 8px 32px ${teamColor}40, inset 0 0 60px ${teamColor}15`,
