@@ -8,8 +8,8 @@ export default function MVPSlideshow({ players, assignments, teams, points, font
   // Calculate top 5 players by total points
   const topPlayers = useMemo(() => {
     const playerTotals = players.map(p => {
-      const total = Object.values(points).reduce((sum, matchPts) => {
-        return sum + (matchPts[p.id]?.total || 0);
+      const total = Object.values(points[p.id] || {}).reduce((sum, matchData) => {
+        return sum + (matchData?.total || matchData?.base || 0);
       }, 0);
       return { ...p, totalPoints: total };
     }).filter(p => p.totalPoints > 0)
@@ -39,23 +39,26 @@ export default function MVPSlideshow({ players, assignments, teams, points, font
 
   return (
     <div style={{
-      position: "sticky",
+      position: "fixed",
       top: 80,
-      height: "calc(100vh - 160px)",
+      bottom: 160,
+      left: 50,
+      width: 220,
       background: `linear-gradient(160deg, ${T.bg} 0%, #0A0E14 100%)`,
-      border: `4px solid ${teamColor}`,
-      borderLeft: `8px solid ${teamColor}`,
+      border: `3px solid ${teamColor}`,
+      borderLeft: `6px solid ${teamColor}`,
       borderRadius: 0,
-      clipPath: "polygon(0% 0%, 100% 0%, calc(100% - 20px) 100%, 0% 100%)",
-      padding: 32,
+      clipPath: "polygon(0% 0%, 100% 0%, calc(100% - 12px) 100%, 0% 100%)",
+      padding: 16,
       display: "flex",
       flexDirection: "column",
       justifyContent: "center",
       alignItems: "center",
-      gap: 24,
+      gap: 12,
       boxShadow: `0 8px 32px ${teamColor}40, inset 0 0 60px ${teamColor}15`,
-      position: "relative",
-      overflow: "hidden"
+      overflow: "hidden",
+      zIndex: 10,
+      boxSizing: "border-box"
     }}>
       {/* Background glow */}
       <div style={{
@@ -69,18 +72,19 @@ export default function MVPSlideshow({ players, assignments, teams, points, font
       {/* "ALL-TIME MVP" Banner */}
       <div style={{
         background: "linear-gradient(135deg, #FF6B00 0%, #FF8C00 100%)",
-        clipPath: "polygon(12px 0%, 100% 0%, calc(100% - 12px) 100%, 0% 100%)",
-        padding: "12px 32px",
+        clipPath: "polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%)",
+        padding: "8px 16px",
         position: "relative",
         zIndex: 1,
+        whiteSpace: "nowrap",
         boxShadow: "4px 4px 0 rgba(255,107,0,0.3)"
       }}>
         <div style={{
           fontFamily: fonts.display,
-          fontSize: 16,
+          fontSize: 12,
           fontWeight: 900,
           color: "#0A0E14",
-          letterSpacing: 4,
+          letterSpacing: 2,
           textTransform: "uppercase",
           textShadow: "1px 1px 0 rgba(255,255,255,0.3)"
         }}>
@@ -90,7 +94,7 @@ export default function MVPSlideshow({ players, assignments, teams, points, font
 
       {/* Rank Badge */}
       <div style={{
-        fontSize: 80,
+        fontSize: 48,
         lineHeight: 1,
         animation: "tb-scaleIn 0.5s ease both",
         filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.4))",
@@ -144,7 +148,7 @@ export default function MVPSlideshow({ players, assignments, teams, points, font
         </div>
         <div style={{
           fontFamily: fonts.display,
-          fontSize: 28,
+          fontSize: 18,
           fontWeight: 900,
           color: T.text,
           letterSpacing: 2,
@@ -175,7 +179,7 @@ export default function MVPSlideshow({ players, assignments, teams, points, font
         }}>
           <div style={{
             fontFamily: fonts.display,
-            fontSize: 32,
+            fontSize: 24,
             fontWeight: 900,
             color: teamColor,
             letterSpacing: 1

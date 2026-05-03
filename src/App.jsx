@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import MVPSlideshow from './MVPSlideshow';
 import FormChart from "./FormChart";
 import H2HStats from "./H2HStats";
 import MVPStats from "./MVPStats";
@@ -6259,6 +6260,9 @@ onChange={e=>setPlayerSearch(e.target.value)}
 
           {page==="leaderboard"&&(
             <div className="fade-in">
+              <div style={{position:"relative"}}>
+              <MVPSlideshow players={players} assignments={assignments} teams={teams} points={points} fonts={fonts} T={T} PALETTE={PALETTE} />
+              <div>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:8}}>
                 <div style={{display:"inline-block",background:T.accent,padding:"4px 16px 4px 12px",clipPath:"polygon(0 0,100% 0,calc(100% - 10px) 100%,0 100%)"}}>
                   <h2 style={{fontFamily:fonts.display,fontSize:28,fontWeight:700,color:T.bg,letterSpacing:3,margin:0}}>LEADERBOARD</h2>
@@ -6354,7 +6358,7 @@ onChange={e=>setPlayerSearch(e.target.value)}
               {leaderboard.length > 0 && (
                 <div style={{
                   position: 'fixed',
-                  bottom: 60,
+                  bottom: 80,
                   left: 0,
                   right: 0,
                   background: `linear-gradient(90deg, ${T.bg} 0%, #1A0F00 50%, ${T.bg} 100%)`,
@@ -6466,6 +6470,8 @@ onChange={e=>setPlayerSearch(e.target.value)}
                 </div>
               )}
 
+            </div>
+            </div>
             </div>
           )}
         </div>
