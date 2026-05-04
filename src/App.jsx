@@ -187,6 +187,7 @@ const [pointsReady, setPointsReady] = useState(() => {
   const [ruledOut, setRuledOut] = useState([]); // [pid, pid] — players ruled out for season
   const [unsoldPool, setUnsoldPool] = useState([]);
 const [poolLoading, setPoolLoading] = useState(true);
+const [unsoldSearch, setUnsoldSearch] = useState("");
   const [myHighlights, setMyHighlights] = useState({});
   const [myNotes, setMyNotes] = useState({});
   const [editingNote, setEditingNote] = useState(null);
@@ -2404,10 +2405,13 @@ ${aiMatchText.slice(0, 3000)}`;
     {/* Current pool section */}
 
     {/* Current pool section */}
-    <div style={{background:"#9F7AEA33",borderLeft:`4px solid #9F7AEA`,padding:"10px 16px",marginBottom:12,clipPath:"polygon(0% 0%,100% 0%,calc(100% - 8px) 100%,0% 100%)"}}>
-      <div style={{fontFamily:fonts.display,fontSize:13,fontWeight:800,color:"#9F7AEA",letterSpacing:2,textTransform:"uppercase"}}>
-        🏊 CURRENT UNSOLD POOL
+    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
+      <div style={{background:"#9F7AEA33",borderLeft:`4px solid #9F7AEA`,padding:"10px 16px",clipPath:"polygon(0% 0%,100% 0%,calc(100% - 8px) 100%,0% 100%)",flex:1}}>
+        <div style={{fontFamily:fonts.display,fontSize:13,fontWeight:800,color:"#9F7AEA",letterSpacing:2,textTransform:"uppercase"}}>
+          🏊 CURRENT UNSOLD POOL
+        </div>
       </div>
+      <input value={unsoldSearch} onChange={e=>setUnsoldSearch(e.target.value)} placeholder="Search player..." style={{background:T.card,border:`2px solid #6B46C1`,borderRadius:0,padding:"8px 14px",color:T.text,fontSize:12,fontFamily:fonts.body,outline:"none",width:180,marginLeft:10}} />
     </div>
 
     {poolLoading ? (
@@ -2423,175 +2427,113 @@ ${aiMatchText.slice(0, 3000)}`;
       </div>
     ) : (
       <div style={{display:"flex",flexDirection:"column",gap:10}}>
-        {unsoldPool.map(pid=>{
-          const p = players.find(x=>x.id===pid);
-          if(!p) return null;
-          const releasedByTeam = teams.find(t=>(transfers?.releases?.[t.id]||[]).includes(pid));
-          
-          return (
-            <div key={pid} style={{
-              background:T.bg,
-              border:`2px solid ${releasedByTeam?releasedByTeam.color+"66":myHighlights[pid]?"#F5A62366":T.border}`,
-              borderLeft:`5px solid ${releasedByTeam?releasedByTeam.color:myHighlights[pid]?"#F5A623":T.border}`,
-              borderRadius:0,
-              padding:"14px 18px",
-              display:"flex",
-              alignItems:"center",
-              gap:12,
-              flexWrap:"wrap",
-              position:"relative",
-              overflow:"hidden"
-            }}>
-              {/* Player info */}
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:6}}>
-                  <span style={{fontFamily:fonts.display,fontSize:16,fontWeight:900,color:myHighlights[pid]?"#F5A623":T.text,letterSpacing:1,textTransform:"uppercase"}}>
-                    {p.name}
-                  </span>
-                  
-                  {/* Tier badge - bigger & sportier */}
-                  {p.tier && (
-                    <span style={{
-                      fontSize:11,
-                      fontWeight:900,
-                      letterSpacing:2,
-                      padding:"4px 10px",
-                      fontFamily:fonts.display,
-                      textTransform:"uppercase",
-                      background:p.tier==="platinum"?"#4A5E7844":p.tier==="gold"?"#F5A62333":p.tier==="silver"?"#94A3B833":"#CD7F3233",
-                      border:`2px solid ${p.tier==="platinum"?"#4A5E78":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32"}`,
-                      color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32",
-                      clipPath:"polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%)",
-                      filter:"drop-shadow(2px 2px 0 rgba(0,0,0,0.5))"
-                    }}>
-                      {p.tier==="platinum"?"PLATINUM":p.tier==="gold"?"GOLD":p.tier==="silver"?"SILVER":"BRONZE"}
-                    </span>
-                  )}
-                  
-                  {/* Released by team badge */}
-                  {releasedByTeam && (
-                    <span style={{
-                      fontSize:11,
-                      fontWeight:900,
-                      letterSpacing:1.5,
-                      padding:"4px 10px",
-                      fontFamily:fonts.display,
-                      background:releasedByTeam.color+"22",
-                      border:`2px solid ${releasedByTeam.color}`,
-                      color:releasedByTeam.color,
-                      clipPath:"polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%)",
+        {(() => {
+          const tierColors = {platinum:"#B0BEC5",gold:"#F5A623",silver:"#94A3B8",bronze:"#CD7F32","":"#9F7AEA"};
+          const tiers = ["platinum","gold","silver","bronze",""];
+          const allPlayers = unsoldPool.map(pid => players.find(x=>x.id===pid)).filter(Boolean);
+          const filtered = allPlayers.filter(p => !unsoldSearch || p.name.toLowerCase().includes(unsoldSearch.toLowerCase()) || p.iplTeam?.toLowerCase().includes(unsoldSearch.toLowerCase()));
+          const sorted = [...filtered].sort((a,b) => a.name.localeCompare(b.name));
+          return tiers.map(tier => {
+            const tierPlayers = sorted.filter(p => (p.tier||"") === tier);
+            if(tierPlayers.length === 0) return null;
+            return (
+              <div key={tier}>
+                <div style={{fontSize:10,fontFamily:fonts.display,fontWeight:800,letterSpacing:2,color:tierColors[tier],background:tierColors[tier]+"11",padding:"4px 10px",marginBottom:6,marginTop:4,clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)",borderLeft:`3px solid ${tierColors[tier]}`}}>{(tier||"UNRANKED").toUpperCase()} ({tierPlayers.length})</div>
+                {tierPlayers.map(p => {
+                  const pid = p.id;
+                  const releasedByTeam = teams.find(t=>(transfers?.releases?.[t.id]||[]).includes(pid));
+                  return (
+                    <div key={pid} style={{
+                      background:T.bg,
+                      border:`2px solid ${releasedByTeam?releasedByTeam.color+"66":myHighlights[pid]?"#F5A62366":T.border}`,
+                      borderLeft:`5px solid ${releasedByTeam?releasedByTeam.color:myHighlights[pid]?"#F5A623":T.border}`,
+                      borderRadius:0,
+                      padding:"14px 18px",
                       display:"flex",
                       alignItems:"center",
-                      gap:6
+                      gap:12,
+                      flexWrap:"wrap",
+                      position:"relative",
+                      overflow:"hidden"
                     }}>
-                      <span style={{width:6,height:6,borderRadius:"50%",background:releasedByTeam.color}}/>
-                      {releasedByTeam.name.toUpperCase()}
-                    </span>
-                  )}
-                  
-                  {/* Unsold badge */}
-                  {!releasedByTeam && (
-                    <span style={{
-                      fontSize:10,
-                      fontWeight:800,
-                      letterSpacing:1.5,
-                      padding:"3px 8px",
-                      fontFamily:fonts.display,
-                      background:"#6B46C122",
-                      border:`1px solid #6B46C144`,
-                      color:"#9F7AEA"
-                    }}>
-                      UNSOLD
-                    </span>
-                  )}
-                </div>
-                
-                <div style={{fontSize:11,color:T.muted,fontFamily:fonts.body,marginBottom:4}}>
-                  {p.iplTeam} • {p.role}
-                </div>
-                
-                {/* Note display/edit */}
-                {myNotes[pid]&&editingNote!==pid&&(
-                  <div style={{fontSize:11,color:"#4299E1",marginTop:6,fontStyle:"italic",background:"#4299E122",border:`1px solid #4299E144`,borderRadius:0,padding:"4px 10px",display:"inline-block"}}>
-                    📝 "{myNotes[pid]}"
-                  </div>
-                )}
-                {editingNote===pid&&(
-                  <div style={{display:"flex",gap:8,marginTop:8}}>
-                    <input autoFocus value={noteInput} onChange={e=>setNoteInput(e.target.value)} 
-                      onKeyDown={async e=>{
-                        if(e.key==="Enter"){const u={...myNotes,[pid]:noteInput.trim()};if(!noteInput.trim())delete u[pid];await saveNotes(u);setEditingNote(null);}
-                        if(e.key==="Escape")setEditingNote(null);
-                      }} 
-                      placeholder="Private note..." maxLength={100} 
-                      style={{flex:1,background:T.bg,border:`2px solid #4299E1`,borderRadius:0,padding:"6px 10px",color:T.text,fontSize:12,fontFamily:fonts.body,outline:"none"}} 
-                    />
-                    <button onClick={async()=>{const u={...myNotes,[pid]:noteInput.trim()};if(!noteInput.trim())delete u[pid];await saveNotes(u);setEditingNote(null);}} 
-                      style={{background:"#4299E1",border:"none",borderRadius:0,padding:"6px 14px",color:T.bg,fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:fonts.display,letterSpacing:1,clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)"}}>
-                      SAVE
-                    </button>
-                    <button onClick={()=>setEditingNote(null)} 
-                      style={{background:"transparent",border:`2px solid ${T.border}`,borderRadius:0,padding:"6px 10px",color:T.muted,fontSize:12,cursor:"pointer"}}>
-                      ✕
-                    </button>
-                  </div>
-                )}
+                      {/* Player info */}
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:6}}>
+                          <span style={{fontFamily:fonts.display,fontSize:16,fontWeight:900,color:myHighlights[pid]?"#F5A623":T.text,letterSpacing:1,textTransform:"uppercase"}}>
+                            {p.name}
+                          </span>
+                          {p.tier && (
+                            <span style={{fontSize:11,fontWeight:900,letterSpacing:2,padding:"4px 10px",fontFamily:fonts.display,textTransform:"uppercase",background:p.tier==="platinum"?"#4A5E7844":p.tier==="gold"?"#F5A62333":p.tier==="silver"?"#94A3B833":"#CD7F3233",border:`2px solid ${p.tier==="platinum"?"#4A5E78":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32"}`,color:p.tier==="platinum"?"#B0BEC5":p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":"#CD7F32",clipPath:"polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%)",filter:"drop-shadow(2px 2px 0 rgba(0,0,0,0.5))"}}>
+                              {p.tier==="platinum"?"PLATINUM":p.tier==="gold"?"GOLD":p.tier==="silver"?"SILVER":"BRONZE"}
+                            </span>
+                          )}
+                          {releasedByTeam && (
+                            <span style={{fontSize:11,fontWeight:900,letterSpacing:1.5,padding:"4px 10px",fontFamily:fonts.display,background:releasedByTeam.color+"22",border:`2px solid ${releasedByTeam.color}`,color:releasedByTeam.color,clipPath:"polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%)",display:"flex",alignItems:"center",gap:6}}>
+                              <span style={{width:6,height:6,borderRadius:"50%",background:releasedByTeam.color}}/>
+                              {releasedByTeam.name.toUpperCase()}
+                            </span>
+                          )}
+                          {!releasedByTeam && (
+                            <span style={{fontSize:10,fontWeight:800,letterSpacing:1.5,padding:"3px 8px",fontFamily:fonts.display,background:"#6B46C122",border:`1px solid #6B46C144`,color:"#9F7AEA"}}>UNSOLD</span>
+                          )}
+                        </div>
+                        <div style={{fontSize:11,color:T.muted,fontFamily:fonts.body,marginBottom:4}}>
+                          {p.iplTeam} • {p.role}
+                        </div>
+                        {myNotes[pid]&&editingNote!==pid&&(
+                          <div style={{fontSize:11,color:"#4299E1",marginTop:6,fontStyle:"italic",background:"#4299E122",border:`1px solid #4299E144`,borderRadius:0,padding:"4px 10px",display:"inline-block"}}>
+                            📝 "{myNotes[pid]}"
+                          </div>
+                        )}
+                        {editingNote===pid&&(
+                          <div style={{display:"flex",gap:8,marginTop:8}}>
+                            <input autoFocus value={noteInput} onChange={e=>setNoteInput(e.target.value)}
+                              onKeyDown={async e=>{
+                                if(e.key==="Enter"){const u={...myNotes,[pid]:noteInput.trim()};if(!noteInput.trim())delete u[pid];await saveNotes(u);setEditingNote(null);}
+                                if(e.key==="Escape")setEditingNote(null);
+                              }}
+                              placeholder="Private note..." maxLength={100}
+                              style={{flex:1,background:T.bg,border:`2px solid #4299E1`,borderRadius:0,padding:"6px 10px",color:T.text,fontSize:12,fontFamily:fonts.body,outline:"none"}}
+                            />
+                            <button onClick={async()=>{const u={...myNotes,[pid]:noteInput.trim()};if(!noteInput.trim())delete u[pid];await saveNotes(u);setEditingNote(null);}}
+                              style={{background:"#4299E1",border:"none",borderRadius:0,padding:"6px 14px",color:T.bg,fontWeight:800,fontSize:12,cursor:"pointer",fontFamily:fonts.display,letterSpacing:1,clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)"}}>
+                              SAVE
+                            </button>
+                            <button onClick={()=>setEditingNote(null)}
+                              style={{background:"transparent",border:`2px solid ${T.border}`,borderRadius:0,padding:"6px 10px",color:T.muted,fontSize:12,cursor:"pointer"}}>
+                              ✕
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      {/* Action buttons */}
+                      <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
+                        <button onClick={async()=>{const u={...myHighlights};u[pid]?delete u[pid]:u[pid]=true;await saveHighlights(u);}}
+                          style={{background:myHighlights[pid]?"#F5A62333":"transparent",border:`2px solid ${myHighlights[pid]?"#F5A623":T.border}`,borderRadius:0,padding:"8px 12px",cursor:"pointer",fontSize:16,transition:"all .2s"}}
+                          onMouseEnter={e => e.currentTarget.style.transform = "scale(1.1)"}
+                          onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}>
+                          {myHighlights[pid]?"⭐":"☆"}
+                        </button>
+                        <button onClick={()=>{setNoteInput(myNotes[pid]||"");setEditingNote(pid);}}
+                          style={{background:myNotes[pid]?"#4299E133":"transparent",border:`2px solid ${myNotes[pid]?"#4299E1":T.border}`,borderRadius:0,padding:"8px 12px",cursor:"pointer",fontSize:14,transition:"all .2s"}}
+                          onMouseEnter={e => e.currentTarget.style.transform = "scale(1.1)"}
+                          onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}>
+                          📝
+                        </button>
+                        {unlocked&&(
+                          <button onClick={()=>removeFromUnsoldPool(pid)}
+                            style={{background:T.dangerBg,border:`2px solid ${T.danger}`,color:T.danger,borderRadius:0,padding:"8px 12px",cursor:"pointer",fontSize:12,fontFamily:fonts.display,fontWeight:800,letterSpacing:1,clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)"}}>
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-
-              {/* Action buttons */}
-              <div style={{display:"flex",gap:8,alignItems:"center",flexShrink:0}}>
-                <button onClick={async()=>{const u={...myHighlights};u[pid]?delete u[pid]:u[pid]=true;await saveHighlights(u);}} 
-                  style={{
-                    background:myHighlights[pid]?"#F5A62333":"transparent",
-                    border:`2px solid ${myHighlights[pid]?"#F5A623":T.border}`,
-                    borderRadius:0,
-                    padding:"8px 12px",
-                    cursor:"pointer",
-                    fontSize:16,
-                    transition:"all .2s"
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.transform = "scale(1.1)"}
-                  onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
-                >
-                  {myHighlights[pid]?"⭐":"☆"}
-                </button>
-                <button onClick={()=>{setNoteInput(myNotes[pid]||"");setEditingNote(pid);}} 
-                  style={{
-                    background:myNotes[pid]?"#4299E133":"transparent",
-                    border:`2px solid ${myNotes[pid]?"#4299E1":T.border}`,
-                    borderRadius:0,
-                    padding:"8px 12px",
-                    cursor:"pointer",
-                    fontSize:14,
-                    transition:"all .2s"
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.transform = "scale(1.1)"}
-                  onMouseLeave={e => e.currentTarget.style.transform = "scale(1)"}
-                >
-                  📝
-                </button>
-                {unlocked&&(
-                  <button onClick={()=>removeFromUnsoldPool(pid)} 
-                    style={{
-                      background:T.dangerBg,
-                      border:`2px solid ${T.danger}`,
-                      color:T.danger,
-                      borderRadius:0,
-                      padding:"8px 12px",
-                      cursor:"pointer",
-                      fontSize:12,
-                      fontFamily:fonts.display,
-                      fontWeight:800,
-                      letterSpacing:1,
-                      clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)"
-                    }}>
-                    ✕
-                  </button>
-                )}
-              </div>
-            </div>
-          );
-        })}
+            );
+          });
+        })()}
       </div>
     )}
   </div>
