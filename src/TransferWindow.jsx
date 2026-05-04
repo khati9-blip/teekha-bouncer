@@ -1,6 +1,12 @@
 import { T, fonts, FONT_URL } from "./Theme";
 import React, { useState, useEffect, useCallback } from "react";
 
+// Pre-warm html2canvas in background — loads once, instant on click
+let html2canvasPromise = null;
+const preloadHtml2Canvas = () => {
+  if (!html2canvasPromise) html2canvasPromise = import("html2canvas").then(m => m.default);
+};
+
 const SB_URL = "https://rmcxhorijitrhqyrvvkn.supabase.co/rest/v1/league_data";
 const SB_KEY = "sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm";
 
@@ -194,6 +200,9 @@ export default function TransferWindow({
   const [twTab, setTwTab] = useState("window"); // "window" | "history"
   const [showReversalAlert, setShowReversalAlert] = useState(false);
   const [tradeConfirmModal, setTradeConfirmModal] = useState(null); // {poolPlayer, releasedPlayer}
+
+  // Pre-warm html2canvas so share is instant when clicked
+  useEffect(() => { preloadHtml2Canvas(); }, []);
 
   const rawPhase = transfers?.phase || "closed";
   const storedDeadline = transfers?.releaseDeadline;
@@ -1245,6 +1254,145 @@ onUpdateTransfers({
           </div>
         </div>
       )}
+
+      {/* ── CURRENTLY RELEASED PLAYERS — TEAM GRID ───────────────────────── */}
+      {(phase !== "done") && (() => {
+        const allReleases = transfers.releases || {};
+        const tradedPids = new Set((transfers.tradedPairs || []).map(tp => tp.releasedPid));
+        // Build per-team data
+        const teamGroups = Object.entries(allReleases)
+          .map(([tid, pids]) => {
+            const team = teams.find(t => t.id === tid);
+            if (!team) return null;
+            const releasedPlayers = pids.map(pid => {
+              const p = players.find(pl => pl.id === pid);
+              return p ? { ...p, traded: tradedPids.has(pid) } : null;
+            }).filter(Boolean);
+            if (releasedPlayers.length === 0) return null;
+            return { team, players: releasedPlayers };
+          })
+          .filter(Boolean);
+
+        if (teamGroups.length === 0) return null;
+
+        const totalAvailable = teamGroups.reduce((s, g) => s + g.players.filter(p => !p.traded).length, 0);
+        const totalTraded    = teamGroups.reduce((s, g) => s + g.players.filter(p => p.traded).length, 0);
+
+        const shareReleased = async () => {
+          const el = document.getElementById("tb-released-grid");
+          if (!el) return;
+          try {
+            const h2c = await (html2canvasPromise || import("html2canvas").then(m => m.default));
+            const canvas = await h2c(el, {
+              backgroundColor: "#080808",
+              scale: 2,
+              useCORS: true,
+              logging: false,
+            });
+            canvas.toBlob(async (blob) => {
+              if (!blob) return;
+              const file = new File([blob], "released-players.png", { type: "image/png" });
+              if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({ files: [file], title: "Released Players" });
+              } else {
+                // Fallback: download
+                const a = document.createElement("a");
+                a.href = URL.createObjectURL(blob);
+                a.download = "released-players.png";
+                a.click();
+              }
+            }, "image/png");
+          } catch(e) {
+            console.error("Screenshot failed:", e);
+          }
+        };
+
+        return (
+          <div style={{marginTop:16,animation:"tb-fadeUp 0.4s ease both"}}>
+            {/* Section header */}
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+              <div style={{background:T.danger,padding:"4px 16px 4px 12px",clipPath:"polygon(0 0,100% 0,calc(100% - 10px) 100%,0 100%)",display:"flex",alignItems:"center",gap:7}}>
+                <span style={{fontSize:14}}>📤</span>
+                <span style={{fontFamily:fonts.display,fontWeight:800,fontSize:15,color:"#fff",letterSpacing:3}}>RELEASED THIS WINDOW</span>
+              </div>
+              <div style={{flex:1,height:2,background:`linear-gradient(90deg,${T.danger}33,transparent)`}} />
+              <div style={{display:"flex",gap:8,alignItems:"center"}}>
+                <span style={{fontFamily:fonts.display,fontSize:10,fontWeight:800,letterSpacing:1.5,color:T.danger,background:T.dangerBg,border:`1px solid ${T.danger}44`,padding:"3px 10px",clipPath:"polygon(5px 0%,100% 0%,calc(100% - 5px) 100%,0% 100%)"}}>
+                  {totalAvailable} IN POOL
+                </span>
+                {totalTraded > 0 && (
+                  <span style={{fontFamily:fonts.display,fontSize:10,fontWeight:800,letterSpacing:1.5,color:T.info,background:"#4F8EF711",border:"1px solid #4F8EF733",padding:"3px 10px",clipPath:"polygon(5px 0%,100% 0%,calc(100% - 5px) 100%,0% 100%)"}}>
+                    {totalTraded} TRADED
+                  </span>
+                )}
+                <button onClick={shareReleased}
+                  style={{background:"#25D366",border:"none",borderRadius:0,clipPath:"polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)",padding:"5px 14px",cursor:"pointer",fontFamily:fonts.display,fontWeight:800,fontSize:11,letterSpacing:1.5,color:"#050F05",filter:"drop-shadow(2px 2px 0 #0A5020)",display:"flex",alignItems:"center",gap:5,flexShrink:0}}>
+                  📲 SHARE
+                </button>
+              </div>
+            </div>
+
+            {/* Team grid — captured as image */}
+            <div id="tb-released-grid" style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:10,padding:12,background:"#080808"}}>
+              {teamGroups.map(({team, players:relPlayers}) => {
+                const allTraded = relPlayers.every(p => p.traded);
+                return (
+                  <div key={team.id} style={{
+                    background: allTraded ? T.bg : T.card,
+                    border:`2px solid ${allTraded ? T.border : team.color+"55"}`,
+                    borderTop:`3px solid ${allTraded ? T.border : team.color}`,
+                    borderRadius:0,
+                    padding:"12px 14px",
+                    opacity: allTraded ? 0.6 : 1,
+                    transition:"all 0.2s",
+                    boxShadow: allTraded ? "none" : `0 2px 12px ${team.color}18`,
+                  }}>
+                    {/* Team name row */}
+                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+                      <div style={{display:"flex",alignItems:"center",gap:7}}>
+                        <div style={{width:8,height:8,borderRadius:"50%",background:team.color,boxShadow:`0 0 8px ${team.color}`,flexShrink:0}} />
+                        <span style={{fontFamily:fonts.display,fontWeight:800,fontSize:13,color:team.color,letterSpacing:1,textTransform:"uppercase"}}>{team.name}</span>
+                      </div>
+                      <span style={{fontFamily:fonts.display,fontSize:10,fontWeight:700,letterSpacing:1,color:allTraded?T.muted:T.muted}}>
+                        {relPlayers.length} RELEASED
+                      </span>
+                    </div>
+
+                    {/* Player list */}
+                    <div style={{display:"flex",flexDirection:"column",gap:5}}>
+                      {relPlayers.map(p => (
+                        <div key={p.id} style={{
+                          display:"flex",alignItems:"center",gap:7,
+                          padding:"7px 10px",
+                          background: p.traded ? "#080C14" : team.color+"0D",
+                          border:`1px solid ${p.traded ? T.border : team.color+"33"}`,
+                          borderLeft:`3px solid ${p.traded ? T.border : team.color}`,
+                          borderRadius:0,
+                        }}>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{display:"flex",alignItems:"center",gap:5,flexWrap:"wrap"}}>
+                              <span style={{fontFamily:fonts.display,fontWeight:700,fontSize:13,color:p.traded?T.muted:T.text,textDecoration:p.traded?"line-through":"none",letterSpacing:0.3}}>
+                                {p.name}
+                              </span>
+                              <TierBadge tier={p.tier} />
+                            </div>
+                            <div style={{fontSize:10,color:T.muted,marginTop:1}}>{p.iplTeam} · {p.role}</div>
+                          </div>
+                          {p.traded ? (
+                            <span style={{fontFamily:fonts.display,fontSize:9,fontWeight:800,letterSpacing:1,color:T.info,background:"#4F8EF711",border:"1px solid #4F8EF733",padding:"2px 7px",flexShrink:0,clipPath:"polygon(3px 0%,100% 0%,calc(100% - 3px) 100%,0% 100%)"}}>TRADED</span>
+                          ) : (
+                            <span style={{fontFamily:fonts.display,fontSize:9,fontWeight:800,letterSpacing:1,color:T.danger,background:T.dangerBg,border:`1px solid ${T.danger}44`,padding:"2px 7px",flexShrink:0,clipPath:"polygon(3px 0%,100% 0%,calc(100% - 3px) 100%,0% 100%)",animation:"tb-pulse 2s ease infinite"}}>FREE</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* RELEASE PHASE */}
       {phase === "release" && (
