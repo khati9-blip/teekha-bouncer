@@ -66,7 +66,6 @@ if (topPlayers.length === 0) return null;
       boxShadow: `0 8px 32px ${teamColor}40, inset 0 0 60px ${teamColor}15`,
       overflow: inline ? "hidden" : "auto",
       zIndex: inline ? 1 : 10,
-      boxSizing: "border-box"
     }}>
       {/* Background glow */}
       <div style={{

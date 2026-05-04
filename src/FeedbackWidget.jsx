@@ -48,7 +48,7 @@ export default function FeedbackWidget({ pitches, user, T, fonts }) {
 
       {/* Modal */}
       {open && (
-        <div style={{position:"fixed",top:"50%",left:"50%",transform:"translate(-50%,-50%)",zIndex:1000,width:"min(440px,95vw)",maxHeight:"80vh",top:"20%",display:"flex",flexDirection:"column",background:T.card,borderRadius:18,border:`1px solid ${T.border}`,boxShadow:"0 24px 80px rgba(0,0,0,0.6)",overflow:"hidden",animation:"tb-fadeUp 0.3s ease both"}}>
+        <div style={{position:"fixed",top:"20%",left:"50%",transform:"translate(-50%,-50%)",zIndex:1000,width:"min(440px,95vw)",maxHeight:"80vh",top:"20%",display:"flex",flexDirection:"column",background:T.card,borderRadius:18,border:`1px solid ${T.border}`,boxShadow:"0 24px 80px rgba(0,0,0,0.6)",overflow:"hidden",animation:"tb-fadeUp 0.3s ease both"}}>
           {/* Header */}
           <div style={{padding:"20px 22px 16px",borderBottom:`1px solid ${T.border}`,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
             <div>
