@@ -185,11 +185,13 @@ const [pointsReady, setPointsReady] = useState(() => {
   const [safePlayers, setSafePlayers] = useState({}); // {teamId: [pid,pid,pid]}
   const [ruledOut, setRuledOut] = useState([]); // [pid, pid] — players ruled out for season
   const [unsoldPool, setUnsoldPool] = useState([]);
+const [poolLoading, setPoolLoading] = useState(true);
   const [myHighlights, setMyHighlights] = useState({});
   const [myNotes, setMyNotes] = useState({});
   const [editingNote, setEditingNote] = useState(null);
   const [noteInput, setNoteInput] = useState(''); // manually managed unsold list
-  const [draftTab, setDraftTab] = useState('players'); // players | unsold
+  const [draftTab, setDraftTab] = useState('players');
+const [showUnassigned, setShowUnassigned] = useState(false); // players | unsold
   const [teamRosterModal, setTeamRosterModal] = useState(null); // null or team.id
   const [playerSearch, setPlayerSearch] = useState('');
   const [playerStatsModal, setPlayerStatsModal] = useState(null); // player object
@@ -233,7 +235,7 @@ const [pointsReady, setPointsReady] = useState(() => {
         } catch {}
 
         // ── Pass 1: Critical keys from Supabase ───────────────────────────
-        const criticalKeys = ["teams","assignments","matches","captains","tnames","numteams","pwhash","transfers","snatch","teamIdentity","pointsConfig","tournaments","safePlayers","pitchConfig","ruledOut"];
+        const criticalKeys = ["teams","assignments","matches","captains","tnames","numteams","pwhash","transfers","snatch","teamIdentity","pointsConfig","tournaments","safePlayers","pitchConfig","ruledOut","unsoldPool"];
         // ── Batched loading: 5 keys at a time with delays ───────────────
         const batchLoad = async (keys, batchSize = 5) => {
           const results = [];
@@ -253,7 +255,9 @@ const [pointsReady, setPointsReady] = useState(() => {
 
         // Load critical keys in batches
         const critResults = await batchLoad(criticalKeys, 5);
-        const [t,a,m,c,tn,nt,ph,tr,sn,ti,pc,tv,sp,pcfg,ro] = critResults;
+        const [t,a,m,c,tn,nt,ph,tr,sn,ti,pc,tv,sp,pcfg,ro,up0] = critResults;
+        if(up0) setUnsoldPool(up0);
+setPoolLoading(false);
         if(t) setTeams(t);
         if(a) setAssignments(a);
         if(m) setMatches(m);
@@ -274,15 +278,14 @@ const [pointsReady, setPointsReady] = useState(() => {
         setAppReady(true);
 
         // ── Pass 2: Heavy keys in batches ────────────────────────────────
-        const heavyKeys = ["players","points","ownershipLog","recoveryHash","teamLogos","unsoldPool","ruleProposal"];
+        const heavyKeys = ["players","points","ownershipLog","recoveryHash","teamLogos","ruleProposal"];
         const heavyResults = await batchLoad(heavyKeys, 3); // Smaller batches for heavy data
-        const [p,pts,ol,rh,tl,up,rp] = heavyResults;
+        const [p,pts,ol,rh,tl,rp] = heavyResults;
         if(p) setPlayers(p);
         if(pts) { setPoints(pts); setPointsReady(true); }
         if(ol && typeof ol === 'object') setOwnershipLog(ol);
         if(rh) setRecoveryHash(rh);
         if(tl) setTeamLogos(tl);
-        if(up) setUnsoldPool(up);
         if(rp && typeof rp === 'object') setRuleProposal(rp);
 
         // ── Save fresh data to localStorage for next instant load ─────────
@@ -2276,17 +2279,19 @@ ${aiMatchText.slice(0, 3000)}`;
         <div style={{color:T.muted,fontSize:11,marginTop:3,fontFamily:fonts.body}}>Players available for pickup during transfer window</div>
       </div>
       <div style={{background:"#6B46C1",color:T.bg,clipPath:"polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)",padding:"8px 16px",fontFamily:fonts.display,fontWeight:800,fontSize:15,letterSpacing:2}}>
-        {unsoldPool.length}
+        {poolLoading ? "FETCHING" : unsoldPool.length}
       </div>
     </div>
 
     {/* Add from unassigned section */}
     <div style={{marginBottom:24}}>
-      <div style={{background:"#4299E133",borderLeft:`4px solid #4299E1`,padding:"10px 16px",marginBottom:12,clipPath:"polygon(0% 0%,100% 0%,calc(100% - 8px) 100%,0% 100%)"}}>
+      <div onClick={()=>setShowUnassigned(v=>!v)} style={{background:"#4299E133",borderLeft:`4px solid #4299E1`,padding:"10px 16px",marginBottom:showUnassigned?12:0,clipPath:"polygon(0% 0%,100% 0%,calc(100% - 8px) 100%,0% 100%)",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
         <div style={{fontFamily:fonts.display,fontSize:13,fontWeight:800,color:"#4299E1",letterSpacing:2,textTransform:"uppercase"}}>
           ➕ ADD FROM UNASSIGNED PLAYERS
         </div>
+        <div style={{color:"#4299E1",fontSize:16,transition:"transform 0.2s",transform:showUnassigned?"rotate(180deg)":"rotate(0deg)"}}>▼</div>
       </div>
+      {showUnassigned && (
       <div style={{maxHeight:180,overflowY:"auto",display:"flex",flexWrap:"wrap",gap:8,padding:"12px 16px",background:T.card,border:`2px solid ${T.border}`,borderRadius:0}}>
         {players.filter(p=>!assignments[p.id]&&!unsoldPool.includes(p.id)).map(p=>(
           <button key={p.id} onClick={()=>addToUnsoldPool(p.id)}
@@ -2301,7 +2306,10 @@ ${aiMatchText.slice(0, 3000)}`;
           <div style={{color:T.muted,fontSize:13,padding:20,width:"100%",textAlign:"center"}}>All unassigned players are already in the pool</div>
         )}
       </div>
+      )}
     </div>
+
+    {/* Current pool section */}
 
     {/* Current pool section */}
     <div style={{background:"#9F7AEA33",borderLeft:`4px solid #9F7AEA`,padding:"10px 16px",marginBottom:12,clipPath:"polygon(0% 0%,100% 0%,calc(100% - 8px) 100%,0% 100%)"}}>
@@ -2310,7 +2318,14 @@ ${aiMatchText.slice(0, 3000)}`;
       </div>
     </div>
 
-    {unsoldPool.length===0 ? (
+    {poolLoading ? (
+      <div style={{textAlign:"center",padding:40,background:T.card,border:`2px solid ${T.border}`,borderRadius:0}}>
+        <div style={{fontFamily:fonts.display,fontSize:13,color:"#9F7AEA",letterSpacing:2,marginBottom:10}}>FETCHING POOL...</div>
+        <div style={{height:4,background:T.border,borderRadius:2,overflow:"hidden"}}>
+          <div style={{height:"100%",background:"#9F7AEA",borderRadius:2,animation:"tb-shimmer 1.2s infinite",backgroundSize:"200% 100%",backgroundImage:`linear-gradient(90deg,#6B46C1 25%,#9F7AEA 50%,#6B46C1 75%)`}} />
+        </div>
+      </div>
+    ) : unsoldPool.length===0 ? (
       <div style={{textAlign:"center",padding:40,color:T.muted,fontSize:14,background:T.card,border:`2px solid ${T.border}`,borderRadius:0}}>
         Pool is empty — add players above
       </div>
