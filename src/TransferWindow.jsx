@@ -12,7 +12,7 @@ const TIER_BORDER = { platinum:"#4A5E7866", gold:"#F5A62366", silver:"#94A3B855"
 function TierBadge({ tier }) {
   if (!tier) return null;
   return (
-    <span style={{fontSize:9,fontWeight:800,letterSpacing:1,padding:"1px 5px",borderRadius:4,
+    <span style={{fontSize:9,fontWeight:800,letterSpacing:1,padding:"2px 6px",borderRadius:0,clipPath:"polygon(3px 0%,100% 0%,calc(100% - 3px) 100%,0% 100%)",
       fontFamily:fonts.body,textTransform:"uppercase",
       background:TIER_BG[tier],border:"1px solid "+TIER_BORDER[tier],color:TIER_COLORS[tier]}}>
       {tier==="platinum"?"PLAT":tier==="gold"?"GOLD":tier==="silver"?"SILV":"BRNZ"}
@@ -567,11 +567,10 @@ export default function TransferWindow({
       }
     };
     if (!isReleased) {
-      // Adding to release — also add to unsold pool
-      if (!unsoldPool.includes(pid)) onUpdateUnsoldPool([...unsoldPool, pid]);
+      // Fetch fresh pool from Supabase before adding — prevents race condition overwrite
+      onUpdateUnsoldPool(pid, "add");
     } else {
-      // Undoing release — remove from unsold pool, player stays with team
-      onUpdateUnsoldPool(unsoldPool.filter(id => id !== pid));
+      onUpdateUnsoldPool(pid, "remove");
     }
     onUpdateTransfers(updated);
   };
@@ -1009,7 +1008,7 @@ onUpdateTransfers({
           </div>
           <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
             <span style={{fontSize:11,color:T.muted}}>Week {transfers?.weekNum || 1}</span>
-            <span style={{background:phaseBadge[phase]+"22",color:phaseBadge[phase],border:"1px solid "+phaseBadge[phase]+"44",padding:"2px 10px",borderRadius:20,fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>
+            <span style={{background:phaseBadge[phase]+"22",color:phaseBadge[phase],border:"1px solid "+phaseBadge[phase]+"44",padding:"2px 10px",borderRadius:0,clipPath:"polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)",fontSize:11,fontWeight:700,textTransform:"uppercase",letterSpacing:1}}>
               {phase}
             </span>
             {phase === "closed" && (
@@ -1020,7 +1019,7 @@ onUpdateTransfers({
 
         {/* Auto countdown to next window */}
         {phase === "closed" && (
-          <div style={{background:T.card,borderRadius:10,padding:"10px 16px",textAlign:"center",border:`1px solid ${T.border}`}}>
+          <div style={{background:T.card,borderRadius:0,padding:"10px 16px",textAlign:"center",border:`1px solid ${T.border}`}}>
             <div style={{fontSize:10,color:T.muted,letterSpacing:2,marginBottom:4}}>NEXT WINDOW OPENS</div>
             <Timer deadline={nextAutoOpen} label={"UNTIL " + (pitchConfig?.transferStart || "SUNDAY 11:59 PM") + " IST"}
               onExpire={() => {
@@ -1033,7 +1032,7 @@ onUpdateTransfers({
           </div>
         )}
         {phase === "release" && (
-          <div style={{background:T.accentBg,borderRadius:10,padding:"10px 16px",textAlign:"center",border:`1px solid ${T.accentBorder}`}}>
+          <div style={{background:T.accentBg,borderRadius:0,padding:"10px 16px",textAlign:"center",border:`1px solid ${T.accentBorder}`,borderTop:`3px solid ${T.accent}`}}>
             <div style={{fontSize:10,color:T.accent,letterSpacing:2,marginBottom:4}}>RELEASE WINDOW CLOSES</div>
             <Timer deadline={releaseDeadline} label={(pitchConfig?.transferEnd || "MONDAY 11:00 AM") + " IST"} />
           </div>
@@ -1041,13 +1040,13 @@ onUpdateTransfers({
       </div>
 
       {/* TAB SWITCHER */}
-      <div style={{display:"flex",gap:6,marginBottom:20,background:T.bg,borderRadius:10,padding:4,border:`1px solid ${T.border}`}}>
+      <div style={{display:"flex",gap:0,marginBottom:20,background:T.bg,borderRadius:0,padding:0,border:"none",borderBottom:`2px solid ${T.border}`}}>
         {[{id:"window",label:"⚡ TRANSFER"},{id:"history",label:"📜 HISTORY"}].map(tab=>(
           <button key={tab.id} onClick={()=>setTwTab(tab.id)}
-            style={{flex:1,padding:"11px 0",border:"none",cursor:"pointer",fontFamily:fonts.display,fontWeight:700,fontSize:15,letterSpacing:2,textTransform:"uppercase",transition:"all 0.2s",
-              background: twTab===tab.id ? T.accent : "transparent",
-              color: twTab===tab.id ? T.bg : T.muted,
-               borderBottom: twTab===tab.id ? "none" : `2px solid ${T.border}`,
+            style={{flex:1,padding:"12px 0",border:"none",borderBottom:twTab===tab.id?`3px solid ${T.accent}`:"3px solid transparent",cursor:"pointer",fontFamily:fonts.display,fontWeight:800,fontSize:14,letterSpacing:2,textTransform:"uppercase",transition:"all 0.2s",
+              background:"transparent",
+              color: twTab===tab.id ? T.accent : T.muted,
+              marginBottom:-2,
             }}>
             {tab.label}
           </button>
@@ -1062,7 +1061,7 @@ onUpdateTransfers({
 
       {/* ADMIN CONTROLS */}
       {unlocked && (
-        <div style={{background:T.card,borderRadius:12,border:`1px solid ${T.accentBorder}`,padding:16,marginBottom:20}}>
+        <div style={{background:T.card,borderRadius:0,borderLeft:`3px solid ${T.accent}`,border:`1px solid ${T.accentBorder}`,padding:16,marginBottom:20}}>
           <div style={{fontSize:11,color:T.accent,letterSpacing:2,fontWeight:700,marginBottom:12}}>🔑 ADMIN CONTROLS</div>
           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
 
@@ -1226,7 +1225,7 @@ onUpdateTransfers({
           {phase === "release" && (
             <div style={{marginTop:12,display:"flex",flexWrap:"wrap",gap:6}}>
               {sortedTeams.filter(t => (transfers?.releases?.[t.id]||[]).length < 3).map(t => (
-                <div key={t.id} style={{background:T.dangerBg,border:`1px solid ${T.danger}33`,borderRadius:8,padding:"5px 10px",fontSize:11,color:T.danger}}>
+                <div key={t.id} style={{background:T.dangerBg,border:`1px solid ${T.danger}33`,borderLeft:`2px solid ${T.danger}`,borderRadius:0,padding:"5px 10px",fontSize:11,color:T.danger}}>
                   ⚠️ {t.name}: {(transfers?.releases?.[t.id]||[]).length}/3 released
                 </div>
               ))}
@@ -1237,11 +1236,11 @@ onUpdateTransfers({
 
       {/* CLOSED STATE */}
       {phase === "closed" && (
-        <div style={{background:T.card,borderRadius:12,border:`1px solid ${T.border}`,padding:40,textAlign:"center"}}>
+        <div style={{background:T.card,borderRadius:0,border:`1px solid ${T.border}`,borderTop:`3px solid ${T.border}`,padding:40,textAlign:"center"}}>
           <div style={{fontSize:48,marginBottom:12}}>🔒</div>
           <div style={{fontFamily:fonts.display,fontSize:26,fontWeight:700,color:T.text,letterSpacing:3,marginBottom:8}}>TRANSFER WINDOW CLOSED</div>
           <div style={{fontSize:13,color:T.muted,marginBottom:12}}>Opens automatically every {pitchConfig?.transferStart || "Sunday at 11:59 PM IST"}</div>
-          <div style={{display:"inline-flex",flexDirection:"column",gap:4,background:T.bg,borderRadius:10,padding:"10px 20px",border:`1px solid ${T.border}`}}>
+          <div style={{display:"inline-flex",flexDirection:"column",gap:4,background:T.bg,borderRadius:0,padding:"10px 20px",border:`1px solid ${T.border}`}}>
             <div style={{fontSize:11,color:T.muted}}>🔄 Window: <span style={{color:T.text,fontWeight:600}}>{pitchConfig?.transferStart || "Sunday 11:59 PM"} → {pitchConfig?.transferEnd || "Monday 11:00 AM"} IST</span></div>
           </div>
         </div>
@@ -1270,20 +1269,20 @@ onUpdateTransfers({
             const allReleased = released.length;
 
             return (
-              <div key={team.id} style={{background:T.card,borderRadius:12,border:"2px solid "+(isMe?team.color+"66":team.color+"22"),padding:16,marginBottom:12}}>
+              <div key={team.id} style={{background:T.card,borderRadius:0,border:"1px solid "+(isMe?team.color+"66":team.color+"22"),borderLeft:"4px solid "+(isMe?team.color:team.color+"44"),padding:16,marginBottom:12}}>
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
                   <div style={{display:"flex",alignItems:"center",gap:8}}>
                     <div style={{fontFamily:fonts.display,fontWeight:700,fontSize:16,color:team.color}}>{team.name}</div>
-                    {isMe && <span style={{fontSize:10,background:team.color+"22",color:team.color,border:"1px solid "+team.color+"44",borderRadius:20,padding:"2px 8px",fontWeight:700,letterSpacing:1}}>YOUR TEAM</span>}
+                    {isMe && <span style={{fontSize:10,background:team.color+"22",color:team.color,border:"1px solid "+team.color+"44",borderRadius:0,clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)",padding:"2px 8px",fontWeight:700,letterSpacing:1}}>YOUR TEAM</span>}
                   </div>
-                  <div style={{fontSize:12,color:allReleased===3?"#2ECC71":"#F5A623",fontWeight:700,background:allReleased===3?"#2ECC7111":"#F5A62311",padding:"3px 10px",borderRadius:20,border:"1px solid "+(allReleased===3?"#2ECC7133":"#F5A62333")}}>
+                  <div style={{fontSize:12,color:allReleased===3?"#2ECC71":"#F5A623",fontWeight:700,background:allReleased===3?"#2ECC7111":"#F5A62311",padding:"3px 10px",borderRadius:0,clipPath:"polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)",border:"1px solid "+(allReleased===3?"#2ECC7133":"#F5A62333")}}>
                     {allReleased}/3 released
                   </div>
                 </div>
 
                 {/* Instruction for own team */}
                 {isMe && (
-                  <div style={{fontSize:12,color:T.muted,marginBottom:10,background:"#F5A62308",border:"1px solid #F5A62322",borderRadius:8,padding:"7px 12px"}}>
+                  <div style={{fontSize:12,color:T.muted,marginBottom:10,background:"#F5A62308",border:"1px solid #F5A62322",borderLeft:"3px solid #F5A62366",borderRadius:0,padding:"7px 12px"}}>
                     Tap <strong style={{color:T.accent}}>RELEASE</strong> to add a player to the pool. Tap <strong style={{color:T.danger}}>UNDO</strong> to take them back. You can change until the window closes.
                   </div>
                 )}
@@ -1292,7 +1291,7 @@ onUpdateTransfers({
                   {teamPlayers.map(p => {
                     const isReleased = released.includes(p.id);
                     return (
-                      <div key={p.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:isReleased?"#FF3D5A11":"#080C14",borderRadius:8,border:"1px solid "+(isReleased?"#FF3D5A44":"#1E2D45")}}>
+                      <div key={p.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:isReleased?"#FF3D5A11":"#080C14",borderRadius:0,borderLeft:"3px solid "+(isReleased?"#FF3D5A":"#1E2D45"),border:"1px solid "+(isReleased?"#FF3D5A44":"#1E2D45")}}>
                         <div style={{flex:1}}>
                           <div style={{display:"flex",alignItems:"center",gap:6}}>
                             {isReleased && <span style={{fontSize:13}}>📤</span>}
@@ -1303,20 +1302,20 @@ onUpdateTransfers({
                         </div>
                         {/* Release/Undo button — only for own team, no lock needed */}
                         {ruledOut.includes(p.id) ? (
-                            <span style={{fontSize:10,color:"#FF3D5A",fontWeight:700,background:"#FF3D5A11",border:"1px solid #FF3D5A33",padding:"3px 8px",borderRadius:6,letterSpacing:0.5}}>🚫 RULED OUT</span>
+                            <span style={{fontSize:10,color:"#FF3D5A",fontWeight:700,background:"#FF3D5A11",border:"1px solid #FF3D5A33",padding:"3px 8px",borderRadius:0,clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)",letterSpacing:0.5}}>🚫 RULED OUT</span>
                           ) : isPlayerSafe(p.id) ? (
-                            <span style={{fontSize:10,color:T.success,fontWeight:700,background:"#2ECC7111",border:`1px solid ${T.success}33`,padding:"3px 8px",borderRadius:6,letterSpacing:0.5}}>🛡 SAFE</span>
+                            <span style={{fontSize:10,color:T.success,fontWeight:700,background:"#2ECC7111",border:`1px solid ${T.success}33`,padding:"3px 8px",borderRadius:0,clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)",letterSpacing:0.5}}>🛡 SAFE</span>
                           ) : canEdit ? (
                             <button onClick={() => handleRelease(team.id, p.id)}
-                              style={{background:isReleased?"#FF3D5A22":"#1E2D4533",border:"1px solid "+(isReleased?"#FF3D5A":"#1E2D45"),borderRadius:6,padding:"6px 14px",color:isReleased?"#FF3D5A":"#4A5E78",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:fonts.body,letterSpacing:0.5}}>
+                              style={{background:isReleased?"#FF3D5A22":"#1E2D4533",border:"1px solid "+(isReleased?"#FF3D5A":"#1E2D45"),borderRadius:0,clipPath:"polygon(5px 0%,100% 0%,calc(100% - 5px) 100%,0% 100%)",padding:"6px 14px",color:isReleased?"#FF3D5A":"#4A5E78",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:fonts.body,letterSpacing:0.5}}>
                               {isReleased ? "UNDO ✕" : "RELEASE"}
                             </button>
                           ) : isReleased ? (
-                            <span style={{fontSize:10,color:T.danger,fontWeight:700,background:T.dangerBg,border:`1px solid ${T.danger}33`,padding:"3px 8px",borderRadius:6}}>RELEASED</span>
+                            <span style={{fontSize:10,color:T.danger,fontWeight:700,background:T.dangerBg,border:`1px solid ${T.danger}33`,padding:"3px 8px",borderRadius:0,clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)"}}>RELEASED</span>
                           ) : null}
                         {/* Read-only view for admin */}
                         {!canEdit && isReleased && (
-                          <span style={{fontSize:10,color:T.danger,fontWeight:700,background:T.dangerBg,border:`1px solid ${T.danger}33`,padding:"3px 8px",borderRadius:6}}>RELEASED</span>
+                          <span style={{fontSize:10,color:T.danger,fontWeight:700,background:T.dangerBg,border:`1px solid ${T.danger}33`,padding:"3px 8px",borderRadius:0,clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)"}}>RELEASED</span>
                         )}
                       </div>
                     );
@@ -1331,11 +1330,11 @@ onUpdateTransfers({
 
           {/* Admin without myTeam: show team picker — only during release phase */}
           {!myTeamId && isAdmin && phase === "release" && (
-            <div style={{background:T.accentBg,borderRadius:12,border:`1px solid ${T.accentBorder}`,padding:16,marginBottom:12}}>
+            <div style={{background:T.accentBg,borderRadius:0,borderLeft:`3px solid ${T.accent}`,border:`1px solid ${T.accentBorder}`,padding:16,marginBottom:12}}>
               <div style={{fontSize:11,color:T.accent,letterSpacing:2,fontWeight:700,marginBottom:8}}>🔑 WHICH TEAM ARE YOU MANAGING?</div>
               <div style={{fontSize:12,color:T.muted,marginBottom:10}}>You're logged in as admin. Select your team to manage releases.</div>
               <select onChange={e=>setSessionTeamId(e.target.value)} defaultValue=""
-                style={{width:"100%",background:T.card,border:`1px solid ${T.accentBorder}`,borderRadius:8,padding:"10px 14px",color:T.text,fontSize:14,fontFamily:fonts.body}}>
+                style={{width:"100%",background:T.card,border:`1px solid ${T.accentBorder}`,borderLeft:`3px solid ${T.accent}`,borderRadius:0,padding:"10px 14px",color:T.text,fontSize:14,fontFamily:fonts.body}}>
                 <option value="">-- Select your team --</option>
                 {sortedTeams.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
@@ -1350,7 +1349,7 @@ onUpdateTransfers({
 
           {/* Current pick timer */}
           {phase === "trade" && currentPickTeam && (
-            <div style={{background:T.card,borderRadius:12,border:"2px solid "+currentPickTeam.color+"66",padding:20,marginBottom:16,textAlign:"center"}}>
+            <div style={{background:T.card,borderRadius:0,borderLeft:"4px solid "+currentPickTeam.color,border:"1px solid "+currentPickTeam.color+"44",padding:20,marginBottom:16,textAlign:"center"}}>
               <div style={{fontSize:11,color:T.muted,letterSpacing:2,marginBottom:4}}>NOW PICKING</div>
               <div style={{fontFamily:fonts.display,fontSize:24,fontWeight:700,color:currentPickTeam.color,marginBottom:12,letterSpacing:1}}>
                 {currentPickTeam.name} {isMyTurn ? "— YOUR TURN 🎯" : ""}
@@ -1368,14 +1367,14 @@ onUpdateTransfers({
           )}
 
           {phase === "done" && (
-            <div style={{background:"#2ECC7111",border:`1px solid ${T.success}33`,borderRadius:12,padding:16,marginBottom:16,textAlign:"center"}}>
+            <div style={{background:"#2ECC7111",border:`1px solid ${T.success}33`,borderLeft:`3px solid ${T.success}`,borderRadius:0,padding:16,marginBottom:16,textAlign:"center"}}>
               <div style={{fontFamily:fonts.display,fontSize:20,fontWeight:700,color:T.success}}>✅ TRADE PHASE COMPLETE</div>
               <div style={{fontSize:12,color:T.muted,marginTop:4}}>All trades finalised for Week {transfers.weekNum}</div>
             </div>
           )}
 
           {/* ── LIVE TRACK ──────────────────────────────────────────────── */}
-          <div style={{background:T.card,borderRadius:12,border:`1px solid ${T.border}`,padding:16,marginBottom:16}}>
+          <div style={{background:T.card,borderRadius:0,border:`1px solid ${T.border}`,borderTop:`2px solid ${T.border}`,padding:16,marginBottom:16}}>
             <div style={{fontSize:11,color:T.accent,letterSpacing:2,fontWeight:700,marginBottom:14}}>📡 LIVE TRADE TRACK</div>
             {sortedTeams.map(team => {
               const released = getReleasedPlayers(team.id);
@@ -1397,7 +1396,7 @@ onUpdateTransfers({
                       return (
                         <div key={p.id} style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",opacity:p.pickedByOther?0.6:1}}>
                           {/* Released player */}
-                          <div style={{display:"flex",alignItems:"center",gap:5,background:T.dangerBg,border:`1px solid ${T.danger}33`,borderRadius:8,padding:"5px 10px"}}>
+                          <div style={{display:"flex",alignItems:"center",gap:5,background:T.dangerBg,border:`1px solid ${T.danger}33`,borderLeft:`2px solid ${T.danger}`,borderRadius:0,padding:"5px 10px"}}>
                             <span style={{fontSize:12}}>⬇️</span>
                             <span style={{fontSize:12,color:T.danger,textDecoration:"line-through",fontWeight:700}}>{p.name}</span>
                             <TierBadge tier={p.tier} />
@@ -1408,7 +1407,7 @@ onUpdateTransfers({
                           {incoming ? (
                             <>
                               <span style={{color:T.muted,fontSize:14}}>→</span>
-                              <div style={{display:"flex",alignItems:"center",gap:5,background:"#2ECC7111",border:`1px solid ${T.success}33`,borderRadius:8,padding:"5px 10px"}}>
+                              <div style={{display:"flex",alignItems:"center",gap:5,background:"#2ECC7111",border:`1px solid ${T.success}33`,borderLeft:`2px solid ${T.success}`,borderRadius:0,padding:"5px 10px"}}>
                                 <span style={{fontSize:12}}>⬆️</span>
                                 <span style={{fontSize:12,color:T.success,fontWeight:700}}>{incoming.name}</span>
                                 <TierBadge tier={incoming.tier} />
@@ -1418,28 +1417,28 @@ onUpdateTransfers({
                           ) : takenByTeam ? (
                             <>
                               <span style={{color:T.muted,fontSize:14}}>→</span>
-                              <div style={{background:"#4A5E7822",border:"1px solid #4A5E7844",borderRadius:8,padding:"5px 10px"}}>
+                              <div style={{background:"#4A5E7822",border:"1px solid #4A5E7844",borderRadius:0,padding:"5px 10px"}}>
                                 <span style={{fontSize:11,color:T.muted}}>🚫 taken by <span style={{color:takenByTeam.color,fontWeight:700}}>{takenByTeam.name}</span></span>
                               </div>
                             </>
                           ) : isIneligible ? (
                             <>
                               <span style={{color:T.muted,fontSize:14}}>→</span>
-                              <div style={{background:"#4A5E7822",border:"1px solid #4A5E7844",borderRadius:8,padding:"5px 10px"}}>
+                              <div style={{background:"#4A5E7822",border:"1px solid #4A5E7844",borderRadius:0,padding:"5px 10px"}}>
                                 <span style={{fontSize:11,color:T.muted}}>↩️ returned (passed)</span>
                               </div>
                             </>
                           ) : (phase === "done" || !currentPickTeamId) ? (
                             <>
                               <span style={{color:T.muted,fontSize:14}}>→</span>
-                              <div style={{background:"#4A5E7822",border:"1px solid #4A5E7844",borderRadius:8,padding:"5px 10px"}}>
+                              <div style={{background:"#4A5E7822",border:"1px solid #4A5E7844",borderRadius:0,padding:"5px 10px"}}>
                                 <span style={{fontSize:11,color:T.muted}}>↩️ returned to squad</span>
                               </div>
                             </>
                           ) : (
                             <>
                               <span style={{color:T.muted,fontSize:14}}>→</span>
-                              <div style={{background:T.accentBg,border:`1px solid ${T.accentBorder}`,borderRadius:8,padding:"5px 10px"}}>
+                              <div style={{background:T.accentBg,border:`1px solid ${T.accentBorder}`,borderLeft:`2px solid ${T.accent}`,borderRadius:0,padding:"5px 10px"}}>
                                 <span style={{fontSize:11,color:T.accent,animation:"pulse 1.5s ease infinite"}}>⏳ waiting…</span>
                               </div>
                             </>
@@ -1457,7 +1456,7 @@ onUpdateTransfers({
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
 
             {/* Unsold pool */}
-            <div style={{background:T.card,borderRadius:12,border:`1px solid ${T.border}`,padding:14}}>
+            <div style={{background:T.card,borderRadius:0,border:`1px solid ${T.border}`,borderTop:`2px solid ${T.border}`,padding:14}}>
               <div style={{fontSize:11,color:T.muted,letterSpacing:2,fontWeight:700,marginBottom:10}}>
                 POOL ({sortedPool.length})
               </div>
@@ -1480,7 +1479,7 @@ onUpdateTransfers({
                 const cardBg = canPick ? "#2ECC7111" : isNewlyReleased ? "#FF3D5A08" : "#080C14";
                 const cardBorder = canPick ? "#2ECC7144" : isNewlyReleased ? teamColor+"44" : "#1E2D4544";
                 return (
-                  <div key={p.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",background:cardBg,borderRadius:8,border:"1px solid "+cardBorder,borderLeft:isNewlyReleased?"3px solid "+teamColor+"99":"1px solid "+cardBorder,marginBottom:6}}>
+                  <div key={p.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",background:cardBg,borderRadius:0,borderLeft:isNewlyReleased?"3px solid "+teamColor+"99":"1px solid "+cardBorder,marginBottom:6}}>
                     <div style={{flex:1,minWidth:0}}>
                       <div style={{display:"flex",alignItems:"center",gap:5,flexWrap:"wrap"}}>
                         <span style={{fontWeight:700,fontSize:12,color:T.text}}>{p.name}</span>
@@ -1514,7 +1513,7 @@ onUpdateTransfers({
             </div>
 
             {/* My released players */}
-            <div style={{background:T.card,borderRadius:12,border:`1px solid ${T.border}`,padding:14}}>
+            <div style={{background:T.card,borderRadius:0,border:`1px solid ${T.border}`,borderTop:`2px solid ${T.border}`,padding:14}}>
               <div style={{fontSize:11,color:T.muted,letterSpacing:2,fontWeight:700,marginBottom:10}}>
                 {myTeamId ? "MY RELEASED" : "ALL RELEASES"}
               </div>
@@ -1531,7 +1530,7 @@ onUpdateTransfers({
                       const traded = pairs.find(pr => pr.releasedPid === p.id);
                       const ineligible = (transfers.ineligible||[]).includes(p.id);
                       return (
-                        <div key={p.id} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 10px",background:traded?"#2ECC7111":p.pickedByOther?"#FF3D5A11":ineligible?"#4A5E7822":"#080C14",borderRadius:8,border:"1px solid "+(traded?"#2ECC7144":p.pickedByOther?"#FF3D5A33":ineligible?"#4A5E7844":"#1E2D44"),marginBottom:4}}>
+                        <div key={p.id} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 10px",background:traded?"#2ECC7111":p.pickedByOther?"#FF3D5A11":ineligible?"#4A5E7822":"#080C14",borderRadius:0,borderLeft:"3px solid "+(traded?"#2ECC71":p.pickedByOther?"#FF3D5A":ineligible?"#4A5E7866":"#1E2D45"),border:"1px solid "+(traded?"#2ECC7144":p.pickedByOther?"#FF3D5A33":ineligible?"#4A5E7844":"#1E2D44"),marginBottom:4}}>
                           <span style={{fontSize:11}}>{traded?"✅":p.pickedByOther?"🚫":ineligible?"↩️":"📤"}</span>
                           <div style={{flex:1}}>
                             <div style={{display:"flex",alignItems:"center",gap:4}}>
@@ -1554,10 +1553,10 @@ onUpdateTransfers({
 
           {/* My turn actions */}
           {(isMyTurn || unlocked) && phase === "trade" && currentPickTeam && (
-            <div style={{background:T.card,borderRadius:12,border:"2px solid "+(myReversalAlert?"#FF3D5A44":"#F5A62344"),padding:16,marginBottom:16}}>
+            <div style={{background:T.card,borderRadius:0,borderLeft:"4px solid "+(myReversalAlert?"#FF3D5A":"#F5A623"),border:"1px solid "+(myReversalAlert?"#FF3D5A44":"#F5A62344"),padding:16,marginBottom:16}}>
               <div style={{fontFamily:fonts.display,fontSize:18,fontWeight:700,color:myReversalAlert?"#FF3D5A":"#F5A623",marginBottom:6}}>{myReversalAlert?"⚠️ RE-PICK REQUIRED":"🎯 YOUR TURN"}</div>
               {myReversalAlert && (
-                <div style={{background:T.dangerBg,border:`1px solid ${T.danger}33`,borderRadius:8,padding:"8px 12px",marginBottom:10,fontSize:12,color:T.danger}}>
+                <div style={{background:T.dangerBg,border:`1px solid ${T.danger}33`,borderLeft:`3px solid ${T.danger}`,borderRadius:0,padding:"8px 12px",marginBottom:10,fontSize:12,color:T.danger}}>
                   <strong>{myReversalAlert.returnedPlayerName}</strong> returned to {myReversalAlert.returnedToTeam}. Pick another player or pass.
                 </div>
               )}
@@ -1566,7 +1565,7 @@ onUpdateTransfers({
               </div>
               {canPass(myTeamId || currentPickTeamId) ? (
                 <button onClick={handlePass}
-                  style={{width:"100%",background:"#4A5E7822",border:"1px solid #4A5E78",borderRadius:10,padding:12,color:T.text,fontFamily:fonts.body,fontWeight:800,fontSize:14,cursor:"pointer",letterSpacing:0.5}}>
+                  style={{width:"100%",background:"#4A5E7822",border:"1px solid #4A5E78",borderRadius:0,clipPath:"polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)",padding:12,color:T.text,fontFamily:fonts.body,fontWeight:800,fontSize:14,cursor:"pointer",letterSpacing:0.5}}>
                   PASS — No valid players in pool (released players will return)
                 </button>
               ) : (
@@ -1574,7 +1573,7 @@ onUpdateTransfers({
                   Valid picks exist in pool — PASS not allowed until pool is exhausted
                   {unlocked && (
                     <button onClick={handlePass}
-                      style={{display:"block",width:"100%",marginTop:8,background:T.dangerBg,border:"1px dashed #FF3D5A44",borderRadius:10,padding:10,color:T.danger,fontFamily:fonts.body,fontWeight:700,fontSize:12,cursor:"pointer"}}>
+                      style={{display:"block",width:"100%",marginTop:8,background:T.dangerBg,border:"1px dashed #FF3D5A44",borderRadius:0,padding:10,color:T.danger,fontFamily:fonts.body,fontWeight:700,fontSize:12,cursor:"pointer"}}>
                       ⚠️ ADMIN: FORCE PASS
                     </button>
                   )}
@@ -1584,14 +1583,14 @@ onUpdateTransfers({
           )}
 
           {/* Trade summary */}
-          <div style={{background:T.card,borderRadius:12,border:`1px solid ${T.border}`,padding:14}}>
+          <div style={{background:T.card,borderRadius:0,border:`1px solid ${T.border}`,borderTop:`2px solid ${T.border}`,padding:14}}>
             <div style={{fontSize:11,color:T.muted,letterSpacing:2,fontWeight:700,marginBottom:10}}>TRADE ORDER</div>
             {pickOrder.map((team, idx) => {
               const released = getReleasedPlayers(team.id);
               const pairs = getTradedPairs(team.id);
               const isCurrent = team.id === currentPickTeamId;
               return (
-                <div key={team.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",background:isCurrent?team.color+"11":"transparent",borderRadius:8,marginBottom:4,border:isCurrent?"1px solid "+team.color+"33":"1px solid transparent"}}>
+                <div key={team.id} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 10px",background:isCurrent?team.color+"11":"transparent",borderRadius:0,borderLeft:isCurrent?"3px solid "+team.color:"3px solid transparent",marginBottom:4,border:isCurrent?"1px solid "+team.color+"33":"1px solid transparent"}}>
                   <div style={{fontFamily:fonts.display,fontSize:13,color:T.muted,minWidth:20}}>{idx+1}</div>
                   <div style={{flex:1}}>
                     <span style={{fontWeight:700,fontSize:13,color:isCurrent?team.color:T.text}}>{team.name}</span>
@@ -1608,12 +1607,12 @@ onUpdateTransfers({
       {/* REVERSAL ALERT MODAL */}
       {showReversalAlert && myReversalAlert && (
         <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:900,padding:16}}>
-          <div style={{background:T.card,borderRadius:16,border:"2px solid #F5A62366",padding:24,width:"100%",maxWidth:400}}>
+          <div style={{background:T.card,borderRadius:0,clipPath:"polygon(0 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%)",border:"1px solid #F5A62366",borderTop:"3px solid #F5A623",padding:24,width:"100%",maxWidth:400}}>
             <div style={{fontSize:32,textAlign:"center",marginBottom:8}}>⚠️</div>
             <div style={{fontFamily:fonts.display,fontSize:20,fontWeight:700,color:T.accent,textAlign:"center",letterSpacing:1,marginBottom:8}}>
               TRADE REVERSED
             </div>
-            <div style={{background:T.dangerBg,border:`1px solid ${T.danger}33`,borderRadius:10,padding:"12px 16px",marginBottom:16,textAlign:"center"}}>
+            <div style={{background:T.dangerBg,border:`1px solid ${T.danger}33`,borderLeft:`3px solid ${T.danger}`,borderRadius:0,padding:"12px 16px",marginBottom:16,textAlign:"center"}}>
               <div style={{fontWeight:700,fontSize:16,color:T.danger,marginBottom:4}}>
                 ⬇️ {myReversalAlert.returnedPlayerName}
               </div>
@@ -1630,7 +1629,7 @@ onUpdateTransfers({
               const cleared = (transfers.reversalAlert||[]).filter(a=>a.teamId!==effectiveTeamId);
               onUpdateTransfers({...transfers, reversalAlert: cleared.length>0?cleared:null});
             }}
-              style={{width:"100%",background:`linear-gradient(135deg,${T.accent},${T.accentDim})`,border:"none",borderRadius:10,padding:13,color:T.bg,fontFamily:fonts.body,fontWeight:800,fontSize:16,cursor:"pointer",letterSpacing:0.5}}>
+              style={{width:"100%",background:`linear-gradient(90deg,${T.accent},#FF8C00)`,border:"none",borderRadius:0,clipPath:"polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%)",padding:13,color:"#0A0E14",fontFamily:fonts.display,fontWeight:900,fontSize:15,cursor:"pointer",letterSpacing:2,filter:`drop-shadow(0 4px 12px ${T.accent}55)`}}>
               GOT IT — LET ME RE-PICK
             </button>
           </div>
@@ -1640,24 +1639,24 @@ onUpdateTransfers({
       {/* CONFIRM MODAL */}
       {confirmModal && (
         <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.95)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:800,padding:16}}>
-          <div style={{background:T.card,borderRadius:16,border:`1px solid ${confirmModal.onConfirm ? T.danger+"44" : T.success+"44"}`,padding:24,width:"100%",maxWidth:380}}>
+          <div style={{background:T.card,borderRadius:0,clipPath:"polygon(0 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%)",border:`1px solid ${confirmModal.onConfirm ? T.danger+"44" : T.success+"44"}`,borderTop:`3px solid ${confirmModal.onConfirm ? T.danger : T.success}`,padding:24,width:"100%",maxWidth:380}}>
             <div style={{fontSize:22,marginBottom:12}}>{confirmModal.onConfirm ? "⚠️" : "✅"}</div>
             <div style={{fontFamily:fonts.display,fontSize:18,fontWeight:700,color:confirmModal.onConfirm ? T.danger : T.success,marginBottom:12}}>{confirmModal.message}</div>
             <div style={{display:"flex",gap:8}}>
               {confirmModal.onConfirm ? (
                 <>
                   <button onClick={()=>setConfirmModal(null)}
-                    style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:8,padding:11,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>
+                    style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:0,clipPath:"polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)",padding:11,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>
                     CANCEL
                   </button>
                   <button onClick={()=>{confirmModal.onConfirm();setConfirmModal(null);}}
-                    style={{flex:1,background:T.dangerBg,border:"1px solid #FF3D5A",borderRadius:8,padding:11,color:T.danger,fontFamily:fonts.body,fontWeight:800,fontSize:14,cursor:"pointer"}}>
+                    style={{flex:1,background:T.dangerBg,border:"1px solid #FF3D5A",borderRadius:0,clipPath:"polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)",padding:11,color:T.danger,fontFamily:fonts.body,fontWeight:800,fontSize:14,cursor:"pointer"}}>
                     CONFIRM
                   </button>
                 </>
               ) : (
                 <button onClick={()=>setConfirmModal(null)}
-                  style={{flex:1,background:"#2ECC7122",border:"1px solid #2ECC7144",borderRadius:8,padding:11,color:T.success,fontFamily:fonts.body,fontWeight:800,fontSize:14,cursor:"pointer"}}>
+                  style={{flex:1,background:"#2ECC7122",border:"1px solid #2ECC7144",borderRadius:0,clipPath:"polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)",padding:11,color:T.success,fontFamily:fonts.body,fontWeight:800,fontSize:14,cursor:"pointer"}}>
                   OK
                 </button>
               )}
@@ -1669,12 +1668,12 @@ onUpdateTransfers({
       {/* PICK MODAL — choose which released player to swap */}
       {pickModal && (
         <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:500,padding:16}}>
-          <div style={{background:T.card,borderRadius:16,border:`1px solid ${T.border}`,padding:24,width:"100%",maxWidth:440}}>
+          <div style={{background:T.card,borderRadius:0,clipPath:"polygon(0 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%)",border:`1px solid ${T.border}`,borderTop:`3px solid ${T.accent}`,padding:24,width:"100%",maxWidth:440}}>
             <div style={{fontFamily:fonts.display,fontSize:20,fontWeight:700,color:T.success,letterSpacing:2,marginBottom:4}}>PICK PLAYER</div>
             <div style={{fontSize:12,color:T.muted,marginBottom:6}}>
               Incoming: <strong style={{color:T.text}}>{pickModal.poolPlayer.name}</strong>
             </div>
-            <div style={{display:"flex",alignItems:"center",gap:6,background:"#2ECC7111",border:`1px solid ${T.success}33`,borderRadius:10,padding:"10px 14px",marginBottom:20}}>
+            <div style={{display:"flex",alignItems:"center",gap:6,background:"#2ECC7111",border:`1px solid ${T.success}33`,borderLeft:`3px solid ${T.success}`,borderRadius:0,padding:"10px 14px",marginBottom:20}}>
               <span style={{fontSize:18}}>⬆️</span>
               <div>
                 <div style={{display:"flex",alignItems:"center",gap:6}}>
@@ -1687,7 +1686,7 @@ onUpdateTransfers({
             <div style={{fontSize:12,color:T.muted,marginBottom:10}}>Select which of your released players goes out for them:</div>
             {pickModal.validMatches.map(rp => (
               <button key={rp.id} onClick={() => confirmTrade(pickModal.poolPlayer, rp)}
-                style={{width:"100%",background:T.dangerBg,border:`1px solid ${T.danger}44`,borderRadius:10,padding:12,marginBottom:8,cursor:"pointer",display:"flex",alignItems:"center",gap:10,textAlign:"left",fontFamily:fonts.body}}>
+                style={{width:"100%",background:T.dangerBg,border:`1px solid ${T.danger}44`,borderLeft:`3px solid ${T.danger}`,borderRadius:0,padding:12,marginBottom:8,cursor:"pointer",display:"flex",alignItems:"center",gap:10,textAlign:"left",fontFamily:fonts.body}}>
                 <span style={{fontSize:16}}>⬇️</span>
                 <div>
                   <div style={{display:"flex",alignItems:"center",gap:6}}>
@@ -1699,7 +1698,7 @@ onUpdateTransfers({
               </button>
             ))}
             <button onClick={() => setPickModal(null)}
-              style={{width:"100%",background:"transparent",border:`1px solid ${T.border}`,borderRadius:10,padding:10,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer",marginTop:4}}>
+              style={{width:"100%",background:"transparent",border:`1px solid ${T.border}`,borderRadius:0,padding:10,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer",marginTop:4}}>
               CANCEL
             </button>
           </div>
@@ -1709,10 +1708,10 @@ onUpdateTransfers({
       {/* FINAL CONFIRM MODAL */}
       {tradeConfirmModal && (
         <div style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.97)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:600,padding:16}}>
-          <div style={{background:T.card,borderRadius:16,border:`1px solid ${T.border}`,padding:24,width:"100%",maxWidth:400}}>
+          <div style={{background:T.card,borderRadius:0,clipPath:"polygon(0 0,100% 0,100% calc(100% - 16px),calc(100% - 16px) 100%,0 100%)",border:`1px solid ${T.border}`,borderTop:`3px solid ${T.accent}`,padding:24,width:"100%",maxWidth:400}}>
             <div style={{fontFamily:fonts.display,fontSize:20,fontWeight:700,color:T.accent,letterSpacing:2,marginBottom:16}}>CONFIRM TRADE</div>
 
-            <div style={{background:"#2ECC7111",border:`1px solid ${T.success}33`,borderRadius:10,padding:14,marginBottom:10,display:"flex",alignItems:"center",gap:10}}>
+            <div style={{background:"#2ECC7111",border:`1px solid ${T.success}33`,borderLeft:`3px solid ${T.success}`,borderRadius:0,padding:14,marginBottom:10,display:"flex",alignItems:"center",gap:10}}>
               <span style={{fontSize:20}}>⬆️</span>
               <div>
                 <div style={{fontSize:10,color:T.success,letterSpacing:1,marginBottom:2}}>JOINING YOUR SQUAD</div>
@@ -1724,7 +1723,7 @@ onUpdateTransfers({
               </div>
             </div>
 
-            <div style={{background:T.dangerBg,border:`1px solid ${T.danger}33`,borderRadius:10,padding:14,marginBottom:16,display:"flex",alignItems:"center",gap:10}}>
+            <div style={{background:T.dangerBg,border:`1px solid ${T.danger}33`,borderLeft:`3px solid ${T.danger}`,borderRadius:0,padding:14,marginBottom:16,display:"flex",alignItems:"center",gap:10}}>
               <span style={{fontSize:20}}>⬇️</span>
               <div>
                 <div style={{fontSize:10,color:T.danger,letterSpacing:1,marginBottom:2}}>LEAVING YOUR SQUAD</div>
@@ -1736,15 +1735,15 @@ onUpdateTransfers({
               </div>
             </div>
 
-            <div style={{background:T.accentBg,border:`1px solid ${T.accentBorder}`,borderRadius:8,padding:"10px 14px",marginBottom:16,fontSize:12,color:T.accent,textAlign:"center",fontWeight:700}}>
+            <div style={{background:T.accentBg,border:`1px solid ${T.accentBorder}`,borderLeft:`3px solid ${T.accent}`,borderRadius:0,padding:"10px 14px",marginBottom:16,fontSize:12,color:T.accent,textAlign:"center",fontWeight:700}}>
               ⚠️ This trade is permanent and cannot be undone this window
             </div>
 
             <div style={{display:"flex",gap:8}}>
               <button onClick={() => setTradeConfirmModal(null)}
-                style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:8,padding:11,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
+                style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:0,clipPath:"polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)",padding:11,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"}}>CANCEL</button>
               <button onClick={executeTrade}
-                style={{flex:2,background:`linear-gradient(135deg,${T.accent},${T.accentDim})`,border:"none",borderRadius:8,padding:11,color:T.bg,fontFamily:fonts.body,fontWeight:800,fontSize:15,cursor:"pointer",letterSpacing:0.5}}>
+                style={{flex:2,background:`linear-gradient(90deg,${T.accent},#FF8C00)`,border:"none",borderRadius:0,clipPath:"polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)",padding:11,color:"#0A0E14",fontFamily:fonts.display,fontWeight:900,fontSize:14,cursor:"pointer",letterSpacing:2}}>
                 ✅ CONFIRM TRADE
               </button>
             </div>
@@ -1780,7 +1779,7 @@ function TransferHistory({ transfers, players, teams }) {
 
   if (history.length === 0) {
     return (
-      <div style={{textAlign:"center",padding:"60px 20px",background:T.card,borderRadius:12,border:`1px solid ${T.border}`}}>
+      <div style={{textAlign:"center",padding:"60px 20px",background:T.card,borderRadius:0,border:`1px solid ${T.border}`,borderTop:`2px solid ${T.border}`}}>
         <div style={{fontSize:48,marginBottom:12}}>📜</div>
         <div style={{fontFamily:fonts.display,fontSize:20,fontWeight:700,color:T.muted,letterSpacing:2}}>NO HISTORY YET</div>
         <div style={{fontSize:13,color:T.muted,marginTop:6}}>Completed transfer windows will appear here.</div>

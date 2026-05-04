@@ -3165,7 +3165,15 @@ onChange={e=>setPlayerSearch(e.target.value)}
               storeSet={storeSet}
               onUpdateTransfers={(val)=>{setTransfers(val);storeSet("transfers",val);}}
               onUpdateAssignments={updAssign}
-              onUpdateUnsoldPool={(val)=>{setUnsoldPool(val);storeSet("unsoldPool",val);}}
+              onUpdateUnsoldPool={async (pid, action) => {
+  // Fetch FRESH from Supabase every time to prevent race condition
+  const latest = await storeGet("unsoldPool") || [];
+  const merged = action === "add"
+    ? (latest.includes(pid) ? latest : [...latest, pid])
+    : latest.filter(id => id !== pid);
+  setUnsoldPool(merged);
+  storeSet("unsoldPool", merged);
+}}
               onUpdateOwnershipLog={(val)=>{setOwnershipLog(val);storeSet("ownershipLog",val);}}
               onUpdatePoints={updPoints}
               onUpdateSnatch={(val)=>{setSnatch(val);storeSet("snatch",val);}}
