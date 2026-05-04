@@ -193,6 +193,10 @@ const [poolLoading, setPoolLoading] = useState(true);
   const [noteInput, setNoteInput] = useState(''); // manually managed unsold list
   const [draftTab, setDraftTab] = useState('players');
 const [showUnassigned, setShowUnassigned] = useState(false); // players | unsold
+const [showCompare, setShowCompare] = useState(false);
+const [compareTeam, setCompareTeam] = useState("");
+const [compareRole, setCompareRole] = useState("All");
+const [compareTier, setCompareTier] = useState("All");
   const [teamRosterModal, setTeamRosterModal] = useState(null); // null or team.id
   const [playerSearch, setPlayerSearch] = useState('');
   const [playerStatsModal, setPlayerStatsModal] = useState(null); // player object
@@ -2273,14 +2277,100 @@ ${aiMatchText.slice(0, 3000)}`;
              {/* UNSOLD POOL TAB */}
 {draftTab==="unsold" && (
   <div>
+    {/* COMPARE MODAL */}
+    {showCompare && (
+      <div onClick={()=>setShowCompare(false)} style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.75)",backdropFilter:"blur(8px)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+        <div onClick={e=>e.stopPropagation()} style={{width:"min(760px,95vw)",maxHeight:"85vh",display:"flex",flexDirection:"column",background:"rgba(15,18,28,0.95)",border:`2px solid #6B46C1`,borderTop:`4px solid #9F7AEA`,borderRadius:0,overflow:"hidden",boxShadow:"0 24px 80px rgba(107,70,193,0.4)"}}>
+          {/* Header */}
+          <div style={{padding:"16px 20px",borderBottom:`1px solid #6B46C133`,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+            <div style={{fontFamily:fonts.display,fontWeight:900,fontSize:18,color:"#9F7AEA",letterSpacing:3}}>⚡ COMPARE SQUAD vs POOL</div>
+            <button onClick={()=>setShowCompare(false)} style={{background:"transparent",border:"none",color:T.muted,fontSize:20,cursor:"pointer"}}>✕</button>
+          </div>
+          {/* Filters */}
+          <div style={{padding:"12px 20px",borderBottom:`1px solid #6B46C133`,display:"flex",gap:10,flexWrap:"wrap"}}>
+            <select value={compareTeam} onChange={e=>setCompareTeam(e.target.value)}
+              style={{flex:1,minWidth:150,background:"#0A0E14",border:`1px solid #6B46C1`,borderRadius:0,padding:"8px 12px",color:T.text,fontFamily:fonts.display,fontWeight:700,fontSize:12,letterSpacing:1,cursor:"pointer"}}>
+              <option value="">— Pick a team —</option>
+              {teams.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+            <select value={compareRole} onChange={e=>setCompareRole(e.target.value)}
+              style={{flex:1,minWidth:120,background:"#0A0E14",border:`1px solid #6B46C1`,borderRadius:0,padding:"8px 12px",color:T.text,fontFamily:fonts.display,fontWeight:700,fontSize:12,letterSpacing:1,cursor:"pointer"}}>
+              <option value="All">Role</option>
+              <option>Batsman</option>
+              <option>Bowler</option>
+              <option>All-Rounder</option>
+              <option>Wicket-Keeper</option>
+            </select>
+            <select value={compareTier} onChange={e=>setCompareTier(e.target.value)}
+              style={{flex:1,minWidth:120,background:"#0A0E14",border:`1px solid #6B46C1`,borderRadius:0,padding:"8px 12px",color:T.text,fontFamily:fonts.display,fontWeight:700,fontSize:12,letterSpacing:1,cursor:"pointer"}}>
+              <option value="All">Category</option>
+              <option value="gold">Gold</option>
+              <option value="silver">Silver</option>
+              <option value="bronze">Bronze</option>
+              <option value="platinum">Platinum</option>
+            </select>
+          </div>
+          {/* Content */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",flex:1,overflowY:"auto"}}>
+            {/* Left - Team Squad */}
+            <div style={{borderRight:`1px solid #6B46C133`,padding:"12px 16px"}}>
+              <div style={{fontFamily:fonts.display,fontWeight:800,fontSize:11,color:"#9F7AEA",letterSpacing:3,marginBottom:10,textTransform:"uppercase"}}>
+                {compareTeam ? teams.find(t=>t.id===compareTeam)?.name + " SQUAD" : "SELECT A TEAM"}
+              </div>
+              {compareTeam ? players.filter(p=>{
+                if(assignments[p.id]!==compareTeam) return false;
+                if(compareRole!=="All" && p.role!==compareRole) return false;
+                if(compareTier!=="All" && p.tier!==compareTier) return false;
+                return true;
+              }).map(p=>(
+                <div key={p.id} style={{padding:"8px 10px",marginBottom:6,background:"rgba(159,122,234,0.08)",border:`1px solid #6B46C133`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div>
+                    <div style={{fontFamily:fonts.display,fontWeight:700,fontSize:13,color:T.text}}>{p.name}</div>
+                    <div style={{fontFamily:fonts.body,fontSize:10,color:T.muted}}>{p.iplTeam} · {p.role} · {p.tier||""}</div>
+                  </div>
+                  {p.tier && <span style={{background:p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":p.tier==="bronze"?"#CD7F3222":"#4A5E7833",border:`1px solid ${p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":p.tier==="bronze"?"#CD7F3255":"#4A5E7866"}`,color:p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":p.tier==="bronze"?"#CD7F32":"#B0BEC5",fontFamily:fonts.display,fontWeight:800,fontSize:10,letterSpacing:1.5,padding:"2px 8px",clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)"}}>
+  {p.tier.toUpperCase()}
+</span>}
+                </div>
+              )) : <div style={{color:T.muted,fontSize:12,fontFamily:fonts.body,padding:20,textAlign:"center"}}>Pick a team to see their squad</div>}
+            </div>
+            {/* Right - Unsold Pool */}
+            <div style={{padding:"12px 16px"}}>
+              <div style={{fontFamily:fonts.display,fontWeight:800,fontSize:11,color:"#F5A623",letterSpacing:3,marginBottom:10,textTransform:"uppercase"}}>UNSOLD POOL</div>
+              {players.filter(p=>{
+                if(!unsoldPool.includes(p.id)) return false;
+                if(compareRole!=="All" && p.role!==compareRole) return false;
+                if(compareTier!=="All" && p.tier!==compareTier) return false;
+                return true;
+              }).map(p=>(
+                <div key={p.id} style={{padding:"8px 10px",marginBottom:6,background:"rgba(245,166,35,0.08)",border:`1px solid #F5A62333`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div>
+                    <div style={{fontFamily:fonts.display,fontWeight:700,fontSize:13,color:T.text}}>{p.name}</div>
+                    <div style={{fontFamily:fonts.body,fontSize:10,color:T.muted}}>{p.iplTeam} · {p.role}</div>
+                  </div>
+                  {p.tier && <span style={{background:p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":p.tier==="bronze"?"#CD7F3222":"#4A5E7833",border:`1px solid ${p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":p.tier==="bronze"?"#CD7F3255":"#4A5E7866"}`,color:p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":p.tier==="bronze"?"#CD7F32":"#B0BEC5",fontFamily:fonts.display,fontWeight:800,fontSize:10,letterSpacing:1.5,padding:"2px 8px",clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)"}}>
+  {p.tier.toUpperCase()}
+</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
     {/* Info banner */}
     <div style={{background:"#6B46C133",border:`2px solid #6B46C1`,borderLeft:`5px solid #6B46C1`,borderRadius:0,padding:"14px 18px",marginBottom:20,display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
       <div>
         <div style={{fontFamily:fonts.display,fontWeight:800,color:"#9F7AEA",fontSize:14,letterSpacing:1.5,textTransform:"uppercase"}}>📦 UNSOLD POOL</div>
         <div style={{color:T.muted,fontSize:11,marginTop:3,fontFamily:fonts.body}}>Players available for pickup during transfer window</div>
       </div>
-      <div style={{background:"#6B46C1",color:T.bg,clipPath:"polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)",padding:"8px 16px",fontFamily:fonts.display,fontWeight:800,fontSize:15,letterSpacing:2}}>
-        {poolLoading ? "FETCHING" : unsoldPool.length}
+      <div style={{display:"flex",gap:8,alignItems:"center"}}>
+        <div style={{background:"#6B46C1",color:T.bg,clipPath:"polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)",padding:"8px 16px",fontFamily:fonts.display,fontWeight:800,fontSize:15,letterSpacing:2}}>
+          {poolLoading ? "FETCHING" : unsoldPool.length}
+        </div>
+        <button onClick={()=>setShowCompare(true)} style={{background:"linear-gradient(135deg,#84CC16,#65A30D)",border:"none",clipPath:"polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)",padding:"8px 16px",fontFamily:fonts.display,fontWeight:800,fontSize:13,color:"#0A0E14",letterSpacing:2,cursor:"pointer"}}>
+          ⚡ COMPARE
+        </button>
       </div>
     </div>
 
