@@ -197,6 +197,7 @@ const [showCompare, setShowCompare] = useState(false);
 const [compareTeam, setCompareTeam] = useState("");
 const [compareRole, setCompareRole] = useState("All");
 const [compareTier, setCompareTier] = useState("All");
+const [highlightPlayer, setHighlightPlayer] = useState(null);
   const [teamRosterModal, setTeamRosterModal] = useState(null); // null or team.id
   const [playerSearch, setPlayerSearch] = useState('');
   const [playerStatsModal, setPlayerStatsModal] = useState(null); // player object
@@ -2279,12 +2280,12 @@ ${aiMatchText.slice(0, 3000)}`;
   <div>
     {/* COMPARE MODAL */}
     {showCompare && (
-      <div onClick={()=>setShowCompare(false)} style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.75)",backdropFilter:"blur(8px)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
+      <div onClick={()=>{setShowCompare(false);setHighlightPlayer(null);}} style={{position:"fixed",inset:0,background:"rgba(8,12,20,0.75)",backdropFilter:"blur(8px)",zIndex:300,display:"flex",alignItems:"center",justifyContent:"center",padding:16}}>
         <div onClick={e=>e.stopPropagation()} style={{width:"min(760px,95vw)",maxHeight:"85vh",display:"flex",flexDirection:"column",background:"rgba(15,18,28,0.95)",border:`2px solid #6B46C1`,borderTop:`4px solid #9F7AEA`,borderRadius:0,overflow:"hidden",boxShadow:"0 24px 80px rgba(107,70,193,0.4)"}}>
           {/* Header */}
           <div style={{padding:"16px 20px",borderBottom:`1px solid #6B46C133`,display:"flex",alignItems:"center",justifyContent:"space-between"}}>
             <div style={{fontFamily:fonts.display,fontWeight:900,fontSize:18,color:"#9F7AEA",letterSpacing:3}}>⚡ COMPARE SQUAD vs POOL</div>
-            <button onClick={()=>setShowCompare(false)} style={{background:"transparent",border:"none",color:T.muted,fontSize:20,cursor:"pointer"}}>✕</button>
+            <button onClick={()=>{setShowCompare(false);setHighlightPlayer(null);}} style={{background:"transparent",border:"none",color:T.muted,fontSize:20,cursor:"pointer"}}>✕</button>
           </div>
           {/* Filters */}
           <div style={{padding:"12px 20px",borderBottom:`1px solid #6B46C133`,display:"flex",gap:10,flexWrap:"wrap"}}>
@@ -2323,10 +2324,10 @@ ${aiMatchText.slice(0, 3000)}`;
                 if(compareTier!=="All" && p.tier!==compareTier) return false;
                 return true;
               }).map(p=>(
-                <div key={p.id} style={{padding:"8px 10px",marginBottom:6,background:"rgba(159,122,234,0.08)",border:`1px solid #6B46C133`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div key={p.id} onClick={()=>setHighlightPlayer(highlightPlayer?.id===p.id?null:p)} style={{padding:"8px 10px",marginBottom:6,background:highlightPlayer?.id===p.id?"rgba(159,122,234,0.25)":"rgba(159,122,234,0.08)",border:`1px solid ${highlightPlayer?.id===p.id?"#9F7AEA":"#6B46C133"}`,display:"flex",justifyContent:"space-between",alignItems:"center",cursor:"pointer",transition:"all 0.2s"}}>
                   <div>
                     <div style={{fontFamily:fonts.display,fontWeight:700,fontSize:13,color:T.text}}>{p.name}</div>
-                    <div style={{fontFamily:fonts.body,fontSize:10,color:T.muted}}>{p.iplTeam} · {p.role} · {p.tier||""}</div>
+                    <div style={{fontFamily:fonts.body,fontSize:10,color:T.muted}}>{p.iplTeam} · {p.role}</div>
                   </div>
                   {p.tier && <span style={{background:p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":p.tier==="bronze"?"#CD7F3222":"#4A5E7833",border:`1px solid ${p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":p.tier==="bronze"?"#CD7F3255":"#4A5E7866"}`,color:p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":p.tier==="bronze"?"#CD7F32":"#B0BEC5",fontFamily:fonts.display,fontWeight:800,fontSize:10,letterSpacing:1.5,padding:"2px 8px",clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)"}}>
   {p.tier.toUpperCase()}
@@ -2343,7 +2344,7 @@ ${aiMatchText.slice(0, 3000)}`;
                 if(compareTier!=="All" && p.tier!==compareTier) return false;
                 return true;
               }).map(p=>(
-                <div key={p.id} style={{padding:"8px 10px",marginBottom:6,background:"rgba(245,166,35,0.08)",border:`1px solid #F5A62333`,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div key={p.id} style={{padding:"8px 10px",marginBottom:6,background:highlightPlayer&&p.role===highlightPlayer.role&&(p.tier===highlightPlayer.tier||["bronze","silver","gold","platinum"].indexOf(p.tier)<=["bronze","silver","gold","platinum"].indexOf(highlightPlayer.tier))?"rgba(245,166,35,0.25)":"rgba(245,166,35,0.04)",border:`1px solid ${highlightPlayer&&p.role===highlightPlayer.role&&(p.tier===highlightPlayer.tier||["bronze","silver","gold","platinum"].indexOf(p.tier)<=["bronze","silver","gold","platinum"].indexOf(highlightPlayer.tier))?"#F5A623":"#F5A62322"}`,display:"flex",justifyContent:"space-between",alignItems:"center",transition:"all 0.2s"}}>
                   <div>
                     <div style={{fontFamily:fonts.display,fontWeight:700,fontSize:13,color:T.text}}>{p.name}</div>
                     <div style={{fontFamily:fonts.body,fontSize:10,color:T.muted}}>{p.iplTeam} · {p.role}</div>
