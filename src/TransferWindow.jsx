@@ -195,6 +195,7 @@ export default function TransferWindow({
     return afterStart || betweenDays || beforeEnd;
   };
   const [pickModal, setPickModal] = useState(null); // {poolPlayer}
+  const [poolSearch, setPoolSearch] = useState("");
   const [sessionTeamId, setSessionTeamId] = useState(null);
   const [confirmModal, setConfirmModal] = useState(null); // {message, onConfirm}
   const [twTab, setTwTab] = useState("window"); // "window" | "history"
@@ -1605,59 +1606,69 @@ onUpdateTransfers({
 
             {/* Unsold pool */}
             <div style={{background:T.card,borderRadius:0,border:`1px solid ${T.border}`,borderTop:`2px solid ${T.border}`,padding:14}}>
-              <div style={{fontSize:11,color:T.muted,letterSpacing:2,fontWeight:700,marginBottom:10}}>
-                POOL ({sortedPool.length})
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+                <div style={{fontSize:11,color:T.muted,letterSpacing:2,fontWeight:700}}>POOL ({sortedPool.length})</div>
+                <input value={poolSearch} onChange={e=>setPoolSearch(e.target.value)} placeholder="Search..." style={{background:T.bg,border:`1px solid ${T.border}`,borderRadius:0,padding:"4px 8px",color:T.text,fontSize:11,fontFamily:fonts.body,outline:"none",width:110}} />
               </div>
               {sortedPool.length === 0 ? (
                 <div style={{fontSize:12,color:T.muted,textAlign:"center",padding:16}}>Pool empty</div>
-              ) : sortedPool.map(p => {
-                const canPickNow = (isMyTurn || unlocked) && phase==="trade" && !isPlayerSafe(p.id);
-                const pickAsTeam = isMyTurn ? myTeamId : currentPickTeamId;
-                // Team cannot pick their own released player
-                const releasedByPickingTeam = (transfers?.releases?.[pickAsTeam]||[]).includes(p.id);
-                const valid = canPickNow && !releasedByPickingTeam ? getValidMatches(p, pickAsTeam) : [];
-                const canPick = valid.length > 0;
-                // Check if newly released this window vs pre-existing unsold
-                const isNewlyReleased = Object.values(transfers?.releases || {}).some(arr => arr.includes(p.id));
-                // Find which team released them
-                const releasedByTeam = isNewlyReleased
-                  ? teams.find(t => (transfers?.releases?.[t.id] || []).includes(p.id))
-                  : null;
-                const teamColor = releasedByTeam?.color || "#1E2D45";
-                const cardBg = canPick ? "#2ECC7111" : isNewlyReleased ? "#FF3D5A08" : "#080C14";
-                const cardBorder = canPick ? "#2ECC7144" : isNewlyReleased ? teamColor+"44" : "#1E2D4544";
-                return (
-                  <div key={p.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",background:cardBg,borderRadius:0,borderLeft:isNewlyReleased?"3px solid "+teamColor+"99":"1px solid "+cardBorder,marginBottom:6}}>
-                    <div style={{flex:1,minWidth:0}}>
-                      <div style={{display:"flex",alignItems:"center",gap:5,flexWrap:"wrap"}}>
-                        <span style={{fontWeight:700,fontSize:12,color:T.text}}>{p.name}</span>
-                        <TierBadge tier={p.tier} />
-                        {isPlayerSafe(p.id) && (
-                          <span style={{fontSize:9,background:"#2ECC7111",color:T.success,border:`1px solid ${T.success}33`,borderRadius:4,padding:"1px 5px",fontWeight:700}}>🛡 SAFE</span>
-                        )}
-                      </div>
-                      <div style={{display:"flex",alignItems:"center",gap:6,marginTop:2,flexWrap:"wrap"}}>
-                        <span style={{fontSize:10,color:T.muted}}>{p.iplTeam} • {p.role}</span>
-                        {isNewlyReleased && releasedByTeam && (
-                          <span style={{display:"flex",alignItems:"center",gap:3,fontSize:9,fontWeight:800,letterSpacing:0.5,color:teamColor,background:teamColor+"15",border:"1px solid "+teamColor+"44",borderRadius:4,padding:"1px 6px"}}>
-                            <span style={{width:5,height:5,borderRadius:"50%",background:teamColor,display:"inline-block",flexShrink:0}} />
-                            FROM {releasedByTeam.name.toUpperCase()}
-                          </span>
-                        )}
-                        {!isNewlyReleased && (
-                          <span style={{fontSize:9,color:T.muted,background:"#1E2D4555",border:"1px solid #1E2D4599",borderRadius:4,padding:"1px 6px",fontWeight:700}}>UNSOLD</span>
-                        )}
-                      </div>
+              ) : (() => {
+                const filtered = sortedPool.filter(p => !poolSearch || p.name.toLowerCase().includes(poolSearch.toLowerCase()) || p.iplTeam?.toLowerCase().includes(poolSearch.toLowerCase()));
+                const tierColors = {platinum:"#B0BEC5",gold:"#F5A623",silver:"#94A3B8",bronze:"#CD7F32","":"#4A5E78"};
+                const tiers = ["platinum","gold","silver","bronze",""];
+                return tiers.map(tier => {
+                  const tierPlayers = filtered.filter(p => (p.tier||"") === tier);
+                  if(tierPlayers.length === 0) return null;
+                  return (
+                    <div key={tier}>
+                      <div style={{fontSize:9,fontFamily:fonts.display,fontWeight:800,letterSpacing:2,color:tierColors[tier],background:tierColors[tier]+"11",padding:"3px 8px",marginBottom:4,marginTop:4,clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)"}}>{(tier||"UNRANKED").toUpperCase()} ({tierPlayers.length})</div>
+                      {tierPlayers.map(p => {
+                        const canPickNow = (isMyTurn || unlocked) && phase==="trade" && !isPlayerSafe(p.id);
+                        const pickAsTeam = isMyTurn ? myTeamId : currentPickTeamId;
+                        const releasedByPickingTeam = (transfers?.releases?.[pickAsTeam]||[]).includes(p.id);
+                        const valid = canPickNow && !releasedByPickingTeam ? getValidMatches(p, pickAsTeam) : [];
+                        const canPick = valid.length > 0;
+                        const isNewlyReleased = Object.values(transfers?.releases || {}).some(arr => arr.includes(p.id));
+                        const releasedByTeam = isNewlyReleased ? teams.find(t => (transfers?.releases?.[t.id] || []).includes(p.id)) : null;
+                        const teamColor = releasedByTeam?.color || "#1E2D45";
+                        const cardBg = canPick ? "#2ECC7111" : isNewlyReleased ? "#FF3D5A08" : "#080C14";
+                        const cardBorder = canPick ? "#2ECC7144" : isNewlyReleased ? teamColor+"44" : "#1E2D4544";
+                        return (
+                          <div key={p.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",background:cardBg,borderRadius:0,borderLeft:isNewlyReleased?"3px solid "+teamColor+"99":"1px solid "+cardBorder,marginBottom:6}}>
+                            <div style={{flex:1,minWidth:0}}>
+                              <div style={{display:"flex",alignItems:"center",gap:5,flexWrap:"wrap"}}>
+                                <span style={{fontWeight:700,fontSize:12,color:T.text}}>{p.name}</span>
+                                <TierBadge tier={p.tier} />
+                                {isPlayerSafe(p.id) && (
+                                  <span style={{fontSize:9,background:"#2ECC7111",color:T.success,border:`1px solid ${T.success}33`,borderRadius:4,padding:"1px 5px",fontWeight:700}}>🛡 SAFE</span>
+                                )}
+                              </div>
+                              <div style={{display:"flex",alignItems:"center",gap:6,marginTop:2,flexWrap:"wrap"}}>
+                                <span style={{fontSize:10,color:T.muted}}>{p.iplTeam} • {p.role}</span>
+                                {isNewlyReleased && releasedByTeam && (
+                                  <span style={{display:"flex",alignItems:"center",gap:3,fontSize:9,fontWeight:800,letterSpacing:0.5,color:teamColor,background:teamColor+"15",border:"1px solid "+teamColor+"44",borderRadius:4,padding:"1px 6px"}}>
+                                    <span style={{width:5,height:5,borderRadius:"50%",background:teamColor,display:"inline-block",flexShrink:0}} />
+                                    FROM {releasedByTeam.name.toUpperCase()}
+                                  </span>
+                                )}
+                                {!isNewlyReleased && (
+                                  <span style={{fontSize:9,color:T.muted,background:"#1E2D4555",border:"1px solid #1E2D4599",borderRadius:4,padding:"1px 6px",fontWeight:700}}>UNSOLD</span>
+                                )}
+                              </div>
+                            </div>
+                            {canPick && (
+                              <button onClick={() => handlePickClick(p)}
+                                style={{background:"#2ECC71",border:"none",padding:"5px 14px",color:"#050F05",fontSize:11,fontWeight:800,cursor:"pointer",flexShrink:0,fontFamily:fonts.display,letterSpacing:2,clipPath:"polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%)",textTransform:"uppercase",filter:"drop-shadow(2px 2px 0 #0A5020)"}}>
+                                PICK
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
-                    {canPick && (
-                     <button onClick={() => handlePickClick(p)}
-                        style={{background:"#2ECC71",border:"none",padding:"5px 14px",color:"#050F05",fontSize:11,fontWeight:800,cursor:"pointer",flexShrink:0,fontFamily:fonts.display,letterSpacing:2,clipPath:"polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%)",textTransform:"uppercase",filter:"drop-shadow(2px 2px 0 #0A5020)"}}>
-                        PICK
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
+                  );
+                });
+              })()}
             </div>
 
             {/* My released players */}

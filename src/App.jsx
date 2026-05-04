@@ -3273,6 +3273,12 @@ onChange={e=>setPlayerSearch(e.target.value)}
               onUpdateTransfers={(val)=>{setTransfers(val);storeSet("transfers",val);}}
               onUpdateAssignments={updAssign}
               onUpdateUnsoldPool={async (pid, action) => {
+  // If called with full array (no action), just save directly
+  if (Array.isArray(pid)) {
+    setUnsoldPool(pid);
+    storeSet("unsoldPool", pid);
+    return;
+  }
   // Fetch FRESH from Supabase every time to prevent race condition
   const latest = await storeGet("unsoldPool") || [];
   const merged = action === "add"
