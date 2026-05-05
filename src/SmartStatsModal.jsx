@@ -218,7 +218,7 @@ try { data = JSON.parse(rawText); } catch { throw new Error("Server response not
         dismissed: !!entry.dismissed,
         wickets: +entry.wickets || 0,
         overs: +entry.overs || 0,
-        economy: +entry.economy || 0,
+        economy: (entry.economy !== undefined && entry.economy !== null && entry.economy !== "") ? +entry.economy : "",
         maidens: +entry.maidens || 0,
         catches: parseInt(entry.catches) || 0,
         stumpings: parseInt(entry.stumpings) || 0,
