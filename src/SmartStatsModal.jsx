@@ -182,18 +182,22 @@ try { data = JSON.parse(rawText); } catch { throw new Error("Server response not
     });
 
     const findP = (name) => {
-      const n = (name||"").toLowerCase().trim();
-      if (nameMap[n]) return nameMap[n];
-      const parts = n.split(" ");
-      const last = parts[parts.length - 1];
-      if (last.length >= 4 && lastNameMap[last]) return lastNameMap[last];
-      // partial first+last match
-      for (const [key, pl] of Object.entries(nameMap)) {
-        const kp = key.split(" ");
-        if (kp[0] === parts[0] && kp[kp.length-1] === last) return pl;
-      }
-      return null;
-    };
+  const n = (name||"").toLowerCase().trim();
+  if (nameMap[n]) return nameMap[n];
+  const parts = n.split(" ");
+  const last = parts[parts.length - 1];
+  if (last.length >= 4 && lastNameMap[last]) return lastNameMap[last];
+  for (const [key, pl] of Object.entries(nameMap)) {
+    const kp = key.split(" ");
+    if (kp[0] === parts[0] && kp[kp.length-1] === last) return pl;
+  }
+  // Single-word input (e.g. "Bishnoi") — check every word in every player name
+  if (parts.length === 1 && parts[0].length >= 4) {
+    const candidates = Object.entries(nameMap).filter(([key]) => key.split(" ").includes(parts[0]));
+    if (candidates.length === 1) return candidates[0][1];
+  }
+  return null;
+};
 
     const newStats = {...stats};
     let matched = 0;
@@ -237,7 +241,7 @@ try { data = JSON.parse(rawText); } catch { throw new Error("Server response not
       // e.g. "Virat Kohli  c Maxwell b Bumrah  82  54  8  3"
       //       ↑ batsman      ↑ dismissal text
       // Short form: "c Bishnoi b Kuldeep"
-const catchShort = t.match(/\bc\s+([A-Za-z][A-Za-z\s\-]{2,30}?)\s+b\s+[A-Za-z]/);
+const catchShort = t.match(/\bc\s+((?:[A-Z][A-Za-z\-]+\s+){0,3}[A-Z][A-Za-z\-]+)\s+b\s+[A-Z]/);
 if (catchShort) {
   const fp = findP(catchShort[1].trim());
   if (fp) { initF(fp.id); fieldingCounts[fp.id].catches++; }
