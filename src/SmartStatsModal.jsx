@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { calcPoints, calcBreakdown, parseScorecardToStats, fetchLiveScorecard } from './utils.js';
 
 export default function SmartStatsModal({ match, players, assignments, existingStats, onSave, onClose, pointsConfig, T, fonts }) {
-  const matchPlayers = players.filter(p => assignments[p.id]);
+  const matchPlayers = players.filter(p => assignments[p.id] || assignments[p.id] === "__pool__");
   const emptyStats = (p) => ({ runs:0, balls:0, fours:0, sixes:0, wickets:0, economy:"", overs:0, maidens:0, catches:0, stumpings:0, runouts:0, longestSix:false, mom:false, playingXI:false, dismissed:false, played:false });
 
   const [stats, setStats] = React.useState(() => {

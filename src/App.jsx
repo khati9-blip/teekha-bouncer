@@ -188,6 +188,7 @@ const [pointsReady, setPointsReady] = useState(() => {
   const [unsoldPool, setUnsoldPool] = useState([]);
 const [poolLoading, setPoolLoading] = useState(true);
 const [unsoldSearch, setUnsoldSearch] = useState("");
+const [unsoldTierFilter, setUnsoldTierFilter] = useState("All");
   const [myHighlights, setMyHighlights] = useState({});
   const [myNotes, setMyNotes] = useState({});
   const [editingNote, setEditingNote] = useState(null);
@@ -2109,7 +2110,12 @@ ${aiMatchText.slice(0, 3000)}`;
           players={players}
           T={T}
           fonts={fonts}
-          assignments={assignments}
+          assignments={{
+  ...assignments,
+  ...Object.fromEntries(
+    (unsoldPool||[]).filter(pid => !assignments[pid]).map(pid => [pid, "__pool__"])
+  )
+}}
           existingStats={Object.fromEntries(Object.entries(points).filter(([pid,m])=>m[smartStatsMatch.id]).map(([pid,m])=>[pid,m[smartStatsMatch.id].stats]))}
           onSave={(statsList)=>{
             const newPts={...points};
@@ -2330,9 +2336,10 @@ ${aiMatchText.slice(0, 3000)}`;
                     <div style={{fontFamily:fonts.display,fontWeight:700,fontSize:13,color:T.text}}>{p.name}</div>
                     <div style={{fontFamily:fonts.body,fontSize:10,color:T.muted}}>{p.iplTeam} · {p.role}</div>
                   </div>
-                  {p.tier && <span style={{background:p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":p.tier==="bronze"?"#CD7F3222":"#4A5E7833",border:`1px solid ${p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":p.tier==="bronze"?"#CD7F3255":"#4A5E7866"}`,color:p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":p.tier==="bronze"?"#CD7F32":"#B0BEC5",fontFamily:fonts.display,fontWeight:800,fontSize:10,letterSpacing:1.5,padding:"2px 8px",clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)"}}>
-  {p.tier.toUpperCase()}
-</span>}
+                  <div style={{display:"flex",alignItems:"center",gap:6}}>
+  {(()=>{const t=Object.values(points[p.id]||{}).reduce((s,d)=>s+(d.base||0),0);return t>0?<div style={{background:"#FF6B0022",border:"1px solid #FF6B0088",clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)",padding:"2px 8px",display:"flex",alignItems:"center",gap:3}}><span style={{fontFamily:fonts.display,fontWeight:900,fontSize:12,color:"#FF8C00"}}>{t}</span><span style={{fontFamily:fonts.display,fontSize:8,color:"#FF6B0088"}}>PTS</span></div>:null;})()}
+  {p.tier&&<span style={{background:p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":p.tier==="bronze"?"#CD7F3222":"#4A5E7833",border:`1px solid ${p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":p.tier==="bronze"?"#CD7F3255":"#4A5E7866"}`,color:p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":p.tier==="bronze"?"#CD7F32":"#B0BEC5",fontFamily:fonts.display,fontWeight:800,fontSize:10,letterSpacing:1.5,padding:"2px 8px",clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)"}}>{p.tier.toUpperCase()}</span>}
+</div>
                 </div>
               )) : <div style={{color:T.muted,fontSize:12,fontFamily:fonts.body,padding:20,textAlign:"center"}}>Pick a team to see their squad</div>}
             </div>
@@ -2350,9 +2357,11 @@ ${aiMatchText.slice(0, 3000)}`;
                     <div style={{fontFamily:fonts.display,fontWeight:700,fontSize:13,color:T.text}}>{p.name}</div>
                     <div style={{fontFamily:fonts.body,fontSize:10,color:T.muted}}>{p.iplTeam} · {p.role}</div>
                   </div>
-                  {p.tier && <span style={{background:p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":p.tier==="bronze"?"#CD7F3222":"#4A5E7833",border:`1px solid ${p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":p.tier==="bronze"?"#CD7F3255":"#4A5E7866"}`,color:p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":p.tier==="bronze"?"#CD7F32":"#B0BEC5",fontFamily:fonts.display,fontWeight:800,fontSize:10,letterSpacing:1.5,padding:"2px 8px",clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)"}}>
-  {p.tier.toUpperCase()}
-</span>}
+                  <div style={{display:"flex",alignItems:"center",gap:6,flexShrink:0}}>
+                    {(()=>{const totalPts=Object.values(points[p.id]||{}).reduce((s,d)=>s+(d.base||0),0);if(!totalPts)return null;return(<div style={{background:"#FF6B0022",border:"1px solid #FF6B0088",clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)",padding:"2px 8px",display:"flex",alignItems:"center",gap:4}}><span style={{fontFamily:fonts.display,fontWeight:900,fontSize:12,color:"#FF8C00"}}>{totalPts}</span><span style={{fontFamily:fonts.display,fontWeight:700,fontSize:8,color:"#FF6B0088",letterSpacing:1}}>PTS</span></div>);})()}
+                    {p.tier && <span style={{background:p.tier==="gold"?"#F5A62322":p.tier==="silver"?"#94A3B822":p.tier==="bronze"?"#CD7F3222":"#4A5E7833",border:`1px solid ${p.tier==="gold"?"#F5A62366":p.tier==="silver"?"#94A3B855":p.tier==="bronze"?"#CD7F3255":"#4A5E7866"}`,color:p.tier==="gold"?"#F5A623":p.tier==="silver"?"#94A3B8":p.tier==="bronze"?"#CD7F32":"#B0BEC5",fontFamily:fonts.display,fontWeight:800,fontSize:10,letterSpacing:1.5,padding:"2px 8px",clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)"}}>{p.tier.toUpperCase()}</span>}
+                  </div>
+  
                 </div>
               ))}
             </div>
@@ -2411,6 +2420,13 @@ ${aiMatchText.slice(0, 3000)}`;
           🏊 CURRENT UNSOLD POOL
         </div>
       </div>
+      <select value={unsoldTierFilter} onChange={e=>setUnsoldTierFilter(e.target.value)} style={{background:T.card,border:`2px solid #6B46C1`,borderRadius:0,padding:"8px 12px",color:"#9F7AEA",fontFamily:fonts.display,fontWeight:700,fontSize:12,letterSpacing:1,cursor:"pointer",marginLeft:10}}>
+  <option value="All">All Tiers</option>
+  <option value="platinum">Platinum</option>
+  <option value="gold">Gold</option>
+  <option value="silver">Silver</option>
+  <option value="bronze">Bronze</option>
+</select>
       <input value={unsoldSearch} onChange={e=>setUnsoldSearch(e.target.value)} placeholder="Search player..." style={{background:T.card,border:`2px solid #6B46C1`,borderRadius:0,padding:"8px 14px",color:T.text,fontSize:12,fontFamily:fonts.body,outline:"none",width:180,marginLeft:10}} />
     </div>
 
@@ -2431,14 +2447,19 @@ ${aiMatchText.slice(0, 3000)}`;
           const tierColors = {platinum:"#B0BEC5",gold:"#F5A623",silver:"#94A3B8",bronze:"#CD7F32","":"#9F7AEA"};
           const tiers = ["platinum","gold","silver","bronze",""];
           const allPlayers = unsoldPool.map(pid => players.find(x=>x.id===pid)).filter(Boolean);
-          const filtered = allPlayers.filter(p => !unsoldSearch || p.name.toLowerCase().includes(unsoldSearch.toLowerCase()) || p.iplTeam?.toLowerCase().includes(unsoldSearch.toLowerCase()));
-          const sorted = [...filtered].sort((a,b) => a.name.localeCompare(b.name));
+          const filtered = allPlayers.filter(p => {
+  if(unsoldTierFilter !== "All" && (p.tier||"") !== unsoldTierFilter) return false;
+  if(unsoldSearch && !p.name.toLowerCase().includes(unsoldSearch.toLowerCase()) && !p.iplTeam?.toLowerCase().includes(unsoldSearch.toLowerCase())) return false;
+  return true;
+});
+          const getPoolPts = (p) => Object.values(points[p.id]||{}).reduce((s,d)=>s+(d.base||0),0);
+const sorted = [...filtered].sort((a,b) => getPoolPts(b) - getPoolPts(a) || a.name.localeCompare(b.name));
           return tiers.map(tier => {
             const tierPlayers = sorted.filter(p => (p.tier||"") === tier);
             if(tierPlayers.length === 0) return null;
             return (
               <div key={tier}>
-                <div style={{fontSize:10,fontFamily:fonts.display,fontWeight:800,letterSpacing:2,color:tierColors[tier],background:tierColors[tier]+"11",padding:"4px 10px",marginBottom:6,marginTop:4,clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)",borderLeft:`3px solid ${tierColors[tier]}`}}>{(tier||"UNRANKED").toUpperCase()} ({tierPlayers.length})</div>
+                <div style={{fontSize:16,fontFamily:fonts.display,fontWeight:800,letterSpacing:2,color:tierColors[tier],background:tierColors[tier]+"11",padding:"8px 14px",marginBottom:6,marginTop:4,clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)",borderLeft:`3px solid ${tierColors[tier]}`}}>{(tier||"UNRANKED").toUpperCase()} ({tierPlayers.length})</div>
                 {tierPlayers.map(p => {
                   const pid = p.id;
                   const releasedByTeam = teams.find(t=>(transfers?.releases?.[t.id]||[]).includes(pid));
@@ -2480,6 +2501,24 @@ ${aiMatchText.slice(0, 3000)}`;
                         <div style={{fontSize:11,color:T.muted,fontFamily:fonts.body,marginBottom:4}}>
                           {p.iplTeam} • {p.role}
                         </div>
+                        {(() => {
+                          const totalPts = Object.values(points[pid]||{}).reduce((s,d)=>s+(d.base||0),0);
+                          const matchesPlayed = Object.keys(points[pid]||{}).length;
+                          if(totalPts === 0 && matchesPlayed === 0) return null;
+                          return (
+                            <div style={{display:"inline-flex",alignItems:"center",gap:6,marginBottom:6,marginTop:2}}>
+                              <div style={{background:"linear-gradient(135deg,#FF6B0022,#FF8C0022)",border:"2px solid #FF6B00",clipPath:"polygon(5px 0%,100% 0%,calc(100% - 5px) 100%,0% 100%)",padding:"3px 10px",display:"flex",alignItems:"center",gap:5}}>
+                                <span style={{fontFamily:fonts.display,fontWeight:900,fontSize:14,color:"#FF8C00",letterSpacing:1}}>{totalPts}</span>
+                                <span style={{fontFamily:fonts.display,fontWeight:700,fontSize:9,color:"#FF6B0099",letterSpacing:1.5,textTransform:"uppercase"}}>PTS</span>
+                              </div>
+                              {matchesPlayed > 0 && (
+                                <span style={{fontFamily:fonts.body,fontSize:10,color:T.muted}}>
+                                  {matchesPlayed} match{matchesPlayed>1?"es":""}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
                         {myNotes[pid]&&editingNote!==pid&&(
                           <div style={{fontSize:11,color:"#4299E1",marginTop:6,fontStyle:"italic",background:"#4299E122",border:`1px solid #4299E144`,borderRadius:0,padding:"4px 10px",display:"inline-block"}}>
                             📝 "{myNotes[pid]}"
