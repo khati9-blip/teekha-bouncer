@@ -255,7 +255,7 @@ if (catchLong && !catchShort) {
 }
 
 // "c & b" or "Caught & Bowled" or "Caught and Bowled"
-const candB = t.match(/\b(?:c\s*&\s*b|Caught\s*(?:&|and)\s*Bowled)\s+([A-Za-z][A-Za-z\s\-]{2,30})/i);
+const candB = t.match(/\b(?:c\s*&\s*b|c\s+and\s+b|Caught\s*(?:&|and)\s*Bowled)\s+([A-Za-z][A-Za-z\s\-]{2,30})/i);
 if (candB) {
   const fp = findP(candB[1].trim());
   if (fp) { initF(fp.id); fieldingCounts[fp.id].catches++; }
