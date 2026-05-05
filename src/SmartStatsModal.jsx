@@ -22,7 +22,10 @@ export default function SmartStatsModal({ match, players, assignments, existingS
     try {
       // CricketData: /cricket-match-scoreboard?matchid=ID (correct endpoint)
       const res = await fetch("/api/cricketdata?path=cricket-match-scoreboard&matchid=" + match.cricbuzzId);
-      const data = await res.json();
+      const rawText = await res.text();
+if (!rawText || rawText.trim() === "") throw new Error("Server returned empty response");
+let data;
+try { data = JSON.parse(rawText); } catch { throw new Error("Server response not JSON: " + rawText.slice(0, 200)); }
       if (data?.message?.includes("not exist") || data?.error) {
         setFetchStatus("❌ CricketData: " + (data.message || data.error || "scorecard not found"));
         setFetching(false); return;
@@ -102,168 +105,194 @@ export default function SmartStatsModal({ match, players, assignments, existingS
   const [parsing, setParsing] = React.useState(false);
 
   const parseScorecard = async () => {
-    if (!pasteText.trim()) return;
-    setParsing(true);
-    setFetchStatus("AI parsing scorecard…");
-    try {
-      const playerList = matchPlayers.map(p => p.name + " (" + (p.iplTeam||"") + ")").join(", ");
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-6",
-          max_tokens: 4000,
-          system: "You are a cricket scorecard parser. Extract player stats from the scorecard text and return ONLY a valid JSON array. No markdown, no explanation.",
-          messages: [{ role: "user", content: `Parse this cricket scorecard and extract stats for every player mentioned.
+  if (!pasteText.trim()) return;
+  setParsing(true);
+  setFetchStatus("Parsing scorecard…");
+  try {
+    const playerList = matchPlayers.map(p => p.name + " (" + (p.iplTeam||"") + ")").join(", ");
 
-IMPORTANT RULES:
-1. CATCHES: Look for "c PlayerName b ..." in batting section — the fielder after "c" took a catch. Also look for "Caught" entries. Count all catches per fielder.
-2. RUN OUTS: Look for "run out (PlayerName)" or "run out (PlayerName/PlayerName)" — the fielder(s) in brackets get a run-out credit. Count all run-outs per fielder.
-3. STUMPINGS: Look for "st PlayerName b ..." — the keeper after "st" gets a stumping.
-4. WICKETS: Count wickets from bowling figures.
-5. ECONOMY: Calculate from runs/overs if given.
-6. MOM: Look for "Player of the Match" or "Man of the Match".
-7. DISMISSED: true if the batsman got out (not "not out").
-8. Include ALL players who appear anywhere in the scorecard.
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 4000,
+        system: "You are a cricket scorecard parser. Return ONLY valid JSON. No markdown, no explanation.",
+        messages: [{ role: "user", content: `Parse this cricket scorecard. 
 
-Players to find: ${playerList}
+The scorecard is likely copied from Cricbuzz. Batting rows follow this format:
+PlayerName [dismissal text] runs balls 4s 6s SR
+Example: "Virat Kohli  c Maxwell b Bumrah  82  54  8  3  151.85"
+
+Dismissal formats:
+- "c FielderName b BowlerName" → batsman caught by FielderName
+- "c & b BowlerName" → batsman caught AND bowled by BowlerName (bowler gets both wicket and catch)  
+- "st KeeperName b BowlerName" → stumped by KeeperName
+- "run out (FielderName)" or "run out (F1/F2)" → run out by FielderName
+- "b BowlerName" → bowled
+- "lbw b BowlerName" → lbw
+- "not out" → not dismissed
+
+Bowling rows: PlayerName overs maidens runs wickets economy
+
+RULES:
+1. For CATCHES: extract the fielder name from "c FielderName b ..." dismissals. Count ALL catches per fielder across both innings.
+2. For STUMPINGS: extract keeper from "st KeeperName b ..." 
+3. For RUN OUTS: extract fielder(s) from "run out (Name)" brackets
+4. For "c & b": the bowler gets 1 wicket (already in bowling) AND 1 catch
+5. WICKETS come from bowling figures only
+6. MOM: look for "Player of the Match" or "Man of the Match"
+7. Only include players from this list: ${playerList}
+8. Do NOT invent players. Only use names that closely match the provided list.
 
 Scorecard:
 ${pasteText}
 
-Return ONLY a JSON array: [{"name":"Player Name","runs":0,"balls":0,"fours":0,"sixes":0,"dismissed":false,"wickets":0,"overs":0,"economy":0,"maidens":0,"catches":0,"stumpings":0,"runouts":0,"longestSix":false,"mom":false}]
-Only include players who appear in the scorecard. Match names as closely as possible.` }],
-        }),
-      });
-      const data = await res.json();
-      const text = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("");
-      const clean = text.replace(/^```json\s*/m,"").replace(/^```\s*/m,"").replace(/```\s*$/m,"").trim();
-      let parsed = [];
-      try { parsed = JSON.parse(clean); } catch { throw new Error("Could not parse AI response"); }
-      
-      // Match parsed players to our matchPlayers — strict matching to avoid wrong assignments
-      const nameMap = {};
-      const lastNameMap = {};
-      const firstNameMap = {};
-      matchPlayers.forEach(p => {
-        const full = p.name.toLowerCase();
-        nameMap[full] = p;
-        const parts = full.split(" ");
-        const last = parts[parts.length - 1];
-        const first = parts[0];
-        // Last name map — only if unique across all players
-        if (last.length >= 4) {
-          if (!lastNameMap[last]) lastNameMap[last] = p;
-          else lastNameMap[last] = null; // conflict — ambiguous, don't use
-        }
-        // First name map — only if unique
-        if (first.length >= 4) {
-          if (!firstNameMap[first]) firstNameMap[first] = p;
-          else firstNameMap[first] = null;
-        }
-        // first+last for players with middle names
-        if (parts.length > 2) nameMap[parts[0] + " " + last] = p;
-      });
-      const findP = (name) => {
-        const n = (name||"").toLowerCase().trim();
-        // 1. Exact full name match
-        if (nameMap[n]) return nameMap[n];
-        // 2. Unambiguous last name match
-        const parts = n.split(" ");
-        const last = parts[parts.length - 1];
-        const first = parts[0];
-        if (last.length >= 4 && lastNameMap[last]) return lastNameMap[last];
-        // 3. Unambiguous first name match
-        if (first.length >= 4 && firstNameMap[first]) return firstNameMap[first];
-        return null;
-      };
+Return ONLY a JSON array:
+[{"name":"exact name from player list","runs":0,"balls":0,"fours":0,"sixes":0,"dismissed":false,"wickets":0,"overs":0,"economy":0,"maidens":0,"catches":0,"stumpings":0,"runouts":0,"longestSix":false,"mom":false,"played":true}]
 
-      const newStats = {...stats};
-      let matched = 0;
-      for (const entry of parsed) {
-        const p = findP(entry.name);
-        if (!p) continue;
-        // Validate: player's FIRST name must appear in the raw scorecard text
-        const firstName = p.name.toLowerCase().split(" ")[0];
-        if (firstName.length >= 4 && !pasteText.toLowerCase().includes(firstName)) continue;
-        if (firstName.length < 4) {
-          // For short first names, require full name
-          if (!pasteText.toLowerCase().includes(p.name.toLowerCase().split(" ").slice(0,2).join(" "))) continue;
-        }
-        matched++;
-        newStats[p.id] = {
-          ...newStats[p.id],
-          runs: +entry.runs || 0,
-          balls: +entry.balls || 0,
-          fours: +entry.fours || 0,
-          sixes: +entry.sixes || 0,
-          dismissed: !!entry.dismissed,
-          wickets: +entry.wickets || 0,
-          overs: +entry.overs || 0,
-          economy: +entry.economy || 0,
-          maidens: +entry.maidens || 0,
-          catches: parseInt(entry.catches) || 0,
-          stumpings: parseInt(entry.stumpings) || 0,
-          runouts: parseInt(entry.runouts) || 0,
-          longestSix: !!entry.longestSix,
-          mom: !!entry.mom,
-          played: true,
-        };
+Only include players who actually appear in the scorecard.` }],
+      }),
+    });
+
+    const rawText = await res.text();
+if (!rawText || rawText.trim() === "") throw new Error("Server returned empty response");
+let data;
+try { data = JSON.parse(rawText); } catch { throw new Error("Server response not JSON: " + rawText.slice(0, 200)); }
+    const text = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("");
+    const clean = text.replace(/^```json\s*/m,"").replace(/^```\s*/m,"").replace(/```\s*$/m,"").trim();
+    let parsed = [];
+    try { parsed = JSON.parse(clean); } catch { throw new Error("Could not parse AI response"); }
+
+    // Build name lookup
+    const nameMap = {};
+    const lastNameMap = {};
+    matchPlayers.forEach(p => {
+      const full = p.name.toLowerCase();
+      nameMap[full] = p;
+      const parts = full.split(" ");
+      const last = parts[parts.length - 1];
+      // first+last shorthand (e.g. "virat kohli" from "virat sharma kohli")
+      if (parts.length > 2) nameMap[parts[0] + " " + last] = p;
+      // unambiguous last name
+      if (last.length >= 4) {
+        if (!lastNameMap[last]) lastNameMap[last] = p;
+        else lastNameMap[last] = null;
+      }
+    });
+
+    const findP = (name) => {
+      const n = (name||"").toLowerCase().trim();
+      if (nameMap[n]) return nameMap[n];
+      const parts = n.split(" ");
+      const last = parts[parts.length - 1];
+      if (last.length >= 4 && lastNameMap[last]) return lastNameMap[last];
+      // partial first+last match
+      for (const [key, pl] of Object.entries(nameMap)) {
+        const kp = key.split(" ");
+        if (kp[0] === parts[0] && kp[kp.length-1] === last) return pl;
+      }
+      return null;
+    };
+
+    const newStats = {...stats};
+    let matched = 0;
+
+    for (const entry of parsed) {
+      const p = findP(entry.name);
+      if (!p) continue;
+      // Verify player name actually appears somewhere in the raw text
+      const lastName = p.name.toLowerCase().split(" ").pop();
+      if (lastName.length >= 4 && !pasteText.toLowerCase().includes(lastName)) continue;
+      matched++;
+      newStats[p.id] = {
+        ...newStats[p.id],
+        runs: +entry.runs || 0,
+        balls: +entry.balls || 0,
+        fours: +entry.fours || 0,
+        sixes: +entry.sixes || 0,
+        dismissed: !!entry.dismissed,
+        wickets: +entry.wickets || 0,
+        overs: +entry.overs || 0,
+        economy: +entry.economy || 0,
+        maidens: +entry.maidens || 0,
+        catches: parseInt(entry.catches) || 0,
+        stumpings: parseInt(entry.stumpings) || 0,
+        runouts: parseInt(entry.runouts) || 0,
+        longestSix: !!entry.longestSix,
+        mom: !!entry.mom,
+        played: true,
+      };
+    }
+
+    // ── Deterministic fielding pass — scan raw text for dismissal patterns ──
+    // This overrides AI fielding since regex on raw text is more reliable
+    const fieldingCounts = {}; // pid -> {catches, stumpings, runouts}
+    const initF = (pid) => { if (!fieldingCounts[pid]) fieldingCounts[pid] = {catches:0,stumpings:0,runouts:0}; };
+
+    for (const line of pasteText.split("\n")) {
+      const t = line.trim();
+
+      // Look for dismissal text WITHIN a batting row:
+      // e.g. "Virat Kohli  c Maxwell b Bumrah  82  54  8  3"
+      //       ↑ batsman      ↑ dismissal text
+      const catchInLine = t.match(/\bc\s+([A-Za-z][A-Za-z\s\-]{2,30}?)\s+b\s+[A-Za-z]/);
+      if (catchInLine) {
+        const fp = findP(catchInLine[1].trim());
+        if (fp) { initF(fp.id); fieldingCounts[fp.id].catches++; }
       }
 
-      // Reset fielding stats before regex scan — AI counts are unreliable, regex is authoritative
+      // "c & b BowlerName" — bowler gets a catch too
+      const candB = t.match(/\bc\s*&\s*b\s+([A-Za-z][A-Za-z\s\-]{2,30})/);
+      if (candB) {
+        const fp = findP(candB[1].trim());
+        if (fp) { initF(fp.id); fieldingCounts[fp.id].catches++; }
+      }
+
+      // Stumpings
+      const stumpInLine = t.match(/\bst\s+([A-Za-z][A-Za-z\s\-]{2,30}?)\s+b\s+[A-Za-z]/);
+      if (stumpInLine) {
+        const kp = findP(stumpInLine[1].trim());
+        if (kp) { initF(kp.id); fieldingCounts[kp.id].stumpings++; }
+      }
+
+      // Run outs
+      const roInLine = t.match(/run\s+out\s+\(([^)]+)\)/i);
+      if (roInLine) {
+        for (const name of roInLine[1].split("/")) {
+          const rp = findP(name.trim());
+          if (rp) { initF(rp.id); fieldingCounts[rp.id].runouts++; }
+        }
+      }
+    }
+
+    // Apply deterministic fielding counts (only if we found anything)
+    const totalFielding = Object.values(fieldingCounts).reduce((s,f)=>s+f.catches+f.stumpings+f.runouts,0);
+    if (totalFielding > 0) {
+      // Reset all fielding first
       for (const pid of Object.keys(newStats)) {
         newStats[pid].catches = 0;
         newStats[pid].stumpings = 0;
         newStats[pid].runouts = 0;
       }
-
-      // Regex scan of raw scorecard for catches/runouts/stumpings — more reliable than AI
-      const lines = pasteText.split("\n");
-      for (const line of lines) {
-        const trimmed = line.trim();
-        // Catches: lines starting with "c PlayerName b ..."
-        const catchMatch = trimmed.match(/^c\s+([A-Za-z][A-Za-z\s\-]+?)\s+b\s/i);
-        if (catchMatch) {
-          const fielderName = catchMatch[1].trim();
-          const fp = findP(fielderName);
-          if (fp) {
-            if (!newStats[fp.id]) newStats[fp.id] = { runs:0, balls:0, fours:0, sixes:0, dismissed:false, wickets:0, overs:0, economy:0, maidens:0, catches:0, stumpings:0, runouts:0, longestSix:false, mom:false, played:true };
-            newStats[fp.id].catches = (parseInt(newStats[fp.id].catches) || 0) + 1;
-          }
-        }
-        // Stumpings: "st PlayerName b ..."
-        const stumpMatch = trimmed.match(/^st\s+([A-Za-z][A-Za-z\s\-]+?)\s+b\s/i);
-        if (stumpMatch) {
-          const keeperName = stumpMatch[1].trim();
-          const kp = findP(keeperName);
-          if (kp) {
-            if (!newStats[kp.id]) newStats[kp.id] = { runs:0, balls:0, fours:0, sixes:0, dismissed:false, wickets:0, overs:0, economy:0, maidens:0, catches:0, stumpings:0, runouts:0, longestSix:false, mom:false, played:true };
-            newStats[kp.id].stumpings = (parseInt(newStats[kp.id].stumpings) || 0) + 1;
-          }
-        }
-        // Run outs: "run out (PlayerName)" or "run out (P1/P2)"
-        const roMatch = trimmed.match(/run\s+out\s+\(([^)]+)\)/i);
-        if (roMatch) {
-          for (const name of roMatch[1].split("/")) {
-            const rp = findP(name.trim());
-            if (rp) {
-              if (!newStats[rp.id]) newStats[rp.id] = { runs:0, balls:0, fours:0, sixes:0, dismissed:false, wickets:0, overs:0, economy:0, maidens:0, catches:0, stumpings:0, runouts:0, longestSix:false, mom:false, played:true };
-              newStats[rp.id].runouts = (parseInt(newStats[rp.id].runouts) || 0) + 1;
-            }
-          }
-        }
+      for (const [pid, f] of Object.entries(fieldingCounts)) {
+        if (!newStats[pid]) newStats[pid] = {...emptyStats({id:pid}), played:true};
+        newStats[pid].catches = f.catches;
+        newStats[pid].stumpings = f.stumpings;
+        newStats[pid].runouts = f.runouts;
       }
-
-      setStats(newStats);
-      setFetchStatus("✅ Parsed " + matched + " players from scorecard");
-      setShowPasteModal(false);
-      setPasteText("");
-    } catch(e) {
-      setFetchStatus("❌ Parse failed: " + e.message);
     }
-    setParsing(false);
-  };
+    // If regex found nothing (unusual format), keep AI fielding values as fallback
+
+    setStats(newStats);
+    setFetchStatus(`✅ Parsed ${matched} players. Fielding via ${totalFielding > 0 ? "regex (reliable)" : "AI (verify manually)"}`);
+    setShowPasteModal(false);
+    setPasteText("");
+  } catch(e) {
+    setFetchStatus("❌ Parse failed: " + e.message);
+  }
+  setParsing(false);
+};
 
   const upd = (pid, field, val) => setStats(s => ({...s, [pid]: {...s[pid], [field]: val}}));
 
@@ -285,7 +314,10 @@ Only include players who appear in the scorecard. Match names as closely as poss
     try {
       // Use hscard endpoint (available on free plan)
       const res = await fetch(`/api/cricbuzz?path=${encodeURIComponent("mcenter/v1/" + match.cricbuzzId + "/hscard")}`);
-      const data = await res.json();
+      const rawText = await res.text();
+if (!rawText || rawText.trim() === "") throw new Error("Server returned empty response");
+let data;
+try { data = JSON.parse(rawText); } catch { throw new Error("Server response not JSON: " + rawText.slice(0, 200)); }
       if (data.message) throw new Error(data.message);
 
       // Build name lookup from our players
