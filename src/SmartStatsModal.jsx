@@ -236,25 +236,35 @@ try { data = JSON.parse(rawText); } catch { throw new Error("Server response not
       // Look for dismissal text WITHIN a batting row:
       // e.g. "Virat Kohli  c Maxwell b Bumrah  82  54  8  3"
       //       ↑ batsman      ↑ dismissal text
-      const catchInLine = t.match(/\bc\s+([A-Za-z][A-Za-z\s\-]{2,30}?)\s+b\s+[A-Za-z]/);
-      if (catchInLine) {
-        const fp = findP(catchInLine[1].trim());
-        if (fp) { initF(fp.id); fieldingCounts[fp.id].catches++; }
-      }
+      // Short form: "c Bishnoi b Kuldeep"
+const catchShort = t.match(/\bc\s+([A-Za-z][A-Za-z\s\-]{2,30}?)\s+b\s+[A-Za-z]/);
+if (catchShort) {
+  const fp = findP(catchShort[1].trim());
+  if (fp) { initF(fp.id); fieldingCounts[fp.id].catches++; }
+}
 
-      // "c & b BowlerName" — bowler gets a catch too
-      const candB = t.match(/\bc\s*&\s*b\s+([A-Za-z][A-Za-z\s\-]{2,30})/);
-      if (candB) {
-        const fp = findP(candB[1].trim());
-        if (fp) { initF(fp.id); fieldingCounts[fp.id].catches++; }
-      }
+// Long form: "Caught Bishnoi Bowled Kuldeep"
+const catchLong = t.match(/\bCaught\s+([A-Za-z][A-Za-z\s\-]{2,30}?)\s+Bowled\s+[A-Za-z]/i);
+if (catchLong && !catchShort) {
+  const fp = findP(catchLong[1].trim());
+  if (fp) { initF(fp.id); fieldingCounts[fp.id].catches++; }
+}
 
-      // Stumpings
-      const stumpInLine = t.match(/\bst\s+([A-Za-z][A-Za-z\s\-]{2,30}?)\s+b\s+[A-Za-z]/);
-      if (stumpInLine) {
-        const kp = findP(stumpInLine[1].trim());
-        if (kp) { initF(kp.id); fieldingCounts[kp.id].stumpings++; }
-      }
+// "c & b" or "Caught & Bowled" or "Caught and Bowled"
+const candB = t.match(/\b(?:c\s*&\s*b|Caught\s*(?:&|and)\s*Bowled)\s+([A-Za-z][A-Za-z\s\-]{2,30})/i);
+if (candB) {
+  const fp = findP(candB[1].trim());
+  if (fp) { initF(fp.id); fieldingCounts[fp.id].catches++; }
+}
+
+// Stumpings — short: "st Dhoni b X" or long: "Stumped Dhoni Bowled X"
+const stumpShort = t.match(/\bst\s+([A-Za-z][A-Za-z\s\-]{2,30}?)\s+b\s+[A-Za-z]/);
+const stumpLong  = t.match(/\bStumped\s+([A-Za-z][A-Za-z\s\-]{2,30}?)\s+Bowled\s+[A-Za-z]/i);
+const stumpMatch = stumpShort || stumpLong;
+if (stumpMatch) {
+  const kp = findP(stumpMatch[1].trim());
+  if (kp) { initF(kp.id); fieldingCounts[kp.id].stumpings++; }
+}
 
       // Run outs
       const roInLine = t.match(/run\s+out\s+\(([^)]+)\)/i);
