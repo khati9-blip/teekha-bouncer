@@ -2110,12 +2110,36 @@ ${aiMatchText.slice(0, 3000)}`;
           players={players}
           T={T}
           fonts={fonts}
-          assignments={{
-  ...assignments,
-  ...Object.fromEntries(
-    (unsoldPool||[]).filter(pid => !assignments[pid]).map(pid => [pid, "__pool__"])
-  )
-}}
+          assignments={(() => {
+  const matchDate = smartStatsMatch.date;
+  const historicalAssignments = {};
+  
+  players.forEach(p => {
+    const periods = ownershipLog[p.id] || [];
+    
+    if (periods.length === 0) {
+      if (assignments[p.id]) {
+        historicalAssignments[p.id] = assignments[p.id];
+      } else if (unsoldPool.includes(p.id)) {
+        historicalAssignments[p.id] = "__pool__";
+      }
+    } else {
+      const owned = periods.find(o => {
+        const fromDate = (o.from || "").split("T")[0];
+        const toDate = o.to ? o.to.split("T")[0] : "2099-01-01";
+        return matchDate >= fromDate && matchDate <= toDate;
+      });
+      
+      if (owned) {
+        historicalAssignments[p.id] = owned.teamId;
+      } else if (unsoldPool.includes(p.id)) {
+        historicalAssignments[p.id] = "__pool__";
+      }
+    }
+  });
+  
+  return historicalAssignments;
+})()}
           existingStats={Object.fromEntries(Object.entries(points).filter(([pid,m])=>m[smartStatsMatch.id]).map(([pid,m])=>[pid,m[smartStatsMatch.id].stats]))}
           onSave={(statsList)=>{
             const newPts={...points};
