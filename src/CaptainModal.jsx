@@ -145,6 +145,8 @@ export default function CaptainModal({ match, teams, players, assignments, capta
           const cap = local[team.id] || {};
           // Only show players whose iplTeam is one of the two match teams AND currently assigned to this team
           const matchTeams = [match.team1, match.team2].map(t => t.toLowerCase().trim());
+          console.log("matchTeams:", JSON.stringify(matchTeams));
+console.log("Ruturaj:", JSON.stringify(players.find(p => p.name.toLowerCase().includes("ruturaj"))));
           const teamPlayers = players.filter(p =>
             assignments[p.id] === team.id &&
             matchTeams.some(mt => (p.iplTeam || "").toLowerCase().trim().includes(mt) || mt.includes((p.iplTeam || "").toLowerCase().trim()))
