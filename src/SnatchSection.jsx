@@ -216,9 +216,16 @@ export default function SnatchSection({
     const newAssignments = { ...assignments, [pid]: actingTeamId };
     const now = new Date().toISOString().split("T")[0];
     const newLog = { ...ownershipLog };
-    if (!newLog[pid]) newLog[pid] = [];
-    newLog[pid] = newLog[pid].map(o => o.teamId === fromTeamId && !o.to ? { ...o, to: now } : o);
-    newLog[pid] = [...newLog[pid], { teamId: actingTeamId, from: now, to: null }];
+if (!newLog[pid]) newLog[pid] = [];
+// If no existing period for fromTeam, create one from season start to now
+const hasFromTeamPeriod = newLog[pid].some(o => o.teamId === fromTeamId);
+if (!hasFromTeamPeriod) {
+  newLog[pid].push({ teamId: fromTeamId, from: "2025-04-01", to: now });
+}
+// Close any open period for fromTeam
+newLog[pid] = newLog[pid].map(o => o.teamId === fromTeamId && !o.to ? { ...o, to: now } : o);
+// Add new period for snatching team
+newLog[pid] = [...newLog[pid], { teamId: actingTeamId, from: now, to: null }];
     onUpdateSnatch({ ...snatch, active });
     onUpdateAssignments(newAssignments);
     onUpdateOwnershipLog(newLog);
