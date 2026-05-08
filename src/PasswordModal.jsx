@@ -8,9 +8,9 @@ export default function PasswordModal({ onSuccess, onClose, storedHash, T, fonts
   const [sending, setSending] = useState(false);
   const isFirstTime = !storedHash;
 
-  const inp = {width:"100%",background:T.bg,border:`1px solid ${err?"#FF3D5A":"#1E2D45"}`,borderRadius:8,padding:"12px 16px",color:T.text,fontSize:16,fontFamily:fonts.body,outline:"none",marginBottom:err?8:20,boxSizing:"border-box"};
-  const cancelBtn = {flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:8,padding:11,color:T.muted,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"};
-  const primaryBtn = (col="#F5A623") => ({flex:2,background:`linear-gradient(135deg,${col},${col}bb)`,border:"none",borderRadius:8,padding:11,color:T.bg,fontFamily:fonts.body,fontWeight:700,fontSize:14,cursor:"pointer"});
+  const inp = {width:"100%",background:T.bg,border:`2px solid ${err?"#FF3D5A":"#FF6B00"}`,borderRadius:0,padding:"12px 16px",color:T.text,fontSize:16,fontFamily:fonts.body,outline:"none",marginBottom:err?8:20,boxSizing:"border-box"};
+  const cancelBtn = {flex:1,background:"transparent",border:`2px solid ${T.border}`,borderRadius:0,clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)",padding:"10px 16px",color:T.muted,fontFamily:fonts.display,fontWeight:800,fontSize:13,letterSpacing:1.5,cursor:"pointer"};
+  const primaryBtn = (col="#FF6B00") => ({flex:2,background:col,border:"none",borderRadius:0,clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)",padding:"10px 16px",color:T.bg,fontFamily:fonts.display,fontWeight:800,fontSize:13,letterSpacing:1.5,cursor:"pointer",filter:`drop-shadow(3px 3px 0 ${col}88)`});
 
   const submit = async () => {
     if (!pw.trim()) { setErr("Enter a password"); return; }
@@ -62,7 +62,7 @@ export default function PasswordModal({ onSuccess, onClose, storedHash, T, fonts
 
         {mode==="login" && <>
           <div style={{fontSize:36,textAlign:"center",marginBottom:8}}>🔐</div>
-          <div style={{fontFamily:fonts.display,fontSize:22,fontWeight:700,color:T.accent,textAlign:"center",letterSpacing:2,marginBottom:4}}>
+          <div style={{fontFamily:fonts.display,fontSize:22,fontWeight:800,color:"#FF6B00",textAlign:"center",letterSpacing:2,marginBottom:4}}>
             {isFirstTime ? "SET ADMIN PASSWORD" : "ADMIN PASSWORD"}
           </div>
           <div style={{fontSize:13,color:T.muted,textAlign:"center",marginBottom:24}}>
@@ -76,8 +76,8 @@ export default function PasswordModal({ onSuccess, onClose, storedHash, T, fonts
           </div>
           {!isFirstTime && (
             <div style={{marginTop:16,textAlign:"center",display:"flex",justifyContent:"center",gap:20}}>
-              <button onClick={async()=>{const p=prompt("Enter NEW password:");if(!p)return;onSuccess(await hashPw(p),true);}} style={{background:"none",border:"none",color:T.muted,fontSize:12,cursor:"pointer",textDecoration:"underline"}}>Change password</button>
-              <button onClick={()=>{reset();setMode("forgot");}} style={{background:"none",border:"none",color:T.danger,fontSize:12,cursor:"pointer",textDecoration:"underline"}}>Forgot password?</button>
+              <button onClick={async()=>{const p=prompt("Enter NEW password:");if(!p)return;onSuccess(await hashPw(p),true);}} style={{background:"none",border:"none",color:"#FF6B00",fontSize:12,cursor:"pointer",textDecoration:"underline"}}>Change password</button>
+              <button onClick={()=>{reset();setMode("forgot");}} style={{background:"none",border:"none",color:"#FF6B00",fontSize:12,cursor:"pointer",textDecoration:"underline"}}>Forgot password?</button>
             </div>
           )}
         </>}
