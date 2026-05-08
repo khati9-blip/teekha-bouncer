@@ -34,7 +34,23 @@ import ResultsPage from './ResultsPage.jsx';
 import LeaderboardPage from './LeaderboardPage.jsx';
 let _pitchId = "p1";
 const storeGet = (key) => sbGet(_pitchId + "_" + key);
-const storeSet = (key, val) => sbSet(_pitchId + "_" + key, val);
+const storeSet = async (key, val) => { 
+  const fullKey = _pitchId + "_" + key;
+  try {
+    await fetch("https://rmcxhorijitrhqyrvvkn.supabase.co/rest/v1/league_data", {
+      method: "POST",
+      headers: {
+        "apikey": "sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm",
+        "Authorization": "Bearer sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm",
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates"
+      },
+      body: JSON.stringify({ key: fullKey, value: val, updated_at: new Date().toISOString() })
+    });
+  } catch (e) {
+    console.error("❌ POST failed:", e);
+  }
+};
 const storeDel = (key) => sbDel(_pitchId + "_" + key);
 
 async function callAI(userPrompt, system = "Return only valid JSON.") {
