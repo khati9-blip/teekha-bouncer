@@ -576,12 +576,13 @@ export default function TransferWindow({
         [teamId]: isReleased ? current.filter(x => x !== pid) : [...current, pid]
       }
     };
-    if (!isReleased) {
-      // Fetch fresh pool from Supabase before adding — prevents race condition overwrite
-      onUpdateUnsoldPool(pid, "add");
-    } else {
-      onUpdateUnsoldPool(pid, "remove");
-    }
+    
+    // Update pool by calculating from current state, not individual add/remove
+    const newPool = isReleased 
+      ? unsoldPool.filter(id => id !== pid)  // removing: filter out
+      : unsoldPool.includes(pid) ? unsoldPool : [...unsoldPool, pid];  // adding: append if not present
+    
+    onUpdateUnsoldPool(newPool);
     onUpdateTransfers(updated);
   };
 
