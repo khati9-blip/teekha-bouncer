@@ -1623,7 +1623,7 @@ ${aiMatchText.slice(0, 3000)}`;
         if(histSnatchedAway) {
           const snatchStart = histSnatchedAway.startDate.split('T')[0];
           const snatchEnd = histSnatchedAway.returnDate ? histSnatchedAway.returnDate.split('T')[0] : '2099-01-01';
-          if(m.date >= snatchStart && m.date <= snatchEnd) continue; // include same day as return only after next day
+          if(m.date >= snatchStart && m.date < snatchEnd) continue;
         }
         // Check if match falls within any ownership period for this team
         const owned = periods.length === 0
@@ -1631,7 +1631,7 @@ ${aiMatchText.slice(0, 3000)}`;
           : periods.some(o => {
               const fromDate = (o.from||"").split("T")[0];
               const toDate   = o.to ? o.to.split("T")[0] : "2099-01-01";
-              return m.date >= fromDate && m.date <= toDate;
+              return m.date >= fromDate && m.date < toDate;
             });
         if(!owned) continue;
         const cap=captains[`${mid}_${tid}`]||{};
