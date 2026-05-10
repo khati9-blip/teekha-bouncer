@@ -43,14 +43,14 @@ export default function ResultsPage({
                     return periods.some(o => {
                       const fromDate = o.from ? o.from.split('T')[0] : '0000-01-01';
                       const toDate = o.to ? o.to.split('T')[0] : '2099-12-31';
-                      return matchDateStr >= fromDate && matchDateStr <= toDate;
+                      return matchDateStr >= fromDate && matchDateStr < toDate;
                     });
                   }
                   const histSnatchedIn = (snatch.history||[]).find(h=>h.pid===p.id && h.byTeamId===team.id);
                   if (histSnatchedIn) {
                     const snatchStart = histSnatchedIn.startDate.split('T')[0];
                     const snatchEnd = histSnatchedIn.returnDate ? histSnatchedIn.returnDate.split('T')[0] : '2099-01-01';
-                    return matchDateStr >= snatchStart && matchDateStr <= snatchEnd;
+                    return matchDateStr >= snatchStart && matchDateStr < snatchEnd;
                   }
                   if (snatch.active?.pid===p.id && snatch.active?.fromTeamId===team.id) {
                     return matchDateStr < snatch.active.startDate.split('T')[0];
@@ -59,7 +59,7 @@ export default function ResultsPage({
                   if (histAway) {
                     const snatchStart = histAway.startDate.split('T')[0];
                     const snatchEnd = histAway.returnDate ? histAway.returnDate.split('T')[0] : '2099-01-01';
-                    return matchDateStr < snatchStart || matchDateStr > snatchEnd;
+                    return matchDateStr < snatchStart || matchDateStr >= snatchEnd;
                   }
                   return assignments[p.id] === team.id;
                 })
