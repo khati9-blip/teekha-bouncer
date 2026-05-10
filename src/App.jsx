@@ -2147,7 +2147,7 @@ ${aiMatchText.slice(0, 3000)}`;
       const owned = periods.find(o => {
         const fromDate = (o.from || "").split("T")[0];
         const toDate = o.to ? o.to.split("T")[0] : "2099-01-01";
-        return matchDate >= fromDate && matchDate <= toDate;
+        return matchDate >= fromDate && matchDate < toDate;
       });
       
       if (owned) {
