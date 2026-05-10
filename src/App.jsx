@@ -2147,7 +2147,21 @@ ${aiMatchText.slice(0, 3000)}`;
       const owned = periods.find(o => {
         const fromDate = (o.from || "").split("T")[0];
         const toDate = o.to ? o.to.split("T")[0] : "2099-01-01";
-        return matchDate >= fromDate && matchDate < toDate;
+        const isOwned = matchDate >= fromDate && matchDate < toDate;
+        
+        // Debug logging for Manimaran and Suryakumar on match 47
+        if ((p.id === "manimaran-siddharth-12930" || p.id === "suryakumar-yadav-7915") && smartStatsMatch.matchNum === 47) {
+          console.log(`[DEBUG] ${p.name || p.id}:`, {
+            matchDate,
+            fromDate,
+            toDate,
+            comparison: `${matchDate} >= ${fromDate} && ${matchDate} < ${toDate}`,
+            isOwned,
+            teamId: o.teamId
+          });
+        }
+        
+        return isOwned;
       });
       
       if (owned) {
