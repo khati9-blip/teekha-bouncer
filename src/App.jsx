@@ -2134,9 +2134,13 @@ ${aiMatchText.slice(0, 3000)}`;
     const periods = ownershipLog[p.id] || [];
     
     if (periods.length === 0) {
+      // No ownership log - use current assignment or pool
       if (assignments[p.id]) {
         historicalAssignments[p.id] = assignments[p.id];
       } else if (unsoldPool.includes(p.id)) {
+        historicalAssignments[p.id] = "__pool__";
+      } else {
+        // Player exists but not assigned - treat as pool for this match
         historicalAssignments[p.id] = "__pool__";
       }
     } else {
@@ -2148,7 +2152,8 @@ ${aiMatchText.slice(0, 3000)}`;
       
       if (owned) {
         historicalAssignments[p.id] = owned.teamId;
-      } else if (unsoldPool.includes(p.id)) {
+      } else {
+        // Player has ownership history but wasn't owned on this date - treat as pool
         historicalAssignments[p.id] = "__pool__";
       }
     }
