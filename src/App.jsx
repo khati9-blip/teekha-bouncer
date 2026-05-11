@@ -252,6 +252,7 @@ const [highlightPlayer, setHighlightPlayer] = useState(null);
             if(d.assignments) setAssignments(d.assignments);
             if(d.matches)     setMatches(d.matches);
             if(d.captains)    setCaptains(d.captains);
+            if(d.ownershipLog) setOwnershipLog(d.ownershipLog);
             // Note: snatch intentionally NOT loaded from cache — always fetch fresh from Supabase
             // Note: transfers intentionally NOT loaded from cache — always fetch fresh from Supabase
             if(d.tournaments && Array.isArray(d.tournaments))  { setTournaments(d.tournaments); const exp={}; d.tournaments.forEach(t=>exp[t.id]=true); setExpandedTournaments(exp); }
@@ -315,7 +316,7 @@ setPoolLoading(false);
 
         // ── Save fresh data to localStorage for next instant load ─────────
         try {
-          const toCache = { teams: t, players: p, assignments: a, matches: m, captains: c, tournaments: tv, points: pts };
+          const toCache = { teams: t, players: p, assignments: a, matches: m, captains: c, tournaments: tv, points: pts, ownershipLog: ol };
           localStorage.setItem('tb_appdata_' + _pitchId, JSON.stringify(toCache));
         } catch {}
 
@@ -3966,6 +3967,7 @@ onChange={e=>setPlayerSearch(e.target.value)}
             captains={captains}
             matches={matches}
             snatch={snatch}
+            ownershipLog={ownershipLog}
             onClose={()=>setShowMVP(false)}
           />
         )}

@@ -29,10 +29,11 @@ function getTeamPids(teamId, players, assignments, snatch) {
   return [...set];
 }
 
-// Base pts for a player attributed to a team, respecting snatch windows
-function getSnatchPts(pid, teamId, points, matches, snatch, filterMatchIds) {
+// Base pts for a player attributed to a team, respecting snatch windows AND ownershipLog (trades)
+function getPtsForTeam(pid, teamId, points, matches, snatch, ownershipLog, filterMatchIds, assignments) {
   const a = snatch?.active, h = snatch?.history || [];
   const allPts = points[pid] || {};
+  const periods = ownershipLog?.[pid] || [];
 
   const sum = (dateOk) =>
     Object.entries(allPts).reduce((s, [mid, d]) => {
@@ -41,9 +42,28 @@ function getSnatchPts(pid, teamId, points, matches, snatch, filterMatchIds) {
       return m && dateOk(m.date) ? s + (d?.base || 0) : s;
     }, 0);
 
+  // Helper: Check if team owned player on a specific date based on ownershipLog
+  const teamOwnedOnDate = (date) => {
+    // If no ownership periods, fall back to current assignments
+    if (periods.length === 0) return assignments[pid] === teamId;
+    
+    // Check if any ownership period covers this date for this team
+    const owned = periods.some(period => {
+      if (period.teamId !== teamId) return false;
+      const from = period.from?.split("T")[0] || "0000";
+      const to = period.to?.split("T")[0] || "9999";
+      return date >= from && date <= to;
+    });
+    
+    // If no period covers this date, player was NOT owned by this team
+    // (Don't fall back to current assignments for historical dates)
+    return owned;
+  };
+
+  // Snatch logic takes priority over ownership log
   if (a?.pid === pid && a?.fromTeamId === teamId) {
     const sd = a.startDate?.split("T")[0] || "9999";
-    return sum(date => date < sd);
+    return sum(date => date < sd && teamOwnedOnDate(date));
   }
   if (a?.pid === pid && a?.byTeamId === teamId) {
     const sd = a.startDate?.split("T")[0] || "0000";
@@ -53,7 +73,7 @@ function getSnatchPts(pid, teamId, points, matches, snatch, filterMatchIds) {
   if (ha) {
     const s = ha.startDate?.split("T")[0]  || "9999";
     const e = ha.returnDate?.split("T")[0] || "9999";
-    return sum(date => date < s || date > e);
+    return sum(date => (date < s || date > e) && teamOwnedOnDate(date));
   }
   const hi = h.find(x => x.pid === pid && x.byTeamId === teamId);
   if (hi) {
@@ -61,12 +81,16 @@ function getSnatchPts(pid, teamId, points, matches, snatch, filterMatchIds) {
     const e = hi.returnDate?.split("T")[0] || "9999";
     return sum(date => date >= s && date <= e);
   }
-  return sum(() => true);
+  
+  // No snatch involvement - use ownershipLog only
+  return sum(date => teamOwnedOnDate(date));
 }
 
 // Which team "owns" a player's points for a given match date?
-function getOwningTeam(pid, matchDate, assignments, snatch, teams) {
+function getOwningTeam(pid, matchDate, assignments, snatch, teams, ownershipLog) {
   const a = snatch?.active, h = snatch?.history || [];
+  
+  // Snatch takes priority
   if (a?.pid === pid) {
     const sd = a.startDate?.split("T")[0] || "9999";
     if (matchDate >= sd) return teams.find(t => t.id === a.byTeamId);
@@ -78,6 +102,24 @@ function getOwningTeam(pid, matchDate, assignments, snatch, teams) {
     const e = hh.returnDate?.split("T")[0] || "9999";
     if (matchDate >= s && matchDate <= e) return teams.find(t => t.id === hh.byTeamId);
   }
+  
+  // Check ownershipLog for trades
+  const periods = ownershipLog?.[pid] || [];
+  for (const period of periods) {
+    const from = period.from?.split("T")[0] || "0000";
+    const to = period.to?.split("T")[0] || "9999";
+    if (matchDate >= from && matchDate <= to) {
+      return teams.find(t => t.id === period.teamId);
+    }
+  }
+  
+  // If no ownership period covers this date AND ownershipLog exists,
+  // this player was unowned (unsold pool) on this date
+  if (periods.length > 0) {
+    return null; // Don't show in any team's stats
+  }
+  
+  // Fall back to current assignment only if no ownershipLog exists
   return teams.find(t => t.id === assignments[pid]);
 }
 
@@ -112,7 +154,7 @@ function medalColor(rank) {
   return T.muted;
 }
 
-export default function MVPStats({ players, teams, assignments, points, captains, matches, snatch, onClose }) {
+export default function MVPStats({ players, teams, assignments, points, captains, matches, snatch, ownershipLog, onClose }) {
   const [view, setView] = useState("weekly");
   const [weekOffset, setWeekOffset] = useState(0);
   const week = useMemo(() => getWeekBounds(weekOffset), [weekOffset]);
@@ -134,13 +176,13 @@ export default function MVPStats({ players, teams, assignments, points, captains
         const d = points[player.id]?.[match.id];
         if (!d || !d.base) continue;
         // Use the team that owns this player's points for THIS match date
-        const team = getOwningTeam(player.id, match.date, assignments, snatch, teams);
+        const team = getOwningTeam(player.id, match.date, assignments, snatch, teams, ownershipLog);
         if (!team) continue;
         rows.push({ player, team, match, pts: d.base, matchLabel: match.team1 + " vs " + match.team2, matchDate: match.date });
       }
     }
     return rows.sort((a, b) => b.pts - a.pts);
-  }, [weekMatches, players, points, teams, assignments, snatch]);
+  }, [weekMatches, players, points, teams, assignments, snatch, ownershipLog]);
 
   const allTimeRows = useMemo(() => {
     const rows = [];
@@ -148,13 +190,13 @@ export default function MVPStats({ players, teams, assignments, points, captains
       for (const pid of getTeamPids(team.id, players, assignments, snatch)) {
         const player = players.find(p => p.id === pid);
         if (!player) continue;
-        const total  = getSnatchPts(pid, team.id, points, matches, snatch, null);
+        const total  = getPtsForTeam(pid, team.id, points, matches, snatch, ownershipLog, null, assignments);
         const status = getSnatchStatus(pid, team.id, snatch);
         if (total > 0 || status) rows.push({ player, team, total, status });
       }
     }
     return rows.sort((a, b) => b.total - a.total);
-  }, [players, teams, assignments, points, matches, snatch]);
+  }, [players, teams, assignments, points, matches, snatch, ownershipLog]);
 
   const teamPerformance = useMemo(() => {
     const weekMatchIds = new Set(weekMatches.map(m => m.id));
@@ -163,13 +205,13 @@ export default function MVPStats({ players, teams, assignments, points, captains
       for (const pid of getTeamPids(team.id, players, assignments, snatch)) {
         const player = players.find(p => p.id === pid);
         if (!player) continue;
-        const playerTotal = getSnatchPts(pid, team.id, points, matches, snatch, weekMatchIds);
+        const playerTotal = getPtsForTeam(pid, team.id, points, matches, snatch, ownershipLog, weekMatchIds, assignments);
         total += playerTotal;
         if (playerTotal > best.pts) best = { name: player.name, pts: playerTotal };
       }
       return { team, total, best };
     }).sort((a, b) => b.total - a.total);
-  }, [teams, players, assignments, points, matches, snatch, weekMatches]);
+  }, [teams, players, assignments, points, matches, snatch, ownershipLog, weekMatches]);
 
   const maxTeamPts = teamPerformance[0]?.total || 1;
 
