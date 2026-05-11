@@ -6,10 +6,10 @@ function H2HStats({ teams, matches, points, assignments, players, captains, owne
   const [teamB, setTeamB] = useState("");
   const [expandedMatch, setExpandedMatch] = useState(null);
 
-  // Same ownership-aware logic as Results tab
+  // Same ownership-aware logic as leaderboard
   const getTeamMatchData = (teamId, match) => {
     const matchId = match.id;
-    const matchDateStr = match.date || "9999-12-31";
+    const matchDate = match.date || "9999-12-31";
     const cap = captains?.[matchId + "_" + teamId] || {};
 
     const playerRows = [];
@@ -17,24 +17,39 @@ function H2HStats({ teams, matches, points, assignments, players, captains, owne
       const d = points[p.id]?.[matchId];
       if (!d) return;
 
-      // Check ownership via ownershipLog
+      // Check ownership via ownershipLog (same logic as leaderboard getPtsForTeam)
       const periods = (ownershipLog?.[p.id] || []).filter(o => o.teamId === teamId);
-      if (periods.length > 0) {
-        const owned = periods.some(o => (!o.from || o.from <= matchDateStr + "Z") && (!o.to || o.to >= matchDateStr));
-        if (!owned) return;
-      } else {
-        // No ownershipLog — check snatch and fallback to current assignment
-        if (snatch?.active?.pid === p.id && snatch.active.fromTeamId === teamId) {
-          if (matchDateStr >= snatch.active.startDate.split('T')[0]) return; // post-snatch, skip
-        }
-        const histAway = (snatch?.history || []).find(h => h.pid === p.id && h.fromTeamId === teamId);
-        if (histAway) {
-          const snatchStart = histAway.startDate.split('T')[0];
-          const snatchEnd = histAway.returnDate ? histAway.returnDate.split('T')[0] : '2099-01-01';
-          if (matchDateStr >= snatchStart && matchDateStr <= snatchEnd) return; // during snatch, skip
-        }
-        if (assignments[p.id] !== teamId) return;
+      
+      // Active snatch: player currently snatched away from this team on this match date
+      if (snatch?.active?.pid === p.id && snatch.active.fromTeamId === teamId) {
+        const snatchStart = snatch.active.startDate.split('T')[0];
+        if (matchDate >= snatchStart) return; // post-snatch, skip
       }
+      
+      // Active snatch: player currently on loan TO this team on this match date
+      if (snatch?.active?.pid === p.id && snatch.active.byTeamId === teamId) {
+        const snatchStart = snatch.active.startDate.split('T')[0];
+        if (matchDate < snatchStart) return; // pre-snatch, skip
+      }
+      
+      // Historical snatch: skip matches during snatch period for original team
+      const histSnatchedAway = (snatch?.history || []).find(h => h.pid === p.id && h.fromTeamId === teamId);
+      if (histSnatchedAway) {
+        const snatchStart = histSnatchedAway.startDate.split('T')[0];
+        const snatchEnd = histSnatchedAway.returnDate ? histSnatchedAway.returnDate.split('T')[0] : '2099-01-01';
+        if (matchDate >= snatchStart && matchDate < snatchEnd) return;
+      }
+      
+      // Check if match falls within any ownership period for this team
+      const owned = periods.length === 0
+        ? (assignments[p.id] === teamId) // no log = check current assignment
+        : periods.some(o => {
+            const fromDate = (o.from || "").split("T")[0];
+            const toDate = o.to ? o.to.split("T")[0] : "2099-01-01";
+            return matchDate >= fromDate && matchDate < toDate;
+          });
+      
+      if (!owned) return;
 
       let pts = d.base || 0;
       let mult = 1;

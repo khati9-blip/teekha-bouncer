@@ -60,20 +60,6 @@ function getTeamPids(teamId, players, assignments, snatch) {
   return [...set];
 }
 
-// ── Bar component ─────────────────────────────────────────────────────────────
-
-function Bar({ val, max, color, isLast }) {
-  const pct = max > 0 ? val / max : 0;
-  const h = Math.max(4, Math.round(pct * 44));
-  const bg = val > 0 ? (isLast ? T.accent : color) : T.border;
-  return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-      <span style={{ fontFamily: fonts.display, fontSize: 9, color: isLast ? T.accent : T.muted, fontWeight: isLast ? 700 : 400 }}>{val}</span>
-      <div style={{ width: "100%", background: bg, borderRadius: "3px 3px 0 0", height: h + "px", opacity: isLast ? 1 : 0.65 }} />
-    </div>
-  );
-}
-
 // ── Snatch badge ──────────────────────────────────────────────────────────────
 
 function SnatchBadge({ status }) {
@@ -105,7 +91,7 @@ function FormChart({ players, assignments, points, teams, matches, snatch }) {
         const p = players.find(x => x.id === pid);
         if (!p) continue;
         const matchPts = getTeamMatchPts(pid, team.id, points, matches, snatch);
-        if (matchPts.length === 0) continue; // no data — skip
+        if (matchPts.length === 0) continue;
         const arr    = matchPts.map(m => m.base);
         const total  = arr.reduce((s, n) => s + n, 0);
         const played = arr.length;
@@ -156,70 +142,338 @@ function FormChart({ players, assignments, points, teams, matches, snatch }) {
         ))}
       </div>
 
-      {/* Player cards */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      {/* Player cards in grid - Interactive hover design */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 14 }}>
         {filtered.map((p, idx) => {
-          const mx        = Math.max(...p.last5, 1);
-          const last      = p.last5[p.last5.length - 1] || 0;
-          const prev      = p.last5[p.last5.length - 2] || 0;
-          const diff      = last - prev;
+          const mx = Math.max(...p.last5, 1);
+          const last = p.last5[p.last5.length - 1] || 0;
+          const prev = p.last5[p.last5.length - 2] || 0;
+          const diff = last - prev;
           const trendIcon = diff > 0 ? "▲" : diff < 0 ? "▼" : "—";
-          const trendColor= diff > 0 ? T.success : diff < 0 ? T.danger : T.muted;
-          const empty     = 5 - p.last5.length;
-          const isSnatched= p.status === "away" || p.status === "in";
+          const trendColor = diff > 0 ? T.success : diff < 0 ? T.danger : T.muted;
+          const empty = 5 - p.last5.length;
+          const isSnatched = p.status === "away" || p.status === "in";
 
           return (
-            <div key={p.id + p.tid} style={{ background: T.card, borderRadius: 12, padding: "14px 16px", border: `1px solid ${isSnatched ? T.purple + "44" : T.border}`, opacity: p.status === "away" ? 0.85 : 1 }}>
-              {/* Header row */}
-              <div style={{ display: "flex", alignItems: "center", marginBottom: 10 }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                    <span style={{ fontFamily: fonts.display, fontWeight: 900, fontSize: 16, letterSpacing: 1, textTransform: "uppercase", color: T.text }}>{p.name}</span>
-                    <span style={{ fontFamily: fonts.body, fontSize: 11, color: p.tc, background: p.tc + "22", padding: "2px 8px", borderRadius: 10 }}>{p.tn}</span>
-                    <SnatchBadge status={p.status} />
-                  </div>
-                  <div style={{ fontFamily: fonts.body, fontSize: 11, color: T.muted, marginTop: 2 }}>
-                    {p.role}
-                    {p.status === "away" && <span style={{ marginLeft: 6, color: T.purple, fontSize: 10 }}>· pre-snatch pts only</span>}
-                    {p.status === "in"   && <span style={{ marginLeft: 6, color: T.success, fontSize: 10 }}>· loan period pts only</span>}
-                    {p.status === "hist-in" && <span style={{ marginLeft: 6, color: T.muted, fontSize: 10 }}>· loan pts (ended)</span>}
+            <div 
+              key={p.id + p.tid} 
+              className="player-card"
+              style={{ 
+                position: "relative",
+                borderRadius: 16, 
+                overflow: "hidden",
+                border: `3px solid ${p.tc}`,
+                boxShadow: `0 8px 24px ${p.tc}33`,
+                background: T.bg,
+                height: 420,
+                cursor: "pointer",
+                transition: "transform 0.3s ease, box-shadow 0.3s ease"
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "translateY(-4px)";
+                e.currentTarget.style.boxShadow = `0 12px 32px ${p.tc}55`;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "translateY(0)";
+                e.currentTarget.style.boxShadow = `0 8px 24px ${p.tc}33`;
+              }}
+            >
+              <style>
+                {`
+                  .player-card .stats-panel {
+                    transform: translateY(100%);
+                    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+                  }
+                  .player-card:hover .stats-panel {
+                    transform: translateY(0);
+                  }
+                  .player-card .image-overlay {
+                    opacity: 0.15;
+                    transition: opacity 0.4s ease;
+                  }
+                  .player-card:hover .image-overlay {
+                    opacity: 0.75;
+                  }
+                  .player-card .player-name-badge {
+                    opacity: 1;
+                    transition: opacity 0.3s ease;
+                  }
+                  .player-card:hover .player-name-badge {
+                    opacity: 0;
+                  }
+                `}
+              </style>
+
+              {/* Full player image background */}
+              <div style={{ 
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                zIndex: 0
+              }}>
+                <img 
+                  src={`https://rmcxhorijitrhqyrvvkn.supabase.co/storage/v1/object/public/player-images/${p.id}.png`}
+                  alt={p.name}
+                  style={{ 
+                    width: "100%", 
+                    height: "100%", 
+                    objectFit: "cover",
+                    objectPosition: "top center"
+                  }}
+                  onError={(e) => {
+                    e.target.style.display = 'none';
+                  }}
+                />
+                {/* Dark overlay - intensifies on hover */}
+                <div 
+                  className="image-overlay"
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    background: "rgba(10, 14, 20, 0.75)"
+                  }} 
+                />
+              </div>
+
+              {/* Overlaid content */}
+              <div style={{ position: "relative", zIndex: 1, height: "100%", display: "flex", flexDirection: "column" }}>
+                
+                {/* Top badges - Always visible */}
+                <div style={{ padding: "12px", display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                  {/* Snatch badge */}
+                  {isSnatched && <SnatchBadge status={p.status} />}
+                  <div style={{ flex: 1 }} />
+                  
+                  {/* Trend badge */}
+                  <div style={{
+                    background: `${trendColor}dd`,
+                    backdropFilter: "blur(8px)",
+                    border: `2px solid ${trendColor}`,
+                    borderRadius: 24,
+                    padding: "6px 14px",
+                    fontFamily: fonts.display,
+                    fontSize: 14,
+                    fontWeight: 800,
+                    color: "#FFFFFF",
+                    boxShadow: `0 4px 12px ${trendColor}66`
+                  }}>
+                    {trendIcon} {Math.abs(diff)}
                   </div>
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 13, color: trendColor, fontWeight: 700 }}>{trendIcon}</span>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontFamily: fonts.display, fontSize: 22, fontWeight: 900, color: p.status === "away" ? T.purple : p.status === "in" ? T.success : T.accent, lineHeight: 1 }}>{p.total}</div>
-                    <div style={{ fontFamily: fonts.display, fontSize: 9, color: T.muted, letterSpacing: 1 }}>
-                      {p.status === "away" ? "PRE-SNATCH" : p.status === "in" || p.status === "hist-in" ? "LOAN PTS" : "TOTAL"}
+
+                {/* Spacer */}
+                <div style={{ flex: 1 }} />
+
+                {/* Player name badge - Visible when NOT hovering */}
+                <div 
+                  className="player-name-badge"
+                  style={{
+                    position: "absolute",
+                    bottom: 16,
+                    left: 16,
+                    right: 16,
+                    background: "rgba(10, 14, 20, 0.85)",
+                    backdropFilter: "blur(12px)",
+                    borderRadius: 12,
+                    padding: "12px 14px",
+                    border: `2px solid ${p.tc}`,
+                    pointerEvents: "none"
+                  }}
+                >
+                  <div style={{ 
+                    fontFamily: fonts.display, 
+                    fontWeight: 900, 
+                    fontSize: 18, 
+                    letterSpacing: 0.5, 
+                    textTransform: "uppercase", 
+                    color: "#FFFFFF",
+                    textShadow: `0 2px 8px ${p.tc}88`,
+                    marginBottom: 4,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis"
+                  }}>
+                    {p.name}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ 
+                      fontFamily: fonts.body, 
+                      fontSize: 11, 
+                      color: p.tc, 
+                      background: `${p.tc}33`, 
+                      padding: "2px 8px", 
+                      borderRadius: 8,
+                      fontWeight: 700,
+                      border: `1px solid ${p.tc}66`
+                    }}>
+                      {p.tn}
+                    </span>
+                    <span style={{ 
+                      fontFamily: fonts.body, 
+                      fontSize: 11, 
+                      color: "#94A3B8"
+                    }}>
+                      {p.role}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Stats panel - Slides up on hover */}
+                <div 
+                  className="stats-panel"
+                  style={{
+                    position: "absolute",
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    background: "rgba(10, 14, 20, 0.95)",
+                    backdropFilter: "blur(16px)",
+                    borderTop: `3px solid ${p.tc}`,
+                    padding: "16px 14px"
+                  }}
+                >
+                  {/* Player name and team */}
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={{ 
+                      fontFamily: fonts.display, 
+                      fontWeight: 900, 
+                      fontSize: 18, 
+                      letterSpacing: 0.5, 
+                      textTransform: "uppercase", 
+                      color: "#FFFFFF",
+                      textShadow: `0 2px 8px ${p.tc}88`,
+                      marginBottom: 4,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis"
+                    }}>
+                      {p.name}
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ 
+                        fontFamily: fonts.body, 
+                        fontSize: 11, 
+                        color: p.tc, 
+                        background: `${p.tc}33`, 
+                        padding: "3px 10px", 
+                        borderRadius: 10,
+                        fontWeight: 700,
+                        border: `1px solid ${p.tc}66`
+                      }}>
+                        {p.tn}
+                      </span>
+                      <span style={{ 
+                        fontFamily: fonts.body, 
+                        fontSize: 11, 
+                        color: "#94A3B8"
+                      }}>
+                        {p.role}
+                      </span>
                     </div>
                   </div>
-                </div>
-              </div>
 
-              {/* Bar chart */}
-              <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 54 }}>
-                {Array.from({ length: empty }).map((_, i) => (
-                  <div key={"e" + i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-                    <span style={{ fontSize: 9, color: T.border }}>-</span>
-                    <div style={{ width: "100%", background: T.border + "33", borderRadius: "3px 3px 0 0", height: "4px" }} />
+                  {/* Total points */}
+                  <div style={{ 
+                    textAlign: "center", 
+                    padding: "10px 0",
+                    marginBottom: 10,
+                    borderTop: `1px solid ${p.tc}44`,
+                    borderBottom: `1px solid ${p.tc}44`
+                  }}>
+                    <div style={{ 
+                      fontFamily: fonts.display, 
+                      fontSize: 36, 
+                      fontWeight: 900, 
+                      color: p.tc,
+                      lineHeight: 1,
+                      textShadow: `0 0 24px ${p.tc}aa`
+                    }}>
+                      {p.total}
+                    </div>
+                    <div style={{ 
+                      fontFamily: fonts.display, 
+                      fontSize: 9, 
+                      color: "#64748B", 
+                      letterSpacing: 1.5,
+                      marginTop: 4,
+                      fontWeight: 600
+                    }}>
+                      TOTAL POINTS
+                    </div>
                   </div>
-                ))}
-                {p.last5.map((v, i) => (
-                  <Bar key={i} val={v} max={mx} color={p.tc} isLast={i === p.last5.length - 1} />
-                ))}
-              </div>
 
-              {/* Stats footer */}
-              <div style={{ display: "flex", gap: 16, marginTop: 10, paddingTop: 10, borderTop: `1px solid ${T.border}44` }}>
-                {[["MATCHES", p.played], ["AVG", p.avg], ["BEST", p.best]].map(([l, v]) => (
-                  <div key={l} style={{ textAlign: "center" }}>
-                    <div style={{ fontFamily: fonts.display, fontSize: 16, fontWeight: 700, color: T.text }}>{v}</div>
-                    <div style={{ fontFamily: fonts.display, fontSize: 9, color: T.muted, letterSpacing: 1 }}>{l}</div>
+                  {/* Last 5 matches bar chart */}
+                  <div style={{ marginBottom: 10 }}>
+                    <div style={{ 
+                      fontFamily: fonts.display, 
+                      fontSize: 8, 
+                      color: "#64748B", 
+                      letterSpacing: 1,
+                      marginBottom: 6,
+                      fontWeight: 600
+                    }}>
+                      LAST 5 MATCHES
+                    </div>
+                    <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 40 }}>
+                      {Array.from({ length: empty }).map((_, i) => (
+                        <div key={"e" + i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                          <span style={{ fontSize: 8, color: "#334155" }}>-</span>
+                          <div style={{ width: "100%", background: "#1E293B", borderRadius: "2px 2px 0 0", height: "4px" }} />
+                        </div>
+                      ))}
+                      {p.last5.map((v, i) => {
+                        const pct = mx > 0 ? v / mx : 0;
+                        const h = Math.max(4, Math.round(pct * 40));
+                        const bg = v > 0 ? (i === p.last5.length - 1 ? T.accent : p.tc) : "#1E293B";
+                        return (
+                          <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                            <span style={{ fontFamily: fonts.display, fontSize: 9, color: i === p.last5.length - 1 ? T.accent : "#94A3B8", fontWeight: i === p.last5.length - 1 ? 700 : 400 }}>{v}</span>
+                            <div style={{ width: "100%", background: bg, borderRadius: "2px 2px 0 0", height: h + "px", opacity: i === p.last5.length - 1 ? 1 : 0.7 }} />
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                ))}
-                <div style={{ flex: 1, textAlign: "right" }}>
-                  <div style={{ fontFamily: fonts.display, fontSize: 9, color: T.muted, letterSpacing: 1, marginBottom: 2 }}>LAST MATCH</div>
-                  <div style={{ fontFamily: fonts.display, fontSize: 12, color: trendColor, fontWeight: 700 }}>{trendIcon} {Math.abs(diff)} pts</div>
+
+                  {/* Stats grid */}
+                  <div style={{ 
+                    display: "grid", 
+                    gridTemplateColumns: "1fr 1fr 1fr", 
+                    gap: 8,
+                    paddingTop: 10,
+                    borderTop: `1px solid ${p.tc}33`
+                  }}>
+                    {[
+                      ["MATCHES", p.played],
+                      ["AVG", p.avg],
+                      ["BEST", p.best]
+                    ].map(([l, v]) => (
+                      <div key={l} style={{ textAlign: "center" }}>
+                        <div style={{ 
+                          fontFamily: fonts.display, 
+                          fontSize: 18, 
+                          fontWeight: 800, 
+                          color: "#FFFFFF" 
+                        }}>
+                          {v}
+                        </div>
+                        <div style={{ 
+                          fontFamily: fonts.display, 
+                          fontSize: 8, 
+                          color: "#64748B", 
+                          letterSpacing: 0.5,
+                          fontWeight: 600
+                        }}>
+                          {l}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
