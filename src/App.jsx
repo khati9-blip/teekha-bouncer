@@ -916,14 +916,10 @@ setPoolLoading(false);
           console.log(`🔍 Checking live status for ${match.team1} vs ${match.team2}...`);
 
           try {
-            // Search Google for live status
-            const searchQuery = `${match.team1} vs ${match.team2} live score`;
-            const searchRes = await fetch(`https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`);
-            const searchText = await searchRes.text();
-
-            // Detect if match is live (look for live indicators in search results)
-            const isLive = /\b(LIVE|Live|●|In Progress|In progress)\b/i.test(searchText) && 
-                          !/\b(Upcoming|upcoming|Scheduled|scheduled)\b/i.test(searchText);
+            // Search Google for live status via proxy API
+            const searchRes = await fetch(`/api/check-live?team1=${encodeURIComponent(match.team1)}&team2=${encodeURIComponent(match.team2)}`);
+            const result = await searchRes.json();
+            const isLive = result.isLive;
 
             if (isLive) {
               console.log(`✅ Match ${match.matchNum} is LIVE - updating status and locking C/VC`);
