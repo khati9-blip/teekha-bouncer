@@ -263,33 +263,57 @@ export default function MVPStats({ players, teams, assignments, points, captains
         <button style={tabBtn(view === "team")} onClick={() => setView("team")}>BY TEAM</button>
       </div>
 
-      <div style={{ padding: "16px", maxWidth: 600, margin: "0 auto", width: "100%" }}>
+      <div style={{ padding: "16px", maxWidth: 1100, margin: "0 auto", width: "100%" }}>
 
         {/* Match stats */}
         {view === "weekly" && (
           <div>
             <div style={{ fontFamily: fonts.display, fontSize: 9, color: T.muted, letterSpacing: 2, marginBottom: 12 }}>PLAYER PERFORMANCE (BASE POINTS)</div>
-            {matchRows.length === 0 ? emptyMsg : matchRows.map((row, idx) => (
-              <div key={row.player.id + row.match.id} style={{ background: T.card, borderRadius: 10, border: `1px solid ${row.team.color}33`, padding: "10px 14px", marginBottom: 6, display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ fontFamily: fonts.display, fontSize: 16, fontWeight: 700, color: medalColor(idx + 1), minWidth: 24, textAlign: "center" }}>{idx + 1}</div>
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: row.team.color, flexShrink: 0 }} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                    <span style={{ fontFamily: fonts.display, fontWeight: 900, fontSize: 16, letterSpacing: 1, textTransform: "uppercase", color: T.text }}>{row.player.name}</span>
-                    <TierBadge tier={row.player.tier} />
-                    <span style={{ fontFamily: fonts.display, fontSize: 10, color: row.team.color, fontWeight: 700 }}>{row.team.name}</span>
+            {matchRows.length === 0 ? emptyMsg : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+                {matchRows.map((row, idx) => (
+                  <div key={row.player.id + row.match.id} className="mvp-card" style={{ position: "relative", borderRadius: 16, overflow: "hidden", border: `3px solid ${row.team.color}`, boxShadow: `0 8px 24px ${row.team.color}33`, background: T.bg, height: 380, cursor: "pointer", transition: "transform 0.3s ease" }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; }}
+                  >
+                    <style>{`.mvp-card .mvp-stats-panel{transform:translateY(100%);transition:transform 0.4s cubic-bezier(0.4,0,0.2,1)}.mvp-card:hover .mvp-stats-panel{transform:translateY(0)}.mvp-card .mvp-overlay{opacity:0.15;transition:opacity 0.4s ease}.mvp-card:hover .mvp-overlay{opacity:0.75}.mvp-card .mvp-name-badge{opacity:1;transition:opacity 0.3s ease}.mvp-card:hover .mvp-name-badge{opacity:0}`}</style>
+                    {/* Image */}
+                    <div style={{ position: "absolute", inset: 0, zIndex: 0 }}>
+                      <img src={`https://rmcxhorijitrhqyrvvkn.supabase.co/storage/v1/object/public/player-images/${row.player.id}.png`} alt={row.player.name} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top center" }} onError={e => { e.target.style.display = "none"; }} />
+                      <div className="mvp-overlay" style={{ position: "absolute", inset: 0, background: "rgba(10,14,20,0.75)" }} />
+                    </div>
+                    {/* Rank + pts badge top */}
+                    <div style={{ position: "relative", zIndex: 1, padding: 12, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <div style={{ background: "rgba(10,14,20,0.8)", backdropFilter: "blur(8px)", border: `2px solid ${medalColor(idx+1)}`, borderRadius: 24, padding: "4px 12px", fontFamily: fonts.display, fontSize: 13, fontWeight: 800, color: medalColor(idx+1) }}>#{idx+1}</div>
+                      <div style={{ background: `${row.team.color}dd`, backdropFilter: "blur(8px)", border: `2px solid ${row.team.color}`, borderRadius: 24, padding: "4px 12px", fontFamily: fonts.display, fontSize: 14, fontWeight: 800, color: "#fff" }}>{row.pts} pts</div>
+                    </div>
+                    {/* Name badge default */}
+                    <div className="mvp-name-badge" style={{ position: "absolute", bottom: 16, left: 16, right: 16, background: "rgba(10,14,20,0.85)", backdropFilter: "blur(12px)", borderRadius: 12, padding: "12px 14px", border: `2px solid ${row.team.color}`, zIndex: 1 }}>
+                      <div style={{ fontFamily: fonts.display, fontWeight: 900, fontSize: 16, letterSpacing: 0.5, textTransform: "uppercase", color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginBottom: 4 }}>{row.player.name}</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                        <span style={{ fontFamily: fonts.body, fontSize: 10, color: row.team.color, background: `${row.team.color}33`, padding: "2px 8px", borderRadius: 8, fontWeight: 700, border: `1px solid ${row.team.color}66` }}>{row.team.name}</span>
+                        <span style={{ fontFamily: fonts.body, fontSize: 10, color: "#94A3B8" }}>{row.player.role}</span>
+                      </div>
+                    </div>
+                    {/* Stats panel on hover */}
+                    <div className="mvp-stats-panel" style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(10,14,20,0.95)", backdropFilter: "blur(16px)", borderTop: `3px solid ${row.team.color}`, padding: "16px 14px", zIndex: 1 }}>
+                      <div style={{ fontFamily: fonts.display, fontWeight: 900, fontSize: 16, textTransform: "uppercase", color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginBottom: 4 }}>{row.player.name}</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
+                        <TierBadge tier={row.player.tier} />
+                        <span style={{ fontFamily: fonts.body, fontSize: 10, color: row.team.color, fontWeight: 700 }}>{row.team.name}</span>
+                        <span style={{ fontFamily: fonts.body, fontSize: 10, color: "#94A3B8" }}>{row.player.role}</span>
+                      </div>
+                      <div style={{ textAlign: "center", padding: "10px 0", borderTop: `1px solid ${row.team.color}44`, borderBottom: `1px solid ${row.team.color}44`, marginBottom: 10 }}>
+                        <div style={{ fontFamily: fonts.display, fontSize: 36, fontWeight: 900, color: row.team.color, lineHeight: 1, textShadow: `0 0 24px ${row.team.color}aa` }}>{row.pts}</div>
+                        <div style={{ fontFamily: fonts.display, fontSize: 9, color: "#64748B", letterSpacing: 1.5, marginTop: 4 }}>MATCH POINTS</div>
+                      </div>
+                      <div style={{ fontFamily: fonts.body, fontSize: 11, color: T.muted, textAlign: "center" }}>{row.matchLabel}</div>
+                      <div style={{ fontFamily: fonts.body, fontSize: 10, color: T.muted, textAlign: "center", marginTop: 2 }}>{row.matchDate}</div>
+                    </div>
                   </div>
-                  <div style={{ fontFamily: fonts.body, fontSize: 11, color: T.muted, marginTop: 1 }}>
-                    <span style={{ color: ROLE_COLORS[row.player.role] || T.muted }}>{row.player.role}</span>
-                    <span style={{ marginLeft: 6 }}>{row.matchLabel}</span>
-                    <span style={{ marginLeft: 6 }}>{row.matchDate}</span>
-                  </div>
-                </div>
-                <div style={{ fontFamily: fonts.display, fontSize: 22, fontWeight: 900, color: medalColor(idx + 1), minWidth: 48, textAlign: "right" }}>
-                  {row.pts}<span style={{ fontFamily: fonts.body, fontSize: 10, color: T.muted, fontWeight: 400, marginLeft: 2 }}>pts</span>
-                </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
         )}
 
@@ -297,34 +321,58 @@ export default function MVPStats({ players, teams, assignments, points, captains
         {view === "alltime" && (
           <div>
             <div style={{ fontFamily: fonts.display, fontSize: 9, color: T.muted, letterSpacing: 2, marginBottom: 12 }}>ALL TIME BASE POINTS</div>
-            {allTimeRows.length === 0 ? emptyMsg : allTimeRows.map((row, idx) => (
-              <div key={row.player.id + row.team.id} style={{ background: T.card, borderRadius: 10, border: `1px solid ${row.team.color}33`, padding: "10px 14px", marginBottom: 6, display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ fontFamily: fonts.display, fontSize: 16, fontWeight: 700, color: medalColor(idx + 1), minWidth: 24, textAlign: "center" }}>{idx + 1}</div>
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: row.team.color, flexShrink: 0 }} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                    <span style={{ fontFamily: fonts.display, fontWeight: 900, fontSize: 16, letterSpacing: 1, textTransform: "uppercase", color: T.text }}>{row.player.name}</span>
-                    <TierBadge tier={row.player.tier} />
-                    <span style={{ fontFamily: fonts.display, fontSize: 10, color: row.team.color, fontWeight: 700 }}>{row.team.name}</span>
-                    {row.status === "away" && <span style={{ fontFamily: fonts.display, fontSize: 8, fontWeight: 700, color: T.purple, background: T.purpleBg, border: `1px solid ${T.purple}33`, borderRadius: 4, padding: "1px 5px" }}>⚡ SNATCHED</span>}
-                    {row.status === "in"   && <span style={{ fontFamily: fonts.display, fontSize: 8, fontWeight: 700, color: T.success, background: T.successBg, border: `1px solid ${T.success}33`, borderRadius: 4, padding: "1px 5px" }}>⚡ ON LOAN</span>}
-                    {row.status === "hist-away" && <span style={{ fontFamily: fonts.display, fontSize: 8, fontWeight: 700, color: T.muted, background: T.border, borderRadius: 4, padding: "1px 5px" }}>↩ RETURNED</span>}
-                    {row.status === "hist-in"   && <span style={{ fontFamily: fonts.display, fontSize: 8, fontWeight: 700, color: T.muted, background: T.border, borderRadius: 4, padding: "1px 5px" }}>↩ LOAN ENDED</span>}
+            {allTimeRows.length === 0 ? emptyMsg : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+                {allTimeRows.map((row, idx) => (
+                  <div key={row.player.id + row.team.id} className="mvp-card" style={{ position: "relative", borderRadius: 16, overflow: "hidden", border: `3px solid ${row.team.color}`, boxShadow: `0 8px 24px ${row.team.color}33`, background: T.bg, height: 380, cursor: "pointer", transition: "transform 0.3s ease" }}
+                    onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; }}
+                  >
+                    {/* Image */}
+                    <div style={{ position: "absolute", inset: 0, zIndex: 0 }}>
+                      <img src={`https://rmcxhorijitrhqyrvvkn.supabase.co/storage/v1/object/public/player-images/${row.player.id}.png`} alt={row.player.name} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top center" }} onError={e => { e.target.style.display = "none"; }} />
+                      <div className="mvp-overlay" style={{ position: "absolute", inset: 0, background: "rgba(10,14,20,0.75)" }} />
+                    </div>
+                    {/* Rank badge top */}
+                    <div style={{ position: "relative", zIndex: 1, padding: 12, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <div style={{ background: "rgba(10,14,20,0.8)", backdropFilter: "blur(8px)", border: `2px solid ${medalColor(idx+1)}`, borderRadius: 24, padding: "4px 12px", fontFamily: fonts.display, fontSize: 13, fontWeight: 800, color: medalColor(idx+1) }}>#{idx+1}</div>
+                      <div style={{ background: `${row.team.color}dd`, backdropFilter: "blur(8px)", border: `2px solid ${row.team.color}`, borderRadius: 24, padding: "4px 12px", fontFamily: fonts.display, fontSize: 14, fontWeight: 800, color: "#fff" }}>{row.total} pts</div>
+                    </div>
+                    {/* Name badge default */}
+                    <div className="mvp-name-badge" style={{ position: "absolute", bottom: 16, left: 16, right: 16, background: "rgba(10,14,20,0.85)", backdropFilter: "blur(12px)", borderRadius: 12, padding: "12px 14px", border: `2px solid ${row.team.color}`, zIndex: 1 }}>
+                      <div style={{ fontFamily: fonts.display, fontWeight: 900, fontSize: 16, letterSpacing: 0.5, textTransform: "uppercase", color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginBottom: 4 }}>{row.player.name}</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                        <span style={{ fontFamily: fonts.body, fontSize: 10, color: row.team.color, background: `${row.team.color}33`, padding: "2px 8px", borderRadius: 8, fontWeight: 700, border: `1px solid ${row.team.color}66` }}>{row.team.name}</span>
+                        <span style={{ fontFamily: fonts.body, fontSize: 10, color: "#94A3B8" }}>{row.player.role}</span>
+                      </div>
+                    </div>
+                    {/* Stats panel on hover */}
+                    <div className="mvp-stats-panel" style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(10,14,20,0.95)", backdropFilter: "blur(16px)", borderTop: `3px solid ${row.team.color}`, padding: "16px 14px", zIndex: 1 }}>
+                      <div style={{ fontFamily: fonts.display, fontWeight: 900, fontSize: 16, textTransform: "uppercase", color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginBottom: 4 }}>{row.player.name}</div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12, flexWrap: "wrap" }}>
+                        <TierBadge tier={row.player.tier} />
+                        <span style={{ fontFamily: fonts.body, fontSize: 10, color: row.team.color, fontWeight: 700 }}>{row.team.name}</span>
+                        <span style={{ fontFamily: fonts.body, fontSize: 10, color: "#94A3B8" }}>{row.player.role}</span>
+                        {row.status === "away" && <span style={{ fontFamily: fonts.display, fontSize: 8, fontWeight: 700, color: T.purple, background: T.purpleBg, border: `1px solid ${T.purple}33`, borderRadius: 4, padding: "1px 5px" }}>⚡ SNATCHED</span>}
+                        {row.status === "in" && <span style={{ fontFamily: fonts.display, fontSize: 8, fontWeight: 700, color: T.success, background: T.successBg, border: `1px solid ${T.success}33`, borderRadius: 4, padding: "1px 5px" }}>⚡ ON LOAN</span>}
+                      </div>
+                      <div style={{ textAlign: "center", padding: "10px 0", borderTop: `1px solid ${row.team.color}44`, borderBottom: `1px solid ${row.team.color}44`, marginBottom: 10 }}>
+                        <div style={{ fontFamily: fonts.display, fontSize: 36, fontWeight: 900, color: row.team.color, lineHeight: 1, textShadow: `0 0 24px ${row.team.color}aa` }}>{row.total}</div>
+                        <div style={{ fontFamily: fonts.display, fontSize: 9, color: "#64748B", letterSpacing: 1.5, marginTop: 4 }}>TOTAL POINTS</div>
+                      </div>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                        {[["IPL TEAM", row.player.iplTeam], ["MATCHES", Object.keys(points[row.player.id] || {}).length]].map(([l, v]) => (
+                          <div key={l} style={{ textAlign: "center" }}>
+                            <div style={{ fontFamily: fonts.display, fontSize: 18, fontWeight: 800, color: "#fff" }}>{v}</div>
+                            <div style={{ fontFamily: fonts.display, fontSize: 8, color: "#64748B", letterSpacing: 0.5 }}>{l}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                  <div style={{ fontFamily: fonts.body, fontSize: 11, color: T.muted, marginTop: 1 }}>
-                    <span style={{ color: ROLE_COLORS[row.player.role] || T.muted }}>{row.player.role}</span>
-                    <span style={{ marginLeft: 6 }}>{row.player.iplTeam}</span>
-                    <span style={{ marginLeft: 6, color: T.muted }}>{Object.keys(points[row.player.id] || {}).length} matches</span>
-                  </div>
-                </div>
-                <div style={{ fontFamily: fonts.display, fontSize: 22, fontWeight: 900, color: medalColor(idx + 1), minWidth: 48, textAlign: "right" }}>
-                  {row.total}
-                  <span style={{ fontFamily: fonts.body, fontSize: 10, color: T.muted, fontWeight: 400, marginLeft: 2 }}>
-                    {row.status === "away" ? "pre-snatch" : row.status === "in" || row.status === "hist-in" ? "loan" : "pts"}
-                  </span>
-                </div>
+                ))}
               </div>
-            ))}
+            )}
           </div>
         )}
 
