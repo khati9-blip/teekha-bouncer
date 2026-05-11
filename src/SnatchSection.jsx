@@ -510,9 +510,11 @@ newLog[pid] = [...newLog[pid], { teamId: actingTeamId, from: now, to: null }];
             const sp = players.find(p => p.id === h.pid);
             const bt = teams.find(t => t.id === h.byTeamId);
             const ft = teams.find(t => t.id === h.fromTeamId);
+            const totalWeeks = snatch.history.length;
+            const weekNum = h.week || (totalWeeks - i);
             return (
               <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 10px",background:"#080C14",borderRadius:8,marginBottom:4,fontSize:11}}>
-                <span style={{color:"#8A7060"}}>Wk {h.week||i+1}</span>
+                <span style={{color:"#8A7060"}}>Wk {weekNum}</span>
                 <span style={{fontWeight:700,color:"#E2EAF4"}}>{sp?.name}</span>
                 <span style={{color:"#8A7060"}}>by</span>
                 <span style={{color:bt?.color,fontWeight:700}}>{bt?.name}</span>
