@@ -25,6 +25,222 @@ function TierBadge({ tier }) {
     </span>
   );
 }
+// ── PLAYER CARD STYLES (global) ────────────────────────────────────────────
+
+const PLAYER_CARD_STYLES = `
+  .transfer-player-card .stats-overlay {
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .transfer-player-card:hover .stats-overlay {
+    transform: translateY(0);
+  }
+  .transfer-player-card .image-dark {
+    opacity: 0.1;
+    transition: opacity 0.3s ease;
+  }
+  .transfer-player-card:hover .image-dark {
+    opacity: 0.6;
+  }
+`;
+
+// ── PLAYER IMAGE CARD (for transfer selection) ────────────────────────────────
+
+function PlayerCard({ player, isSelected, canClick, onClick, selectionColor, showPoints = true, points, height = 300 }) {
+  const [isHovered, setIsHovered] = useState(false);
+  
+  return (
+    <div
+      className="transfer-player-card"
+      style={{
+        position: "relative",
+        borderRadius: 12,
+        overflow: "hidden",
+        border: `3px solid ${isSelected ? selectionColor : T.border}`,
+        boxShadow: isSelected ? `0 0 20px ${selectionColor}66, 0 4px 12px ${selectionColor}44` : "0 2px 8px rgba(0,0,0,0.3)",
+        background: T.bg,
+        height: height,
+        cursor: canClick ? "pointer" : "default",
+        transition: "all 0.3s ease",
+        opacity: canClick ? 1 : 0.7
+      }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onClick={canClick ? onClick : undefined}
+    >
+
+      {/* Player Image */}
+      <div style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 0
+      }}>
+        <img
+          src={`https://rmcxhorijitrhqyrvvkn.supabase.co/storage/v1/object/public/player-images/${player.id}.png`}
+          alt={player.name}
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            objectPosition: "top center"
+          }}
+          onError={(e) => {
+            e.target.style.display = 'none';
+          }}
+        />
+        <div
+          className="image-dark"
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(10, 14, 20, 0.6)"
+          }}
+        />
+      </div>
+
+      {/* Selected Checkmark */}
+      {isSelected && (
+        <div style={{
+          position: "absolute",
+          top: 8,
+          right: 8,
+          background: selectionColor,
+          borderRadius: "50%",
+          width: 32,
+          height: 32,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: 18,
+          zIndex: 2,
+          boxShadow: `0 2px 8px ${selectionColor}88`
+        }}>
+          ✓
+        </div>
+      )}
+
+      {/* Player Name Badge (always visible) */}
+      <div style={{
+        position: "absolute",
+        bottom: 0,
+        left: 0,
+        right: 0,
+        background: "rgba(10, 14, 20, 0.9)",
+        backdropFilter: "blur(8px)",
+        padding: "10px 12px",
+        borderTop: `2px solid ${isSelected ? selectionColor : T.border}`,
+        zIndex: 1
+      }}>
+        <div style={{
+          fontFamily: fonts.display,
+          fontWeight: 900,
+          fontSize: 14,
+          letterSpacing: 0.5,
+          textTransform: "uppercase",
+          color: "#FFFFFF",
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          marginBottom: 2
+        }}>
+          {player.name}
+        </div>
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 4,
+          fontSize: 10,
+          color: "#94A3B8"
+        }}>
+          <TierBadge tier={player.tier} />
+          <span>{player.role}</span>
+        </div>
+      </div>
+
+      {/* Stats Overlay (slides up on hover) */}
+      {showPoints && (
+        <div
+          className="stats-overlay"
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            background: "rgba(10, 14, 20, 0.95)",
+            backdropFilter: "blur(12px)",
+            padding: "16px 12px",
+            borderTop: `3px solid ${isSelected ? selectionColor : T.accent}`,
+            zIndex: 1
+          }}
+        >
+          <div style={{
+            fontFamily: fonts.display,
+            fontWeight: 900,
+            fontSize: 14,
+            letterSpacing: 0.5,
+            textTransform: "uppercase",
+            color: "#FFFFFF",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            marginBottom: 8
+          }}>
+            {player.name}
+          </div>
+          
+          <div style={{
+            textAlign: "center",
+            padding: "8px 0",
+            marginBottom: 8,
+            borderTop: `1px solid ${T.border}44`,
+            borderBottom: `1px solid ${T.border}44`
+          }}>
+            <div style={{
+              fontFamily: fonts.display,
+              fontSize: 28,
+              fontWeight: 900,
+              color: isSelected ? selectionColor : T.accent,
+              lineHeight: 1,
+              textShadow: isSelected ? `0 0 20px ${selectionColor}aa` : `0 0 20px ${T.accent}aa`
+            }}>
+              {points || 0}
+            </div>
+            <div style={{
+              fontFamily: fonts.display,
+              fontSize: 8,
+              color: "#64748B",
+              letterSpacing: 1,
+              marginTop: 4,
+              fontWeight: 600
+            }}>
+              TOTAL POINTS
+            </div>
+          </div>
+
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            fontSize: 10,
+            color: "#94A3B8"
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <TierBadge tier={player.tier} />
+              <span>{player.role}</span>
+            </div>
+            <span>{player.iplTeam}</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ── COUNTDOWN TIMER ──────────────────────────────────────────────────────────
 function Timer({ deadline, label = "REMAINING", onExpire }) {
@@ -113,6 +329,14 @@ export default function TransferWindow({
   onUpdateOwnershipLog, ownershipLog, points,
   user, safePlayers, pitchConfig, ruledOut = []
 }) {
+  useEffect(() => {
+    if (!document.getElementById('transfer-player-card-styles')) {
+      const styleEl = document.createElement('style');
+      styleEl.id = 'transfer-player-card-styles';
+      styleEl.textContent = PLAYER_CARD_STYLES;
+      document.head.appendChild(styleEl);
+    }
+  }, []);
 
   // Parse day/time from pitchConfig string like "Sunday 11:59 PM"
   const parseDayTime = (str, defDay, defH, defM) => {
@@ -1437,41 +1661,39 @@ onUpdateTransfers({
                   </div>
                 )}
 
-                <div style={{display:"flex",flexDirection:"column",gap:5}}>
+                <div style={{display:"grid",gridTemplateColumns:"repeat(4, 1fr)",gap:8}}>
                   {teamPlayers.map(p => {
                     const isReleased = released.includes(p.id);
+                    const pTotal = Object.values(points[p.id] || {}).reduce((s, m) => s + (m.base || 0), 0);
+                    const canRelease = !ruledOut.includes(p.id) && !isPlayerSafe(p.id) && canEdit;
+                    
                     return (
-                      <div key={p.id} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 12px",background:isReleased?"#FF3D5A11":"#080C14",borderRadius:0,borderLeft:"3px solid "+(isReleased?"#FF3D5A":"#1E2D45"),border:"1px solid "+(isReleased?"#FF3D5A44":"#1E2D45")}}>
-                        <div style={{flex:1}}>
-                          <div style={{display:"flex",alignItems:"center",gap:6}}>
-                            {isReleased && <span style={{fontSize:13}}>📤</span>}
-                            <span style={{fontWeight:700,fontSize:13,color:isReleased?"#FF3D5A":"#E2EAF4",textDecoration:isReleased?"line-through":"none"}}>{p.name}</span>
-                            <TierBadge tier={p.tier} />
+                      <div key={p.id} style={{position:"relative"}}>
+                        <PlayerCard
+                          player={p}
+                          isSelected={isReleased}
+                          canClick={canRelease}
+                          onClick={() => canRelease && handleRelease(team.id, p.id)}
+                          selectionColor={team.color}
+                          showPoints={true}
+                          points={pTotal}
+                          height={250}
+                        />
+                        {ruledOut.includes(p.id) && (
+                          <div style={{position:"absolute",top:8,left:8,background:"#FF3D5A",borderRadius:6,padding:"4px 8px",fontSize:9,fontWeight:800,color:"#FFF",zIndex:3,boxShadow:"0 2px 6px rgba(0,0,0,0.4)"}}>
+                            🚫 RULED OUT
                           </div>
-                          <div style={{fontSize:11,color:T.muted}}>{p.iplTeam} • {p.role}</div>
-                        </div>
-                        {/* Release/Undo button — only for own team, no lock needed */}
-                        {ruledOut.includes(p.id) ? (
-                            <span style={{fontSize:10,color:"#FF3D5A",fontWeight:700,background:"#FF3D5A11",border:"1px solid #FF3D5A33",padding:"3px 8px",borderRadius:0,clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)",letterSpacing:0.5}}>🚫 RULED OUT</span>
-                          ) : isPlayerSafe(p.id) ? (
-                            <span style={{fontSize:10,color:T.success,fontWeight:700,background:"#2ECC7111",border:`1px solid ${T.success}33`,padding:"3px 8px",borderRadius:0,clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)",letterSpacing:0.5}}>🛡 SAFE</span>
-                          ) : canEdit ? (
-                            <button onClick={() => handleRelease(team.id, p.id)}
-                              style={{background:isReleased?"#FF3D5A22":"#1E2D4533",border:"1px solid "+(isReleased?"#FF3D5A":"#1E2D45"),borderRadius:0,clipPath:"polygon(5px 0%,100% 0%,calc(100% - 5px) 100%,0% 100%)",padding:"6px 14px",color:isReleased?"#FF3D5A":"#4A5E78",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:fonts.body,letterSpacing:0.5}}>
-                              {isReleased ? "UNDO ✕" : "RELEASE"}
-                            </button>
-                          ) : isReleased ? (
-                            <span style={{fontSize:10,color:T.danger,fontWeight:700,background:T.dangerBg,border:`1px solid ${T.danger}33`,padding:"3px 8px",borderRadius:0,clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)"}}>RELEASED</span>
-                          ) : null}
-                        {/* Read-only view for admin */}
-                        {!canEdit && isReleased && (
-                          <span style={{fontSize:10,color:T.danger,fontWeight:700,background:T.dangerBg,border:`1px solid ${T.danger}33`,padding:"3px 8px",borderRadius:0,clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)"}}>RELEASED</span>
+                        )}
+                        {isPlayerSafe(p.id) && !ruledOut.includes(p.id) && (
+                          <div style={{position:"absolute",top:8,left:8,background:T.success,borderRadius:6,padding:"4px 8px",fontSize:9,fontWeight:800,color:"#FFF",zIndex:3,boxShadow:"0 2px 6px rgba(0,0,0,0.4)"}}>
+                            🛡 SAFE
+                          </div>
                         )}
                       </div>
                     );
                   })}
                   {teamPlayers.length === 0 && (
-                    <div style={{fontSize:12,color:T.muted,textAlign:"center",padding:16}}>No players in squad</div>
+                    <div style={{gridColumn:"1 / -1",fontSize:12,color:T.muted,textAlign:"center",padding:32}}>No players in squad</div>
                   )}
                 </div>
               </div>
@@ -1524,18 +1746,34 @@ onUpdateTransfers({
           )}
 
           {/* ── LIVE TRACK ──────────────────────────────────────────────── */}
-          <div style={{background:T.card,borderRadius:0,border:`1px solid ${T.border}`,borderTop:`2px solid ${T.border}`,padding:16,marginBottom:16}}>
-            <div style={{fontSize:11,color:T.accent,letterSpacing:2,fontWeight:700,marginBottom:14}}>📡 LIVE TRADE TRACK</div>
+          <div style={{background:T.card,borderRadius:0,border:`1px solid ${T.border}`,borderTop:`3px solid ${T.accent}`,padding:20,marginBottom:16}}>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:18}}>
+              <div style={{background:T.accent,padding:"4px 16px 4px 12px",clipPath:"polygon(0 0,100% 0,calc(100% - 10px) 100%,0 100%)",display:"flex",alignItems:"center",gap:7}}>
+                <span style={{fontSize:13}}>📡</span>
+                <span style={{fontFamily:fonts.display,fontWeight:800,fontSize:14,color:T.bg,letterSpacing:3}}>LIVE TRADE TRACK</span>
+              </div>
+              <div style={{flex:1,height:2,background:`linear-gradient(90deg,${T.accent}33,transparent)`}} />
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))",gap:12}}>
             {sortedTeams.map(team => {
               const released = getReleasedPlayers(team.id);
               if (released.length === 0) return null;
               const pairs = getTradedPairs(team.id);
+              const tradedCount = pairs.length;
+              const totalCount = released.length;
+              const allDone = tradedCount === totalCount;
               return (
-                <div key={team.id} style={{marginBottom:14,paddingBottom:14,borderBottom:`1px solid ${T.border}`}}>
-                  <div style={{fontFamily:fonts.display,fontSize:14,fontWeight:700,color:team.color,letterSpacing:1,marginBottom:8}}>
-                    {team.name}
+                <div key={team.id} style={{background:T.bg,border:`1px solid ${team.color}33`,borderTop:`3px solid ${allDone?T.success:team.color}`,overflow:"hidden"}}>
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"10px 14px",background:team.color+"11",borderBottom:`1px solid ${team.color}22`}}>
+                    <div style={{display:"flex",alignItems:"center",gap:7}}>
+                      <div style={{width:8,height:8,borderRadius:"50%",background:team.color,boxShadow:`0 0 8px ${team.color}`}} />
+                      <span style={{fontFamily:fonts.display,fontWeight:800,fontSize:13,color:team.color,letterSpacing:1}}>{team.name}</span>
+                    </div>
+                    <div style={{fontFamily:fonts.display,fontSize:10,fontWeight:800,letterSpacing:1,padding:"2px 8px",clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)",background:allDone?"#2ECC7122":team.color+"22",color:allDone?T.success:team.color,border:`1px solid ${allDone?T.success+"44":team.color+"44"}`}}>
+                      {tradedCount}/{totalCount} TRADED
+                    </div>
                   </div>
-                  <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                  <div style={{padding:"10px 14px",display:"flex",flexDirection:"column",gap:8}}>
                     {released.map(p => {
                       const pair = pairs.find(pr => pr.releasedPid === p.id);
                       const incoming = pair ? players.find(x => x.id === pair.pickedPid) : null;
@@ -1544,54 +1782,40 @@ onUpdateTransfers({
                         (transfers.tradedPairs||[]).some(tp => tp.pickedPid === p.id && tp.teamId === t.id)
                       ) : null;
                       return (
-                        <div key={p.id} style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",opacity:p.pickedByOther?0.6:1}}>
-                          {/* Released player */}
-                          <div style={{display:"flex",alignItems:"center",gap:5,background:T.dangerBg,border:`1px solid ${T.danger}33`,borderLeft:`2px solid ${T.danger}`,borderRadius:0,padding:"5px 10px"}}>
-                            <span style={{fontSize:12}}>⬇️</span>
-                            <span style={{fontSize:12,color:T.danger,textDecoration:"line-through",fontWeight:700}}>{p.name}</span>
-                            <TierBadge tier={p.tier} />
-                            <span style={{fontSize:10,color:T.muted}}>{p.role}</span>
+                        <div key={p.id} style={{display:"grid",gridTemplateColumns:"1fr 24px 1fr",alignItems:"center",gap:4,opacity:p.pickedByOther?0.5:1}}>
+                          <div style={{background:T.dangerBg,border:`1px solid ${T.danger}22`,borderLeft:`2px solid ${T.danger}`,padding:"6px 8px",minWidth:0}}>
+                            <div style={{fontSize:9,color:T.danger,letterSpacing:1,fontWeight:700,marginBottom:2}}>OUT</div>
+                            <div style={{fontFamily:fonts.display,fontWeight:700,fontSize:12,color:T.danger,textDecoration:"line-through",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{p.name}</div>
+                            <div style={{display:"flex",alignItems:"center",gap:4,marginTop:2}}>
+                              <TierBadge tier={p.tier} />
+                              <span style={{fontSize:9,color:T.muted}}>{p.role}</span>
+                            </div>
                           </div>
-
-                          {/* Arrow + incoming or waiting */}
+                          <div style={{textAlign:"center",fontSize:14,color:incoming?T.success:T.muted}}>{incoming?"⇄":"→"}</div>
                           {incoming ? (
-                            <>
-                              <span style={{color:T.muted,fontSize:14}}>→</span>
-                              <div style={{display:"flex",alignItems:"center",gap:5,background:"#2ECC7111",border:`1px solid ${T.success}33`,borderLeft:`2px solid ${T.success}`,borderRadius:0,padding:"5px 10px"}}>
-                                <span style={{fontSize:12}}>⬆️</span>
-                                <span style={{fontSize:12,color:T.success,fontWeight:700}}>{incoming.name}</span>
+                            <div style={{background:"#2ECC7111",border:`1px solid ${T.success}22`,borderLeft:`2px solid ${T.success}`,padding:"6px 8px",minWidth:0}}>
+                              <div style={{fontSize:9,color:T.success,letterSpacing:1,fontWeight:700,marginBottom:2}}>IN</div>
+                              <div style={{fontFamily:fonts.display,fontWeight:700,fontSize:12,color:T.success,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{incoming.name}</div>
+                              <div style={{display:"flex",alignItems:"center",gap:4,marginTop:2}}>
                                 <TierBadge tier={incoming.tier} />
-                                <span style={{fontSize:10,color:T.muted}}>{incoming.role}</span>
+                                <span style={{fontSize:9,color:T.muted}}>{incoming.role}</span>
                               </div>
-                            </>
+                            </div>
                           ) : takenByTeam ? (
-                            <>
-                              <span style={{color:T.muted,fontSize:14}}>→</span>
-                              <div style={{background:"#4A5E7822",border:"1px solid #4A5E7844",borderRadius:0,padding:"5px 10px"}}>
-                                <span style={{fontSize:11,color:T.muted}}>🚫 taken by <span style={{color:takenByTeam.color,fontWeight:700}}>{takenByTeam.name}</span></span>
-                              </div>
-                            </>
-                          ) : isIneligible ? (
-                            <>
-                              <span style={{color:T.muted,fontSize:14}}>→</span>
-                              <div style={{background:"#4A5E7822",border:"1px solid #4A5E7844",borderRadius:0,padding:"5px 10px"}}>
-                                <span style={{fontSize:11,color:T.muted}}>↩️ returned (passed)</span>
-                              </div>
-                            </>
-                          ) : (phase === "done" || !currentPickTeamId) ? (
-                            <>
-                              <span style={{color:T.muted,fontSize:14}}>→</span>
-                              <div style={{background:"#4A5E7822",border:"1px solid #4A5E7844",borderRadius:0,padding:"5px 10px"}}>
-                                <span style={{fontSize:11,color:T.muted}}>↩️ returned to squad</span>
-                              </div>
-                            </>
+                            <div style={{background:"#4A5E7811",border:"1px solid #4A5E7833",padding:"6px 8px"}}>
+                              <div style={{fontSize:9,color:T.muted,letterSpacing:1,fontWeight:700,marginBottom:2}}>TAKEN</div>
+                              <div style={{fontSize:11,color:takenByTeam.color,fontWeight:700}}>by {takenByTeam.name}</div>
+                            </div>
+                          ) : isIneligible || phase==="done" || !currentPickTeamId ? (
+                            <div style={{background:"#4A5E7811",border:"1px solid #4A5E7833",padding:"6px 8px"}}>
+                              <div style={{fontSize:9,color:T.muted,letterSpacing:1,fontWeight:700,marginBottom:2}}>RETURNED</div>
+                              <div style={{fontSize:11,color:T.muted}}>↩️ back to squad</div>
+                            </div>
                           ) : (
-                            <>
-                              <span style={{color:T.muted,fontSize:14}}>→</span>
-                              <div style={{background:T.accentBg,border:`1px solid ${T.accentBorder}`,borderLeft:`2px solid ${T.accent}`,borderRadius:0,padding:"5px 10px"}}>
-                                <span style={{fontSize:11,color:T.accent,animation:"pulse 1.5s ease infinite"}}>⏳ waiting…</span>
-                              </div>
-                            </>
+                            <div style={{background:T.accentBg,border:`1px solid ${T.accentBorder}`,borderLeft:`2px solid ${T.accent}`,padding:"6px 8px"}}>
+                              <div style={{fontSize:9,color:T.accent,letterSpacing:1,fontWeight:700,marginBottom:2}}>PENDING</div>
+                              <div style={{fontSize:11,color:T.accent,animation:"pulse 1.5s ease infinite"}}>⏳ waiting…</div>
+                            </div>
                           )}
                         </div>
                       );
@@ -1600,10 +1824,11 @@ onUpdateTransfers({
                 </div>
               );
             })}
+            </div>
           </div>
 
           {/* ── POOL + MY RELEASES ───────────────────────────────────────── */}
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
+          <div style={{display:"grid",gridTemplateColumns:"3fr 2fr",gap:16,marginBottom:16}}>
 
             {/* Unsold pool */}
             <div style={{background:T.card,borderRadius:0,border:`1px solid ${T.border}`,borderTop:`2px solid ${T.border}`,padding:14}}>
@@ -1621,52 +1846,51 @@ onUpdateTransfers({
                   const tierPlayers = filtered.filter(p => (p.tier||"") === tier);
                   if(tierPlayers.length === 0) return null;
                   return (
-                    <div key={tier}>
+                    <React.Fragment key={tier}>
                       <div style={{fontSize:9,fontFamily:fonts.display,fontWeight:800,letterSpacing:2,color:tierColors[tier],background:tierColors[tier]+"11",padding:"3px 8px",marginBottom:4,marginTop:4,clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)"}}>{(tier||"UNRANKED").toUpperCase()} ({tierPlayers.length})</div>
-                      {tierPlayers.map(p => {
-                        const canPickNow = (isMyTurn || unlocked) && phase==="trade" && !isPlayerSafe(p.id);
-                        const pickAsTeam = isMyTurn ? myTeamId : currentPickTeamId;
-                        const releasedByPickingTeam = (transfers?.releases?.[pickAsTeam]||[]).includes(p.id);
-                        const valid = canPickNow && !releasedByPickingTeam ? getValidMatches(p, pickAsTeam) : [];
-                        const canPick = valid.length > 0;
-                        const isNewlyReleased = Object.values(transfers?.releases || {}).some(arr => arr.includes(p.id));
-                        const releasedByTeam = isNewlyReleased ? teams.find(t => (transfers?.releases?.[t.id] || []).includes(p.id)) : null;
-                        const teamColor = releasedByTeam?.color || "#1E2D45";
-                        const cardBg = canPick ? "#2ECC7111" : isNewlyReleased ? "#FF3D5A08" : "#080C14";
-                        const cardBorder = canPick ? "#2ECC7144" : isNewlyReleased ? teamColor+"44" : "#1E2D4544";
-                        return (
-                          <div key={p.id} style={{display:"flex",alignItems:"center",gap:8,padding:"8px 10px",background:cardBg,borderRadius:0,borderLeft:isNewlyReleased?"3px solid "+teamColor+"99":"1px solid "+cardBorder,marginBottom:6}}>
-                            <div style={{flex:1,minWidth:0}}>
-                              <div style={{display:"flex",alignItems:"center",gap:5,flexWrap:"wrap"}}>
-                                <span style={{fontWeight:700,fontSize:12,color:T.text}}>{p.name}</span>
-                                <TierBadge tier={p.tier} />
-                                {isPlayerSafe(p.id) && (
-                                  <span style={{fontSize:9,background:"#2ECC7111",color:T.success,border:`1px solid ${T.success}33`,borderRadius:4,padding:"1px 5px",fontWeight:700}}>🛡 SAFE</span>
-                                )}
-                              </div>
-                              <div style={{display:"flex",alignItems:"center",gap:6,marginTop:2,flexWrap:"wrap"}}>
-                                <span style={{fontSize:10,color:T.muted}}>{p.iplTeam} • {p.role}</span>
-                                {isNewlyReleased && releasedByTeam && (
-                                  <span style={{display:"flex",alignItems:"center",gap:3,fontSize:9,fontWeight:800,letterSpacing:0.5,color:teamColor,background:teamColor+"15",border:"1px solid "+teamColor+"44",borderRadius:4,padding:"1px 6px"}}>
-                                    <span style={{width:5,height:5,borderRadius:"50%",background:teamColor,display:"inline-block",flexShrink:0}} />
-                                    FROM {releasedByTeam.name.toUpperCase()}
-                                  </span>
-                                )}
-                                {!isNewlyReleased && (
-                                  <span style={{fontSize:9,color:T.muted,background:"#1E2D4555",border:"1px solid #1E2D4599",borderRadius:4,padding:"1px 6px",fontWeight:700}}>UNSOLD</span>
-                                )}
-                              </div>
+                      <div style={{display:"grid",gridTemplateColumns:"repeat(3, 1fr)",gap:8,marginBottom:8}}>
+                        {tierPlayers.map(p => {
+                          const canPickNow = (isMyTurn || unlocked) && phase==="trade" && !isPlayerSafe(p.id);
+                          const pickAsTeam = isMyTurn ? myTeamId : currentPickTeamId;
+                          const releasedByPickingTeam = (transfers?.releases?.[pickAsTeam]||[]).includes(p.id);
+                          const valid = canPickNow && !releasedByPickingTeam ? getValidMatches(p, pickAsTeam) : [];
+                          const canPick = valid.length > 0;
+                          const isNewlyReleased = Object.values(transfers?.releases || {}).some(arr => arr.includes(p.id));
+                          const releasedByTeam = isNewlyReleased ? teams.find(t => (transfers?.releases?.[t.id] || []).includes(p.id)) : null;
+                          const pTotal = Object.values(points[p.id] || {}).reduce((s, m) => s + (m.base || 0), 0);
+                          
+                          return (
+                            <div key={p.id} style={{position:"relative"}}>
+                              <PlayerCard
+                                player={p}
+                                isSelected={false}
+                                canClick={canPick}
+                                onClick={() => canPick && handlePickClick(p)}
+                                selectionColor={canPick ? "#2ECC71" : T.border}
+                                showPoints={true}
+                                points={pTotal}
+                              />
+                              {isPlayerSafe(p.id) && (
+                                <div style={{position:"absolute",top:8,left:8,background:T.success,borderRadius:6,padding:"4px 8px",fontSize:9,fontWeight:800,color:"#FFF",zIndex:3,boxShadow:"0 2px 6px rgba(0,0,0,0.4)"}}>
+                                  🛡 SAFE
+                                </div>
+                              )}
+                              {isNewlyReleased && releasedByTeam && (
+                                <div style={{position:"absolute",top:8,left:8,background:releasedByTeam.color,borderRadius:6,padding:"4px 8px",fontSize:9,fontWeight:800,color:"#FFF",zIndex:3,boxShadow:"0 2px 6px rgba(0,0,0,0.4)"}}>
+                                  FROM {releasedByTeam.name.split(" ")[0].toUpperCase()}
+                                </div>
+                              )}
+                              {canPick && (
+                                <button onClick={() => handlePickClick(p)}
+                                  style={{position:"absolute",top:8,right:8,background:"#2ECC71",border:"none",padding:"4px 10px",color:"#050F05",fontSize:10,fontWeight:800,cursor:"pointer",fontFamily:fonts.display,letterSpacing:2,clipPath:"polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%)",textTransform:"uppercase",filter:"drop-shadow(2px 2px 0 #0A5020)",zIndex:3}}>
+                                  PICK
+                                </button>
+                              )}
                             </div>
-                            {canPick && (
-                              <button onClick={() => handlePickClick(p)}
-                                style={{background:"#2ECC71",border:"none",padding:"5px 14px",color:"#050F05",fontSize:11,fontWeight:800,cursor:"pointer",flexShrink:0,fontFamily:fonts.display,letterSpacing:2,clipPath:"polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%)",textTransform:"uppercase",filter:"drop-shadow(2px 2px 0 #0A5020)"}}>
-                                PICK
-                              </button>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
+                          );
+                        })}
+                      </div>
+                    </React.Fragment>
                   );
                 });
               })()}
@@ -1686,25 +1910,42 @@ onUpdateTransfers({
                 return (
                   <div key={team.id} style={{marginBottom:10}}>
                     {(!myTeamId || unlocked) && <div style={{fontSize:11,color:team.color,fontWeight:700,marginBottom:4}}>{team.name}</div>}
-                    {released.map(p => {
-                      const traded = pairs.find(pr => pr.releasedPid === p.id);
-                      const ineligible = (transfers.ineligible||[]).includes(p.id);
-                      return (
-                        <div key={p.id} style={{display:"flex",alignItems:"center",gap:6,padding:"6px 10px",background:traded?"#2ECC7111":p.pickedByOther?"#FF3D5A11":ineligible?"#4A5E7822":"#080C14",borderRadius:0,borderLeft:"3px solid "+(traded?"#2ECC71":p.pickedByOther?"#FF3D5A":ineligible?"#4A5E7866":"#1E2D45"),border:"1px solid "+(traded?"#2ECC7144":p.pickedByOther?"#FF3D5A33":ineligible?"#4A5E7844":"#1E2D44"),marginBottom:4}}>
-                          <span style={{fontSize:11}}>{traded?"✅":p.pickedByOther?"🚫":ineligible?"↩️":"📤"}</span>
-                          <div style={{flex:1}}>
-                            <div style={{display:"flex",alignItems:"center",gap:4}}>
-                              <span style={{fontWeight:700,fontSize:12,color:traded?"#2ECC71":p.pickedByOther?"#FF3D5A":ineligible?"#4A5E78":"#E2EAF4",textDecoration:(traded||p.pickedByOther)?"line-through":"none"}}>{p.name}</span>
-                              <TierBadge tier={p.tier} />
-                            </div>
-                            <div style={{fontSize:10,color:T.muted}}>{p.role}</div>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(3, 1fr)",gap:6}}>
+                      {released.map(p => {
+                        const traded = pairs.find(pr => pr.releasedPid === p.id);
+                        const ineligible = (transfers.ineligible||[]).includes(p.id);
+                        const pTotal = Object.values(points[p.id] || {}).reduce((s, m) => s + (m.base || 0), 0);
+                        
+                        return (
+                          <div key={p.id} style={{position:"relative",opacity:traded||p.pickedByOther?0.6:1}}>
+                            <PlayerCard
+                              player={p}
+                              isSelected={false}
+                              canClick={false}
+                              onClick={undefined}
+                              selectionColor={team.color}
+                              showPoints={true}
+                              points={pTotal}
+                            />
+                            {traded && (
+                              <div style={{position:"absolute",top:8,left:8,background:"#2ECC71",borderRadius:6,padding:"4px 8px",fontSize:9,fontWeight:800,color:"#FFF",zIndex:3,boxShadow:"0 2px 6px rgba(0,0,0,0.4)"}}>
+                                ✅ TRADED
+                              </div>
+                            )}
+                            {p.pickedByOther && !traded && (
+                              <div style={{position:"absolute",top:8,left:8,background:"#FF3D5A",borderRadius:6,padding:"4px 8px",fontSize:9,fontWeight:800,color:"#FFF",zIndex:3,boxShadow:"0 2px 6px rgba(0,0,0,0.4)"}}>
+                                🚫 TAKEN
+                              </div>
+                            )}
+                            {ineligible && !traded && !p.pickedByOther && (
+                              <div style={{position:"absolute",top:8,left:8,background:"#4A5E78",borderRadius:6,padding:"4px 8px",fontSize:9,fontWeight:800,color:"#FFF",zIndex:3,boxShadow:"0 2px 6px rgba(0,0,0,0.4)"}}>
+                                ↩️ RETURNED
+                              </div>
+                            )}
                           </div>
-                          {traded && <span style={{fontSize:10,color:T.success,fontWeight:700}}>TRADED</span>}
-                          {p.pickedByOther && !traded && <span style={{fontSize:10,color:"#FF3D5A",fontWeight:700}}>TAKEN</span>}
-                          {ineligible && !traded && !p.pickedByOther && <span style={{fontSize:10,color:T.muted,fontWeight:700}}>RETURNED</span>}
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
                 );
               })}

@@ -2417,7 +2417,7 @@ ${aiMatchText.slice(0, 3000)}`;
             </div>
           </div>
         )}
-        <div style={{maxWidth:860,margin:"0 auto",padding:"20px 16px 90px"}}>
+        <div style={{maxWidth:1200,margin:"0 auto",padding:"20px 16px 90px"}}>
 
           {page==="setup"&&(
             <SetupPage
