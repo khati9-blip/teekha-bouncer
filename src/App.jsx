@@ -198,6 +198,7 @@ const [pointsReady, setPointsReady] = useState(() => {
   const [selectedBulk, setSelectedBulk] = useState([]); // toggle squad view
   const [teamFilter, setTeamFilter] = useState(null); // filter by fantasy team
   const [sortOrder, setSortOrder] = useState('null'); // default | az | za
+  const [matchCheckSchedule, setMatchCheckSchedule] = useState({}); // {matchId: {nextCheck: timestamp, attempts: number}}
   const [teamLogos, setTeamLogos] = useState({});
   const [safePlayers, setSafePlayers] = useState({}); // {teamId: [pid,pid,pid]}
   const [ruledOut, setRuledOut] = useState([]); // [pid, pid] — players ruled out for season
@@ -869,6 +870,130 @@ setPoolLoading(false);
     const t = setInterval(loadNotifications, 600000); // 10 minutes - reduced from 2 min to save quota
     return () => clearInterval(t);
   }, []);
+
+  // ── AUTO-CHECK MATCH LIVE STATUS ──────────────────────────────────────────
+  React.useEffect(() => {
+    if (!appReady || matches.length === 0) return;
+
+    const checkInterval = setInterval(async () => {
+      const now = Date.now();
+      
+      for (const match of matches) {
+        // Skip if already live or completed
+        if (match.status === "live" || match.status === "completed") continue;
+        if (!match.date || !match.time) continue;
+
+        // Parse match scheduled time (IST) - handles both "19:30" and "07:30 pm" formats
+        let timeStr = match.time;
+        if (timeStr.includes('pm') || timeStr.includes('am')) {
+          // Convert 12-hour to 24-hour format
+          const isPM = timeStr.includes('pm');
+          const isAM = timeStr.includes('am');
+          const timePart = timeStr.replace(/\s*(am|pm)\s*/i, '').trim();
+          const [hours, minutes] = timePart.split(':').map(Number);
+          let hour24 = hours;
+          if (isPM && hours !== 12) hour24 = hours + 12;
+          if (isAM && hours === 12) hour24 = 0;
+          timeStr = `${hour24.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        }
+        const matchDateTime = new Date(`${match.date}T${timeStr}:00+05:30`);
+        const matchTimestamp = matchDateTime.getTime();
+
+        // Check if we have a schedule entry
+        const scheduleEntry = matchCheckSchedule[match.id];
+
+        // Initialize schedule if match time has arrived and no schedule exists
+        if (!scheduleEntry && now >= matchTimestamp) {
+          setMatchCheckSchedule(prev => ({
+            ...prev,
+            [match.id]: { nextCheck: now, attempts: 0 }
+          }));
+          continue;
+        }
+
+        // If we have a schedule and it's time to check
+        if (scheduleEntry && now >= scheduleEntry.nextCheck) {
+          console.log(`🔍 Checking live status for ${match.team1} vs ${match.team2}...`);
+
+          try {
+            // Search Google for live status
+            const searchQuery = `${match.team1} vs ${match.team2} live score`;
+            const searchRes = await fetch(`https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`);
+            const searchText = await searchRes.text();
+
+            // Detect if match is live (look for live indicators in search results)
+            const isLive = /\b(LIVE|Live|●|In Progress|In progress)\b/i.test(searchText) && 
+                          !/\b(Upcoming|upcoming|Scheduled|scheduled)\b/i.test(searchText);
+
+            if (isLive) {
+              console.log(`✅ Match ${match.matchNum} is LIVE - updating status and locking C/VC`);
+              
+              // Update match status to live
+              const updatedMatches = matches.map(m => 
+                m.id === match.id ? { ...m, status: "live" } : m
+              );
+              updMatches(updatedMatches);
+
+              // Auto-lock C/VC for this match
+              const updatedCaptains = {
+                ...captains,
+                [match.id + "_locked"]: true
+              };
+              updCaptains(updatedCaptains);
+
+              // Push notification
+              await pushNotif("system", `🔴 Match ${match.matchNum} is now LIVE! C/VC selections locked.`, "⚽");
+
+              // Remove from check schedule
+              setMatchCheckSchedule(prev => {
+                const newSchedule = { ...prev };
+                delete newSchedule[match.id];
+                return newSchedule;
+              });
+
+            } else {
+              // Not live yet - schedule next check
+              const attempts = scheduleEntry.attempts + 1;
+              
+              if (attempts === 1) {
+                // After first attempt (at scheduled time), wait 5 minutes
+                console.log(`⏳ Match ${match.matchNum} not live yet, will check again in 5 minutes`);
+                setMatchCheckSchedule(prev => ({
+                  ...prev,
+                  [match.id]: { nextCheck: now + 5 * 60 * 1000, attempts }
+                }));
+              } else if (attempts < 8) {
+                // After 5 min, check every 15 minutes (max 8 attempts = ~2 hours)
+                console.log(`⏳ Match ${match.matchNum} still not live, will check again in 15 minutes (attempt ${attempts})`);
+                setMatchCheckSchedule(prev => ({
+                  ...prev,
+                  [match.id]: { nextCheck: now + 15 * 60 * 1000, attempts }
+                }));
+              } else {
+                // Stop checking after 8 attempts
+                console.log(`⚠️ Stopped checking match ${match.matchNum} after 8 attempts`);
+                setMatchCheckSchedule(prev => {
+                  const newSchedule = { ...prev };
+                  delete newSchedule[match.id];
+                  return newSchedule;
+                });
+              }
+            }
+          } catch (error) {
+            console.error(`❌ Error checking live status for match ${match.matchNum}:`, error.message);
+            
+            // On error, retry in 5 minutes (don't increment attempts)
+            setMatchCheckSchedule(prev => ({
+              ...prev,
+              [match.id]: { nextCheck: now + 5 * 60 * 1000, attempts: scheduleEntry.attempts }
+            }));
+          }
+        }
+      }
+    }, 60 * 1000); // Check every 60 seconds
+
+    return () => clearInterval(checkInterval);
+  }, [appReady, matches, matchCheckSchedule, captains]);
 
   const unreadNotifCount = notifications.filter(n => n.ts > notifLastRead).length;
 
