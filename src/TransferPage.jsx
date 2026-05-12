@@ -45,6 +45,7 @@ export default function TransferPage({
           user={user}
           pitchConfig={pitchConfig}
           ruledOut={ruledOut}
+          storeSet={storeSet}
           onUpdateTransfers={onUpdateTransfers}
           onUpdateAssignments={onUpdateAssignments}
           onUpdateUnsoldPool={onUpdateUnsoldPool}

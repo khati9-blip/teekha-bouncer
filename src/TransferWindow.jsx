@@ -326,7 +326,7 @@ export default function TransferWindow({
   leaderboard, isAdmin, myTeam, unlocked, withPassword,
   onUpdateTransfers, onUpdateAssignments, onUpdateUnsoldPool,
   onUpdateOwnershipLog, ownershipLog, points,
-  user, safePlayers, pitchConfig, ruledOut = []
+  user, safePlayers, pitchConfig, ruledOut = [], storeSet
 }) {
   useEffect(() => {
     if (!document.getElementById('transfer-player-card-styles')) {
@@ -792,21 +792,28 @@ export default function TransferWindow({
     const current = transfers?.releases?.[teamId] || [];
     const isReleased = current.includes(pid);
     if (!isReleased && current.length >= 3) { alert("Max 3 releases per team"); return; }
+    
+    // 🔒 ROCK SOLID: Calculate new releases for THIS team only
+    const newReleases = isReleased 
+      ? current.filter(x => x !== pid) 
+      : [...current, pid];
+    
+    // 🔒 ATOMIC SAVE: Save this team's releases to separate Supabase key
+    storeSet(`releases_${teamId}`, newReleases);
+    
+    // Update local state for immediate UI feedback (doesn't save to Supabase)
     const updated = {
       ...transfers,
       releases: {
         ...transfers.releases,
-        [teamId]: isReleased ? current.filter(x => x !== pid) : [...current, pid]
+        [teamId]: newReleases
       }
     };
-    
-    // Update pool by calculating from current state, not individual add/remove
-    const newPool = isReleased 
-      ? unsoldPool.filter(id => id !== pid)  // removing: filter out
-      : unsoldPool.includes(pid) ? unsoldPool : [...unsoldPool, pid];  // adding: append if not present
-    
-    onUpdateUnsoldPool(newPool);
     onUpdateTransfers(updated);
+    
+    // 🔒 ATOMIC UNSOLD POOL UPDATE: Use read-before-write pattern via (pid, action)
+    const action = isReleased ? "remove" : "add";
+    onUpdateUnsoldPool(pid, action);
   };
 
   // ── PICK ───────────────────────────────────────────────────────────────────

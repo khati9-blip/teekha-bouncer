@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import MVPSlideshow from './MVPSlideshow';
 import FormChart from "./FormChart";
 import H2HStats from "./H2HStats";
@@ -281,7 +281,7 @@ const [highlightPlayer, setHighlightPlayer] = useState(null);
 
         // Load critical keys in batches
         const critResults = await batchLoad(criticalKeys, 5);
-        const [t,a,m,c,tn,nt,ph,tr,sn,ti,pc,tv,sp,pcfg,ro,up0] = critResults;
+       const [t,a,m,c,tn,nt,ph,tr,sn,ti,pc,tv,sp,pcfg,ro,up0] = critResults;
         if(up0) setUnsoldPool(up0);
 setPoolLoading(false);
         if(t) setTeams(t);
@@ -292,8 +292,22 @@ setPoolLoading(false);
         if(nt) setNumTeams(nt);
         if(ph) setPwHash(ph);
         else { const ah = await sbGet(_pitchId + "_adminHash"); if(ah) { setPwHash(ah); storeSet("pwhash", ah); } }
-        if(tr && typeof tr === 'object') { setTransfers(tr); setTransfersLoaded(true); }
-        else setTransfersLoaded(true);
+        // 🔒 ROCK SOLID: Load releases from separate team keys dynamically
+        let reconstructedReleases = {};
+        if (t && Array.isArray(t)) {
+          // Load releases for each team that exists
+          const releaseKeys = t.map(team => _pitchId + "_releases_" + team.id);
+          const releaseResults = await sbGetMany(releaseKeys);
+          t.forEach((team, idx) => {
+            reconstructedReleases[team.id] = releaseResults[idx] || [];
+          });
+        }
+        
+        const mergedTransfers = tr && typeof tr === 'object' 
+          ? { ...tr, releases: reconstructedReleases }
+          : { weekNum: 1, phase: 'closed', releases: reconstructedReleases, picks: [], currentPickTeam: null, pickDeadline: null, history: [] };
+        setTransfers(mergedTransfers);
+        setTransfersLoaded(true);
         if(sn && typeof sn === 'object') setSnatch(sn);
         if(ti && typeof ti === 'object') setTeamIdentity(ti);
         if(pc && typeof pc === 'object') setPointsConfig(prev=>({...prev,...pc}));
@@ -1021,6 +1035,38 @@ setPoolLoading(false);
 
   const isPlayerSafe = (pid) => Object.values(safePlayers).some(arr => arr.includes(pid));
   const isPlayerSafeForTeam = (teamId, pid) => (safePlayers[teamId]||[]).includes(pid);
+
+  // 🔒 ROCK SOLID: Queue for atomic unsoldPool updates
+  const unsoldPoolQueue = useRef(Promise.resolve());
+  
+  const queueUnsoldPoolUpdate = (pid, action) => {
+    unsoldPoolQueue.current = unsoldPoolQueue.current.then(async () => {
+      try {
+        // 🔒 CRITICAL: Fetch FRESH from Supabase, bypassing cache
+        const fullKey = _pitchId + "_unsoldPool";
+        const response = await fetch("https://rmcxhorijitrhqyrvvkn.supabase.co/rest/v1/league_data?key=eq." + fullKey, {
+          headers: {
+            "apikey": "sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm",
+            "Authorization": "Bearer sb_publishable_V-AVbMHELIebUlnMl5h3dA_Yn4YEoHm"
+          }
+        });
+        const data = await response.json();
+        const latest = data[0]?.value || [];
+        
+        // Compute new pool
+        const merged = action === "add"
+          ? (latest.includes(pid) ? latest : [...latest, pid])
+          : latest.filter(id => id !== pid);
+        
+        // Save atomically
+        setUnsoldPool(merged);
+        await storeSet("unsoldPool", merged);
+      } catch (e) {
+        console.error("❌ Failed to update unsoldPool:", e);
+      }
+    });
+    return unsoldPoolQueue.current;
+  };
 
   const addToUnsoldPool = (pid) => {
     withPassword(() => {
@@ -3440,16 +3486,11 @@ onChange={e=>setPlayerSearch(e.target.value)}
   // If called with full array (no action), just save directly
   if (Array.isArray(pid)) {
     setUnsoldPool(pid);
-    storeSet("unsoldPool", pid);
+    await storeSet("unsoldPool", pid);
     return;
   }
-  // Fetch FRESH from Supabase every time to prevent race condition
-  const latest = await storeGet("unsoldPool") || [];
-  const merged = action === "add"
-    ? (latest.includes(pid) ? latest : [...latest, pid])
-    : latest.filter(id => id !== pid);
-  setUnsoldPool(merged);
-  storeSet("unsoldPool", merged);
+  // 🔒 ATOMIC: Use queue to prevent race conditions
+  await queueUnsoldPoolUpdate(pid, action);
 }}
               onUpdateOwnershipLog={(val)=>{setOwnershipLog(val);storeSet("ownershipLog",val);}}
               onUpdatePoints={updPoints}
