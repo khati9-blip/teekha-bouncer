@@ -1040,6 +1040,12 @@ setPoolLoading(false);
         autoSafe = teamSafe.auto || [];
       }
       
+      // 🔒 BLOCK: Cannot toggle auto-safe players (returned from snatch)
+      if (autoSafe.includes(pid)) {
+        alert("⚠️ This player is AUTO-SAFE (returned from snatch) and cannot be manually toggled!");
+        return;
+      }
+      
       let updatedManual;
       if (manualSafe.includes(pid)) {
         // Remove from manual safe
