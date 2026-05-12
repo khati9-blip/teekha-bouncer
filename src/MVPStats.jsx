@@ -328,6 +328,7 @@ export default function MVPStats({ players, teams, assignments, points, captains
                     onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; }}
                     onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; }}
                   >
+                    <style>{`.mvp-card .mvp-stats-panel{transform:translateY(100%);transition:transform 0.4s cubic-bezier(0.4,0,0.2,1)}.mvp-card:hover .mvp-stats-panel{transform:translateY(0)}.mvp-card .mvp-overlay{opacity:0.15;transition:opacity 0.4s ease}.mvp-card:hover .mvp-overlay{opacity:0.75}.mvp-card .mvp-name-badge{opacity:1;transition:opacity 0.3s ease}.mvp-card:hover .mvp-name-badge{opacity:0}`}</style>
                     {/* Image */}
                     <div style={{ position: "absolute", inset: 0, zIndex: 0 }}>
                       <img src={`https://rmcxhorijitrhqyrvvkn.supabase.co/storage/v1/object/public/player-images/${row.player.id}.png`} alt={row.player.name} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top center" }} onError={e => { e.target.style.display = "none"; }} />
