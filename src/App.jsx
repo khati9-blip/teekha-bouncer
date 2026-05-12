@@ -2115,27 +2115,65 @@ ${aiMatchText.slice(0, 3000)}`;
     if (!appReady || matches.length === 0) return;
 
     const checkAndUpdate = async (matchesToCheck) => {
+      const timestamp = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+      console.log(`\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+      console.log(`🔍 AUTO-CHECK START: ${timestamp}`);
+      console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+      console.log(`📋 Checking ${matchesToCheck.length} match(es):`, matchesToCheck.map(m => `${m.team1} vs ${m.team2} (${m.status})`));
+      
       try {
+        console.log(`⏳ Fetching from RapidAPI...`);
         const [liveRes, resultsRes] = await Promise.all([
-          fetch("/api/cricketdata?path=currentMatches").then(r=>r.json()).catch(()=>({})),
-          fetch("/api/cricketdata?path=cricket-results").then(r=>r.json()).catch(()=>({})),
+          fetch("/api/cricketdata?path=currentMatches").then(r=>r.json()).catch(e=>{ console.error("❌ currentMatches API failed:", e); return {}; }),
+          fetch("/api/cricketdata?path=cricket-results").then(r=>r.json()).catch(e=>{ console.error("❌ cricket-results API failed:", e); return {}; }),
         ]);
+        
+        console.log(`📥 RapidAPI Live Response:`, liveRes);
+        console.log(`📥 RapidAPI Results Response:`, resultsRes);
+        
         const liveList = Array.isArray(liveRes?.response) ? liveRes.response : [];
         const liveIds = new Set(liveList.map(m => String(m?.matchId || m?.id)).filter(Boolean));
         const resultsList = Array.isArray(resultsRes?.response) ? resultsRes.response : [];
         const completedIds = new Set(resultsList.map(m => String(m?.matchId || m?.id)).filter(Boolean));
 
+        console.log(`🔴 Live Match IDs Found:`, Array.from(liveIds));
+        console.log(`✅ Completed Match IDs Found:`, Array.from(completedIds));
+
         let matchesChanged = false;
         let captainsChanged = false;
         const updatedMatches = matches.map(m => {
-          if (!m.cricbuzzId) return m;
+          if (!m.cricbuzzId) {
+            console.log(`⚠️ ${m.team1} vs ${m.team2}: No cricbuzzId set`);
+            return m;
+          }
           const id = String(m.cricbuzzId);
-          if (m.status === "completed") return m;
-          if (completedIds.has(id)) { matchesChanged = true; return { ...m, status: "completed" }; }
-          if (liveIds.has(id)) { matchesChanged = true; return { ...m, status: "live" }; }
+          console.log(`🔍 Checking ${m.team1} vs ${m.team2} (cricbuzzId: ${id}, current status: ${m.status})`);
+          
+          if (m.status === "completed") {
+            console.log(`   ↳ Already completed, skipping`);
+            return m;
+          }
+          if (completedIds.has(id)) { 
+            console.log(`   ↳ ✅ FOUND IN COMPLETED LIST → Setting to "completed"`);
+            matchesChanged = true; 
+            return { ...m, status: "completed" }; 
+          }
+          if (liveIds.has(id)) { 
+            console.log(`   ↳ 🔴 FOUND IN LIVE LIST → Setting to "live"`);
+            matchesChanged = true; 
+            return { ...m, status: "live" }; 
+          }
+          console.log(`   ↳ Not found in any list, keeping status: ${m.status}`);
           return m;
         });
-        if (matchesChanged) updMatches(updatedMatches);
+        
+        if (matchesChanged) {
+          console.log(`✅ MATCHES STATUS CHANGED!`);
+          console.log(`   Live matches now:`, updatedMatches.filter(m => m.status === "live").map(m => `${m.team1} vs ${m.team2}`));
+          updMatches(updatedMatches);
+        } else {
+          console.log(`ℹ️ No match status changes`);
+        }
 
         // Auto-lock C/VC for matches that just went live
         const newCaptains = { ...captains };
@@ -2144,15 +2182,31 @@ ${aiMatchText.slice(0, 3000)}`;
           const id = String(m.cricbuzzId);
           const isLive = liveIds.has(id) || completedIds.has(id);
           const alreadyLocked = !!captains[m.id + "_locked"];
+          
           if (isLive && !alreadyLocked) {
+            console.log(`🔒 AUTO-LOCKING C/VC: ${m.team1} vs ${m.team2}`);
             newCaptains[m.id + "_locked"] = true;
             captainsChanged = true;
             pushNotif('match', `🔒 C/VC locked for ${m.team1} vs ${m.team2} — match is live!`, '🔒');
           }
         });
-        if (captainsChanged) updCaptains(newCaptains);
+        
+        if (captainsChanged) {
+          console.log(`✅ CAPTAINS AUTO-LOCKED!`);
+          updCaptains(newCaptains);
+        } else {
+          console.log(`ℹ️ No captain locks needed`);
+        }
 
-      } catch(e) { console.warn("Auto status/lock check failed:", e.message); }
+        console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+        console.log(`✅ AUTO-CHECK COMPLETE: ${timestamp}`);
+        console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
+
+      } catch(e) { 
+        console.error(`❌ AUTO-CHECK FAILED:`, e); 
+        console.error(`   Error message:`, e.message);
+        console.error(`   Stack:`, e.stack);
+      }
     };
 
     const timeouts = [];
