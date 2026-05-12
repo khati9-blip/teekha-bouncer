@@ -183,11 +183,19 @@ export default function SnatchSection({
 
     const newAssignments = { ...assignments, [pid]: fromTeamId };
 
-    // Mark player permanently safe
+    // Mark player permanently safe (AUTO-SAFE - unlimited)
     const safeObj = (Array.isArray(safePlayers) || !safePlayers) ? {} : { ...safePlayers };
-    const teamSafe = safeObj[fromTeamId] || [];
-    if (!teamSafe.includes(pid)) safeObj[fromTeamId] = [...teamSafe, pid];
-    onUpdateSafePlayers(safeObj);
+    const teamSafe = safeObj[fromTeamId] || { manual: [], auto: [] };
+    const manualSafe = Array.isArray(teamSafe) ? teamSafe : (teamSafe.manual || []); // Backward compat
+    const autoSafe = Array.isArray(teamSafe) ? [] : (teamSafe.auto || []);
+    
+    if (!autoSafe.includes(pid)) {
+      safeObj[fromTeamId] = { 
+        manual: manualSafe, 
+        auto: [...autoSafe, pid] 
+      };
+      onUpdateSafePlayers(safeObj);
+    }
 
     onUpdateSnatch({ ...snatch, active: null, history: newHistory });
     onUpdateAssignments(newAssignments);

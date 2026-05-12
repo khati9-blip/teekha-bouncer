@@ -1019,22 +1019,62 @@ setPoolLoading(false);
 
   const toggleSafePlayer = (teamId, pid) => {
     withPassword(() => {
-      const current = safePlayers[teamId] || [];
-      let updated;
-      if (current.includes(pid)) {
-        updated = current.filter(x => x !== pid);
+      const teamSafe = safePlayers[teamId] || { manual: [], auto: [] };
+      
+      // 🔒 CRITICAL: Handle backward compatibility - convert old array format FIRST
+      let manualSafe, autoSafe;
+      
+      if (Array.isArray(teamSafe)) {
+        // Old format detected - need to identify which players are auto-safe
+        // Check snatch history to see if any players were returned (those are auto-safe)
+        const returnedPlayerIds = (snatch?.history || [])
+          .filter(h => h.returnDate && h.fromTeamId === teamId)
+          .map(h => h.pid);
+        
+        // Split old array into manual and auto
+        manualSafe = teamSafe.filter(p => !returnedPlayerIds.includes(p));
+        autoSafe = teamSafe.filter(p => returnedPlayerIds.includes(p));
       } else {
-        if (current.length >= 3) { alert("Max 3 safe players per team!"); return; }
-        updated = [...current, pid];
+        // New format
+        manualSafe = teamSafe.manual || [];
+        autoSafe = teamSafe.auto || [];
       }
-      const newSafe = { ...safePlayers, [teamId]: updated };
+      
+      let updatedManual;
+      if (manualSafe.includes(pid)) {
+        // Remove from manual safe
+        updatedManual = manualSafe.filter(x => x !== pid);
+      } else {
+        // Add to manual safe (check limit for MANUAL only, not auto)
+        if (manualSafe.length >= 3) { 
+          alert(`Max 3 manual safe players per team! (Auto-safe from snatch returns: ${autoSafe.length})`); 
+          return; 
+        }
+        updatedManual = [...manualSafe, pid];
+      }
+      
+      const newSafe = { 
+        ...safePlayers, 
+        [teamId]: { manual: updatedManual, auto: autoSafe } 
+      };
       setSafePlayers(newSafe);
       storeSet("safePlayers", newSafe);
     });
   };
 
-  const isPlayerSafe = (pid) => Object.values(safePlayers).some(arr => arr.includes(pid));
-  const isPlayerSafeForTeam = (teamId, pid) => (safePlayers[teamId]||[]).includes(pid);
+  const isPlayerSafe = (pid) => {
+    return Object.values(safePlayers).some(teamSafe => {
+      if (Array.isArray(teamSafe)) return teamSafe.includes(pid); // Backward compatibility
+      return (teamSafe.manual || []).includes(pid) || (teamSafe.auto || []).includes(pid);
+    });
+  };
+  
+  const isPlayerSafeForTeam = (teamId, pid) => {
+    const teamSafe = safePlayers[teamId];
+    if (!teamSafe) return false;
+    if (Array.isArray(teamSafe)) return teamSafe.includes(pid); // Backward compatibility
+    return (teamSafe.manual || []).includes(pid) || (teamSafe.auto || []).includes(pid);
+  };
 
   // 🔒 ROCK SOLID: Queue for atomic unsoldPool updates
   const unsoldPoolQueue = useRef(Promise.resolve());
