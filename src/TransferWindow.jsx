@@ -32,9 +32,6 @@ const PLAYER_CARD_STYLES = `
     transform: translateY(100%);
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
-  .transfer-player-card:hover .stats-overlay {
-    transform: translateY(0);
-  }
   .transfer-player-card .image-dark {
     opacity: 0.1;
     transition: opacity 0.3s ease;
@@ -47,7 +44,7 @@ const PLAYER_CARD_STYLES = `
 // ── PLAYER IMAGE CARD (for transfer selection) ────────────────────────────────
 
 function PlayerCard({ player, isSelected, canClick, onClick, selectionColor, showPoints = true, points, height = 300 }) {
-  const [isHovered, setIsHovered] = useState(false);
+  const [statsOpen, setStatsOpen] = useState(false);
   
   return (
     <div
@@ -64,9 +61,9 @@ function PlayerCard({ player, isSelected, canClick, onClick, selectionColor, sho
         transition: "all 0.3s ease",
         opacity: canClick ? 1 : 0.7
       }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      onClick={canClick ? onClick : undefined}
+      onMouseEnter={e => { e.currentTarget.querySelector(".stats-overlay") && (e.currentTarget.querySelector(".stats-overlay").style.transform = "translateY(0)"); }}
+      onMouseLeave={e => { if(!statsOpen) e.currentTarget.querySelector(".stats-overlay") && (e.currentTarget.querySelector(".stats-overlay").style.transform = "translateY(100%)"); }}
+      onClick={e => { setStatsOpen(o => !o); if(canClick) onClick && onClick(); }}
     >
 
       {/* Player Image */}
@@ -176,7 +173,9 @@ function PlayerCard({ player, isSelected, canClick, onClick, selectionColor, sho
             backdropFilter: "blur(12px)",
             padding: "16px 12px",
             borderTop: `3px solid ${isSelected ? selectionColor : T.accent}`,
-            zIndex: 1
+            zIndex: 1,
+            transform: statsOpen ? "translateY(0)" : "translateY(100%)",
+            transition: "transform 0.4s cubic-bezier(0.4,0,0.2,1)"
           }}
         >
           <div style={{
@@ -1661,7 +1660,7 @@ onUpdateTransfers({
                   </div>
                 )}
 
-                <div style={{display:"grid",gridTemplateColumns:"repeat(4, 1fr)",gap:8}}>
+                <div style={{display:"grid",gridTemplateColumns:window.innerWidth < 768 ? "repeat(2, 1fr)" : "repeat(4, 1fr)",gap:8}}>
                   {teamPlayers.map(p => {
                     const isReleased = released.includes(p.id);
                     const pTotal = Object.values(points[p.id] || {}).reduce((s, m) => s + (m.base || 0), 0);
@@ -1677,7 +1676,7 @@ onUpdateTransfers({
                           selectionColor={team.color}
                           showPoints={true}
                           points={pTotal}
-                          height={250}
+                          height={window.innerWidth < 768 ? 160 : 220}
                         />
                         {ruledOut.includes(p.id) && (
                           <div style={{position:"absolute",top:8,left:8,background:"#FF3D5A",borderRadius:6,padding:"4px 8px",fontSize:9,fontWeight:800,color:"#FFF",zIndex:3,boxShadow:"0 2px 6px rgba(0,0,0,0.4)"}}>
@@ -1828,7 +1827,7 @@ onUpdateTransfers({
           </div>
 
           {/* ── POOL + MY RELEASES ───────────────────────────────────────── */}
-          <div style={{display:"grid",gridTemplateColumns:"3fr 2fr",gap:16,marginBottom:16}}>
+          <div style={{display:"grid",gridTemplateColumns:window.innerWidth < 768 ? "1fr" : "3fr 2fr",gap:16,marginBottom:16}}>
 
             {/* Unsold pool */}
             <div style={{background:T.card,borderRadius:0,border:`1px solid ${T.border}`,borderTop:`2px solid ${T.border}`,padding:14}}>
@@ -1848,7 +1847,7 @@ onUpdateTransfers({
                   return (
                     <React.Fragment key={tier}>
                       <div style={{fontSize:9,fontFamily:fonts.display,fontWeight:800,letterSpacing:2,color:tierColors[tier],background:tierColors[tier]+"11",padding:"3px 8px",marginBottom:4,marginTop:4,clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)"}}>{(tier||"UNRANKED").toUpperCase()} ({tierPlayers.length})</div>
-                      <div style={{display:"grid",gridTemplateColumns:"repeat(3, 1fr)",gap:8,marginBottom:8}}>
+                      <div style={{display:"grid",gridTemplateColumns:window.innerWidth < 768 ? "repeat(2, 1fr)" : "repeat(3, 1fr)",gap:8,marginBottom:8}}>
                         {tierPlayers.map(p => {
                           const canPickNow = (isMyTurn || unlocked) && phase==="trade" && !isPlayerSafe(p.id);
                           const pickAsTeam = isMyTurn ? myTeamId : currentPickTeamId;
@@ -1869,6 +1868,7 @@ onUpdateTransfers({
                                 selectionColor={canPick ? "#2ECC71" : T.border}
                                 showPoints={true}
                                 points={pTotal}
+                                height={window.innerWidth < 768 ? 200 : 280}
                               />
                               {isPlayerSafe(p.id) && (
                                 <div style={{position:"absolute",top:8,left:8,background:T.success,borderRadius:6,padding:"4px 8px",fontSize:9,fontWeight:800,color:"#FFF",zIndex:3,boxShadow:"0 2px 6px rgba(0,0,0,0.4)"}}>
@@ -1926,6 +1926,7 @@ onUpdateTransfers({
                               selectionColor={team.color}
                               showPoints={true}
                               points={pTotal}
+                              height={160}
                             />
                             {traded && (
                               <div style={{position:"absolute",top:8,left:8,background:"#2ECC71",borderRadius:6,padding:"4px 8px",fontSize:9,fontWeight:800,color:"#FFF",zIndex:3,boxShadow:"0 2px 6px rgba(0,0,0,0.4)"}}>
