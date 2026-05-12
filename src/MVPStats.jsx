@@ -157,6 +157,7 @@ function medalColor(rank) {
 export default function MVPStats({ players, teams, assignments, points, captains, matches, snatch, ownershipLog, onClose }) {
   const [view, setView] = useState("weekly");
   const [weekOffset, setWeekOffset] = useState(0);
+  const [openCard, setOpenCard] = useState(null);
   const week = useMemo(() => getWeekBounds(weekOffset), [weekOffset]);
 
   const allStatsMatches = useMemo(() =>
@@ -270,33 +271,26 @@ export default function MVPStats({ players, teams, assignments, points, captains
           <div>
             <div style={{ fontFamily: fonts.display, fontSize: 9, color: T.muted, letterSpacing: 2, marginBottom: 12 }}>PLAYER PERFORMANCE (BASE POINTS)</div>
             {matchRows.length === 0 ? emptyMsg : (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
                 {matchRows.map((row, idx) => (
-                  <div key={row.player.id + row.match.id} className="mvp-card" style={{ position: "relative", borderRadius: 16, overflow: "hidden", border: `3px solid ${row.team.color}`, boxShadow: `0 8px 24px ${row.team.color}33`, background: T.bg, height: 380, cursor: "pointer", transition: "transform 0.3s ease" }}
-                    onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; }}
-                    onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; }}
+                  <div key={row.player.id + row.match.id} style={{ position: "relative", borderRadius: 12, overflow: "hidden", border: `3px solid ${row.team.color}`, boxShadow: `0 8px 24px ${row.team.color}33`, background: T.bg, height: "clamp(220px, 40vw, 380px)", cursor: "pointer", transition: "transform 0.3s ease" }}
+                    onClick={() => setOpenCard(openCard === "m"+idx ? null : "m"+idx)}
+                    onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; if(openCard !== "m"+idx){ e.currentTarget.querySelector(".m-panel").style.transform="translateY(0)"; e.currentTarget.querySelector(".m-overlay").style.opacity="0.75"; e.currentTarget.querySelector(".m-badge").style.opacity="0"; } }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; if(openCard !== "m"+idx){ e.currentTarget.querySelector(".m-panel").style.transform="translateY(100%)"; e.currentTarget.querySelector(".m-overlay").style.opacity="0.15"; e.currentTarget.querySelector(".m-badge").style.opacity="1"; } }}
                   >
-                    <style>{`.mvp-card .mvp-stats-panel{transform:translateY(100%);transition:transform 0.4s cubic-bezier(0.4,0,0.2,1)}.mvp-card:hover .mvp-stats-panel{transform:translateY(0)}.mvp-card .mvp-overlay{opacity:0.15;transition:opacity 0.4s ease}.mvp-card:hover .mvp-overlay{opacity:0.75}.mvp-card .mvp-name-badge{opacity:1;transition:opacity 0.3s ease}.mvp-card:hover .mvp-name-badge{opacity:0}`}</style>
                     {/* Image */}
                     <div style={{ position: "absolute", inset: 0, zIndex: 0 }}>
                       <img src={`https://rmcxhorijitrhqyrvvkn.supabase.co/storage/v1/object/public/player-images/${row.player.id}.png`} alt={row.player.name} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top center" }} onError={e => { e.target.style.display = "none"; }} />
-                      <div className="mvp-overlay" style={{ position: "absolute", inset: 0, background: "rgba(10,14,20,0.75)" }} />
+                      <div className="m-overlay" style={{ position: "absolute", inset: 0, background: "rgba(10,14,20,0.75)", opacity: 0.15, transition: "opacity 0.4s ease" }} />
                     </div>
-                    {/* Rank + pts badge top */}
-                    <div style={{ position: "relative", zIndex: 1, padding: 12, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                      <div style={{ background: "rgba(10,14,20,0.8)", backdropFilter: "blur(8px)", border: `2px solid ${medalColor(idx+1)}`, borderRadius: 24, padding: "4px 12px", fontFamily: fonts.display, fontSize: 13, fontWeight: 800, color: medalColor(idx+1) }}>#{idx+1}</div>
-                      <div style={{ background: `${row.team.color}dd`, backdropFilter: "blur(8px)", border: `2px solid ${row.team.color}`, borderRadius: 24, padding: "4px 12px", fontFamily: fonts.display, fontSize: 14, fontWeight: 800, color: "#fff" }}>{row.pts} pts</div>
+                    {/* Rank badge top */}
+                    <div style={{ position: "absolute", top: 8, left: 8, zIndex: 2, background: "rgba(10,14,20,0.8)", backdropFilter: "blur(8px)", border: `2px solid ${medalColor(idx+1)}`, borderRadius: 20, padding: "3px 10px", fontFamily: fonts.display, fontSize: "clamp(10px, 1.5vw, 13px)", fontWeight: 800, color: medalColor(idx+1) }}>#{idx+1}</div>
+                    {/* Name badge */}
+                    <div className="m-badge" style={{ position: "absolute", bottom: 8, left: 8, right: 8, background: "rgba(10,14,20,0.85)", backdropFilter: "blur(12px)", borderRadius: 8, padding: "8px 10px", border: `2px solid ${row.team.color}`, zIndex: 1, opacity: 1, transition: "opacity 0.3s ease" }}>
+                      <div style={{ fontFamily: fonts.display, fontWeight: 900, fontSize: "clamp(10px, 2.5vw, 15px)", letterSpacing: 0.5, textTransform: "uppercase", color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{row.player.name}</div>
                     </div>
-                    {/* Name badge default */}
-                    <div className="mvp-name-badge" style={{ position: "absolute", bottom: 16, left: 16, right: 16, background: "rgba(10,14,20,0.85)", backdropFilter: "blur(12px)", borderRadius: 12, padding: "12px 14px", border: `2px solid ${row.team.color}`, zIndex: 1 }}>
-                      <div style={{ fontFamily: fonts.display, fontWeight: 900, fontSize: 16, letterSpacing: 0.5, textTransform: "uppercase", color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginBottom: 4 }}>{row.player.name}</div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                        <span style={{ fontFamily: fonts.body, fontSize: 10, color: row.team.color, background: `${row.team.color}33`, padding: "2px 8px", borderRadius: 8, fontWeight: 700, border: `1px solid ${row.team.color}66` }}>{row.team.name}</span>
-                        <span style={{ fontFamily: fonts.body, fontSize: 10, color: "#94A3B8" }}>{row.player.role}</span>
-                      </div>
-                    </div>
-                    {/* Stats panel on hover */}
-                    <div className="mvp-stats-panel" style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(10,14,20,0.95)", backdropFilter: "blur(16px)", borderTop: `3px solid ${row.team.color}`, padding: "16px 14px", zIndex: 1 }}>
+                    {/* Stats panel */}
+                    <div className="m-panel" style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(10,14,20,0.95)", backdropFilter: "blur(16px)", borderTop: `3px solid ${row.team.color}`, padding: "16px 14px", zIndex: 1, transform: openCard === "m"+idx ? "translateY(0)" : "translateY(100%)", transition: "transform 0.4s cubic-bezier(0.4,0,0.2,1)" }}>
                       <div style={{ fontFamily: fonts.display, fontWeight: 900, fontSize: 16, textTransform: "uppercase", color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginBottom: 4 }}>{row.player.name}</div>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
                         <TierBadge tier={row.player.tier} />
@@ -324,31 +318,24 @@ export default function MVPStats({ players, teams, assignments, points, captains
             {allTimeRows.length === 0 ? emptyMsg : (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
                 {allTimeRows.map((row, idx) => (
-                  <div key={row.player.id + row.team.id} className="mvp-card" style={{ position: "relative", borderRadius: 16, overflow: "hidden", border: `3px solid ${row.team.color}`, boxShadow: `0 8px 24px ${row.team.color}33`, background: T.bg, height: 380, cursor: "pointer", transition: "transform 0.3s ease" }}
-                    onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; }}
-                    onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; }}
+                  <div key={row.player.id + row.team.id} style={{ position: "relative", borderRadius: 12, overflow: "hidden", border: `3px solid ${row.team.color}`, boxShadow: `0 8px 24px ${row.team.color}33`, background: T.bg, height: "clamp(220px, 40vw, 380px)", cursor: "pointer", transition: "transform 0.3s ease" }}
+                    onClick={() => setOpenCard(openCard === "a"+idx ? null : "a"+idx)}
+                    onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-4px)"; if(openCard !== "a"+idx){ e.currentTarget.querySelector(".a-panel").style.transform="translateY(0)"; e.currentTarget.querySelector(".a-overlay").style.opacity="0.75"; e.currentTarget.querySelector(".a-badge").style.opacity="0"; } }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; if(openCard !== "a"+idx){ e.currentTarget.querySelector(".a-panel").style.transform="translateY(100%)"; e.currentTarget.querySelector(".a-overlay").style.opacity="0.15"; e.currentTarget.querySelector(".a-badge").style.opacity="1"; } }}
                   >
-                    <style>{`.mvp-card .mvp-stats-panel{transform:translateY(100%);transition:transform 0.4s cubic-bezier(0.4,0,0.2,1)}.mvp-card:hover .mvp-stats-panel{transform:translateY(0)}.mvp-card .mvp-overlay{opacity:0.15;transition:opacity 0.4s ease}.mvp-card:hover .mvp-overlay{opacity:0.75}.mvp-card .mvp-name-badge{opacity:1;transition:opacity 0.3s ease}.mvp-card:hover .mvp-name-badge{opacity:0}`}</style>
                     {/* Image */}
                     <div style={{ position: "absolute", inset: 0, zIndex: 0 }}>
                       <img src={`https://rmcxhorijitrhqyrvvkn.supabase.co/storage/v1/object/public/player-images/${row.player.id}.png`} alt={row.player.name} style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "top center" }} onError={e => { e.target.style.display = "none"; }} />
-                      <div className="mvp-overlay" style={{ position: "absolute", inset: 0, background: "rgba(10,14,20,0.75)" }} />
+                      <div className="a-overlay" style={{ position: "absolute", inset: 0, background: "rgba(10,14,20,0.75)", opacity: 0.15, transition: "opacity 0.4s ease" }} />
                     </div>
                     {/* Rank badge top */}
-                    <div style={{ position: "relative", zIndex: 1, padding: 12, display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                      <div style={{ background: "rgba(10,14,20,0.8)", backdropFilter: "blur(8px)", border: `2px solid ${medalColor(idx+1)}`, borderRadius: 24, padding: "4px 12px", fontFamily: fonts.display, fontSize: 13, fontWeight: 800, color: medalColor(idx+1) }}>#{idx+1}</div>
-                      <div style={{ background: `${row.team.color}dd`, backdropFilter: "blur(8px)", border: `2px solid ${row.team.color}`, borderRadius: 24, padding: "4px 12px", fontFamily: fonts.display, fontSize: 14, fontWeight: 800, color: "#fff" }}>{row.total} pts</div>
+                    <div style={{ position: "absolute", top: 8, left: 8, zIndex: 2, background: "rgba(10,14,20,0.8)", backdropFilter: "blur(8px)", border: `2px solid ${medalColor(idx+1)}`, borderRadius: 20, padding: "3px 10px", fontFamily: fonts.display, fontSize: "clamp(10px, 1.5vw, 13px)", fontWeight: 800, color: medalColor(idx+1) }}>#{idx+1}</div>
+                    {/* Name badge */}
+                    <div className="a-badge" style={{ position: "absolute", bottom: 8, left: 8, right: 8, background: "rgba(10,14,20,0.85)", backdropFilter: "blur(12px)", borderRadius: 8, padding: "8px 10px", border: `2px solid ${row.team.color}`, zIndex: 1, opacity: 1, transition: "opacity 0.3s ease" }}>
+                      <div style={{ fontFamily: fonts.display, fontWeight: 900, fontSize: "clamp(10px, 2.5vw, 15px)", letterSpacing: 0.5, textTransform: "uppercase", color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{row.player.name}</div>
                     </div>
-                    {/* Name badge default */}
-                    <div className="mvp-name-badge" style={{ position: "absolute", bottom: 16, left: 16, right: 16, background: "rgba(10,14,20,0.85)", backdropFilter: "blur(12px)", borderRadius: 12, padding: "12px 14px", border: `2px solid ${row.team.color}`, zIndex: 1 }}>
-                      <div style={{ fontFamily: fonts.display, fontWeight: 900, fontSize: 16, letterSpacing: 0.5, textTransform: "uppercase", color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginBottom: 4 }}>{row.player.name}</div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                        <span style={{ fontFamily: fonts.body, fontSize: 10, color: row.team.color, background: `${row.team.color}33`, padding: "2px 8px", borderRadius: 8, fontWeight: 700, border: `1px solid ${row.team.color}66` }}>{row.team.name}</span>
-                        <span style={{ fontFamily: fonts.body, fontSize: 10, color: "#94A3B8" }}>{row.player.role}</span>
-                      </div>
-                    </div>
-                    {/* Stats panel on hover */}
-                    <div className="mvp-stats-panel" style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(10,14,20,0.95)", backdropFilter: "blur(16px)", borderTop: `3px solid ${row.team.color}`, padding: "16px 14px", zIndex: 1 }}>
+                    {/* Stats panel */}
+                    <div className="a-panel" style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(10,14,20,0.95)", backdropFilter: "blur(16px)", borderTop: `3px solid ${row.team.color}`, padding: "16px 14px", zIndex: 1, transform: openCard === "a"+idx ? "translateY(0)" : "translateY(100%)", transition: "transform 0.4s cubic-bezier(0.4,0,0.2,1)" }}>
                       <div style={{ fontFamily: fonts.display, fontWeight: 900, fontSize: 16, textTransform: "uppercase", color: "#fff", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginBottom: 4 }}>{row.player.name}</div>
                       <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12, flexWrap: "wrap" }}>
                         <TierBadge tier={row.player.tier} />
