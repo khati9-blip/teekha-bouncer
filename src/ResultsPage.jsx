@@ -29,9 +29,11 @@ export default function ResultsPage({
         </div>
       ) : (
         <div style={{display:"flex",flexDirection:"column",gap:16}}>
-          {[...matches.filter(m=>m.status==="completed"&&Object.keys(points).some(pid=>points[pid][m.id]))].sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999")).map((match,idx)=>{
+          {(() => {
+            const completedMatches = [...matches.filter(m=>m.status==="completed"&&Object.keys(points).some(pid=>points[pid][m.id]))].sort((a,b)=>(b.date||"9999").localeCompare(a.date||"9999"));
+            return completedMatches.map((match,idx)=>{
             const open = expandedMatch===match.id;
-            const displayNum = idx + 1;
+            const displayNum = completedMatches.length - idx;
 
             const matchDateStr = match.date || "9999-12-31";
             const teamBreakdowns = teams.map(team=>{
@@ -247,7 +249,7 @@ export default function ResultsPage({
                 )}
               </div>
             );
-          })}
+          })})()}
         </div>
       )}
     </div>

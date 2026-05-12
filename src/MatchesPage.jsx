@@ -133,12 +133,12 @@ export default function MatchesPage({
                       allTourneyMatches.sort((a,b)=>{
                         const dateA=a.date||"9999";
                         const dateB=b.date||"9999";
-                        if(dateA!==dateB) return dateA.localeCompare(dateB);
+                        if(dateA!==dateB) return dateB.localeCompare(dateA);
                         const o={live:0,completed:1,upcoming:2};
                         return (o[a.status]||2)-(o[b.status]||2);
                       });
                       const matchNumMap={};
-                      allTourneyMatches.forEach((m,i)=>{matchNumMap[m.id]=i+1;});
+                      allTourneyMatches.forEach((m,i)=>{matchNumMap[m.id]=allTourneyMatches.length-i;});
                       return allTourneyMatches.map((match)=>{
                         const displayNum=matchNumMap[match.id]||match.matchNum;
                         const completed=match.status==="completed";
