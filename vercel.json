@@ -5,6 +5,15 @@
     },
     "api/cricbuzz.js": {
       "maxDuration": 30
+    },
+    "api/cron/check-matches.js": {
+      "maxDuration": 30
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/check-matches",
+      "schedule": "*/5 * * * *"
+    }
+  ]
 }
