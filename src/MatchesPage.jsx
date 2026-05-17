@@ -134,6 +134,7 @@ export default function MatchesPage({
                         const dateA=a.date||"9999";
                         const dateB=b.date||"9999";
                         if(dateA!==dateB) return dateB.localeCompare(dateA);
+                        if(a.matchNum !== b.matchNum) return (b.matchNum||0) - (a.matchNum||0);
                         const o={live:0,completed:1,upcoming:2};
                         return (o[a.status]||2)-(o[b.status]||2);
                       });
