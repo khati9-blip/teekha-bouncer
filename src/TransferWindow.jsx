@@ -1536,8 +1536,13 @@ onUpdateTransfers({
               if (!blob) return;
               const file = new File([blob], "released-players.png", { type: "image/png" });
               if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                await navigator.share({ files: [file], title: "Released Players" });
-              } else {
+  try {
+    await navigator.share({ files: [file], title: "Released Players" });
+  } catch(err) {
+    // User canceled share - silently ignore
+    if (err.name !== 'AbortError') console.error("Share failed:", err);
+  }
+} else {
                 // Fallback: download
                 const a = document.createElement("a");
                 a.href = URL.createObjectURL(blob);
