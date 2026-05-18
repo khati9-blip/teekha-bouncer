@@ -30,10 +30,13 @@ export default function ResultsPage({
       ) : (
         <div style={{display:"flex",flexDirection:"column",gap:16}}>
           {(() => {
-            const completedMatches = [...matches.filter(m=>m.status==="completed"&&Object.keys(points).some(pid=>points[pid][m.id]))].sort((a,b)=>(b.date||"9999").localeCompare(a.date||"9999"));
-            return completedMatches.map((match,idx)=>{
-            const open = expandedMatch===match.id;
-            const displayNum = completedMatches.length - idx;
+            const completedMatches = [...matches.filter(m=>m.status==="completed"&&Object.keys(points).some(pid=>points[pid][m.id]))].sort((a,b)=>{
+  if(a.date !== b.date) return (b.date||"9999").localeCompare(a.date||"9999");
+  return (b.matchNum||0) - (a.matchNum||0);
+});
+return completedMatches.map((match,idx)=>{
+const open = expandedMatch===match.id;
+const displayNum = match.matchNum || (completedMatches.length - idx);
 
             const matchDateStr = match.date || "9999-12-31";
             const teamBreakdowns = teams.map(team=>{
