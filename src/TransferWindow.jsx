@@ -437,7 +437,18 @@ export default function TransferWindow({
   );
   const phase = releaseDeadlinePassed ? "closed" : rawPhase;
   const myTeamId = myTeam?.id || sessionTeamId;
-  const isPlayerSafe = (pid) => Object.values(safePlayers || {}).some(arr => arr.includes(pid));
+  const isPlayerSafe = (pid) => {
+  const allSafe = [];
+  Object.values(safePlayers || {}).forEach(val => {
+    if (Array.isArray(val)) allSafe.push(...val);
+    else if (val && typeof val === 'object') {
+      Object.values(val).forEach(subVal => {
+        if (Array.isArray(subVal)) allSafe.push(...subVal);
+      });
+    }
+  });
+  return allSafe.includes(pid);
+};
   const sortedTeams = leaderboard.map(t => teams.find(x => x.id === t.id)).filter(Boolean);
   // Pick order: fewest active squad players first
   const pickOrder = [...teams].sort((a, b) => {
