@@ -4059,6 +4059,7 @@ onChange={e=>setPlayerSearch(e.target.value)}
           onSave={(updated) => updCaptains(updated)}
           onClose={() => setCaptainMatch(null)}
           pitchId={_pitchId}
+          ruledOut={ruledOut}
         />}
 
         {/* GENERIC CONFIRM MODAL */}

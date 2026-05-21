@@ -28,7 +28,7 @@ async function pushCaptainNotification(text, pitchId) {
   } catch(e) { console.warn("Captain notification failed:", e.message); }
 }
 
-export default function CaptainModal({ match, teams, players, assignments, captains, points, myTeam, unlocked, isGuest, withPassword, onSave, onClose, pitchId }) {
+export default function CaptainModal({ match, teams, players, assignments, captains, points, myTeam, unlocked, isGuest, withPassword, onSave, onClose, pitchId, ruledOut = [] }) {
   const isLocked = !!captains[match.id+"_locked"];
 
   // Local state to avoid stale closure bug — copy on open, save on close
@@ -146,9 +146,10 @@ export default function CaptainModal({ match, teams, players, assignments, capta
           // Only show players whose iplTeam is one of the two match teams AND currently assigned to this team
           const matchTeams = [match.team1, match.team2].map(t => t.toLowerCase().trim());
           const teamPlayers = players.filter(p =>
-            assignments[p.id] === team.id &&
-            matchTeams.some(mt => (p.iplTeam || "").toLowerCase().trim().includes(mt) || mt.includes((p.iplTeam || "").toLowerCase().trim()))
-          );
+  assignments[p.id] === team.id &&
+  !ruledOut.includes(p.id) &&
+  matchTeams.some(mt => (p.iplTeam || "").toLowerCase().trim().includes(mt) || mt.includes((p.iplTeam || "").toLowerCase().trim()))
+);
           const validPids = new Set(teamPlayers.map(p => p.id));
           // Clear stale C/VC selections — if saved player is no longer in squad, treat as unset
           const cleanCap = {
