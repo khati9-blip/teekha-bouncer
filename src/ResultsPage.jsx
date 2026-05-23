@@ -10,6 +10,8 @@ export default function ResultsPage({
   const [expandedMatch, setExpandedMatch] = useState(null);
   const [filterTeam, setFilterTeam] = useState(null); // null = all teams
   const [viewMode, setViewMode] = useState("match"); // "match" or "player"
+  const [playerSearch, setPlayerSearch] = useState(""); // player search query
+  const [matchDetailModal, setMatchDetailModal] = useState(null); // {player, match, teamId, points, base, mult}
 
   return (
     <div className="fade-in">
@@ -58,6 +60,28 @@ export default function ResultsPage({
             </button>
           </div>
         </div>
+
+        {/* Player Search (only show in player-wise view) */}
+        {viewMode === "player" && (
+          <div style={{display:"flex",alignItems:"center",gap:8}}>
+            <span style={{fontSize:12,color:T.muted,fontFamily:fonts.body,fontWeight:700,letterSpacing:1}}>SEARCH:</span>
+            <input
+              type="text"
+              placeholder="Search player..."
+              value={playerSearch}
+              onChange={(e) => setPlayerSearch(e.target.value)}
+              style={{background:T.card,border:`2px solid ${T.border}`,borderRadius:0,padding:"8px 12px",color:T.text,fontFamily:fonts.body,fontSize:14,minWidth:200,outline:"none",clipPath:"polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%)"}}
+            />
+            {playerSearch && (
+              <button
+                onClick={() => setPlayerSearch("")}
+                style={{background:T.border,border:"none",borderRadius:0,padding:"8px 12px",color:T.muted,fontFamily:fonts.display,fontSize:12,fontWeight:700,cursor:"pointer",clipPath:"polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%)"}}
+              >
+                ✕ CLEAR
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Running Total (only show when team is filtered) */}
         {filterTeam && viewMode === "match" && (() => {
@@ -177,7 +201,23 @@ export default function ResultsPage({
 
             const sortedPlayers = Object.values(playerStats).sort((a, b) => b.totalPts - a.totalPts);
 
-            return sortedPlayers.map((stat, idx) => (
+            // Filter by search query
+            const filteredPlayers = playerSearch
+              ? sortedPlayers.filter(stat => 
+                  stat.player.name.toLowerCase().includes(playerSearch.toLowerCase())
+                )
+              : sortedPlayers;
+
+            // Show no results message if search returned nothing
+            if (filteredPlayers.length === 0) {
+              return (
+                <div style={{textAlign:"center",padding:40,color:T.muted,fontFamily:fonts.body}}>
+                  No players found matching "{playerSearch}"
+                </div>
+              );
+            }
+
+            return filteredPlayers.map((stat, idx) => (
               <div key={`${stat.team.id}_${stat.player.id}`} style={{background:T.card,border:`2px solid ${T.border}`,borderLeft:`5px solid ${stat.team.color}`,borderRadius:0,padding:"16px 20px"}}>
                 <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
                   <div style={{flex:1}}>
@@ -194,13 +234,50 @@ export default function ResultsPage({
                 
                 {/* Match details */}
                 <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill, minmax(120px, 1fr))",gap:8,marginTop:12}}>
-                  {stat.matchDetails.map(md => (
-                    <div key={md.matchId} style={{background:T.bg,border:`1px solid ${T.border}`,borderRadius:0,padding:"8px",textAlign:"center"}}>
-                      <div style={{fontSize:10,color:T.muted,marginBottom:4}}>M{md.matchNum}</div>
-                      <div style={{fontSize:18,fontWeight:900,color:md.points>50?T.success:T.text,fontFamily:fonts.display}}>{md.points}</div>
-                      {md.mult > 1 && <div style={{fontSize:9,color:T.accent,marginTop:2}}>{md.mult===2?"⭐C":"🥈VC"}</div>}
-                    </div>
-                  ))}
+                  {stat.matchDetails.map(md => {
+                    const match = matches.find(m => m.id === md.matchId);
+                    return (
+                      <div 
+                        key={md.matchId} 
+                        onClick={() => {
+  // Extract player stats from points data
+  const playerMatchData = points[stat.player.id]?.[md.matchId];
+  
+  setMatchDetailModal({
+    player: stat.player,
+    match: match,
+    teamId: stat.team.id,
+    points: md.points,
+    base: md.base,
+    mult: md.mult,
+    matchData: playerMatchData ? {
+      bat: playerMatchData.bat || null,
+      bowl: playerMatchData.bowl || null,
+      ct: playerMatchData.ct || 0,
+      ro: playerMatchData.ro || 0,
+      st: playerMatchData.st || 0
+    } : {}
+  });
+}}
+                        style={{background:T.bg,border:`1px solid ${T.border}`,borderRadius:0,padding:"8px",textAlign:"center",cursor:"pointer",transition:"all 0.2s",position:"relative"}}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = T.accent + "22";
+                          e.currentTarget.style.borderColor = T.accent;
+                          e.currentTarget.style.transform = "translateY(-2px)";
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = T.bg;
+                          e.currentTarget.style.borderColor = T.border;
+                          e.currentTarget.style.transform = "translateY(0)";
+                        }}
+                      >
+                        <div style={{fontSize:10,color:T.muted,marginBottom:4}}>M{md.matchNum}</div>
+                        <div style={{fontSize:18,fontWeight:900,color:md.points>50?T.success:T.text,fontFamily:fonts.display}}>{md.points}</div>
+                        {md.mult > 1 && <div style={{fontSize:9,color:T.accent,marginTop:2}}>{md.mult===2?"⭐C":"🥈VC"}</div>}
+                        <div style={{fontSize:8,color:T.muted,marginTop:4}}>📊 CLICK</div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ));
@@ -467,6 +544,226 @@ const displayNum = match.matchNum || (completedMatches.length - idx);
               </div>
             );
           })})()}
+        </div>
+      )}
+
+      {/* Match Detail Modal - Cricket Card Style */}
+      {matchDetailModal && (
+        <div 
+          onClick={() => setMatchDetailModal(null)}
+          style={{position:"fixed",top:0,left:0,right:0,bottom:0,background:"rgba(0,0,0,0.9)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:20}}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            style={{background:"linear-gradient(135deg, #1a1f2e 0%, #0f1419 100%)",border:`3px solid ${T.accent}`,borderRadius:0,maxWidth:600,width:"100%",clipPath:"polygon(16px 0%, 100% 0%, calc(100% - 16px) 100%, 0% 100%)",boxShadow:"12px 12px 0 rgba(245,158,11,0.4)",overflow:"hidden"}}
+          >
+            {/* Header - Match Info */}
+            <div style={{background:"linear-gradient(135deg, #F59E0B 0%, #D97706 100%)",padding:"16px 24px",position:"relative"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div>
+                  <div style={{fontFamily:fonts.display,fontSize:20,fontWeight:900,color:"#0A0E14",letterSpacing:1}}>
+                    MATCH {matchDetailModal.match.matchNum}
+                  </div>
+                  <div style={{fontSize:11,color:"rgba(10,14,20,0.7)",fontFamily:fonts.body,marginTop:2}}>
+                    {matchDetailModal.match.date} • {matchDetailModal.match.venue || `${matchDetailModal.match.team1} vs ${matchDetailModal.match.team2}`}
+                  </div>
+                </div>
+                <button
+                  onClick={() => setMatchDetailModal(null)}
+                  style={{background:"rgba(10,14,20,0.3)",border:"none",width:36,height:36,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",clipPath:"polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%)",fontSize:20,color:"#0A0E14",fontWeight:900}}
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Player Card Header */}
+            <div style={{background:"linear-gradient(135deg, #2a3142 0%, #1f2533 100%)",padding:"24px",borderBottom:`2px solid ${T.border}`}}>
+              <div style={{display:"flex",gap:20,alignItems:"center"}}>
+                {/* Player Image */}
+                <div style={{width:100,height:100,background:`linear-gradient(135deg, ${teams.find(t=>t.id===matchDetailModal.teamId)?.color}22 0%, ${teams.find(t=>t.id===matchDetailModal.teamId)?.color}44 100%)`,border:`3px solid ${teams.find(t=>t.id===matchDetailModal.teamId)?.color}`,borderRadius:0,clipPath:"polygon(12px 0%, 100% 0%, calc(100% - 12px) 100%, 0% 100%)",overflow:"hidden",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                  {matchDetailModal.player.image ? (
+                    <img src={matchDetailModal.player.image} alt={matchDetailModal.player.name} style={{width:"100%",height:"100%",objectFit:"cover"}} />
+                  ) : (
+                    <div style={{fontSize:40,fontWeight:900,color:teams.find(t=>t.id===matchDetailModal.teamId)?.color,fontFamily:fonts.display}}>
+                      {matchDetailModal.player.name.charAt(0)}
+                    </div>
+                  )}
+                </div>
+
+                {/* Player Info */}
+                <div style={{flex:1}}>
+                  <div style={{fontFamily:fonts.display,fontSize:24,fontWeight:900,color:T.text,letterSpacing:1,marginBottom:4}}>
+                    {matchDetailModal.player.name}
+                  </div>
+                  <div style={{fontSize:13,color:teams.find(t=>t.id===matchDetailModal.teamId)?.color,fontFamily:fonts.body,fontWeight:700,marginBottom:8}}>
+                    {teams.find(t => t.id === matchDetailModal.teamId)?.name}
+                  </div>
+                  <div style={{display:"inline-block",background:matchDetailModal.mult>1?"linear-gradient(135deg, #F59E0B 0%, #D97706 100%)":T.border,padding:"4px 12px",clipPath:"polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%)",fontSize:11,fontWeight:800,color:matchDetailModal.mult>1?"#0A0E14":T.muted,letterSpacing:1}}>
+                    {matchDetailModal.mult === 2 ? "⭐ CAPTAIN" : matchDetailModal.mult === 1.5 ? "🥈 VICE-CAPTAIN" : "PLAYER"}
+                  </div>
+                </div>
+
+                {/* Points Badge */}
+                <div style={{textAlign:"center",background:"linear-gradient(135deg, #F59E0B 0%, #D97706 100%)",padding:"16px 24px",clipPath:"polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%)",boxShadow:"6px 6px 0 rgba(245,158,11,0.3)"}}>
+                  <div style={{fontSize:42,fontWeight:900,color:"#0A0E14",fontFamily:fonts.display,letterSpacing:1,lineHeight:1}}>
+                    {matchDetailModal.points}
+                  </div>
+                  <div style={{fontSize:9,color:"rgba(10,14,20,0.7)",letterSpacing:1.5,marginTop:4,fontWeight:700}}>POINTS</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Stats Section */}
+            <div style={{padding:24}}>
+              {/* Batting Stats */}
+              {matchDetailModal.matchData.bat && (
+                <div style={{marginBottom:20}}>
+                  <div style={{fontSize:11,color:T.accent,fontWeight:800,letterSpacing:2,marginBottom:12,fontFamily:fonts.display}}>
+                    🏏 BATTING PERFORMANCE
+                  </div>
+                  <div style={{background:T.card,border:`2px solid ${T.border}`,padding:16,borderRadius:0}}>
+                    <div style={{display:"flex",gap:12,marginBottom:16}}>
+                      {/* Runs */}
+                      <div style={{flex:1,background:T.bg,padding:12,textAlign:"center",borderLeft:`3px solid ${T.accent}`}}>
+                        <div style={{fontSize:28,fontWeight:900,color:T.accent,fontFamily:fonts.display}}>{matchDetailModal.matchData.bat.r || 0}</div>
+                        <div style={{fontSize:9,color:T.muted,marginTop:2,letterSpacing:1}}>RUNS</div>
+                      </div>
+                      {/* Balls */}
+                      <div style={{flex:1,background:T.bg,padding:12,textAlign:"center",borderLeft:`3px solid ${T.muted}`}}>
+                        <div style={{fontSize:28,fontWeight:900,color:T.text,fontFamily:fonts.display}}>{matchDetailModal.matchData.bat.b || 0}</div>
+                        <div style={{fontSize:9,color:T.muted,marginTop:2,letterSpacing:1}}>BALLS</div>
+                      </div>
+                      {/* Strike Rate */}
+                      {matchDetailModal.matchData.bat.b > 0 && (
+                        <div style={{flex:1,background:T.bg,padding:12,textAlign:"center",borderLeft:`3px solid ${T.success}`}}>
+                          <div style={{fontSize:28,fontWeight:900,color:T.success,fontFamily:fonts.display}}>
+                            {((matchDetailModal.matchData.bat.r / matchDetailModal.matchData.bat.b) * 100).toFixed(1)}
+                          </div>
+                          <div style={{fontSize:9,color:T.muted,marginTop:2,letterSpacing:1}}>S/R</div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Boundaries */}
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(4, 1fr)",gap:8}}>
+                      <div style={{background:"linear-gradient(135deg, rgba(34,197,94,0.1) 0%, rgba(22,163,74,0.1) 100%)",border:`2px solid rgba(34,197,94,0.3)`,padding:"10px",textAlign:"center",clipPath:"polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%)"}}>
+                        <div style={{fontSize:20,fontWeight:900,color:"#22C55E",fontFamily:fonts.display}}>{matchDetailModal.matchData.bat['6s'] || 0}</div>
+                        <div style={{fontSize:8,color:"#22C55E",marginTop:2,fontWeight:700,letterSpacing:1}}>SIXES</div>
+                      </div>
+                      <div style={{background:"linear-gradient(135deg, rgba(59,130,246,0.1) 0%, rgba(37,99,235,0.1) 100%)",border:`2px solid rgba(59,130,246,0.3)`,padding:"10px",textAlign:"center",clipPath:"polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%)"}}>
+                        <div style={{fontSize:20,fontWeight:900,color:"#3B82F6",fontFamily:fonts.display}}>{matchDetailModal.matchData.bat['4s'] || 0}</div>
+                        <div style={{fontSize:8,color:"#3B82F6",marginTop:2,fontWeight:700,letterSpacing:1}}>FOURS</div>
+                      </div>
+                      <div style={{background:T.bg,border:`2px solid ${T.border}`,padding:"10px",textAlign:"center",clipPath:"polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%)"}}>
+                        <div style={{fontSize:20,fontWeight:900,color:T.text,fontFamily:fonts.display}}>{((matchDetailModal.matchData.bat['4s'] || 0) * 4 + (matchDetailModal.matchData.bat['6s'] || 0) * 6)}</div>
+                        <div style={{fontSize:8,color:T.muted,marginTop:2,fontWeight:700,letterSpacing:1}}>BOUNDARY</div>
+                      </div>
+                      <div style={{background:T.bg,border:`2px solid ${T.border}`,padding:"10px",textAlign:"center",clipPath:"polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%)"}}>
+                        <div style={{fontSize:20,fontWeight:900,color:T.text,fontFamily:fonts.display}}>
+                          {(matchDetailModal.matchData.bat.r || 0) - ((matchDetailModal.matchData.bat['4s'] || 0) * 4 + (matchDetailModal.matchData.bat['6s'] || 0) * 6)}
+                        </div>
+                        <div style={{fontSize:8,color:T.muted,marginTop:2,fontWeight:700,letterSpacing:1}}>SINGLES</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Bowling Stats */}
+              {matchDetailModal.matchData.bowl && (
+                <div style={{marginBottom:20}}>
+                  <div style={{fontSize:11,color:"#EF4444",fontWeight:800,letterSpacing:2,marginBottom:12,fontFamily:fonts.display}}>
+                    ⚡ BOWLING PERFORMANCE
+                  </div>
+                  <div style={{background:T.card,border:`2px solid ${T.border}`,padding:16,borderRadius:0}}>
+                    <div style={{display:"grid",gridTemplateColumns:"repeat(5, 1fr)",gap:8}}>
+                      <div style={{background:T.bg,padding:12,textAlign:"center",borderLeft:`3px solid #EF4444`}}>
+                        <div style={{fontSize:24,fontWeight:900,color:"#EF4444",fontFamily:fonts.display}}>{matchDetailModal.matchData.bowl.w || 0}</div>
+                        <div style={{fontSize:9,color:T.muted,marginTop:2,letterSpacing:1}}>WKTS</div>
+                      </div>
+                      <div style={{background:T.bg,padding:12,textAlign:"center",borderLeft:`3px solid ${T.muted}`}}>
+                        <div style={{fontSize:24,fontWeight:900,color:T.text,fontFamily:fonts.display}}>{matchDetailModal.matchData.bowl.o || 0}</div>
+                        <div style={{fontSize:9,color:T.muted,marginTop:2,letterSpacing:1}}>OVERS</div>
+                      </div>
+                      <div style={{background:T.bg,padding:12,textAlign:"center",borderLeft:`3px solid ${T.muted}`}}>
+                        <div style={{fontSize:24,fontWeight:900,color:T.text,fontFamily:fonts.display}}>{matchDetailModal.matchData.bowl.r || 0}</div>
+                        <div style={{fontSize:9,color:T.muted,marginTop:2,letterSpacing:1}}>RUNS</div>
+                      </div>
+                      <div style={{background:T.bg,padding:12,textAlign:"center",borderLeft:`3px solid ${T.muted}`}}>
+                        <div style={{fontSize:24,fontWeight:900,color:T.text,fontFamily:fonts.display}}>{matchDetailModal.matchData.bowl.m || 0}</div>
+                        <div style={{fontSize:9,color:T.muted,marginTop:2,letterSpacing:1}}>MDNS</div>
+                      </div>
+                      {matchDetailModal.matchData.bowl.o > 0 && (
+                        <div style={{background:T.bg,padding:12,textAlign:"center",borderLeft:`3px solid ${T.success}`}}>
+                          <div style={{fontSize:24,fontWeight:900,color:T.success,fontFamily:fonts.display}}>
+                            {((matchDetailModal.matchData.bowl.r || 0) / (matchDetailModal.matchData.bowl.o || 1)).toFixed(2)}
+                          </div>
+                          <div style={{fontSize:9,color:T.muted,marginTop:2,letterSpacing:1}}>ECON</div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Fielding Stats */}
+              {(matchDetailModal.matchData.ct > 0 || matchDetailModal.matchData.ro > 0 || matchDetailModal.matchData.st > 0) && (
+                <div style={{marginBottom:20}}>
+                  <div style={{fontSize:11,color:"#8B5CF6",fontWeight:800,letterSpacing:2,marginBottom:12,fontFamily:fonts.display}}>
+                    🧤 FIELDING
+                  </div>
+                  <div style={{display:"flex",gap:8}}>
+                    {matchDetailModal.matchData.ct > 0 && (
+                      <div style={{flex:1,background:T.card,border:`2px solid #8B5CF6`,padding:12,textAlign:"center",clipPath:"polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%)"}}>
+                        <div style={{fontSize:24,fontWeight:900,color:"#8B5CF6",fontFamily:fonts.display}}>{matchDetailModal.matchData.ct}</div>
+                        <div style={{fontSize:9,color:T.muted,marginTop:2,letterSpacing:1}}>CATCHES</div>
+                      </div>
+                    )}
+                    {matchDetailModal.matchData.ro > 0 && (
+                      <div style={{flex:1,background:T.card,border:`2px solid #8B5CF6`,padding:12,textAlign:"center",clipPath:"polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%)"}}>
+                        <div style={{fontSize:24,fontWeight:900,color:"#8B5CF6",fontFamily:fonts.display}}>{matchDetailModal.matchData.ro}</div>
+                        <div style={{fontSize:9,color:T.muted,marginTop:2,letterSpacing:1}}>RUN-OUTS</div>
+                      </div>
+                    )}
+                    {matchDetailModal.matchData.st > 0 && (
+                      <div style={{flex:1,background:T.card,border:`2px solid #8B5CF6`,padding:12,textAlign:"center",clipPath:"polygon(6px 0%, 100% 0%, calc(100% - 6px) 100%, 0% 100%)"}}>
+                        <div style={{fontSize:24,fontWeight:900,color:"#8B5CF6",fontFamily:fonts.display}}>{matchDetailModal.matchData.st}</div>
+                        <div style={{fontSize:9,color:T.muted,marginTop:2,letterSpacing:1}}>STUMPINGS</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Points Calculation */}
+              <div style={{background:"linear-gradient(135deg, rgba(245,158,11,0.15) 0%, rgba(217,119,6,0.15) 100%)",border:`2px solid ${T.accent}`,padding:20,borderRadius:0}}>
+                <div style={{fontSize:11,color:T.accent,fontWeight:800,letterSpacing:2,marginBottom:12,textAlign:"center"}}>
+                  💰 POINTS BREAKDOWN
+                </div>
+                <div style={{display:"flex",justifyContent:"center",alignItems:"center",gap:16,fontSize:18,fontWeight:900,fontFamily:fonts.display,color:T.accent}}>
+                  <span>{matchDetailModal.base}</span>
+                  <span style={{color:T.muted}}>×</span>
+                  <span>{matchDetailModal.mult}</span>
+                  <span style={{color:T.muted}}>=</span>
+                  <span style={{fontSize:28}}>{matchDetailModal.points}</span>
+                </div>
+                <div style={{textAlign:"center",marginTop:8,fontSize:10,color:T.muted}}>
+                  Base Points × {matchDetailModal.mult === 2 ? "Captain (2×)" : matchDetailModal.mult === 1.5 ? "Vice-Captain (1.5×)" : "Multiplier (1×)"}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div style={{background:T.bg,padding:"16px 24px",borderTop:`2px solid ${T.border}`,display:"flex",justifyContent:"center"}}>
+              <button
+                onClick={() => setMatchDetailModal(null)}
+                style={{background:"linear-gradient(135deg, #F59E0B 0%, #D97706 100%)",border:"none",borderRadius:0,padding:"12px 32px",color:"#0A0E14",fontFamily:fonts.display,fontSize:14,fontWeight:900,cursor:"pointer",letterSpacing:1.5,clipPath:"polygon(8px 0%, 100% 0%, calc(100% - 8px) 100%, 0% 100%)",boxShadow:"6px 6px 0 rgba(245,158,11,0.3)"}}
+              >
+                ✕ CLOSE
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
