@@ -177,11 +177,19 @@ export default function SnatchSection({
     const newHistory = [...(snatch.history || []), {
       ...activeSnatch,
       preSnatchPts: correctPointsAtSnatch,
-      returnDate: new Date().toISOString(),
+      returnDate: istNow().toISOString(),
       snatchWeekPts,
     }];
 
     const newAssignments = { ...assignments, [pid]: fromTeamId };
+    const now = istNow().toISOString().split("T")[0];
+const newLog = { ...ownershipLog };
+if (!newLog[pid]) newLog[pid] = [];
+newLog[pid] = newLog[pid].map(o => 
+  o.teamId === byTeamId && !o.to ? { ...o, to: now } : o
+);
+newLog[pid] = [...newLog[pid], { teamId: fromTeamId, from: now, to: null }];
+onUpdateOwnershipLog(newLog);
 
     // Mark player permanently safe (AUTO-SAFE - unlimited)
     const safeObj = (Array.isArray(safePlayers) || !safePlayers) ? {} : { ...safePlayers };
@@ -222,7 +230,7 @@ export default function SnatchSection({
     },0);
     const active = { pid, byTeamId: actingTeamId, fromTeamId, totalPtsAtSnatch: playerTotalPts, startDate: new Date().toISOString() };
     const newAssignments = { ...assignments, [pid]: actingTeamId };
-    const now = new Date().toISOString().split("T")[0];
+    const now = istNow().toISOString().split("T")[0];
     const newLog = { ...ownershipLog };
 if (!newLog[pid]) newLog[pid] = [];
 // If no existing period for fromTeam, create one from season start to now
