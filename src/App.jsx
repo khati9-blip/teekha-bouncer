@@ -1806,10 +1806,9 @@ ${aiMatchText.slice(0, 3000)}`;
       const periods = (ownershipLog[pid]||[]).filter(o=>o.teamId===tid);
       let tot = 0;
 
-      // Active snatch: player currently snatched away from this team — freeze at pointsAtSnatch
-      if(snatch.active?.pid===pid && snatch.active?.fromTeamId===tid) {
-        return snatch.active.pointsAtSnatch || 0;
-      }
+      // Active snatch: player currently snatched away from this team — recalculate from ownershipLog
+      // Don't use frozen pointsAtSnatch - let it fall through to normal calculation using ownership periods
+      const isActivelySnatched = snatch.active?.pid===pid && snatch.active?.fromTeamId===tid;
       // Active snatch: player currently on loan TO this team — only post-snatch points
       if(snatch.active?.pid===pid && snatch.active?.byTeamId===tid) {
         const snatchDate = snatch.active.startDate.split('T')[0];
@@ -1971,7 +1970,8 @@ ${aiMatchText.slice(0, 3000)}`;
     const snatchedOut = (snatch.active?.fromTeamId===teamId) ? (() => {
       const p = players.find(x=>x.id===snatch.active.pid);
       if(!p) return null;
-      return {...p, total: snatch.active.pointsAtSnatch, status:"snatched-out", frozenAt: snatch.active.pointsAtSnatch};
+      const total = getPtsForTeam(p.id, teamId);
+      return {...p, total, status:"snatched-out", frozenAt: total};
     })() : null;
 
     // Historical: players returned after snatch
