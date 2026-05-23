@@ -1809,19 +1809,9 @@ ${aiMatchText.slice(0, 3000)}`;
       // Active snatch: player currently snatched away from this team — recalculate from ownershipLog
       // Don't use frozen pointsAtSnatch - let it fall through to normal calculation using ownership periods
       const isActivelySnatched = snatch.active?.pid===pid && snatch.active?.fromTeamId===tid;
-      // Active snatch: player currently on loan TO this team — only post-snatch points
-      if(snatch.active?.pid===pid && snatch.active?.byTeamId===tid) {
-        const snatchDate = snatch.active.startDate.split('T')[0];
-        for(const[mid,d] of Object.entries(points[pid]||{})){
-          const m = matches.find(x=>x.id===mid);
-          if(!m || m.date < snatchDate) continue;
-          const cap=captains[`${mid}_${tid}`]||{};
-          let pts=d.base;
-          if(cap.captain===pid)pts*=2;else if(cap.vc===pid)pts*=1.5;
-          tot+=Math.round(pts);
-        }
-        return tot;
-      }
+      // Active snatch: player currently on loan TO this team
+      // Don't use early return - let it fall through to ownershipLog calculation
+      // which will count ALL ownership periods (original + snatch)
 
       // Historical snatch: player was snatched away from this team, now returned
       const histSnatchedAway = (snatch.history||[]).find(h=>h.pid===pid && h.fromTeamId===tid);
@@ -1949,21 +1939,12 @@ ${aiMatchText.slice(0, 3000)}`;
 
     const historical = [];
 
-    // Snatched player this team borrowed
+    // Snatched player this team borrowed - recalculate from ownershipLog
     const snatchedIn = snatch.active?.byTeamId===teamId ? (() => {
       const p = players.find(x=>x.id===snatch.active.pid);
       if(!p) return null;
-      const snatchDate = snatch.active.startDate.split('T')[0];
-      let tot=0;
-      for(const[mid,d]of Object.entries(points[p.id]||{})){
-        const m = matches.find(x=>x.id===mid);
-        if(!m || m.date < snatchDate) continue;
-        const cap=captains[`${mid}_${teamId}`]||{};
-        let pts=d.base;
-        if(cap.captain===p.id)pts*=2;else if(cap.vc===p.id)pts*=1.5;
-        tot+=Math.round(pts);
-      }
-      return p?{...p,total:tot,status:"snatched-in",frozenAt:tot}:null;
+      const total = getPtsForTeam(p.id, teamId);
+      return p?{...p,total,status:"snatched-in",frozenAt:total}:null;
     })() : null;
 
     // Players currently snatched AWAY from this team (show struck-through, frozen pts)
