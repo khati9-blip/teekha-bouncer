@@ -1826,9 +1826,9 @@ ${aiMatchText.slice(0, 3000)}`;
 
       // Historical snatch: player was snatched away from this team, now returned
       const histSnatchedAway = (snatch.history||[]).find(h=>h.pid===pid && h.fromTeamId===tid);
-      // Historical snatch: player was snatched IN to this team, now returned — use frozen pts
+      // Historical snatch: player was snatched IN to this team, now returned
+      // Note: removed frozen snatchWeekPts — now recalculates from ownershipLog for accuracy
       const histSnatchedIn = (snatch.history||[]).find(h=>h.pid===pid && h.byTeamId===tid);
-      if(histSnatchedIn) return histSnatchedIn.snatchWeekPts || 0;
 
       for(const[mid,d] of Object.entries(points[pid]||{})){
         const m = matches.find(x=>x.id===mid);
@@ -1978,8 +1978,11 @@ ${aiMatchText.slice(0, 3000)}`;
     const snatchHistoryForTeam = (snatch.history||[]).map(h => {
       const p = players.find(x=>x.id===h.pid);
       if(!p) return null;
-      // Snatching team — show their loan pts
-      if(h.byTeamId===teamId) return {...p, total: h.snatchWeekPts||0, status:"snatch-returned-in", frozenAt: h.snatchWeekPts||0};
+      // Snatching team — recalculate their loan pts from ownershipLog instead of frozen value
+      if(h.byTeamId===teamId) {
+        const total = getPtsForTeam(p.id, teamId);
+        return {...p, total, status:"snatch-returned-in", frozenAt: total};
+      }
       // Original team — show player with their total (all pts minus snatch period, handled by getPtsForTeam via ownershipLog)
       if(h.fromTeamId===teamId && assignments[p.id]===teamId) return null; // already in active list
       return null;

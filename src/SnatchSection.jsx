@@ -96,6 +96,40 @@ function getSnatchEligibleTeam(matches, points, players, teams, assignments, wee
   return { team: teams.find(t => t.id === bestTeamId), bestPts };
 }
 
+// Calculate snatch points including captain/VC multipliers
+function calcSnatchPoints(pid, teamId, snatchHistory, points, matches, captains, ownershipLog) {
+  const history = snatchHistory.find(h => h.pid === pid && h.byTeamId === teamId);
+  if (!history) return 0;
+
+  // Get ownership periods for this team
+  const periods = (ownershipLog[pid] || []).filter(o => o.teamId === teamId);
+  
+  let total = 0;
+  for (const [mid, d] of Object.entries(points[pid] || {})) {
+    const m = matches.find(x => x.id === mid);
+    if (!m) continue;
+    
+    // Check if match falls within any ownership period for this team
+    const owned = periods.length === 0
+      ? false // no log = not owned
+      : periods.some(o => {
+          const fromDate = (o.from || "").split("T")[0];
+          const toDate = o.to ? o.to.split("T")[0] : "2099-01-01";
+          return m.date >= fromDate && m.date < toDate;
+        });
+    
+    if (!owned) continue;
+    
+    const cap = captains[`${mid}_${teamId}`] || {};
+    let pts = d.base;
+    if (cap.captain === pid) pts *= 2;
+    else if (cap.vc === pid) pts *= 1.5;
+    total += Math.round(pts);
+  }
+  return total;
+}
+
+
 export default function SnatchSection({
   teams, players, assignments, snatch, points, matches, captains,
   leaderboard, myTeam, isAdmin, unlocked, withPassword,
@@ -528,6 +562,8 @@ newLog[pid] = [...newLog[pid], { teamId: actingTeamId, from: now, to: null }];
             const ft = teams.find(t => t.id === h.fromTeamId);
             const totalWeeks = snatch.history.length;
             const weekNum = h.week || (totalWeeks - i);
+            // Recalculate points from matches instead of using frozen snatchWeekPts
+            const calculatedPts = calcSnatchPoints(h.pid, h.byTeamId, snatch.history, points, matches, captains, ownershipLog);
             return (
               <div key={i} style={{display:"flex",alignItems:"center",gap:8,padding:"6px 10px",background:"#080C14",borderRadius:8,marginBottom:4,fontSize:11}}>
                 <span style={{color:"#8A7060"}}>Wk {weekNum}</span>
@@ -536,7 +572,7 @@ newLog[pid] = [...newLog[pid], { teamId: actingTeamId, from: now, to: null }];
                 <span style={{color:bt?.color,fontWeight:700}}>{bt?.name}</span>
                 <span style={{color:"#8A7060"}}>from</span>
                 <span style={{color:ft?.color,fontWeight:700}}>{ft?.name}</span>
-                {h.snatchWeekPts != null && <span style={{marginLeft:"auto",color:"#F5A623",fontWeight:700}}>{h.snatchWeekPts} pts</span>}
+                <span style={{marginLeft:"auto",color:"#F5A623",fontWeight:700}}>{calculatedPts} pts</span>
               </div>
             );
           })}
