@@ -1499,7 +1499,7 @@ onUpdateTransfers({
       )}
 
       {/* ── CURRENTLY RELEASED PLAYERS — TEAM GRID ───────────────────────── */}
-      {(phase !== "done") && (() => {
+      {(phase === "release" || phase === "trade") && (() => {
         const allReleases = transfers.releases || {};
         const tradedPids = new Set((transfers.tradedPairs || []).map(tp => tp.releasedPid));
         // Build per-team data
