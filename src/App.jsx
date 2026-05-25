@@ -587,7 +587,27 @@ setPoolLoading(false);
       const totalMinsUTC = dlEndTime.h * 60 + dlEndTime.m - 330;
       deadline.setUTCHours(Math.floor(totalMinsUTC / 60), totalMinsUTC % 60, 0, 0);
 
-      const updated = { ...transfers, phase: 'release', weekNum: transfers.weekNum, releaseDeadline: deadline.toISOString() };
+      // Archive previous window if it had activity
+      const hasHistory = (transfers.tradedPairs?.length > 0) || Object.values(transfers.releases || {}).some(a => a.length > 0);
+      const newHistory = hasHistory ? [
+        ...(transfers.history || []),
+        { week: transfers.weekNum || 1, releases: transfers.releases || {}, tradedPairs: transfers.tradedPairs || [], date: new Date().toISOString() }
+      ] : (transfers.history || []);
+
+
+      const updated = {
+        ...transfers,
+        phase: 'release',
+        weekNum: hasHistory ? (transfers.weekNum || 1) + 1 : (transfers.weekNum || 1),
+        releaseDeadline: deadline.toISOString(),
+        releases: {},
+        tradedPairs: [],
+        ineligible: [],
+        currentPickTeam: null,
+        pickDeadline: null,
+        history: newHistory,
+      };
+
       updTransfers(updated);
       pushNotif('transfer', 'Transfer window is now open — release your players!', '📤');
     };
@@ -595,7 +615,7 @@ setPoolLoading(false);
     check(); // run immediately on mount
     const interval = setInterval(check, 60000); // re-check every minute
     return () => clearInterval(interval); // cleanup on unmount
-  }, [appReady, transfersLoaded, transfers.phase, transfers.weekNum, pitchConfig]);
+  }, [appReady, transfersLoaded, transfers.phase, transfers.weekNum, pitchConfig, assignments, unsoldPool]);
 
   // ── LOAD USER-SPECIFIC NOTES & HIGHLIGHTS ────────────────────────────────
   useEffect(() => {
