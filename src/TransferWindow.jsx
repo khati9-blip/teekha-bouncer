@@ -1164,6 +1164,7 @@ onUpdateTransfers({
       ineligible: [],
       currentPickTeam: null,
       pickDeadline: null,
+      releaseDeadline: null,
       history: [
         ...(transfers.history || []),
         {
