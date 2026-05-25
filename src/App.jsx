@@ -412,7 +412,7 @@ setPoolLoading(false);
       const isAfterNoon = istNow().getUTCHours() >= 12;
 
       // Only auto-release if: deadline passed AND past noon AND haven't run yet this session
-      if (deadline && Date.now() > deadline.getTime() && isAfterNoon && !autoReleaseRanRef.current) {
+      if (deadline && Date.now() > deadline.getTime() && isAfterNoon && !autoReleaseRanRef.current && Object.values(transfers.releases || {}).some(r => r.length > 0)) {
         autoReleaseRanRef.current = true; // prevent double-fire in this session
 
         const newReleases = { ...transfers.releases };
