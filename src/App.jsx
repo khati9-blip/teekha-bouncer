@@ -106,6 +106,8 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   const [teams, setTeams] = useState([]);
   const [players, setPlayers] = useState([]);
   const [assignments, setAssignments] = useState({});
+  const assignmentsRef = useRef(assignments);
+useEffect(() => { assignmentsRef.current = assignments; }, [assignments]);
   const [matches, setMatches] = useState([]);
   const [tournaments, setTournaments] = useState([{id:"t_ipl",name:"Indian Premier League",open:true}]);
   const [newTournamentName, setNewTournamentName] = useState("");
@@ -414,7 +416,7 @@ setPoolLoading(false);
         autoReleaseRanRef.current = true; // prevent double-fire in this session
 
         const newReleases = { ...transfers.releases };
-        const newAssign = { ...assignments };
+        const newAssign = { ...assignmentsRef.current };
         const newPool = [...unsoldPool];
         const notifications = [];
 
@@ -496,7 +498,7 @@ setPoolLoading(false);
           });
         const pick = available[0];
         if (pick) {
-          const newAssign2 = { ...assignments, [pick.id]: currentTeamId };
+          const newAssign2 = { ...assignmentsRef.current, [pick.id]: currentTeamId };
           const newPool2 = unsoldPool.filter(x => x !== pick.id);
           const newLog = recordOwnership(pick.id, currentTeamId, ownershipLog);
           updAssign(newAssign2);
