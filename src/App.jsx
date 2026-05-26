@@ -332,7 +332,7 @@ setPoolLoading(false);
 
         // ── Save fresh data to localStorage for next instant load ─────────
         try {
-          const toCache = { teams: t, players: p, assignments: a, matches: m, captains: c, tournaments: tv, points: pts, ownershipLog: ol };
+          const toCache = { teams: t, players: p, assignments: a, matches: m, captains: c, tournaments: tv || tournaments, points: pts, ownershipLog: ol };
           localStorage.setItem('tb_appdata_' + _pitchId, JSON.stringify(toCache));
         } catch {}
 
