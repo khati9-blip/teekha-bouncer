@@ -1,6 +1,224 @@
 import React, { useState } from "react";
 import { T, fonts } from "./Theme";
 
+const PLAYOFF_ROUNDS = ["q1","elim","q2","final"];
+const PLAYOFF_LABELS = { q1:"Qualifier 1", elim:"Eliminator", q2:"Qualifier 2", final:"Final" };
+const PLAYOFF_SHORT = { q1:"Q1", elim:"EL", q2:"Q2", final:"🏆" };
+const PLAYOFF_COLORS = { q1:"#4F8EF7", elim:"#FF3D5A", q2:"#A855F7", final:"#F5A623" };
+
+function PlayoffSetupModal({ tournament, onSave, onClose }) {
+  const existing = tournament.playoffs || {};
+  const [enabled, setEnabled] = useState(existing.enabled || false);
+  const [rounds, setRounds] = useState({
+    q1:   { team1: existing.q1?.team1||"", team2: existing.q1?.team2||"", date: existing.q1?.date||"", time: existing.q1?.time||"07:30 pm", venue: existing.q1?.venue||"", winner: existing.q1?.winner||null, matchId: existing.q1?.matchId||"playoff_q1" },
+    elim: { team1: existing.elim?.team1||"", team2: existing.elim?.team2||"", date: existing.elim?.date||"", time: existing.elim?.time||"07:30 pm", venue: existing.elim?.venue||"", winner: existing.elim?.winner||null, matchId: existing.elim?.matchId||"playoff_elim" },
+    q2:   { team1: existing.q2?.team1||"", team2: existing.q2?.team2||"", date: existing.q2?.date||"", time: existing.q2?.time||"07:30 pm", venue: existing.q2?.venue||"", winner: existing.q2?.winner||null, matchId: existing.q2?.matchId||"playoff_q2" },
+    final:{ team1: existing.final?.team1||"", team2: existing.final?.team2||"", date: existing.final?.date||"", time: existing.final?.time||"07:30 pm", venue: existing.final?.venue||"", winner: existing.final?.winner||null, matchId: existing.final?.matchId||"playoff_final" },
+  });
+
+  const setRound = (key, field, val) => setRounds(r => ({...r, [key]: {...r[key], [field]: val}}));
+  const inp = (placeholder, val, onChange, w="100%") => (
+    <input value={val} onChange={e=>onChange(e.target.value)} placeholder={placeholder}
+      style={{width:w,background:T.bg,border:`1px solid ${T.border}`,color:T.text,padding:"7px 10px",fontSize:12,fontFamily:fonts.body,outline:"none",boxSizing:"border-box"}} />
+  );
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={onClose}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"linear-gradient(135deg,#0f1419 0%,#1a1f2e 100%)",border:`3px solid #F5A623`,maxWidth:560,width:"100%",maxHeight:"90vh",overflowY:"auto",clipPath:"polygon(12px 0%,100% 0%,calc(100% - 12px) 100%,0% 100%)"}}>
+        {/* Header */}
+        <div style={{background:"linear-gradient(90deg,rgba(245,166,35,0.2),transparent)",borderBottom:"2px solid #F5A62344",padding:"16px 20px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <div>
+            <div style={{fontFamily:fonts.display,fontSize:16,fontWeight:900,color:"#F5A623",letterSpacing:3}}>🏆 PLAYOFFS SETUP</div>
+            <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginTop:2,fontFamily:fonts.body,letterSpacing:1}}>{tournament.name}</div>
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:12}}>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:11,color:enabled?"#F5A623":"rgba(255,255,255,0.4)",fontFamily:fonts.display,fontWeight:800,letterSpacing:1}}>{enabled?"ON":"OFF"}</span>
+              <div onClick={()=>setEnabled(!enabled)} style={{width:40,height:20,background:enabled?"#F5A623":"#2a2f3e",borderRadius:10,cursor:"pointer",position:"relative",transition:"background 0.2s"}}>
+                <div style={{position:"absolute",top:2,left:enabled?20:2,width:16,height:16,background:"#fff",borderRadius:"50%",transition:"left 0.2s"}}/>
+              </div>
+            </div>
+            <button onClick={onClose} style={{background:"transparent",border:"none",color:"rgba(255,255,255,0.4)",fontSize:20,cursor:"pointer"}}>×</button>
+          </div>
+        </div>
+
+        {/* Rounds */}
+        <div style={{padding:"16px 20px"}}>
+          {PLAYOFF_ROUNDS.map(key => (
+            <div key={key} style={{marginBottom:16,background:`${PLAYOFF_COLORS[key]}0A`,border:`2px solid ${PLAYOFF_COLORS[key]}33`,padding:"12px 14px"}}>
+              <div style={{fontSize:11,color:PLAYOFF_COLORS[key],fontWeight:900,letterSpacing:2,fontFamily:fonts.display,marginBottom:10}}>{PLAYOFF_SHORT[key]} · {PLAYOFF_LABELS[key].toUpperCase()}</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:6}}>
+                {inp("Team 1", rounds[key].team1, v=>setRound(key,"team1",v))}
+                {inp("Team 2", rounds[key].team2, v=>setRound(key,"team2",v))}
+              </div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 2fr",gap:6,marginBottom:6}}>
+                {inp("Date (YYYY-MM-DD)", rounds[key].date, v=>setRound(key,"date",v))}
+                {inp("Time", rounds[key].time, v=>setRound(key,"time",v))}
+                {inp("Venue", rounds[key].venue, v=>setRound(key,"venue",v))}
+              </div>
+              {/* Winner select */}
+              {(rounds[key].team1 || rounds[key].team2) && (
+                <div style={{display:"flex",gap:6,alignItems:"center",marginTop:4}}>
+                  <span style={{fontSize:10,color:"rgba(255,255,255,0.4)",fontFamily:fonts.body,letterSpacing:1}}>WINNER:</span>
+                  {["", rounds[key].team1, rounds[key].team2].filter(Boolean).map(t=>(
+                    <button key={t} onClick={()=>setRound(key,"winner",t||null)}
+                      style={{padding:"4px 10px",fontSize:11,fontWeight:800,fontFamily:fonts.display,cursor:"pointer",border:`2px solid ${rounds[key].winner===t?PLAYOFF_COLORS[key]:"#ffffff22"}`,background:rounds[key].winner===t?`${PLAYOFF_COLORS[key]}33`:"transparent",color:rounds[key].winner===t?PLAYOFF_COLORS[key]:"rgba(255,255,255,0.4)",letterSpacing:0.5}}>
+                      {t||"TBD"}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Footer */}
+        <div style={{padding:"12px 20px",borderTop:"2px solid #F5A62344",display:"flex",gap:8}}>
+          <button onClick={onClose} style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,color:T.muted,padding:"10px",fontFamily:fonts.display,fontWeight:800,fontSize:13,cursor:"pointer",letterSpacing:1}}>CANCEL</button>
+          <button onClick={()=>onSave({...rounds,enabled})} style={{flex:2,background:"#F5A623",border:"none",color:"#080C14",padding:"10px",fontFamily:fonts.display,fontWeight:900,fontSize:13,cursor:"pointer",letterSpacing:2}}>SAVE PLAYOFFS</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PlayoffBracketModal({ tournament, onClose, unlocked, withPassword, onUpdate }) {
+  const pl = tournament.playoffs || {};
+  const rounds = {
+    q1:    pl.q1    || {},
+    elim:  pl.elim  || {},
+    q2:    pl.q2    || {},
+    final: pl.final || {},
+  };
+
+  // Derive Q2 teams from results
+  const q2team1 = rounds.q1.winner || (rounds.q1.team1 ? `W: ${rounds.q1.team1}/${rounds.q1.team2}` : "W: Q1");
+  const q2team2 = rounds.elim.winner || (rounds.elim.team1 ? `W: ${rounds.elim.team1}/${rounds.elim.team2}` : "W: EL");
+  const finalTeam1 = rounds.q1.winner || "W: Q1";
+  const finalTeam2 = rounds.q2.winner || "W: Q2";
+
+  const MatchNode = ({ round, label, color, t1, t2, winner, date, showWinner=true }) => (
+    <div style={{background:`linear-gradient(135deg,${color}12,${color}06)`,border:`2px solid ${color}55`,padding:"12px 14px",minWidth:160,position:"relative"}}>
+      <div style={{fontSize:9,color:color,fontWeight:900,letterSpacing:2,fontFamily:fonts.display,marginBottom:8}}>{label}</div>
+      {[t1||"TBD",t2||"TBD"].map((team,i)=>(
+        <div key={i} style={{display:"flex",alignItems:"center",gap:6,padding:"5px 8px",marginBottom:i===0?4:0,background:winner===team?"rgba(255,255,255,0.08)":"transparent",border:winner===team?`1px solid ${color}88`:"1px solid transparent"}}>
+          {winner===team && <div style={{width:6,height:6,background:color,borderRadius:"50%",flexShrink:0}}/>}
+          <span style={{fontSize:12,fontWeight:winner===team?900:500,color:winner===team?color:"rgba(255,255,255,0.6)",fontFamily:fonts.display,letterSpacing:0.5,textTransform:"uppercase"}}>{team}</span>
+          {winner===team && <span style={{marginLeft:"auto",fontSize:9,color:color,fontWeight:900}}>✓ WIN</span>}
+        </div>
+      ))}
+      {date && <div style={{fontSize:9,color:"rgba(255,255,255,0.3)",marginTop:8,fontFamily:fonts.body}}>{date}</div>}
+    </div>
+  );
+
+  const Arrow = ({vertical=false}) => (
+    <div style={{display:"flex",alignItems:"center",justifyContent:"center",color:"rgba(255,255,255,0.2)",fontSize:vertical?18:14,padding:vertical?"4px 0":"0 4px",flexShrink:0}}>
+      {vertical ? "↓" : "→"}
+    </div>
+  );
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.92)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:16}} onClick={onClose}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"linear-gradient(135deg,#080c14 0%,#0f1419 50%,#1a1f2e 100%)",border:`3px solid #F5A623`,maxWidth:700,width:"100%",maxHeight:"92vh",overflowY:"auto",clipPath:"polygon(16px 0%,100% 0%,calc(100% - 16px) 100%,0% 100%)",boxShadow:"0 0 60px rgba(245,166,35,0.15)"}}>
+
+        {/* Header */}
+        <div style={{background:"linear-gradient(90deg,rgba(245,166,35,0.15),transparent,rgba(245,166,35,0.05))",borderBottom:"2px solid #F5A62344",padding:"20px 24px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <div>
+            <div style={{fontFamily:fonts.display,fontSize:22,fontWeight:900,color:"#F5A623",letterSpacing:4,textTransform:"uppercase"}}>🏆 Playoffs</div>
+            <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",marginTop:3,fontFamily:fonts.body,letterSpacing:2,textTransform:"uppercase"}}>{tournament.name} · Road to the Final</div>
+          </div>
+          <button onClick={onClose} style={{background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.5)",fontSize:18,cursor:"pointer",padding:"6px 12px",fontFamily:fonts.display}}>✕</button>
+        </div>
+
+        {/* Bracket */}
+        <div style={{padding:"28px 24px"}}>
+
+          {/* Top legend */}
+          <div style={{display:"flex",gap:16,marginBottom:24,flexWrap:"wrap"}}>
+            {PLAYOFF_ROUNDS.map(k=>(
+              <div key={k} style={{display:"flex",alignItems:"center",gap:6}}>
+                <div style={{width:10,height:10,background:PLAYOFF_COLORS[k],clipPath:"polygon(2px 0%,100% 0%,calc(100% - 2px) 100%,0% 100%)"}}/>
+                <span style={{fontSize:10,color:PLAYOFF_COLORS[k],fontFamily:fonts.display,fontWeight:800,letterSpacing:1}}>{PLAYOFF_LABELS[k].toUpperCase()}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Round 1: Q1 + Eliminator */}
+          <div style={{fontSize:10,color:"rgba(255,255,255,0.25)",fontFamily:fonts.display,letterSpacing:2,marginBottom:10}}>ROUND 1</div>
+          <div style={{display:"flex",gap:8,marginBottom:8,alignItems:"stretch"}}>
+            <MatchNode round="q1" label="QUALIFIER 1" color={PLAYOFF_COLORS.q1}
+              t1={rounds.q1.team1} t2={rounds.q1.team2} winner={rounds.q1.winner} date={rounds.q1.date} />
+            <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around",padding:"0 4px"}}>
+              <div style={{fontSize:9,color:"rgba(255,255,255,0.2)",fontFamily:fonts.body,textAlign:"center",lineHeight:1.4}}>
+                Winner →<br/>Final<br/><span style={{color:"rgba(255,255,255,0.1)"}}>Loser →<br/>Q2</span>
+              </div>
+            </div>
+            <MatchNode round="elim" label="ELIMINATOR" color={PLAYOFF_COLORS.elim}
+              t1={rounds.elim.team1} t2={rounds.elim.team2} winner={rounds.elim.winner} date={rounds.elim.date} />
+            <div style={{display:"flex",flexDirection:"column",justifyContent:"center",padding:"0 4px"}}>
+              <div style={{fontSize:9,color:"rgba(255,255,255,0.2)",fontFamily:fonts.body,textAlign:"center",lineHeight:1.4}}>
+                Winner →<br/>Q2
+              </div>
+            </div>
+          </div>
+
+          {/* Divider with flow lines */}
+          <div style={{display:"flex",alignItems:"center",margin:"16px 0",gap:0}}>
+            <div style={{flex:1,height:1,background:"linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent)"}}/>
+            <div style={{padding:"4px 12px",background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.08)",fontSize:9,color:"rgba(255,255,255,0.3)",fontFamily:fonts.display,letterSpacing:2}}>ROUND 2</div>
+            <div style={{flex:1,height:1,background:"linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent)"}}/>
+          </div>
+
+          {/* Round 2: Q2 */}
+          <div style={{display:"flex",gap:8,marginBottom:8,alignItems:"center",justifyContent:"center"}}>
+            <MatchNode round="q2" label="QUALIFIER 2" color={PLAYOFF_COLORS.q2}
+              t1={q2team1} t2={q2team2} winner={rounds.q2.winner} date={rounds.q2.date} />
+            <Arrow />
+            <div style={{fontSize:9,color:"rgba(255,255,255,0.2)",fontFamily:fonts.body,textAlign:"center",lineHeight:1.6}}>Winner →<br/>Final</div>
+          </div>
+
+          {/* Divider */}
+          <div style={{display:"flex",alignItems:"center",margin:"16px 0",gap:0}}>
+            <div style={{flex:1,height:1,background:"linear-gradient(90deg,transparent,#F5A62333,transparent)"}}/>
+            <div style={{padding:"4px 12px",background:"rgba(245,166,35,0.08)",border:"1px solid #F5A62333",fontSize:9,color:"#F5A623",fontFamily:fonts.display,letterSpacing:2,fontWeight:900}}>🏆 GRAND FINAL</div>
+            <div style={{flex:1,height:1,background:"linear-gradient(90deg,transparent,#F5A62333,transparent)"}}/>
+          </div>
+
+          {/* Final */}
+          <div style={{display:"flex",justifyContent:"center"}}>
+            <div style={{position:"relative",minWidth:220}}>
+              {rounds.final.winner && (
+                <div style={{position:"absolute",top:-18,left:"50%",transform:"translateX(-50%)",whiteSpace:"nowrap",fontSize:9,color:"#F5A623",fontFamily:fonts.display,fontWeight:900,letterSpacing:2}}>🏆 CHAMPION</div>
+              )}
+              <MatchNode round="final" label="FINAL" color={PLAYOFF_COLORS.final}
+                t1={finalTeam1} t2={finalTeam2} winner={rounds.final.winner} date={rounds.final.date} />
+            </div>
+          </div>
+
+          {/* Champion banner */}
+          {rounds.final.winner && (
+            <div style={{marginTop:24,background:"linear-gradient(135deg,rgba(245,166,35,0.15),rgba(245,166,35,0.05))",border:"2px solid #F5A623",padding:"16px 20px",textAlign:"center",clipPath:"polygon(12px 0%,100% 0%,calc(100% - 12px) 100%,0% 100%)"}}>
+              <div style={{fontSize:10,color:"rgba(255,255,255,0.4)",fontFamily:fonts.display,letterSpacing:3,marginBottom:6}}>IPL 2026 CHAMPION</div>
+              <div style={{fontSize:28,fontWeight:900,color:"#F5A623",fontFamily:fonts.display,letterSpacing:4,textTransform:"uppercase"}}>{rounds.final.winner}</div>
+              <div style={{fontSize:20,marginTop:4}}>🏆</div>
+            </div>
+          )}
+
+          {/* Edit button for admin */}
+          {unlocked && (
+            <div style={{marginTop:20,textAlign:"center"}}>
+              <button onClick={()=>withPassword(()=>onUpdate())}
+                style={{background:"rgba(245,166,35,0.1)",border:"2px solid #F5A62344",color:"#F5A623",padding:"8px 20px",fontFamily:fonts.display,fontWeight:800,fontSize:11,cursor:"pointer",letterSpacing:2}}>
+                ✏️ EDIT BRACKET
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function MatchesPage({
   tournaments, setTournaments,
   matches, updMatches,
@@ -18,6 +236,8 @@ export default function MatchesPage({
 }) {
   const [expandedTournaments, setExpandedTournaments] = useState({"t_ipl":true});
   const [expandedMatchId, setExpandedMatchId] = useState(null);
+  const [playoffSetupTournament, setPlayoffSetupTournament] = useState(null);
+  const [playoffBracketTournament, setPlayoffBracketTournament] = useState(null);
   return (
     <div className="fade-in">
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:12}}>
@@ -76,6 +296,9 @@ export default function MatchesPage({
                 <button onClick={e=>{e.stopPropagation();withPassword(()=>setAiMatchModal({tournamentId:tournament.id,tournamentName:tournament.name}));}}
                   style={{background:"#A855F7",border:"none",color:"#050F14",clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)",padding:"6px 10px",cursor:"pointer",fontFamily:fonts.display,fontWeight:800,fontSize:10,letterSpacing:1.5,filter:"drop-shadow(2px 2px 0 #5B21B6)"}}
                   title="Generate past matches using AI">🤖 AI</button>
+                <button onClick={e=>{e.stopPropagation();withPassword(()=>setPlayoffSetupTournament(tournament));}}
+                    style={{background:tournament.playoffs?.enabled?"#F5A623":"#2a2f3e",border:tournament.playoffs?.enabled?"none":`1px solid #F5A62344`,color:tournament.playoffs?.enabled?"#080C14":"#F5A623",clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)",padding:"6px 10px",cursor:"pointer",fontFamily:fonts.display,fontWeight:800,fontSize:10,letterSpacing:1.5,filter:tournament.playoffs?.enabled?"drop-shadow(2px 2px 0 #8B4500)":"none"}}
+                    title="Setup Playoffs Bracket">🏆 PO</button>
                 {tMatches.some(m=>m.aiGenerated) && (
                   <button onClick={e=>{e.stopPropagation();withPassword(()=>{
                     if(!window.confirm("Delete all AI-generated matches for "+tournament.name+"? This cannot be undone.")) return;
@@ -122,6 +345,16 @@ export default function MatchesPage({
             {/* Matches list */}
             {isOpen && (
               <div style={{borderTop:`1px solid ${T.border}`,padding:"8px 8px"}}>
+                {tournament.playoffs?.enabled && (
+                  <div style={{marginBottom:8}}>
+                    <button onClick={()=>setPlayoffBracketTournament(tournament)}
+                      style={{width:"100%",background:"linear-gradient(135deg,rgba(245,166,35,0.12),rgba(245,166,35,0.06))",border:"2px solid #F5A62344",color:"#F5A623",padding:"12px 16px",cursor:"pointer",fontFamily:fonts.display,fontWeight:900,fontSize:13,letterSpacing:3,display:"flex",alignItems:"center",justifyContent:"center",gap:10,clipPath:"polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)"}}>
+                      <span style={{fontSize:18}}>🏆</span>
+                      <span>VIEW PLAYOFFS BRACKET</span>
+                      <span style={{fontSize:18}}>🏆</span>
+                    </button>
+                  </div>
+                )}
                 {tMatches.length === 0 ? (
                   <div style={{textAlign:"center",padding:"24px",color:T.muted,fontSize:13}}>
                     No matches yet — hit ↻ REFRESH to fetch from Cricbuzz
@@ -147,12 +380,26 @@ export default function MatchesPage({
                         const liveScore=liveScores[match.id];
                         const isSynced=completed&&Object.keys(points).some(pid=>points[pid][match.id]);
                         const hasStats=Object.keys(points).some(pid=>points[pid][match.id]);
+                        // Playoff label lookup
+                        const pl = tournament.playoffs || {};
+                        const playoffRound = PLAYOFF_ROUNDS.find(k => pl[k]?.matchId === match.id);
+                        const playoffLabel = playoffRound ? PLAYOFF_SHORT[playoffRound] : null;
+                        const playoffColor = playoffRound ? PLAYOFF_COLORS[playoffRound] : null;
                         return (
                           <div key={match.id} style={{background:T.bg,borderRadius:0,border:`2px solid ${live?"#FF3D5A":completed?"#2ECC71":"#4A5E78"}`,borderLeft:`5px solid ${live?"#FF3D5A":completed?"#2ECC71":"#4A5E78"}`}}>
                             <div style={{display:"flex",alignItems:"center",padding:"12px 16px",gap:14,cursor:"pointer"}} onClick={()=>setExpandedMatchId(expandedMatchId===match.id?null:match.id)}>
-                              <div style={{background:T.card,borderRadius:0,padding:"4px 10px",minWidth:44,textAlign:"center",flexShrink:0,border:`1px solid ${T.border}`}}>
-                                <div style={{fontSize:9,color:T.muted,fontFamily:fonts.display,letterSpacing:1}}>M</div>
-                                <div style={{fontSize:18,fontWeight:900,color:T.accent,fontFamily:fonts.display,letterSpacing:1}}>{displayNum}</div>
+                              <div style={{background:playoffLabel?`${playoffColor}22`:T.card,borderRadius:0,padding:"4px 10px",minWidth:44,textAlign:"center",flexShrink:0,border:`1px solid ${playoffLabel?playoffColor:T.border}`}}>
+                                {playoffLabel ? (
+                                  <>
+                                    <div style={{fontSize:8,color:playoffColor,fontFamily:fonts.display,letterSpacing:1,fontWeight:900}}>PO</div>
+                                    <div style={{fontSize:13,fontWeight:900,color:playoffColor,fontFamily:fonts.display,letterSpacing:0.5}}>{playoffLabel}</div>
+                                  </>
+                                ) : (
+                                  <>
+                                    <div style={{fontSize:9,color:T.muted,fontFamily:fonts.display,letterSpacing:1}}>M</div>
+                                    <div style={{fontSize:18,fontWeight:900,color:T.accent,fontFamily:fonts.display,letterSpacing:1}}>{displayNum}</div>
+                                  </>
+                                )}
                               </div>
                               <div style={{flex:1,minWidth:0}}>
                                 <div style={{fontWeight:800,fontSize:15,color:T.text,fontFamily:fonts.display,letterSpacing:1,textTransform:"uppercase"}}>
@@ -235,9 +482,39 @@ export default function MatchesPage({
                 )}
               </div>
             )}
+
           </div>
         );
       })}
+
+      {/* Playoff Setup Modal */}
+      {playoffSetupTournament && (
+        <PlayoffSetupModal
+          tournament={playoffSetupTournament}
+          onClose={()=>setPlayoffSetupTournament(null)}
+          onSave={(playoffs)=>{
+            const updated = tournaments.map(t => t.id===playoffSetupTournament.id ? {...t,playoffs} : t);
+            setTournaments(updated);
+            storeSet("tournaments", updated);
+            setPlayoffSetupTournament(null);
+            pushNotif("system","Playoffs bracket updated!","🏆");
+          }}
+        />
+      )}
+
+      {/* Playoff Bracket Modal */}
+      {playoffBracketTournament && (
+        <PlayoffBracketModal
+          tournament={tournaments.find(t=>t.id===playoffBracketTournament.id)||playoffBracketTournament}
+          onClose={()=>setPlayoffBracketTournament(null)}
+          unlocked={unlocked}
+          withPassword={withPassword}
+          onUpdate={()=>{
+            setPlayoffBracketTournament(null);
+            setPlayoffSetupTournament(tournaments.find(t=>t.id===playoffBracketTournament.id)||playoffBracketTournament);
+          }}
+        />
+      )}
     </div>
   );
 }

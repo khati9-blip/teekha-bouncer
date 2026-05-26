@@ -3,10 +3,13 @@ import { T, fonts } from "./Theme";
 import { calcBreakdown } from "./utils.js";
 import PlayerImage from "./PlayerImage";
 
+const PLAYOFF_LABELS_FULL = { q1:"Qualifier 1", elim:"Eliminator", q2:"Qualifier 2", final:"Final" };
+const PLAYOFF_COLORS_R = { q1:"#4F8EF7", elim:"#FF3D5A", q2:"#A855F7", final:"#F5A623" };
+
 export default function ResultsPage({
   matches, points, teams, players,
   captains, assignments, ownershipLog,
-  snatch, ruledOut, nav,
+  snatch, ruledOut, nav, tournaments,
 }) {
   const [expandedMatch, setExpandedMatch] = useState(null);
   const [filterTeam, setFilterTeam] = useState(null); // null = all teams
@@ -312,6 +315,9 @@ export default function ResultsPage({
 return completedMatches.map((match,idx)=>{
 const open = expandedMatch===match.id;
 const displayNum = match.matchNum || (completedMatches.length - idx);
+  const playoffRound = (() => { if (!tournaments) return null; for (const t of tournaments) { if (!t.playoffs?.enabled) continue; for (const k of ["q1","elim","q2","final"]) { if (t.playoffs[k]?.matchId === match.id) return k; } } return null; })();
+  const playoffColor = playoffRound ? PLAYOFF_COLORS_R[playoffRound] : null;
+  const playoffFullLabel = playoffRound ? PLAYOFF_LABELS_FULL[playoffRound] : null;
 
             const matchDateStr = match.date || "9999-12-31";
             const teamsToShow = filterTeam ? teams.filter(t => t.id === filterTeam) : teams;
@@ -387,19 +393,26 @@ const displayNum = match.matchNum || (completedMatches.length - idx);
                 }} onClick={()=>setExpandedMatch(open?null:match.id)}>
                   {/* Match number badge */}
                   <div style={{
-                    background:"linear-gradient(135deg, #F59E0B 0%, #D97706 100%)",
+                    background: playoffRound ? ("linear-gradient(135deg," + playoffColor + "cc," + playoffColor + "99)") : "linear-gradient(135deg, #F59E0B 0%, #D97706 100%)",
                     padding:"8px 14px",
                     borderRadius:0,
                     clipPath:"polygon(4px 0%, 100% 0%, calc(100% - 4px) 100%, 0% 100%)",
-                    boxShadow:"2px 2px 0 rgba(217,119,6,0.4)",
+                    boxShadow: playoffRound ? ("2px 2px 0 " + playoffColor + "44") : "2px 2px 0 rgba(217,119,6,0.4)",
                     minWidth:60,
                     textAlign:"center"
                   }}>
-                    <div style={{fontSize:10,color:"rgba(10,14,20,0.7)",fontFamily:fonts.display,letterSpacing:1.5,fontWeight:700}}>MATCH</div>
-                    <div style={{fontSize:22,fontWeight:900,color:"#0A0E14",fontFamily:fonts.display,letterSpacing:1}}>{displayNum}</div>
-                  </div>
-
-                  {/* Match info */}
+                    {playoffRound ? (
+                      <>
+                        <div style={{fontSize:9,color:"rgba(10,14,20,0.7)",fontFamily:fonts.display,letterSpacing:1,fontWeight:700}}>PLAYOFF</div>
+                        <div style={{fontSize:13,fontWeight:900,color:"#0A0E14",fontFamily:fonts.display,letterSpacing:0.5}}>{playoffFullLabel}</div>
+                      </>
+                    ) : (
+                      <>
+                        <div style={{fontSize:10,color:"rgba(10,14,20,0.7)",fontFamily:fonts.display,letterSpacing:1.5,fontWeight:700}}>MATCH</div>
+                        <div style={{fontSize:22,fontWeight:900,color:"#0A0E14",fontFamily:fonts.display,letterSpacing:1}}>{displayNum}</div>
+                      </>
+                    )}
+                  </div>                  {/* Match info */}
                   <div style={{flex:1}}>
                     <div style={{fontFamily:fonts.display,fontWeight:800,fontSize:17,color:T.text,letterSpacing:1}}>
                       {match.team1} <span style={{color:T.muted,fontWeight:400}}>vs</span> {match.team2}
@@ -658,7 +671,7 @@ const displayNum = match.matchNum || (completedMatches.length - idx);
               <div style={{background:"rgba(0,0,0,0.3)",borderTop:"1px solid rgba(255,255,255,0.1)",padding:"12px 24px",display:"flex",gap:20,flexWrap:"wrap"}}>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
                   <div style={{fontSize:9,color:"rgba(255,255,255,0.5)",fontWeight:700,letterSpacing:1}}>MATCH</div>
-                  <div style={{fontSize:14,fontWeight:800,color:"#fff",fontFamily:fonts.display}}>#{matchDetailModal.match.matchNum}</div>
+                  <div style={{fontSize:14,fontWeight:800,color:"#fff",fontFamily:fonts.display}}>{(() => { if (!tournaments) return "#" + matchDetailModal.match.matchNum; for (const t of tournaments) { if (!t.playoffs?.enabled) continue; for (const k of ["q1","elim","q2","final"]) { if (t.playoffs[k]?.matchId === matchDetailModal.match.id) return PLAYOFF_LABELS_FULL[k]; } } return "#" + matchDetailModal.match.matchNum; })()}</div>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:8}}>
                   <div style={{fontSize:9,color:"rgba(255,255,255,0.5)",fontWeight:700,letterSpacing:1}}>VS</div>
