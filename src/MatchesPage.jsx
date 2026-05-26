@@ -97,17 +97,29 @@ function PlayoffBracketModal({ tournament, onClose, unlocked, withPassword, onUp
   const finalTeam1 = rounds.q1.winner || "W: Q1";
   const finalTeam2 = rounds.q2.winner || "W: Q2";
 
-  const MatchNode = ({ round, label, color, t1, t2, winner, date, showWinner=true }) => (
-    <div style={{background:`linear-gradient(135deg,${color}12,${color}06)`,border:`2px solid ${color}55`,padding:"12px 14px",minWidth:160,position:"relative"}}>
-      <div style={{fontSize:9,color:color,fontWeight:900,letterSpacing:2,fontFamily:fonts.display,marginBottom:8}}>{label}</div>
-      {[t1||"TBD",t2||"TBD"].map((team,i)=>(
-        <div key={i} style={{display:"flex",alignItems:"center",gap:6,padding:"5px 8px",marginBottom:i===0?4:0,background:winner===team?"rgba(255,255,255,0.08)":"transparent",border:winner===team?`1px solid ${color}88`:"1px solid transparent"}}>
-          {winner===team && <div style={{width:6,height:6,background:color,borderRadius:"50%",flexShrink:0}}/>}
-          <span style={{fontSize:12,fontWeight:winner===team?900:500,color:winner===team?color:"rgba(255,255,255,0.6)",fontFamily:fonts.display,letterSpacing:0.5,textTransform:"uppercase"}}>{team}</span>
-          {winner===team && <span style={{marginLeft:"auto",fontSize:9,color:color,fontWeight:900}}>✓ WIN</span>}
+  const MatchNode = ({ label, color, t1, t2, winner, date, sublabel }) => (
+    <div style={{background:"linear-gradient(180deg,#0f1521 0%,#080c14 100%)",border:"1px solid "+color+"44",borderTop:"3px solid "+color,flex:1,minWidth:0,overflow:"hidden"}}>
+      <div style={{background:"linear-gradient(90deg,"+color+"18,transparent)",padding:"8px 12px",borderBottom:"1px solid "+color+"22",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div>
+          <div style={{fontSize:10,fontWeight:900,color:color,fontFamily:fonts.display,letterSpacing:2}}>{label}</div>
+          {sublabel&&<div style={{fontSize:8,color:"rgba(255,255,255,0.25)",fontFamily:fonts.body,letterSpacing:1,marginTop:1}}>{sublabel}</div>}
         </div>
-      ))}
-      {date && <div style={{fontSize:9,color:"rgba(255,255,255,0.3)",marginTop:8,fontFamily:fonts.body}}>{date}</div>}
+        {date&&<div style={{fontSize:9,color:"rgba(255,255,255,0.25)",fontFamily:fonts.body}}>{date}</div>}
+      </div>
+      {[t1||"TBD",t2||"TBD"].map((team,i)=>{
+        const isWin=winner&&winner===team;
+        const isTBD=!team||team==="TBD";
+        return (
+          <div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"12px 14px",background:isWin?("linear-gradient(90deg,"+color+"18,transparent)"):"transparent",borderBottom:i===0?"1px solid rgba(255,255,255,0.05)":"none",position:"relative"}}>
+            {isWin&&<div style={{position:"absolute",left:0,top:0,bottom:0,width:3,background:color}}/>}
+            <div style={{width:34,height:34,borderRadius:"50%",background:isWin?(color+"22"):"rgba(255,255,255,0.04)",border:"2px solid "+(isWin?color:"rgba(255,255,255,0.08)"),display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,fontWeight:900,color:isWin?color:"rgba(255,255,255,0.25)",fontFamily:fonts.display,flexShrink:0}}>
+              {isTBD?"?":team.slice(0,3)}
+            </div>
+            <span style={{fontSize:14,fontWeight:isWin?900:600,color:isWin?color:isTBD?"rgba(255,255,255,0.2)":"rgba(255,255,255,0.75)",fontFamily:fonts.display,letterSpacing:1,textTransform:"uppercase",flex:1}}>{isTBD?"TBD":team}</span>
+            {isWin&&<div style={{background:color,padding:"3px 8px",clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)",fontSize:8,fontWeight:900,color:"#080C14",fontFamily:fonts.display,letterSpacing:1.5}}>WIN</div>}
+          </div>
+        );
+      })}
     </div>
   );
 
@@ -145,20 +157,18 @@ function PlayoffBracketModal({ tournament, onClose, unlocked, withPassword, onUp
 
           {/* Round 1: Q1 + Eliminator */}
           <div style={{fontSize:10,color:"rgba(255,255,255,0.25)",fontFamily:fonts.display,letterSpacing:2,marginBottom:10}}>ROUND 1</div>
-          <div style={{display:"flex",gap:8,marginBottom:8,alignItems:"stretch"}}>
-            <MatchNode round="q1" label="QUALIFIER 1" color={PLAYOFF_COLORS.q1}
+          <div style={{display:"flex",gap:8,marginBottom:6,alignItems:"stretch"}}>
+            <MatchNode label="QUALIFIER 1" sublabel="Winner → Final · Loser → Q2" color={PLAYOFF_COLORS.q1}
               t1={rounds.q1.team1} t2={rounds.q1.team2} winner={rounds.q1.winner} date={rounds.q1.date} />
-            <div style={{display:"flex",flexDirection:"column",justifyContent:"space-around",padding:"0 4px"}}>
-              <div style={{fontSize:9,color:"rgba(255,255,255,0.2)",fontFamily:fonts.body,textAlign:"center",lineHeight:1.4}}>
-                Winner →<br/>Final<br/><span style={{color:"rgba(255,255,255,0.1)"}}>Loser →<br/>Q2</span>
-              </div>
-            </div>
-            <MatchNode round="elim" label="ELIMINATOR" color={PLAYOFF_COLORS.elim}
+            <MatchNode label="ELIMINATOR" sublabel="Winner → Q2 · Loser out" color={PLAYOFF_COLORS.elim}
               t1={rounds.elim.team1} t2={rounds.elim.team2} winner={rounds.elim.winner} date={rounds.elim.date} />
-            <div style={{display:"flex",flexDirection:"column",justifyContent:"center",padding:"0 4px"}}>
-              <div style={{fontSize:9,color:"rgba(255,255,255,0.2)",fontFamily:fonts.body,textAlign:"center",lineHeight:1.4}}>
-                Winner →<br/>Q2
-              </div>
+          </div>
+          <div style={{display:"flex",gap:8,marginBottom:8}}>
+            <div style={{flex:1,textAlign:"center",fontSize:8,color:PLAYOFF_COLORS.q1+"88",fontFamily:fonts.display,letterSpacing:1}}>
+              {rounds.q1.winner?"✓ "+rounds.q1.winner+" → FINAL":"WINNER → FINAL"}
+            </div>
+            <div style={{flex:1,textAlign:"center",fontSize:8,color:PLAYOFF_COLORS.elim+"88",fontFamily:fonts.display,letterSpacing:1}}>
+              {rounds.elim.winner?"✓ "+rounds.elim.winner+" → Q2":"WINNER → Q2"}
             </div>
           </div>
 
@@ -170,11 +180,14 @@ function PlayoffBracketModal({ tournament, onClose, unlocked, withPassword, onUp
           </div>
 
           {/* Round 2: Q2 */}
-          <div style={{display:"flex",gap:8,marginBottom:8,alignItems:"center",justifyContent:"center"}}>
-            <MatchNode round="q2" label="QUALIFIER 2" color={PLAYOFF_COLORS.q2}
-              t1={q2team1} t2={q2team2} winner={rounds.q2.winner} date={rounds.q2.date} />
-            <Arrow />
-            <div style={{fontSize:9,color:"rgba(255,255,255,0.2)",fontFamily:fonts.body,textAlign:"center",lineHeight:1.6}}>Winner →<br/>Final</div>
+          <div style={{display:"flex",justifyContent:"center",marginBottom:6}}>
+            <div style={{width:"50%",minWidth:200}}>
+              <MatchNode label="QUALIFIER 2" sublabel="Winner → Final" color={PLAYOFF_COLORS.q2}
+                t1={q2team1} t2={q2team2} winner={rounds.q2.winner} date={rounds.q2.date} />
+            </div>
+          </div>
+          <div style={{textAlign:"center",fontSize:8,color:PLAYOFF_COLORS.q2+"88",fontFamily:fonts.display,letterSpacing:1,marginBottom:8}}>
+            {rounds.q2.winner?"✓ "+rounds.q2.winner+" → FINAL":"WINNER → FINAL"}
           </div>
 
           {/* Divider */}
@@ -186,11 +199,8 @@ function PlayoffBracketModal({ tournament, onClose, unlocked, withPassword, onUp
 
           {/* Final */}
           <div style={{display:"flex",justifyContent:"center"}}>
-            <div style={{position:"relative",minWidth:220}}>
-              {rounds.final.winner && (
-                <div style={{position:"absolute",top:-18,left:"50%",transform:"translateX(-50%)",whiteSpace:"nowrap",fontSize:9,color:"#F5A623",fontFamily:fonts.display,fontWeight:900,letterSpacing:2}}>🏆 CHAMPION</div>
-              )}
-              <MatchNode round="final" label="FINAL" color={PLAYOFF_COLORS.final}
+            <div style={{width:"60%",minWidth:220}}>
+              <MatchNode label="FINAL" color={PLAYOFF_COLORS.final}
                 t1={finalTeam1} t2={finalTeam2} winner={rounds.final.winner} date={rounds.final.date} />
             </div>
           </div>
