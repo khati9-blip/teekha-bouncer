@@ -1576,6 +1576,7 @@ ${aiMatchText.slice(0, 3000)}`;
           status: m.status || "upcoming",
           result: m.result || "",
           aiGenerated: true,
+          playoffRound: m.playoffRound || null,
         });
         // Track playoff rounds
         if (m.playoffRound && playoffRoundMap.hasOwnProperty(m.playoffRound)) {
