@@ -1508,12 +1508,14 @@ setPoolLoading(false);
 
 Each match object must have exactly these fields:
 - matchNum: integer match number
-- team1: short code like SRH, RCB, MI, CSK, KKR, RR, GT, PBKS, DC, LSG
+- team1: short code like SRH, RCB, MI, CSK, KKR, RR, GT, PBKS, DC, LSG, TBC
 - team2: short code
 - date: YYYY-MM-DD format
+- time: time string like "07:30 PM"
 - venue: stadium name and city
 - status: "completed" if scores/result shown, "upcoming" if not
 - result: result string if available, else empty string
+- playoffRound: one of "q1", "elim", "q2", "final" if this is a playoff match, else null
 
 Team name mappings:
 Sunrisers Hyderabad=SRH, Royal Challengers Bengaluru=RCB, Royal Challengers Bangalore=RCB,
@@ -1522,6 +1524,12 @@ Rajasthan Royals=RR, Gujarat Titans=GT, Punjab Kings=PBKS,
 Delhi Capitals=DC, Lucknow Super Giants=LSG
 
 IMPORTANT: Extract ONLY what is in the text. Do not invent matches.
+For playoff matches, detect the round from keywords:
+- "Qualifier 1" or "Q1" → playoffRound: "q1"
+- "Eliminator" → playoffRound: "elim"  
+- "Qualifier 2" or "Q2" → playoffRound: "q2"
+- "Final" (not Qualifier) → playoffRound: "final"
+- Regular league matches → playoffRound: null
 
 Schedule text:
 ${aiMatchText.slice(0, 3000)}`;
@@ -1545,6 +1553,8 @@ ${aiMatchText.slice(0, 3000)}`;
       let nextNum = Math.max(...(existing.map(m => m.matchNum || 0)), 0) + 1;
       let added = 0, skipped = 0;
 
+      const playoffRoundMap = { q1: null, elim: null, q2: null, final: null };
+
       parsed.forEach(m => {
         if (!m.team1 || !m.team2 || !m.date) return;
         if (!aiMatchReplace) {
@@ -1555,22 +1565,44 @@ ${aiMatchText.slice(0, 3000)}`;
           );
           if (isDup) { skipped++; return; }
         }
+        const matchId = "ai_" + tournamentId + "_" + (m.matchNum || nextNum) + "_" + Date.now() + "_" + Math.random().toString(36).slice(2);
         base.push({
-          id: "ai_" + tournamentId + "_" + (m.matchNum || nextNum) + "_" + Date.now() + "_" + Math.random().toString(36).slice(2),
+          id: matchId,
           tournamentId,
           matchNum: m.matchNum || nextNum,
           team1: m.team1, team2: m.team2,
-          date: m.date, time: "7:30 PM",
+          date: m.date, time: m.time || "07:30 PM",
           venue: m.venue || "",
           status: m.status || "upcoming",
           result: m.result || "",
           aiGenerated: true,
         });
+        // Track playoff rounds
+        if (m.playoffRound && playoffRoundMap.hasOwnProperty(m.playoffRound)) {
+          playoffRoundMap[m.playoffRound] = { team1: m.team1, team2: m.team2, date: m.date, time: m.time || "07:30 PM", venue: m.venue || "", winner: null, matchId };
+        }
         nextNum++; added++;
       });
 
       updMatches(base);
-      setAiMatchSuccess("Added " + added + " matches" + (skipped > 0 ? " (" + skipped + " skipped — already exist)" : "") + ". Sync stats for completed matches via scorecard paste.");
+
+      // Auto-update playoffs bracket if any playoff rounds detected
+      const hasPlayoffs = Object.values(playoffRoundMap).some(v => v !== null);
+      if (hasPlayoffs) {
+        const existingPlayoffs = tournaments.find(t => t.id === tournamentId)?.playoffs || {};
+        const newPlayoffs = {
+          enabled: true,
+          q1:    playoffRoundMap.q1    || existingPlayoffs.q1    || { team1:"", team2:"", date:"", time:"07:30 PM", venue:"", winner:null, matchId:"playoff_q1" },
+          elim:  playoffRoundMap.elim  || existingPlayoffs.elim  || { team1:"", team2:"", date:"", time:"07:30 PM", venue:"", winner:null, matchId:"playoff_elim" },
+          q2:    playoffRoundMap.q2    || existingPlayoffs.q2    || { team1:"", team2:"", date:"", time:"07:30 PM", venue:"", winner:null, matchId:"playoff_q2" },
+          final: playoffRoundMap.final || existingPlayoffs.final || { team1:"", team2:"", date:"", time:"07:30 PM", venue:"", winner:null, matchId:"playoff_final" },
+        };
+        const updatedTournaments = tournaments.map(t => t.id === tournamentId ? { ...t, playoffs: newPlayoffs } : t);
+        setTournaments(updatedTournaments);
+        storeSet("tournaments", updatedTournaments);
+      }
+
+      setAiMatchSuccess("Added " + added + " matches" + (skipped > 0 ? " (" + skipped + " skipped — already exist)" : "") + (hasPlayoffs ? " · Playoffs bracket auto-filled! 🏆" : "") + ". Sync stats for completed matches via scorecard paste.");
     } catch(e) {
       setAiMatchError("Error: " + e.message);
     }
@@ -3617,6 +3649,7 @@ onChange={e=>setPlayerSearch(e.target.value)}
               snatch={snatch}
               ruledOut={ruledOut}
               nav={nav}
+              tournaments={tournaments}
             />
           )}
           {page==="form" && (
