@@ -355,12 +355,12 @@ export default function MatchesPage({
             {/* Matches list */}
             {isOpen && (
               <div style={{borderTop:`1px solid ${T.border}`,padding:"8px 8px"}}>
-                {tournament.playoffs?.enabled && (
+                {(tournament.playoffs?.enabled || tMatches.some(m => m.playoffRound)) && (
                   <div style={{marginBottom:8}}>
-                    <button onClick={()=>setPlayoffBracketTournament(tournament)}
-                      style={{width:"100%",background:"linear-gradient(135deg,rgba(245,166,35,0.12),rgba(245,166,35,0.06))",border:"2px solid #F5A62344",color:"#F5A623",padding:"12px 16px",cursor:"pointer",fontFamily:fonts.display,fontWeight:900,fontSize:13,letterSpacing:3,display:"flex",alignItems:"center",justifyContent:"center",gap:10,clipPath:"polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)"}}>
+                    <button onClick={()=>tournament.playoffs?.enabled ? setPlayoffBracketTournament(tournament) : null}
+                      style={{width:"100%",background:"linear-gradient(135deg,rgba(245,166,35,0.12),rgba(245,166,35,0.06))",border:"2px solid #F5A62344",color:tournament.playoffs?.enabled?"#F5A623":"rgba(245,166,35,0.3)",padding:"12px 16px",cursor:tournament.playoffs?.enabled?"pointer":"default",fontFamily:fonts.display,fontWeight:900,fontSize:13,letterSpacing:3,display:"flex",alignItems:"center",justifyContent:"center",gap:10,clipPath:"polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%)"}}>
                       <span style={{fontSize:18}}>🏆</span>
-                      <span>VIEW PLAYOFFS BRACKET</span>
+                      <span>{tournament.playoffs?.enabled?"VIEW PLAYOFFS BRACKET":"PLAYOFFS BRACKET LOADING..."}</span>
                       <span style={{fontSize:18}}>🏆</span>
                     </button>
                   </div>
