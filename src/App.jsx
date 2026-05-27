@@ -1033,8 +1033,8 @@ setPoolLoading(false);
   const nav=(pg)=>{setPage(pg);try{localStorage.setItem("tb_page_"+pitch?.id,pg);}catch{}}; // removed storeSet to save quota
   const upd=(setter,key)=>(val)=>{setter(val);storeSet(key,val);};
   const updTeams=upd(setTeams,"teams"),updAssign=upd(setAssignments,"assignments"),
-        updMatches=upd(setMatches,"matches"),updCaptains=upd(setCaptains,"captains"),
-        updPoints=upd(setPoints,"points");
+      updMatches=upd(setMatches,"matches"),updCaptains=upd(setCaptains,"captains"),
+      updPoints=(val)=>{setPoints(val);storeSet("points",val);try{const c=localStorage.getItem('tb_appdata_'+pitch?.id);if(c){const d=JSON.parse(c);d.points=val;localStorage.setItem('tb_appdata_'+pitch?.id,JSON.stringify(d));}}catch{}};
 
   const saveHighlights = async (updated) => { setMyHighlights(updated); await storeSet("hl_"+(user?.email||"").replace(/[@.]/g,"_"), updated); };
   const saveNotes = async (updated) => { setMyNotes(updated); await storeSet("notes_"+(user?.email||"").replace(/[@.]/g,"_"), updated); };
