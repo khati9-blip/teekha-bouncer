@@ -92,7 +92,7 @@ function PlayoffBracketModal({ tournament, onClose, unlocked, withPassword, onUp
   };
 
   // Derive Q2 teams from results
-  const q2team1 = rounds.q1.winner || (rounds.q1.team1 ? `W: ${rounds.q1.team1}/${rounds.q1.team2}` : "W: Q1");
+  const q2team1 = rounds.q1.winner ? (rounds.q1.team1 === rounds.q1.winner ? rounds.q1.team2 : rounds.q1.team1) : (rounds.q1.team1 ? "L: " + rounds.q1.team1 + "/" + rounds.q1.team2 : "Loser Q1");
   const q2team2 = rounds.elim.winner || (rounds.elim.team1 ? `W: ${rounds.elim.team1}/${rounds.elim.team2}` : "W: EL");
   const finalTeam1 = rounds.q1.winner || "W: Q1";
   const finalTeam2 = rounds.q2.winner || "W: Q2";
@@ -231,7 +231,7 @@ function PlayoffBracketModal({ tournament, onClose, unlocked, withPassword, onUp
 
 export default function MatchesPage({
   tournaments, setTournaments,
-  matches, updMatches,
+  matches, updMatches, pitch,
   points, updPoints,
   captains,
   liveScores,
@@ -506,6 +506,23 @@ export default function MatchesPage({
             const updated = tournaments.map(t => t.id===playoffSetupTournament.id ? {...t,playoffs} : t);
             setTournaments(updated);
             storeSet("tournaments", updated);
+            // Auto-sync match teams from bracket results
+            const newMatches = matches.map(m => {
+              if (!m.playoffRound) return m;
+              if (m.playoffRound === "q2") {
+                const t1 = playoffs.q1?.winner ? (playoffs.q1.team1 === playoffs.q1.winner ? playoffs.q1.team2 : playoffs.q1.team1) : (m.team1 !== "TBC" ? m.team1 : "TBC");
+                const t2 = playoffs.elim?.winner || (m.team2 !== "TBC" ? m.team2 : "TBC");
+                return {...m, team1: t1||m.team1, team2: t2||m.team2};
+              }
+              if (m.playoffRound === "final") {
+                const t1 = playoffs.q1?.winner || (m.team1 !== "TBC" ? m.team1 : "TBC");
+                const t2 = playoffs.q2?.winner || (m.team2 !== "TBC" ? m.team2 : "TBC");
+                return {...m, team1: t1||m.team1, team2: t2||m.team2};
+              }
+              return m;
+            });
+            updMatches(newMatches);
+            try { const c = localStorage.getItem('tb_appdata_' + pitch?.id); if(c) { const d = JSON.parse(c); d.tournaments = updated; localStorage.setItem('tb_appdata_' + pitch?.id, JSON.stringify(d)); } } catch {}
             setPlayoffSetupTournament(null);
             pushNotif("system","Playoffs bracket updated!","🏆");
           }}
