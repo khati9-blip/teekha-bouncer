@@ -235,7 +235,7 @@ export async function sbGetMany(rawKeys) {
   const uncached = rawKeys.filter(k => localCache[k] === undefined);
   if (uncached.length > 0) {
     try {
-      const inClause = uncached.map(k => `"${k}"`).join(",");
+      const inClause = uncached.map(k => k).join(",");
       const res = await fetch(
         SUPABASE_URL + "/rest/v1/league_data?key=in.(" + inClause + ")&select=key,value",
         { headers: SB_HEADERS }
