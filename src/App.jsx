@@ -313,7 +313,7 @@ setPoolLoading(false);
         if(sn && typeof sn === 'object') setSnatch(sn);
         if(ti && typeof ti === 'object') setTeamIdentity(ti);
         if(pc && typeof pc === 'object') setPointsConfig(prev=>({...prev,...pc}));
-        if(tv && Array.isArray(tv)) { setTournaments(tv); const exp={}; tv.forEach(t=>exp[t.id]=true); setExpandedTournaments(exp); }
+        if(tv && Array.isArray(tv)) { setTournaments(tv); }
         if(sp) setSafePlayers(sp);
         if(pcfg && typeof pcfg === 'object') setPitchConfig(pcfg);
         if(ro && Array.isArray(ro)) setRuledOut(ro);
