@@ -3590,6 +3590,7 @@ onChange={e=>setPlayerSearch(e.target.value)}
               setAiMatchModal={setAiMatchModal}
               fetchMatchesForTournament={fetchMatchesForTournament}
               fetchFromCricketData={fetchFromCricketData}
+              pitch={pitch}
             />
           )}
 
