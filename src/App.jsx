@@ -109,7 +109,7 @@ function App({ pitch, onLeave, onLeaveGuest, user, onLogout, myTeam, myPinHash, 
   const assignmentsRef = useRef(assignments);
 useEffect(() => { assignmentsRef.current = assignments; }, [assignments]);
   const [matches, setMatches] = useState([]);
-  const [tournaments, setTournaments] = useState([{id:"t_ipl",name:"Indian Premier League",open:true}]);
+  const [tournaments, setTournaments] = useState([]);
   const [newTournamentName, setNewTournamentName] = useState("");
   const [captainMatch, setCaptainMatch] = useState(null);
   const [captains, setCaptains] = useState({});
@@ -257,7 +257,7 @@ const [highlightPlayer, setHighlightPlayer] = useState(null);
             if(d.ownershipLog) setOwnershipLog(d.ownershipLog);
             // Note: snatch intentionally NOT loaded from cache — always fetch fresh from Supabase
             // Note: transfers intentionally NOT loaded from cache — always fetch fresh from Supabase
-            if(d.tournaments && Array.isArray(d.tournaments))  { setTournaments(d.tournaments); const exp={}; d.tournaments.forEach(t=>exp[t.id]=true); setExpandedTournaments(exp); }
+            if(d.tournaments && Array.isArray(d.tournaments))  { setTournaments(d.tournaments); }
             setAppReady(true); // show UI immediately from cache
           }
         } catch {}
@@ -813,7 +813,7 @@ setPoolLoading(false);
     };
     const updated = [...tournaments, newT];
     setTournaments(updated);
-    setExpandedTournaments(prev => ({...prev, [newT.id]: true}));
+    // setExpandedTournaments handled in MatchesPage
     storeSet("tournaments", updated);
     setAddTournamentModal(false);
     setAddTournamentSource(null);
