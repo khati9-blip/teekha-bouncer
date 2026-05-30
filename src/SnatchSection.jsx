@@ -130,6 +130,8 @@ function calcSnatchPoints(pid, teamId, snatchHistory, points, matches, captains,
 }
 
 
+const istNow = () => new Date(Date.now() + new Date().getTimezoneOffset()*60000 + 5.5*3600000);
+
 export default function SnatchSection({
   teams, players, assignments, snatch, points, matches, captains,
   leaderboard, myTeam, isAdmin, unlocked, withPassword,
