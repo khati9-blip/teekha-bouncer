@@ -74,7 +74,7 @@ function CricketDataTab({ existingPlayers, onDone, setStatus }) {
       const res = await fetch("/api/cricketdata?path=cricket-series").then(r => r.json()).catch(() => ({}));
       const data = res?.response || [];
       setSeries((Array.isArray(data) ? data : []).map(s => ({
-        id: s?.id || s?.url || s?.series || "",
+        id: (() => { const raw = s?.id || s?.url || s?.series || ""; const match = String(raw).match(/\/(\d+)\//); return match ? match[1] : raw; })(),
         name: s?.title || s?.series || s?.name || "",
       })).filter(s => s.name));
     } catch (e) { setStatus("❌ " + e.message); }
