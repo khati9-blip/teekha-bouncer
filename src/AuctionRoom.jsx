@@ -331,7 +331,7 @@ function LiveAuction({ auction, setAuction, saveAuction, players, categories, is
   const queueIdx = auction.queue?.indexOf(auction.currentPlayer) ?? 0;
   const remaining = auction.queue?.length - queueIdx - 1;
 
-  const CAT_BASE = { PLATINUM: 200, GOLD: 100, SILVER: 50, BRONZE: 25 };
+  const CAT_BASE = auction.catBase || { PLATINUM: 2, GOLD: 1, SILVER: 0.5, BRONZE: 0.25 };
   const playerCat = currentPlayer ? (categories[currentPlayer.id] || "BRONZE") : "BRONZE";
   const basePrice = CAT_BASE[playerCat];
 

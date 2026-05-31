@@ -419,6 +419,7 @@ function AuctionCreateForm({ T, fonts, onCancel, onCreated }) {
   const [budget, setBudget] = useState(1000);
   const [maxSquad, setMaxSquad] = useState(15);
   const [raiseBy, setRaiseBy] = useState(25);
+  const [catBase, setCatBase] = useState({ PLATINUM: 2, GOLD: 1, SILVER: 0.5, BRONZE: 0.25 });
   const [teams, setTeams] = useState([
     {name:"Team 1",color:"#FF3D5A"},{name:"Team 2",color:"#4F8EF7"},
     {name:"Team 3",color:"#2ECC71"},{name:"Team 4",color:"#F5A623"},
@@ -495,6 +496,19 @@ function AuctionCreateForm({ T, fonts, onCancel, onCreated }) {
           <select value={raiseBy} onChange={e=>setRaiseBy(parseInt(e.target.value))} style={{...inpStyle,cursor:"pointer"}}>
             {[1,2,5,10,25,50,100].map(b=><option key={b} value={b}>+₹{b} Cr per bid</option>)}
           </select>
+        </div>
+        <div style={{gridColumn:"1/-1"}}>
+          <label style={labelStyle}>BASE PRICE PER CATEGORY (CR)</label>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+            {["PLATINUM","GOLD","SILVER","BRONZE"].map(cat => (
+              <div key={cat} style={{display:"flex",alignItems:"center",gap:8}}>
+                <div style={{fontSize:9,fontFamily:fonts.display,fontWeight:900,color:cat==="PLATINUM"?"#E5E4E2":cat==="GOLD"?"#F5A623":cat==="SILVER"?"#94A3B8":"#CD7F32",letterSpacing:1,width:60,flexShrink:0}}>{cat}</div>
+                <select value={catBase[cat]} onChange={e=>setCatBase(p=>({...p,[cat]:parseFloat(e.target.value)}))} style={{...inpStyle,flex:1,padding:"6px 8px",fontSize:11}}>
+                  {[0.25,0.5,0.75,1,1.5,2,2.5,3,4,5,7.5,10,15,20,25,50,100].map(v=><option key={v} value={v}>₹{v} Cr</option>)}
+                </select>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
