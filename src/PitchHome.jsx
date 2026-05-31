@@ -426,6 +426,7 @@ function AuctionCreateForm({ T, fonts, onCancel, onCreated }) {
   ]);
   const [err, setErr] = useState("");
   const [saving, setSaving] = useState(false);
+  const [roomPassword, setRoomPassword] = useState("");
   const TEAM_COLORS = ["#FF3D5A","#4F8EF7","#2ECC71","#F5A623","#A855F7","#06B6D4","#FB923C","#10B981","#F43F5E","#8B5CF6"];
 
   const updateNumTeams = (n) => {
@@ -446,7 +447,7 @@ function AuctionCreateForm({ T, fonts, onCancel, onCreated }) {
     const id = "auction_" + Date.now();
     const auction = {
       id, name: name.trim(), status: "setup",
-      budget, maxSquad, raiseBy,
+      budget, maxSquad, raiseBy, catBase,
       teams: teams.map((t,i) => ({id:"at"+i,name:t.name,color:t.color,budget,players:[]})),
       pool: [], queue: [], currentPlayer: null,
       currentBid: 0, currentBidder: null,
