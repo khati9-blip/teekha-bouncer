@@ -1939,12 +1939,26 @@ ${aiMatchText.slice(0, 3000)}`;
     const pickThenReleasedPids = new Set([...allTradedInPids].filter(id =>
       allTradedOutPids.has(id) && firstAppearance[id] === 'in'
     ));
-    // Net traded-in: came in and stayed (not released later)
-    const netTradedInPids  = new Set([...allTradedInPids].filter(id => !allTradedOutPids.has(id)));
+    // Net traded-in: came in and stayed (not released later), exclude snatch history players
+    // Only treat snatch as "latest event" if no trade happened AFTER the snatch return
+    const snatchHistoryPids = new Set([...(snatch.history||[]).filter(h => {
+      if (h.byTeamId !== teamId) return false;
+      // Check if any trade for this player happened AFTER the snatch return date
+      const returnDate = h.returnDate || "2099-01-01";
+      const tradedAfter = allWeeks.some(w =>
+        (w.tradedPairs||[]).some(pr =>
+          pr.teamId === teamId &&
+          (pr.pickedPid === h.pid || pr.releasedPid === h.pid) &&
+          (pr.timestamp || "0") > returnDate
+        )
+      );
+      return !tradedAfter; // only include in snatchHistoryPids if no later trade
+    }).map(h => h.pid)]);
+    const netTradedInPids  = new Set([...allTradedInPids].filter(id => !allTradedOutPids.has(id) && !snatchHistoryPids.has(id)));
     // Net traded-out: originally released and never came back, OR picked then released
     const netTradedOutPids = new Set([
-      ...[...allTradedOutPids].filter(id => !returnedPids.has(id) && !pickThenReleasedPids.has(id)),
-      ...pickThenReleasedPids
+      ...[...allTradedOutPids].filter(id => !returnedPids.has(id) && !pickThenReleasedPids.has(id) && !snatchHistoryPids.has(id)),
+      ...[...pickThenReleasedPids].filter(id => !snatchHistoryPids.has(id))
     ]);
 
     // Source of truth for who is physically in the squad right now
@@ -2016,6 +2030,7 @@ ${aiMatchText.slice(0, 3000)}`;
       if(!p) return null;
       // Snatching team — recalculate their loan pts from ownershipLog instead of frozen value
       if(h.byTeamId===teamId) {
+        if(inSquadNow.has(h.pid)) return null; // currently in squad, shown elsewhere
         const total = getPtsForTeam(p.id, teamId);
         return {...p, total, status:"snatch-returned-in", frozenAt: total};
       }
