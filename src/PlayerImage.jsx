@@ -4,7 +4,7 @@ import { T } from "./Theme";
 function PlayerImage({ player, size = 100, borderRadius = 12, teamColor = T.accent, showBackground = true }) {
   const [imageError, setImageError] = useState(false);
   
-  const imageUrl = player?.imageUrl || player?.image;
+  const imageUrl = (player?.imageUrl || player?.image) ? `${player?.imageUrl || player?.image}?v=2` : null;
   const showFallback = !imageUrl || imageError;
   
   // Handle both fixed size (number) and responsive size (string like "100%")

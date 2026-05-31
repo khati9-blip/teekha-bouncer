@@ -350,7 +350,16 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin, pushNotif }) {
                     <span style={{fontFamily:fonts.body,fontSize:10,color:T.muted}}>Max {auction.maxSquad} players/team</span>
                   </div>
                 </div>
-                <button onClick={()=>setEditingAuction(auction)}
+                <button onClick={()=>{
+                  const pw = prompt("Enter room password:");
+                  if (!pw) return;
+                  crypto.subtle.digest("SHA-256", new TextEncoder().encode(pw))
+                    .then(buf => Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join(""))
+                    .then(hash => {
+                      if (hash === auction.pwHash) setEditingAuction(auction);
+                      else alert("Wrong password");
+                    });
+                }}
                   style={{background:"linear-gradient(135deg,#A855F7,#7C3AED)",border:"none",color:"#fff",padding:"8px 14px",fontFamily:fonts.display,fontWeight:800,fontSize:11,cursor:"pointer",letterSpacing:1,clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)"}}>
                   {auction.status === "ended" ? "VIEW →" : "ENTER →"}
                 </button>
@@ -443,11 +452,14 @@ function AuctionCreateForm({ T, fonts, onCancel, onCreated }) {
 
   const handleCreate = async () => {
     if (!name.trim()) { setErr("Enter auction name"); return; }
+    if (!roomPassword.trim()) { setErr("Set a room password"); return; }
     setSaving(true);
+    const pwHash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(roomPassword))
+      .then(buf => Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join(""));
     const id = "auction_" + Date.now();
     const auction = {
       id, name: name.trim(), status: "setup",
-      budget, maxSquad, raiseBy, catBase,
+      budget, maxSquad, raiseBy, catBase, pwHash,
       teams: teams.map((t,i) => ({id:"at"+i,name:t.name,color:t.color,budget,players:[]})),
       pool: [], queue: [], currentPlayer: null,
       currentBid: 0, currentBidder: null,
@@ -525,6 +537,14 @@ function AuctionCreateForm({ T, fonts, onCancel, onCreated }) {
             </div>
           ))}
         </div>
+      </div>
+
+      <div style={{marginBottom:16}}>
+        <label style={labelStyle}>ROOM PASSWORD</label>
+        <input type="password" value={roomPassword} onChange={e=>setRoomPassword(e.target.value)}
+          placeholder="Set a password for this auction room"
+          style={inpStyle} />
+        <div style={{fontFamily:fonts.body,fontSize:10,color:T.muted,marginTop:4}}>Only people with this password can enter the auction</div>
       </div>
 
       {err && <div style={{fontFamily:fonts.body,color:T.danger,fontSize:12,marginBottom:12}}>{err}</div>}
