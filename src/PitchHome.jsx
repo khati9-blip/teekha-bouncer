@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { T, fonts, GlobalStyles } from "./Theme";
 import { SUPABASE_URL, SB_HEADERS } from "./utils.js";
 import HomeHub from "./HomeHub";
+import AuctionRoom from "./AuctionRoom";
 import FeedbackWidget from "./FeedbackWidget";
 import RulesSheet from "./RulesSheet";
 
@@ -110,6 +111,7 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin, pushNotif }) {
     setCloning(false);
   };
 
+
   const createPitch = async () => {
     if (!newName.trim()) { setErr("Enter a pitch name"); return; }
     if (pitches.length >= 1000) { setErr("Max 1000 pitches"); return; }
@@ -121,6 +123,17 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin, pushNotif }) {
   };
 
   const COLORS = ["#FF3D5A","#4F8EF7","#2ECC71","#F5A623","#A855F7","#06B6D4"];
+  const [mainTab, setMainTab] = useState("leagues");
+  const [auctions, setAuctions] = useState([]);
+  const [auctionsLoaded, setAuctionsLoaded] = useState(false);
+  const [showCreateAuction, setShowCreateAuction] = useState(false);
+  const [editingAuction, setEditingAuction] = useState(null);
+
+  useEffect(() => {
+    if (mainTab !== "auctions" || auctionsLoaded) return;
+    (async () => { const data = await sbGet("auctions"); setAuctions(Array.isArray(data) ? data : []); setAuctionsLoaded(true); })();
+  }, [mainTab, auctionsLoaded]);
+
 
   if (loading) return (
     <div style={{minHeight:"100vh",background:T.bg,display:"flex",alignItems:"center",justifyContent:"center",flexDirection:"column",gap:16}}>
@@ -128,6 +141,16 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin, pushNotif }) {
       <img src="/logo.png" alt="Teekha Bouncer" style={{width:64,height:64,objectFit:"contain",borderRadius:18,animation:"tb-spin 2s linear infinite",boxShadow:`0 0 40px ${T.accent}44`}} />
       <div style={{fontFamily:fonts.display,fontSize:16,fontWeight:800,color:T.accent,letterSpacing:5}}>LOADING LEAGUES…</div>
     </div>
+  );
+
+  // Show AuctionRoom when an auction is selected
+  if (editingAuction) return (
+    <AuctionRoom
+      auction={editingAuction}
+      user={user}
+      isAdmin={true}
+      onBack={() => { setEditingAuction(null); setAuctionsLoaded(false); }}
+    />
   );
 
   return (
@@ -171,21 +194,51 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin, pushNotif }) {
       </div>
 
       {/* Hero */}
-<div style={{position:"relative",zIndex:10,maxWidth:680,margin:"0 auto",padding:"48px 24px 32px"}}>
+<div style={{position:"relative",zIndex:10,maxWidth:680,margin:"0 auto",padding:"32px 24px 24px"}}>
   <div style={{animation:"tb-fadeUp 0.6s ease both"}}>
-    <div style={{display:"inline-block",background:`linear-gradient(135deg, ${T.accent} 0%, #D97706 100%)`,padding:"6px 20px 6px 14px",clipPath:"polygon(0 0, 100% 0, calc(100% - 12px) 100%, 0 100%)",marginBottom:16,boxShadow:"4px 4px 0 rgba(217,119,6,0.3)"}}>
-      <div style={{fontFamily:fonts.display,fontSize:11,fontWeight:900,color:"#0A0E14",letterSpacing:4,textShadow:"1px 1px 0 rgba(255,255,255,0.2)"}}>DESIGN YOUR OWN LEAGUES</div>
-    </div>
-    <h1 style={{fontFamily:fonts.display,fontSize:48,fontWeight:900,color:T.text,letterSpacing:1,margin:0,lineHeight:1.05,textShadow:"3px 3px 0 rgba(245,158,11,0.1)"}}>
-      YOUR <span style={{color:T.accent,background:`linear-gradient(135deg, ${T.accent} 0%, #D97706 100%)`,WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>LEAGUES</span>
-    </h1>
-    <p style={{fontFamily:fonts.body,fontSize:14,color:T.muted,marginTop:12,letterSpacing:0.5,lineHeight:1.6}}>
-      Select a pitch to manage your squad, track points and dominate the leaderboard
-    </p>
-  </div>
 
-        {/* Pitch cards */}
-        <div style={{display:"flex",flexDirection:"column",gap:10,marginTop:28}}>
+    {/* Two big mode blocks */}
+    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:28}}>
+      {/* LEAGUES block */}
+      <div onClick={()=>setMainTab("leagues")} style={{
+        background:mainTab==="leagues"?"linear-gradient(135deg,rgba(245,158,11,0.15),rgba(245,158,11,0.05))":"rgba(255,255,255,0.02)",
+        border:mainTab==="leagues"?`3px solid ${T.accent}`:`3px solid ${T.border}`,
+        borderRadius:0,padding:"24px 16px",cursor:"pointer",
+        clipPath:"polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%)",
+        boxShadow:mainTab==="leagues"?`4px 4px 0 ${T.accent}44`:"none",
+        transition:"all 0.2s",
+      }}>
+        <div style={{fontSize:32,marginBottom:10}}>🏏</div>
+        <div style={{fontFamily:fonts.display,fontSize:16,fontWeight:900,color:mainTab==="leagues"?T.accent:T.muted,letterSpacing:3,marginBottom:6}}>LEAGUES</div>
+        <div style={{fontFamily:fonts.body,fontSize:11,color:T.muted,lineHeight:1.5}}>Fantasy cricket with live points, transfers & leaderboard</div>
+        {mainTab==="leagues" && <div style={{marginTop:10,width:24,height:3,background:T.accent}}/>}
+      </div>
+
+      {/* AUCTIONS block */}
+      <div onClick={()=>setMainTab("auctions")} style={{
+        background:mainTab==="auctions"?"linear-gradient(135deg,rgba(168,85,247,0.15),rgba(168,85,247,0.05))":"rgba(255,255,255,0.02)",
+        border:mainTab==="auctions"?`3px solid #A855F7`:`3px solid ${T.border}`,
+        borderRadius:0,padding:"24px 16px",cursor:"pointer",
+        clipPath:"polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%)",
+        boxShadow:mainTab==="auctions"?"4px 4px 0 #A855F744":"none",
+        transition:"all 0.2s",
+      }}>
+        <div style={{fontSize:32,marginBottom:10}}>🔨</div>
+        <div style={{fontFamily:fonts.display,fontSize:16,fontWeight:900,color:mainTab==="auctions"?"#A855F7":T.muted,letterSpacing:3,marginBottom:6}}>AUCTIONS</div>
+        <div style={{fontFamily:fonts.body,fontSize:11,color:T.muted,lineHeight:1.5}}>Live bidding to build your dream team from scratch</div>
+        {mainTab==="auctions" && <div style={{marginTop:10,width:24,height:3,background:"#A855F7"}}/>}
+      </div>
+    </div>
+
+    {/* LEAGUES TAB */}
+    {mainTab === "leagues" && (<>
+      <div style={{fontFamily:fonts.display,fontSize:28,fontWeight:900,color:T.text,letterSpacing:1,marginBottom:4}}>
+        YOUR <span style={{color:T.accent}}>LEAGUES</span>
+      </div>
+      <p style={{fontFamily:fonts.body,fontSize:13,color:T.muted,marginTop:4,marginBottom:20,lineHeight:1.6}}>
+        Select a pitch to manage your squad, track points and dominate the leaderboard
+      </p>
+      <div style={{display:"flex",flexDirection:"column",gap:10}}>
           {pitches.map((pitch, i) => {
             const color = COLORS[i % COLORS.length];
             const pitchTeamKey = "tb_myteam_" + pitch.id;
@@ -263,6 +316,68 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin, pushNotif }) {
         </div>
         {/* Feedback */}
         <FeedbackWidget pitches={pitches} user={user} T={T} fonts={fonts} />
+    </>)}
+
+    {/* AUCTIONS TAB */}
+    {mainTab === "auctions" && (<>
+      <div style={{fontFamily:fonts.display,fontSize:28,fontWeight:900,color:T.text,letterSpacing:1,marginBottom:4}}>
+        YOUR <span style={{color:"#A855F7"}}>AUCTIONS</span>
+      </div>
+      <p style={{fontFamily:fonts.body,fontSize:13,color:T.muted,marginTop:4,marginBottom:20,lineHeight:1.6}}>
+        Run a live IPL-style auction to build squads before starting a league
+      </p>
+
+      <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:16}}>
+        {!auctionsLoaded ? (
+          <div style={{textAlign:"center",padding:"24px",fontFamily:fonts.display,fontSize:10,color:T.muted,letterSpacing:3}}>LOADING AUCTIONS…</div>
+        ) : auctions.length === 0 ? (
+          <div style={{background:T.card,border:"2px dashed #A855F733",padding:"32px 20px",textAlign:"center",clipPath:"polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%)"}}>
+            <div style={{fontSize:40,marginBottom:12}}>🔨</div>
+            <div style={{fontFamily:fonts.display,fontSize:14,color:T.muted,letterSpacing:2,marginBottom:6}}>NO AUCTIONS YET</div>
+            <div style={{fontFamily:fonts.body,fontSize:12,color:T.muted,opacity:0.6}}>Create your first auction to get started</div>
+          </div>
+        ) : auctions.map((auction, i) => {
+          const statusColor = auction.status === "live" ? T.danger : auction.status === "ended" ? T.success : "#A855F7";
+          const statusLabel = auction.status === "live" ? "🔴 LIVE" : auction.status === "ended" ? "✅ ENDED" : "⏳ SETUP";
+          return (
+            <div key={auction.id} style={{background:T.card,border:"2px solid #A855F722",borderLeft:"6px solid #A855F7",padding:"16px 18px",clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)",animation:`tb-fadeUp 0.4s ease ${i*0.07}s both`}}>
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                <div>
+                  <div style={{fontFamily:fonts.display,fontSize:16,fontWeight:800,color:T.text,letterSpacing:0.5}}>{auction.name}</div>
+                  <div style={{display:"flex",gap:8,marginTop:4,flexWrap:"wrap"}}>
+                    <span style={{fontFamily:fonts.display,fontSize:9,color:statusColor,fontWeight:700,letterSpacing:1}}>{statusLabel}</span>
+                    <span style={{fontFamily:fonts.body,fontSize:10,color:T.muted}}>{auction.teams?.length || 0} teams · ₹{auction.budget}Cr budget</span>
+                    <span style={{fontFamily:fonts.body,fontSize:10,color:T.muted}}>Max {auction.maxSquad} players/team</span>
+                  </div>
+                </div>
+                <button onClick={()=>setEditingAuction(auction)}
+                  style={{background:"linear-gradient(135deg,#A855F7,#7C3AED)",border:"none",color:"#fff",padding:"8px 14px",fontFamily:fonts.display,fontWeight:800,fontSize:11,cursor:"pointer",letterSpacing:1,clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)"}}>
+                  {auction.status === "ended" ? "VIEW →" : "ENTER →"}
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {!showCreateAuction ? (
+        <button onClick={()=>setShowCreateAuction(true)}
+          style={{width:"100%",background:"transparent",border:"3px dashed #A855F755",borderRadius:0,padding:"18px",fontFamily:fonts.display,fontWeight:800,fontSize:14,color:"#A855F7",cursor:"pointer",letterSpacing:2,display:"flex",alignItems:"center",justifyContent:"center",gap:8,clipPath:"polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%)"}}>
+          🔨 CREATE NEW AUCTION
+        </button>
+      ) : (
+        <AuctionCreateForm T={T} fonts={fonts}
+          onCancel={()=>setShowCreateAuction(false)}
+          onCreated={async (auction)=>{
+            const updated = [...auctions, auction];
+            await sbSet("auctions", updated);
+            setAuctions(updated);
+            setShowCreateAuction(false);
+          }} />
+      )}
+    </>)}
+
+      </div>
       </div>
 
       <RulesSheet />
@@ -293,6 +408,118 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin, pushNotif }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+
+function AuctionCreateForm({ T, fonts, onCancel, onCreated }) {
+  const [name, setName] = useState("");
+  const [numTeams, setNumTeams] = useState(4);
+  const [budget, setBudget] = useState(1000);
+  const [maxSquad, setMaxSquad] = useState(15);
+  const [raiseBy, setRaiseBy] = useState(25);
+  const [teams, setTeams] = useState([
+    {name:"Team 1",color:"#FF3D5A"},{name:"Team 2",color:"#4F8EF7"},
+    {name:"Team 3",color:"#2ECC71"},{name:"Team 4",color:"#F5A623"},
+  ]);
+  const [err, setErr] = useState("");
+  const [saving, setSaving] = useState(false);
+  const TEAM_COLORS = ["#FF3D5A","#4F8EF7","#2ECC71","#F5A623","#A855F7","#06B6D4","#FB923C","#10B981","#F43F5E","#8B5CF6"];
+
+  const updateNumTeams = (n) => {
+    const count = parseInt(n);
+    setNumTeams(count);
+    const updated = [...teams];
+    while (updated.length < count) updated.push({name:"Team "+(updated.length+1),color:TEAM_COLORS[updated.length%TEAM_COLORS.length]});
+    while (updated.length > count) updated.pop();
+    setTeams(updated);
+  };
+
+  const inpStyle = {width:"100%",background:T.bg,border:`1px solid ${T.border}`,color:T.text,padding:"10px 12px",fontSize:13,fontFamily:fonts.body,outline:"none",boxSizing:"border-box"};
+  const labelStyle = {fontFamily:fonts.display,fontSize:9,color:T.muted,letterSpacing:2,marginBottom:6,display:"block"};
+
+  const handleCreate = async () => {
+    if (!name.trim()) { setErr("Enter auction name"); return; }
+    setSaving(true);
+    const id = "auction_" + Date.now();
+    const auction = {
+      id, name: name.trim(), status: "setup",
+      budget, maxSquad, raiseBy,
+      teams: teams.map((t,i) => ({id:"at"+i,name:t.name,color:t.color,budget,players:[]})),
+      pool: [], queue: [], currentPlayer: null,
+      currentBid: 0, currentBidder: null,
+      timer: null, unsold: [], soldLog: [],
+      createdAt: new Date().toISOString(),
+    };
+    await onCreated(auction);
+    setSaving(false);
+  };
+
+  return (
+    <div style={{background:T.card,border:"2px solid #A855F744",padding:24,clipPath:"polygon(8px 0%,100% 0%,calc(100% - 8px) 100%,0% 100%)",animation:"tb-fadeUp 0.3s ease both"}}>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
+        <div style={{fontFamily:fonts.display,fontSize:18,fontWeight:900,color:"#A855F7",letterSpacing:3}}>🔨 NEW AUCTION</div>
+        <button onClick={onCancel} style={{background:"transparent",border:"none",color:T.muted,fontSize:18,cursor:"pointer"}}>✕</button>
+      </div>
+
+      <div style={{marginBottom:16}}>
+        <label style={labelStyle}>AUCTION NAME</label>
+        <input value={name} onChange={e=>{setName(e.target.value);setErr("");}} placeholder="e.g. IPL Fantasy Auction 2025" style={inpStyle} autoFocus />
+      </div>
+
+
+
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
+        <div>
+          <label style={labelStyle}>NUMBER OF TEAMS</label>
+          <select value={numTeams} onChange={e=>updateNumTeams(e.target.value)} style={{...inpStyle,cursor:"pointer"}}>
+            {[4,5,6,7,8,9,10].map(n=><option key={n} value={n}>{n} teams</option>)}
+          </select>
+        </div>
+        <div>
+          <label style={labelStyle}>BUDGET PER TEAM (CR)</label>
+          <select value={budget} onChange={e=>setBudget(parseInt(e.target.value))} style={{...inpStyle,cursor:"pointer"}}>
+            {[100,200,300,400,500,600,700,800,900,1000,1500,2000].map(b=><option key={b} value={b}>₹{b} Cr</option>)}
+          </select>
+        </div>
+        <div>
+          <label style={labelStyle}>MAX SQUAD SIZE</label>
+          <select value={maxSquad} onChange={e=>setMaxSquad(parseInt(e.target.value))} style={{...inpStyle,cursor:"pointer"}}>
+            {[10,11,12,13,14,15,16,17,18,19,20,22,25,28,30,35,40].map(n=><option key={n} value={n}>{n} players</option>)}
+          </select>
+        </div>
+
+        <div style={{gridColumn:"1/-1"}}>
+          <label style={labelStyle}>BID INCREMENT (CR)</label>
+          <select value={raiseBy} onChange={e=>setRaiseBy(parseInt(e.target.value))} style={{...inpStyle,cursor:"pointer"}}>
+            {[1,2,5,10,25,50,100].map(b=><option key={b} value={b}>+₹{b} Cr per bid</option>)}
+          </select>
+        </div>
+      </div>
+
+      <div style={{marginBottom:20}}>
+        <label style={labelStyle}>TEAM NAMES & COLORS</label>
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          {teams.map((team,i) => (
+            <div key={i} style={{display:"flex",gap:8,alignItems:"center"}}>
+              <input type="color" value={team.color} onChange={e=>{const u=[...teams];u[i]={...u[i],color:e.target.value};setTeams(u);}}
+                style={{width:36,height:36,border:`1px solid ${T.border}`,background:"transparent",cursor:"pointer",padding:2,flexShrink:0}} />
+              <input value={team.name} onChange={e=>{const u=[...teams];u[i]={...u[i],name:e.target.value};setTeams(u);}}
+                placeholder={`Team ${i+1}`} style={{...inpStyle,flex:1}} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {err && <div style={{fontFamily:fonts.body,color:T.danger,fontSize:12,marginBottom:12}}>{err}</div>}
+
+      <div style={{display:"flex",gap:8}}>
+        <button onClick={onCancel} style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,color:T.muted,padding:"11px",fontFamily:fonts.display,fontWeight:700,fontSize:13,cursor:"pointer"}}>CANCEL</button>
+        <button onClick={handleCreate} disabled={saving} style={{flex:2,background:"linear-gradient(135deg,#A855F7,#7C3AED)",border:"none",color:"#fff",padding:"11px",fontFamily:fonts.display,fontWeight:900,fontSize:14,cursor:saving?"not-allowed":"pointer",opacity:saving?0.7:1,letterSpacing:1}}>
+          {saving ? "CREATING\u2026" : "🔨 CREATE AUCTION →"}
+        </button>
+      </div>
     </div>
   );
 }
