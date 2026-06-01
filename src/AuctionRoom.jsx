@@ -18,7 +18,9 @@ const POLL_MS = 2500;
 export default function AuctionRoom({ auction: initialAuction, user, onBack, isAdmin }) {
   const [auction, setAuction] = useState(initialAuction);
   const [screen, setScreen] = useState(
-    !initialAuction.pool || initialAuction.pool.length === 0 ? "setup" : "lobby"
+    initialAuction.status === "live" ? "live" :
+    initialAuction.status === "ended" ? "ended" :
+    !initialAuction.pool || initialAuction.pool.length === 0 ? "setup" : "setup"
   );
   const [showFetchPlayers, setShowFetchPlayers] = useState(false);
   const [players, setPlayers] = useState(initialAuction.pool || []);
