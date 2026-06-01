@@ -523,7 +523,7 @@ function AuctionCreateForm({ T, fonts, onCancel, onCreated }) {
         <div style={{gridColumn:"1/-1"}}>
           <label style={labelStyle}>BID INCREMENT (CR)</label>
           <select value={raiseBy} onChange={e=>setRaiseBy(parseInt(e.target.value))} style={{...inpStyle,cursor:"pointer"}}>
-            {[1,2,5,10,25,50,100].map(b=><option key={b} value={b}>+₹{b} Cr per bid</option>)}
+            {[0.25,0.5,0.75,1,1.5,2,2.5,3,4,5,7.5,10,15,20,25,50,100].map(b=><option key={b} value={b}>+₹{b} Cr per bid</option>)}
           </select>
         </div>
         <div style={{gridColumn:"1/-1"}}>

@@ -161,7 +161,7 @@ const [settingsData, setSettingsData] = useState({
                 <label style={{ fontFamily:fonts.display, fontSize:9, color:T.muted, letterSpacing:2, marginBottom:6, display:"block" }}>BID INCREMENT (CR)</label>
                 <select value={settingsData.raiseBy} onChange={e => setSettingsData(p => ({...p, raiseBy: parseInt(e.target.value)}))}
                   style={{ width:"100%", background:T.bg, border:`1px solid ${T.border}`, color:T.text, padding:"10px 12px", fontSize:13, fontFamily:fonts.body, outline:"none", boxSizing:"border-box", cursor:"pointer" }}>
-                  {[1,2,5,10,25,50,100].map(b => <option key={b} value={b}>+₹{b} Cr per bid</option>)}
+                  {[0.25,0.5,0.75,1,1.5,2,2.5,3,4,5,7.5,10,15,20,25,50,100].map(b => <option key={b} value={b}>+₹{b} Cr per bid</option>)}
                 </select>
               </div>
             </div>
