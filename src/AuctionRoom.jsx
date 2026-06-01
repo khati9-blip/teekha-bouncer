@@ -432,6 +432,12 @@ function CategoryEditor({ players, categories, onSave }) {
 function LiveAuction({ auction, setAuction, saveAuction, players, categories, isAdmin, user, onEnd }) {
   const [timeLeft, setTimeLeft] = useState(30);
   const [bidding, setBidding] = useState(false);
+  const [showOverview, setShowOverview] = useState(false);
+  const [imgError, setImgError] = useState(false);
+  const [showEndConfirm, setShowEndConfirm] = useState(false);
+  const [endPw, setEndPw] = useState("");
+  const [endPwErr, setEndPwErr] = useState("");
+  const [ending, setEnding] = useState(false);
   const timerRef = useRef(null);
 
   const currentPlayer = auction.currentPlayer ? players.find(p => p.id === auction.currentPlayer) : null;
@@ -442,8 +448,14 @@ function LiveAuction({ auction, setAuction, saveAuction, players, categories, is
   const CAT_BASE = auction.catBase || { PLATINUM: 2, GOLD: 1, SILVER: 0.5, BRONZE: 0.25 };
   const playerCat = currentPlayer ? (categories[currentPlayer.id] || "BRONZE") : "BRONZE";
   const basePrice = CAT_BASE[playerCat];
+  const newBid = auction.currentBid > 0 ? auction.currentBid + basePrice : basePrice;
 
-  // Timer countdown
+  const playerImageUrl = currentPlayer?.id
+    ? `https://rmcxhorijitrhqyrvvkn.supabase.co/storage/v1/object/public/player-images/${currentPlayer.id}.png?v=2`
+    : null;
+
+  useEffect(() => { setImgError(false); }, [currentPlayer?.id]);
+
   useEffect(() => {
     if (!auction.timer) return;
     timerRef.current = setInterval(() => {
@@ -454,65 +466,49 @@ function LiveAuction({ auction, setAuction, saveAuction, players, categories, is
     return () => clearInterval(timerRef.current);
   }, [auction.timer]);
 
-  // Admin: place bid for a team
   const placeBid = async (teamId) => {
     const team = auction.teams.find(t => t.id === teamId);
-    if (!team) return;
-    const newBid = auction.currentBid > 0 ? auction.currentBid + basePrice : basePrice;
-    if (team.budget < newBid) return;
+    if (!team || team.budget < newBid) return;
     setBidding(true);
-    const updated = {
-      ...auction,
-      currentBid: newBid,
-      currentBidder: teamId,
-      timer: Date.now() + 30000,
-    };
-    await saveAuction(updated);
+    await saveAuction({ ...auction, currentBid: newBid, currentBidder: teamId, timer: Date.now() + 30000 });
     setBidding(false);
   };
 
-  // Admin: sell to current bidder
   const sellPlayer = async () => {
     if (!auction.currentBidder || !currentPlayer) return;
     const updated = {
       ...auction,
-      teams: auction.teams.map(t => {
-        if (t.id === auction.currentBidder) {
-          return {
-            ...t,
-            budget: t.budget - auction.currentBid,
-            players: [...(t.players||[]), { ...currentPlayer, soldFor: auction.currentBid, category: playerCat }],
-          };
-        }
-        return t;
-      }),
+      teams: auction.teams.map(t => t.id === auction.currentBidder
+        ? { ...t, budget: t.budget - auction.currentBid, players: [...(t.players||[]), { ...currentPlayer, soldFor: auction.currentBid, category: playerCat }] }
+        : t),
       soldLog: [...(auction.soldLog||[]), { playerId: currentPlayer.id, playerName: currentPlayer.name, teamId: auction.currentBidder, price: auction.currentBid, category: playerCat }],
     };
     await moveToNext(updated);
   };
 
-  // Admin: mark unsold
   const markUnsold = async () => {
     if (!currentPlayer) return;
-    const updated = {
-      ...auction,
-      unsold: [...(auction.unsold||[]), currentPlayer.id],
-    };
-    await moveToNext(updated);
+    await moveToNext({ ...auction, unsold: [...(auction.unsold||[]), currentPlayer.id] });
+  };
+
+  const handleEndAuction = async () => {
+    if (!endPw.trim()) { setEndPwErr("Enter password"); return; }
+    setEnding(true);
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(endPw));
+    const hash = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,"0")).join("");
+    if (hash !== auction.pwHash) {
+      setEndPwErr("❌ Wrong password");
+      setEnding(false);
+      return;
+    }
+    await saveAuction({ ...auction, status:"ended" });
+    onEnd();
   };
 
   const moveToNext = async (base) => {
     const idx = base.queue.indexOf(base.currentPlayer);
     const nextId = base.queue[idx + 1] || null;
-    const updated = {
-      ...base,
-      currentPlayer: nextId,
-      currentBid: 0,
-      currentBidder: null,
-      timer: nextId ? Date.now() + 30000 : null,
-      status: nextId ? "live" : "ended",
-    };
-    await saveAuction(updated);
+    await saveAuction({ ...base, currentPlayer: nextId, currentBid: 0, currentBidder: null, timer: nextId ? Date.now() + 30000 : null, status: nextId ? "live" : "ended" });
     if (!nextId) onEnd();
   };
 
@@ -526,8 +522,9 @@ function LiveAuction({ auction, setAuction, saveAuction, players, categories, is
   const catColor = CAT_COLORS[playerCat]?.border || T.accent;
 
   return (
-    <div style={{ maxWidth:640, margin:"0 auto", padding:"16px" }}>
-      {/* Progress bar */}
+    <div style={{ maxWidth:700, margin:"0 auto", padding:"16px" }}>
+
+      {/* Progress bar + overview button */}
       <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:16 }}>
         <div style={{ flex:1, height:4, background:T.border, borderRadius:2, overflow:"hidden" }}>
           <div style={{ width:`${((queueIdx)/(auction.queue?.length||1))*100}%`, height:"100%", background:"#A855F7", transition:"width 0.5s" }} />
@@ -535,80 +532,144 @@ function LiveAuction({ auction, setAuction, saveAuction, players, categories, is
         <div style={{ fontFamily:fonts.display, fontSize:10, color:T.muted, letterSpacing:1, whiteSpace:"nowrap" }}>
           {queueIdx+1} / {auction.queue?.length} · {remaining} left
         </div>
+        <button onClick={() => setShowOverview(true)}
+          style={{ background:"rgba(168,85,247,0.15)", border:"1px solid #A855F7", color:"#A855F7", padding:"4px 10px", fontFamily:fonts.display, fontWeight:800, fontSize:9, cursor:"pointer", letterSpacing:1, whiteSpace:"nowrap" }}>
+          📋 OVERVIEW
+        </button>
       </div>
 
-      {/* Current player card */}
+      {/* Current player card — image + info side by side */}
       <div style={{
-        background:`linear-gradient(135deg,${catColor}15,${catColor}05)`,
+        background:`linear-gradient(135deg,${catColor}18,${catColor}06)`,
         border:`3px solid ${catColor}`,
-        padding:"24px 20px", marginBottom:16, position:"relative",
+        marginBottom:16, position:"relative", overflow:"hidden",
         clipPath:"polygon(10px 0%,100% 0%,calc(100% - 10px) 100%,0% 100%)",
       }}>
-        <div style={{ position:"absolute", top:12, right:16, background:`${catColor}22`, border:`1px solid ${catColor}`, padding:"3px 10px", fontFamily:fonts.display, fontSize:9, fontWeight:900, color:catColor, letterSpacing:2 }}>
-          {playerCat}
-        </div>
-        <div style={{ fontFamily:fonts.display, fontSize:28, fontWeight:900, color:"#fff", letterSpacing:1, marginBottom:4 }}>
-          {currentPlayer.name}
-        </div>
-        <div style={{ fontFamily:fonts.body, fontSize:13, color:T.muted, marginBottom:16 }}>
-          {currentPlayer.iplTeam || ""} {currentPlayer.role ? `· ${currentPlayer.role}` : ""}
-        </div>
+        {/* Glow bg */}
+        <div style={{ position:"absolute", inset:0, background:`radial-gradient(circle at 30% 50%, ${catColor}22, transparent 70%)`, pointerEvents:"none" }} />
 
-        {/* Current bid display */}
-        <div style={{ display:"flex", alignItems:"baseline", gap:8, marginBottom:8 }}>
-          <div style={{ fontFamily:fonts.display, fontSize:42, fontWeight:900, color:catColor, lineHeight:1 }}>
-            ₹{auction.currentBid > 0 ? auction.currentBid : basePrice}
+        <div style={{ display:"flex", alignItems:"stretch", position:"relative", zIndex:1 }}>
+          {/* Player image */}
+          <div style={{ width:140, flexShrink:0, background:`linear-gradient(180deg,${catColor}33,${catColor}11)`, display:"flex", alignItems:"center", justifyContent:"center", overflow:"hidden", minHeight:160 }}>
+            {playerImageUrl && !imgError ? (
+              <img src={playerImageUrl} alt={currentPlayer.name} onError={() => setImgError(true)}
+                style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition:"top" }} />
+            ) : (
+              <div style={{ fontSize:48, opacity:0.3 }}>👤</div>
+            )}
           </div>
-          <div style={{ fontFamily:fonts.body, fontSize:13, color:T.muted }}>Cr</div>
-          {auction.currentBid === 0 && <div style={{ fontFamily:fonts.display, fontSize:10, color:T.muted, letterSpacing:1 }}>BASE PRICE</div>}
-        </div>
 
-        {/* Current bidder */}
-        {currentTeam && (
-          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-            <div style={{ width:8, height:8, background:currentTeam.color, borderRadius:"50%" }} />
-            <div style={{ fontFamily:fonts.display, fontSize:12, fontWeight:800, color:currentTeam.color, letterSpacing:1 }}>
-              {currentTeam.name} is leading
+          {/* Player info */}
+          <div style={{ flex:1, padding:"20px 16px" }}>
+            <div style={{ position:"absolute", top:12, right:16, background:`${catColor}22`, border:`1px solid ${catColor}`, padding:"3px 10px", fontFamily:fonts.display, fontSize:9, fontWeight:900, color:catColor, letterSpacing:2 }}>
+              {playerCat}
+            </div>
+            <div style={{ fontFamily:fonts.display, fontSize:24, fontWeight:900, color:"#fff", letterSpacing:1, marginBottom:2 }}>
+              {currentPlayer.name}
+            </div>
+            <div style={{ fontFamily:fonts.body, fontSize:12, color:T.muted, marginBottom:14 }}>
+              {currentPlayer.iplTeam || ""}{currentPlayer.role ? ` · ${currentPlayer.role}` : ""}
+            </div>
+
+            <div style={{ display:"flex", alignItems:"baseline", gap:6, marginBottom:6 }}>
+              <div style={{ fontFamily:fonts.display, fontSize:38, fontWeight:900, color:catColor, lineHeight:1 }}>
+                ₹{auction.currentBid > 0 ? auction.currentBid : basePrice}
+              </div>
+              <div style={{ fontFamily:fonts.body, fontSize:12, color:T.muted }}>Cr</div>
+              {auction.currentBid === 0 && <div style={{ fontFamily:fonts.display, fontSize:9, color:T.muted, letterSpacing:1 }}>BASE</div>}
+            </div>
+
+            {currentTeam ? (
+              <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                <div style={{ width:8, height:8, background:currentTeam.color, borderRadius:"50%" }} />
+                <div style={{ fontFamily:fonts.display, fontSize:11, fontWeight:800, color:currentTeam.color, letterSpacing:1 }}>
+                  {currentTeam.name} is leading
+                </div>
+              </div>
+            ) : (
+              <div style={{ fontFamily:fonts.display, fontSize:10, color:T.muted, letterSpacing:1 }}>NO BIDS YET</div>
+            )}
+
+            <div style={{
+              position:"absolute", bottom:10, right:16,
+              fontFamily:fonts.display, fontSize:28, fontWeight:900,
+              color: timeLeft <= 5 ? "#EF4444" : timeLeft <= 10 ? "#F5A623" : T.muted,
+            }}>
+              {timeLeft}s
             </div>
           </div>
-        )}
-
-        {/* Timer */}
-        <div style={{
-          position:"absolute", bottom:12, right:16,
-          fontFamily:fonts.display, fontSize:24, fontWeight:900,
-          color: timeLeft <= 5 ? "#EF4444" : timeLeft <= 10 ? "#F5A623" : T.muted,
-          letterSpacing:1,
-        }}>
-          {timeLeft}s
         </div>
       </div>
 
-      {/* Bid buttons — admin bids on behalf of teams */}
+      {/* Team bid squares */}
       {isAdmin && (
-        <div style={{ marginBottom:16 }}>
+        <div style={{ marginBottom:14 }}>
           <div style={{ fontFamily:fonts.display, fontSize:9, color:T.muted, letterSpacing:2, marginBottom:8 }}>BID FOR TEAM</div>
-          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
             {auction.teams?.map(team => {
-              const newBid = auction.currentBid > 0 ? auction.currentBid + auction.raiseBy : basePrice;
               const canBid = team.budget >= newBid && team.id !== auction.currentBidder;
               const squadFull = (team.players?.length || 0) >= auction.maxSquad;
+              const isLeading = team.id === auction.currentBidder;
+              const spent = auction.budget - team.budget;
+              const teamPlayers = team.players || [];
+              const batsmen = teamPlayers.filter(p => p.role === "Batsman").length;
+              const bowlers = teamPlayers.filter(p => p.role === "Bowler").length;
+              const allRounders = teamPlayers.filter(p => p.role === "All-Rounder").length;
+              const keepers = teamPlayers.filter(p => p.role === "Wicket-Keeper").length;
               return (
                 <button key={team.id} onClick={() => canBid && !squadFull && placeBid(team.id)}
                   disabled={!canBid || squadFull || bidding}
                   style={{
-                    background: team.id === auction.currentBidder ? `${team.color}33` : canBid && !squadFull ? `${team.color}18` : "rgba(255,255,255,0.02)",
-                    border: `2px solid ${team.id === auction.currentBidder ? team.color : canBid && !squadFull ? `${team.color}88` : T.border}`,
-                    color: canBid && !squadFull ? team.color : T.muted,
-                    padding:"12px 10px", cursor:canBid&&!squadFull?"pointer":"not-allowed",
-                    fontFamily:fonts.display, fontWeight:800, fontSize:11, letterSpacing:0.5,
-                    opacity:!canBid||squadFull?0.5:1,
+                    background: isLeading ? `linear-gradient(135deg,${team.color}44,${team.color}22)` : canBid && !squadFull ? `${team.color}12` : "rgba(255,255,255,0.02)",
+                    border: `2px solid ${isLeading ? team.color : canBid && !squadFull ? `${team.color}66` : T.border}`,
+                    color: team.color, padding:"14px 12px",
+                    cursor: canBid && !squadFull ? "pointer" : "not-allowed",
+                    textAlign:"left", opacity: !canBid || squadFull ? 0.5 : 1,
+                    position:"relative", transition:"all 0.15s",
                   }}>
-                  <div style={{ marginBottom:2 }}>{team.name}</div>
-                  <div style={{ fontSize:9, opacity:0.7 }}>
-                    {squadFull ? "SQUAD FULL" : `₹${newBid}Cr · Rem: ₹${team.budget}Cr`}
+                  {isLeading && (
+                    <div style={{ position:"absolute", top:6, right:8, fontFamily:fonts.display, fontSize:8, color:team.color, letterSpacing:1 }}>⭐ LEADING</div>
+                  )}
+                  {squadFull && (
+                    <div style={{ position:"absolute", top:6, right:8, fontFamily:fonts.display, fontSize:8, color:"#EF4444", letterSpacing:1 }}>FULL</div>
+                  )}
+
+                  {/* Team name */}
+                  <div style={{ fontFamily:fonts.display, fontSize:13, fontWeight:900, letterSpacing:0.5, marginBottom:8 }}>{team.name}</div>
+
+                  {/* Budget row */}
+                  <div style={{ display:"flex", justifyContent:"space-between", marginBottom:4 }}>
+                    <div style={{ fontFamily:fonts.body, fontSize:9, color:T.muted }}>PURSE</div>
+                    <div style={{ fontFamily:fonts.display, fontSize:9, color:T.muted }}>SPENT</div>
                   </div>
-                  {team.id === auction.currentBidder && <div style={{ fontSize:8, marginTop:2, color:team.color }}>⭐ LEADING</div>}
+                  <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
+                    <div style={{ fontFamily:fonts.display, fontSize:14, fontWeight:900, color:team.color }}>₹{team.budget}Cr</div>
+                    <div style={{ fontFamily:fonts.display, fontSize:12, fontWeight:700, color:T.muted }}>₹{spent}Cr</div>
+                  </div>
+
+                  {/* Budget bar */}
+                  <div style={{ height:3, background:"rgba(255,255,255,0.08)", borderRadius:2, overflow:"hidden", marginBottom:8 }}>
+                    <div style={{ width:`${(team.budget/auction.budget)*100}%`, height:"100%", background:team.color, borderRadius:2, transition:"width 0.5s" }} />
+                  </div>
+
+                  {/* Players breakdown */}
+                  <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:6 }}>
+                    {[["🏏", batsmen, "BAT"], ["🎳", bowlers, "BWL"], ["⚡", allRounders, "AR"], ["🧤", keepers, "WK"]].map(([icon, count, label]) => (
+                      <div key={label} style={{ fontFamily:fonts.display, fontSize:8, color:T.muted, display:"flex", alignItems:"center", gap:2 }}>
+                        {icon}<span style={{ color: count > 0 ? team.color : T.muted }}>{count}</span>
+                      </div>
+                    ))}
+                    <div style={{ fontFamily:fonts.display, fontSize:8, color:T.muted, marginLeft:"auto" }}>
+                      {teamPlayers.length}/{auction.maxSquad}pl
+                    </div>
+                  </div>
+
+                  {/* Next bid */}
+                  {!squadFull && canBid && (
+                    <div style={{ fontFamily:fonts.display, fontSize:10, color:team.color, letterSpacing:0.5 }}>
+                      BID ₹{newBid}Cr →
+                    </div>
+                  )}
                 </button>
               );
             })}
@@ -618,39 +679,143 @@ function LiveAuction({ auction, setAuction, saveAuction, players, categories, is
 
       {/* Admin controls */}
       {isAdmin && (
-        <div style={{ display:"flex", gap:8, marginBottom:20 }}>
-          <button onClick={markUnsold}
-            style={{ flex:1, background:"rgba(239,68,68,0.1)", border:"2px solid #EF444444", color:"#EF4444", padding:"10px", fontFamily:fonts.display, fontWeight:800, fontSize:12, cursor:"pointer", letterSpacing:1 }}>
-            ✗ UNSOLD
+        <>
+          <div style={{ display:"flex", gap:8, marginBottom:10 }}>
+            <button onClick={markUnsold}
+              style={{ flex:1, background:"rgba(239,68,68,0.1)", border:"2px solid #EF444466", color:"#EF4444", padding:"12px", fontFamily:fonts.display, fontWeight:800, fontSize:12, cursor:"pointer", letterSpacing:1 }}>
+              ✗ UNSOLD
+            </button>
+            <button onClick={sellPlayer} disabled={!auction.currentBidder}
+              style={{ flex:2, background:auction.currentBidder?"linear-gradient(135deg,#A855F7,#7C3AED)":"rgba(255,255,255,0.05)", border:"none", color:auction.currentBidder?"#fff":T.muted, padding:"12px", fontFamily:fonts.display, fontWeight:900, fontSize:13, cursor:auction.currentBidder?"pointer":"not-allowed", letterSpacing:1, opacity:auction.currentBidder?1:0.5 }}>
+              🔨 SOLD{currentTeam ? ` → ${currentTeam.name}` : ""}
+            </button>
+          </div>
+          <button onClick={() => setShowEndConfirm(true)}
+            style={{ width:"100%", background:"rgba(239,68,68,0.08)", border:"2px dashed #EF444466", color:"#EF4444", padding:"10px", fontFamily:fonts.display, fontWeight:800, fontSize:11, cursor:"pointer", letterSpacing:2, marginBottom:16 }}>
+            ⏹ END AUCTION
           </button>
-          <button onClick={sellPlayer} disabled={!auction.currentBidder}
-            style={{ flex:2, background:auction.currentBidder?"linear-gradient(135deg,#A855F7,#7C3AED)":"rgba(255,255,255,0.05)", border:"none", color:auction.currentBidder?"#fff":T.muted, padding:"10px", fontFamily:fonts.display, fontWeight:900, fontSize:13, cursor:auction.currentBidder?"pointer":"not-allowed", letterSpacing:1, opacity:auction.currentBidder?1:0.5 }}>
-            🔨 SOLD{currentTeam ? ` → ${currentTeam.name}` : ""}
-          </button>
+        </>
+      )}
+
+      {/* ── AUCTION OVERVIEW MODAL ── */}
+      {showOverview && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.92)", zIndex:2000, display:"flex", alignItems:"flex-start", justifyContent:"center", padding:"20px 16px", overflowY:"auto" }}
+          onClick={() => setShowOverview(false)}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ background:"#0D1117", border:"2px solid #A855F7", width:"100%", maxWidth:640, padding:24, marginTop:8 }}>
+
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
+              <div style={{ fontFamily:fonts.display, fontSize:18, fontWeight:900, color:"#A855F7", letterSpacing:3 }}>📋 AUCTION OVERVIEW</div>
+              <button onClick={() => setShowOverview(false)} style={{ background:"transparent", border:"none", color:T.muted, fontSize:20, cursor:"pointer" }}>✕</button>
+            </div>
+
+            {/* Stats row */}
+            <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:8, marginBottom:20 }}>
+              {[
+                ["SOLD", auction.soldLog?.length || 0, "#A855F7"],
+                ["UNSOLD", auction.unsold?.length || 0, "#EF4444"],
+                ["REMAINING", remaining, T.muted],
+              ].map(([label, val, color]) => (
+                <div key={label} style={{ background:"rgba(255,255,255,0.03)", border:`1px solid ${color}33`, padding:"12px", textAlign:"center" }}>
+                  <div style={{ fontFamily:fonts.display, fontSize:22, fontWeight:900, color }}>{val}</div>
+                  <div style={{ fontFamily:fonts.display, fontSize:8, color:T.muted, letterSpacing:2, marginTop:2 }}>{label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Per team */}
+            {auction.teams?.map(team => {
+              const teamPlayers = team.players || [];
+              const batsmen = teamPlayers.filter(p => p.role === "Batsman");
+              const bowlers = teamPlayers.filter(p => p.role === "Bowler");
+              const allRounders = teamPlayers.filter(p => p.role === "All-Rounder");
+              const keepers = teamPlayers.filter(p => p.role === "Wicket-Keeper");
+              const spent = auction.budget - team.budget;
+              return (
+                <div key={team.id} style={{ border:`2px solid ${team.color}33`, borderLeft:`4px solid ${team.color}`, marginBottom:12, overflow:"hidden" }}>
+                  {/* Team header */}
+                  <div style={{ background:`${team.color}18`, padding:"10px 14px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                    <div style={{ fontFamily:fonts.display, fontSize:14, fontWeight:900, color:team.color }}>{team.name}</div>
+                    <div style={{ display:"flex", gap:16 }}>
+                      <div style={{ textAlign:"right" }}>
+                        <div style={{ fontFamily:fonts.display, fontSize:12, fontWeight:900, color:team.color }}>₹{team.budget}Cr</div>
+                        <div style={{ fontFamily:fonts.body, fontSize:8, color:T.muted }}>REMAINING</div>
+                      </div>
+                      <div style={{ textAlign:"right" }}>
+                        <div style={{ fontFamily:fonts.display, fontSize:12, fontWeight:900, color:T.muted }}>₹{spent}Cr</div>
+                        <div style={{ fontFamily:fonts.body, fontSize:8, color:T.muted }}>SPENT</div>
+                      </div>
+                      <div style={{ textAlign:"right" }}>
+                        <div style={{ fontFamily:fonts.display, fontSize:12, fontWeight:900, color:T.text }}>{teamPlayers.length}</div>
+                        <div style={{ fontFamily:fonts.body, fontSize:8, color:T.muted }}>PLAYERS</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Players by role */}
+                  {teamPlayers.length === 0 ? (
+                    <div style={{ padding:"12px 14px", fontFamily:fonts.body, fontSize:11, color:T.muted }}>No players yet</div>
+                  ) : (
+                    <div style={{ padding:"10px 14px" }}>
+                      {[["🏏 BATSMEN", batsmen], ["🎳 BOWLERS", bowlers], ["⚡ ALL-ROUNDERS", allRounders], ["🧤 KEEPERS", keepers]].map(([label, group]) =>
+                        group.length > 0 ? (
+                          <div key={label} style={{ marginBottom:8 }}>
+                            <div style={{ fontFamily:fonts.display, fontSize:8, color:T.muted, letterSpacing:2, marginBottom:4 }}>{label} ({group.length})</div>
+                            <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
+                              {group.map(p => (
+                                <div key={p.id} style={{ background:`${team.color}18`, border:`1px solid ${team.color}44`, padding:"3px 8px", fontFamily:fonts.display, fontSize:9, color:team.color, letterSpacing:0.3 }}>
+                                  {p.name} <span style={{ opacity:0.6 }}>₹{p.soldFor}Cr</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
+            <button onClick={() => setShowOverview(false)}
+              style={{ width:"100%", background:"transparent", border:`1px solid ${T.border}`, color:T.muted, padding:"12px", fontFamily:fonts.display, fontWeight:800, fontSize:12, cursor:"pointer", letterSpacing:2, marginTop:4 }}>
+              CLOSE
+            </button>
+          </div>
         </div>
       )}
 
-      {/* Team budgets */}
-      <div style={{ marginTop:8 }}>
-        <div style={{ fontFamily:fonts.display, fontSize:9, color:T.muted, letterSpacing:2, marginBottom:8 }}>TEAM BUDGETS</div>
-        <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-          {auction.teams?.map(team => {
-            const spent = (auction.teams.find(t=>t.id===team.id)?.budget !== team.budget) ? "—" : "";
-            const pct = (team.budget / auction.budget) * 100;
-            return (
-              <div key={team.id} style={{ display:"flex", alignItems:"center", gap:10 }}>
-                <div style={{ width:8, height:8, background:team.color, borderRadius:"50%", flexShrink:0 }} />
-                <div style={{ fontFamily:fonts.display, fontSize:11, fontWeight:700, color:T.text, width:120, flexShrink:0 }}>{team.name}</div>
-                <div style={{ flex:1, height:6, background:T.border, borderRadius:3, overflow:"hidden" }}>
-                  <div style={{ width:`${pct}%`, height:"100%", background:team.color, transition:"width 0.5s", borderRadius:3 }} />
-                </div>
-                <div style={{ fontFamily:fonts.display, fontSize:10, fontWeight:700, color:team.color, width:60, textAlign:"right" }}>₹{team.budget}Cr</div>
-                <div style={{ fontFamily:fonts.body, fontSize:9, color:T.muted, width:40, textAlign:"right" }}>{team.players?.length||0}pl</div>
-              </div>
-            );
-          })}
+    {/* End Auction password modal */}
+      {showEndConfirm && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.92)", zIndex:3000, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
+          onClick={() => { setShowEndConfirm(false); setEndPw(""); setEndPwErr(""); }}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ background:"#0D1117", border:"3px solid #EF4444", maxWidth:360, width:"100%", padding:28, clipPath:"polygon(10px 0%,100% 0%,calc(100% - 10px) 100%,0% 100%)" }}>
+            <div style={{ fontSize:32, textAlign:"center", marginBottom:8 }}>⏹</div>
+            <div style={{ fontFamily:fonts.display, fontSize:18, fontWeight:900, color:"#EF4444", letterSpacing:3, textAlign:"center", marginBottom:4 }}>END AUCTION</div>
+            <div style={{ fontFamily:fonts.body, fontSize:12, color:T.muted, textAlign:"center", marginBottom:20 }}>
+              Enter room password to confirm. This cannot be undone.
+            </div>
+            <input type="password" value={endPw} autoFocus
+              onChange={e => { setEndPw(e.target.value); setEndPwErr(""); }}
+              onKeyDown={async e => { if (e.key === "Enter") await handleEndAuction(); }}
+              placeholder="Room password…"
+              style={{ width:"100%", background:T.bg, border:`2px solid ${endPwErr ? "#EF4444" : "#EF444466"}`, color:T.text, padding:"12px 14px", fontSize:14, fontFamily:fonts.body, outline:"none", boxSizing:"border-box", marginBottom:8 }} />
+            {endPwErr && <div style={{ fontFamily:fonts.body, fontSize:11, color:"#EF4444", marginBottom:12 }}>{endPwErr}</div>}
+            <div style={{ display:"flex", gap:8, marginTop:12 }}>
+              <button onClick={() => { setShowEndConfirm(false); setEndPw(""); setEndPwErr(""); }}
+                style={{ flex:1, background:"transparent", border:`1px solid ${T.border}`, color:T.muted, padding:"11px", fontFamily:fonts.display, fontWeight:700, fontSize:12, cursor:"pointer" }}>
+                CANCEL
+              </button>
+              <button onClick={handleEndAuction} disabled={ending}
+                style={{ flex:2, background:"linear-gradient(135deg,#EF4444,#B91C1C)", border:"none", color:"#fff", padding:"11px", fontFamily:fonts.display, fontWeight:900, fontSize:13, cursor:ending?"not-allowed":"pointer", letterSpacing:1, opacity:ending?0.7:1 }}>
+                {ending ? "ENDING…" : "⏹ CONFIRM END"}
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
+
     </div>
   );
 }
