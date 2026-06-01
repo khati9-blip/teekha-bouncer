@@ -128,6 +128,9 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin, pushNotif }) {
   const [auctionsLoaded, setAuctionsLoaded] = useState(false);
   const [showCreateAuction, setShowCreateAuction] = useState(false);
   const [editingAuction, setEditingAuction] = useState(null);
+  const [auctionPwModal, setAuctionPwModal] = useState(null); // auction object awaiting pw
+  const [auctionPwInput, setAuctionPwInput] = useState("");
+  const [auctionPwErr, setAuctionPwErr] = useState("");
 
   useEffect(() => {
     if (mainTab !== "auctions" || auctionsLoaded) return;
@@ -350,16 +353,7 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin, pushNotif }) {
                     <span style={{fontFamily:fonts.body,fontSize:10,color:T.muted}}>Max {auction.maxSquad} players/team</span>
                   </div>
                 </div>
-                <button onClick={()=>{
-                  const pw = prompt("Enter room password:");
-                  if (!pw) return;
-                  crypto.subtle.digest("SHA-256", new TextEncoder().encode(pw))
-                    .then(buf => Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join(""))
-                    .then(hash => {
-                      if (hash === auction.pwHash) setEditingAuction(auction);
-                      else alert("Wrong password");
-                    });
-                }}
+                <button onClick={()=>{ setAuctionPwModal(auction); setAuctionPwInput(""); setAuctionPwErr(""); }}
                   style={{background:"linear-gradient(135deg,#A855F7,#7C3AED)",border:"none",color:"#fff",padding:"8px 14px",fontFamily:fonts.display,fontWeight:800,fontSize:11,cursor:"pointer",letterSpacing:1,clipPath:"polygon(4px 0%,100% 0%,calc(100% - 4px) 100%,0% 100%)"}}>
                   {auction.status === "ended" ? "VIEW →" : "ENTER →"}
                 </button>
@@ -412,6 +406,28 @@ function PitchHome({ onEnter, user, onLogout, onSetupAdmin, pushNotif }) {
               <button onClick={()=>{setCloneModal(null);setCloneAdminPw("");setCloneErr("");}} style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,borderRadius:9,padding:12,color:T.sub,fontFamily:fonts.display,fontWeight:700,fontSize:13,cursor:"pointer"}}>CANCEL</button>
               <button onClick={confirmClone} disabled={cloning} style={{flex:2,background:`linear-gradient(135deg,${T.purple},#7C3AED)`,border:"none",borderRadius:9,padding:12,color:"#fff",fontFamily:fonts.display,fontWeight:800,fontSize:14,cursor:cloning?"not-allowed":"pointer",opacity:cloning?0.7:1}}>
                 {cloning ? "CLONING…" : "🧬 CREATE CLONE →"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Auction Password Modal */}
+      {auctionPwModal && (
+        <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={()=>setAuctionPwModal(null)}>
+          <div onClick={e=>e.stopPropagation()} style={{background:T.card,border:"3px solid #A855F7",maxWidth:360,width:"100%",padding:28,clipPath:"polygon(10px 0%,100% 0%,calc(100% - 10px) 100%,0% 100%)"}}>
+            <div style={{fontFamily:fonts.display,fontSize:18,fontWeight:900,color:"#A855F7",letterSpacing:3,marginBottom:4}}>🔒 ENTER ROOM</div>
+            <div style={{fontFamily:fonts.body,fontSize:12,color:T.muted,marginBottom:20}}>{auctionPwModal.name}</div>
+            <input type="password" value={auctionPwInput} onChange={e=>{setAuctionPwInput(e.target.value);setAuctionPwErr("");}}
+              onKeyDown={async e=>{if(e.key==="Enter"){const hash=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(auctionPwInput)).then(buf=>Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join(""));if(hash===auctionPwModal.pwHash){setEditingAuction(auctionPwModal);setAuctionPwModal(null);}else setAuctionPwErr("Wrong password");}}}
+              placeholder="Enter room password" autoFocus
+              style={{width:"100%",background:T.bg,border:`2px solid ${auctionPwErr?"#EF4444":"#A855F744"}`,color:T.text,padding:"12px 14px",fontSize:14,fontFamily:fonts.body,outline:"none",boxSizing:"border-box",marginBottom:8}} />
+            {auctionPwErr && <div style={{fontFamily:fonts.body,fontSize:11,color:"#EF4444",marginBottom:12}}>{auctionPwErr}</div>}
+            <div style={{display:"flex",gap:8,marginTop:8}}>
+              <button onClick={()=>setAuctionPwModal(null)} style={{flex:1,background:"transparent",border:`1px solid ${T.border}`,color:T.muted,padding:"10px",fontFamily:fonts.display,fontWeight:700,fontSize:12,cursor:"pointer"}}>CANCEL</button>
+              <button onClick={async()=>{const hash=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(auctionPwInput)).then(buf=>Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join(""));if(hash===auctionPwModal.pwHash){setEditingAuction(auctionPwModal);setAuctionPwModal(null);}else setAuctionPwErr("Wrong password");}}
+                style={{flex:2,background:"linear-gradient(135deg,#A855F7,#7C3AED)",border:"none",color:"#fff",padding:"10px",fontFamily:fonts.display,fontWeight:900,fontSize:13,cursor:"pointer",letterSpacing:1}}>
+                ENTER →
               </button>
             </div>
           </div>
