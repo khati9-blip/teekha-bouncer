@@ -456,7 +456,7 @@ function LiveAuction({ auction, setAuction, saveAuction, players, categories, is
   const placeBid = async (teamId) => {
     const team = auction.teams.find(t => t.id === teamId);
     if (!team) return;
-    const newBid = auction.currentBid > 0 ? auction.currentBid + auction.raiseBy : basePrice;
+    const newBid = auction.currentBid > 0 ? auction.currentBid + basePrice : basePrice;
     if (team.budget < newBid) return;
     setBidding(true);
     const updated = {
