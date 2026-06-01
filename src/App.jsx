@@ -4593,8 +4593,16 @@ function Root() {
       const pitches = await sbGet("pitches") || [];
       const freshPitch = pitches.find(p => p.id === pitch.id);
       if (freshPitch) setCurrentPitch(freshPitch);
+
+      // If pitch came from auction and has no password set yet → go straight to admin setup
+      if (freshPitch?.fromAuction && !freshPitch?.hash) {
+        _pitchId = freshPitch.id;
+        setCurrentPitch(freshPitch);
+        setScreenAndSave('adminSetup');
+        return;
+      }
+
       if (freshPitch?.guestAllowed === false) {
-        // Guest access is off — only show claim/admin options, not guest entry
         setCurrentPitch({ ...freshPitch });
       }
     } catch {}
