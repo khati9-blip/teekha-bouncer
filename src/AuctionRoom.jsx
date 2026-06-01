@@ -25,6 +25,15 @@ export default function AuctionRoom({ auction: initialAuction, user, onBack, isA
   const [categorizing, setCategorizing] = useState(false);
   const [categories, setCategories] = useState(initialAuction.categories || {});
   const pollRef = useRef(null);
+  const [showSettings, setShowSettings] = useState(false);
+const [settingsData, setSettingsData] = useState({
+  name: auction.name,
+  budget: auction.budget,
+  maxSquad: auction.maxSquad,
+  raiseBy: auction.raiseBy,
+  catBase: auction.catBase || { PLATINUM: 2, GOLD: 1, SILVER: 0.5, BRONZE: 0.25 },
+  teams: auction.teams || [],
+});
 
   // ── Save auction to Supabase ──────────────────────────────────────────────
   const saveAuction = async (updated) => {
@@ -101,16 +110,113 @@ export default function AuctionRoom({ auction: initialAuction, user, onBack, isA
             </div>
           </div>
         </div>
-        <div style={{
-          padding:"4px 12px",
-          background: auction.status==="live" ? "rgba(239,68,68,0.2)" : auction.status==="ended" ? "rgba(34,197,94,0.2)" : "rgba(168,85,247,0.2)",
-          border: `1px solid ${auction.status==="live" ? "#EF4444" : auction.status==="ended" ? "#22C55E" : "#A855F7"}`,
-          fontFamily:fonts.display, fontSize:9, fontWeight:900, letterSpacing:2,
-          color: auction.status==="live" ? "#EF4444" : auction.status==="ended" ? "#22C55E" : "#A855F7",
-        }}>
-          {auction.status==="live" ? "🔴 LIVE" : auction.status==="ended" ? "✅ ENDED" : "⚙️ SETUP"}
+        <div
+          onClick={() => auction.status === "setup" && setShowSettings(true)}
+          style={{
+            padding:"4px 12px",
+            cursor: auction.status === "setup" ? "pointer" : "default",
+            background: auction.status==="live" ? "rgba(239,68,68,0.2)" : auction.status==="ended" ? "rgba(34,197,94,0.2)" : "rgba(168,85,247,0.2)",
+            border: `1px solid ${auction.status==="live" ? "#EF4444" : auction.status==="ended" ? "#22C55E" : "#A855F7"}`,
+            fontFamily:fonts.display, fontSize:9, fontWeight:900, letterSpacing:2,
+            color: auction.status==="live" ? "#EF4444" : auction.status==="ended" ? "#22C55E" : "#A855F7",
+          }}>
+          {auction.status==="live" ? "🔴 LIVE" : auction.status==="ended" ? "✅ ENDED" : "⚙️ SETUP ✎"}
         </div>
       </div>
+
+      {/* ── SETTINGS MODAL ── */}
+      {showSettings && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.85)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:20 }}
+          onClick={() => setShowSettings(false)}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ background:T.card, border:"3px solid #A855F7", maxWidth:480, width:"100%", padding:28, maxHeight:"85vh", overflowY:"auto", clipPath:"polygon(10px 0%,100% 0%,calc(100% - 10px) 100%,0% 100%)" }}>
+
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:20 }}>
+              <div style={{ fontFamily:fonts.display, fontSize:18, fontWeight:900, color:"#A855F7", letterSpacing:3 }}>⚙️ EDIT AUCTION</div>
+              <button onClick={() => setShowSettings(false)} style={{ background:"transparent", border:"none", color:T.muted, fontSize:20, cursor:"pointer" }}>✕</button>
+            </div>
+
+            <div style={{ marginBottom:14 }}>
+              <label style={{ fontFamily:fonts.display, fontSize:9, color:T.muted, letterSpacing:2, marginBottom:6, display:"block" }}>AUCTION NAME</label>
+              <input value={settingsData.name} onChange={e => setSettingsData(p => ({...p, name: e.target.value}))}
+                style={{ width:"100%", background:T.bg, border:`1px solid ${T.border}`, color:T.text, padding:"10px 12px", fontSize:13, fontFamily:fonts.body, outline:"none", boxSizing:"border-box" }} />
+            </div>
+
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:14 }}>
+              <div>
+                <label style={{ fontFamily:fonts.display, fontSize:9, color:T.muted, letterSpacing:2, marginBottom:6, display:"block" }}>BUDGET PER TEAM (CR)</label>
+                <select value={settingsData.budget} onChange={e => setSettingsData(p => ({...p, budget: parseInt(e.target.value)}))}
+                  style={{ width:"100%", background:T.bg, border:`1px solid ${T.border}`, color:T.text, padding:"10px 12px", fontSize:13, fontFamily:fonts.body, outline:"none", boxSizing:"border-box", cursor:"pointer" }}>
+                  {[100,200,300,400,500,600,700,800,900,1000,1500,2000].map(b => <option key={b} value={b}>₹{b} Cr</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ fontFamily:fonts.display, fontSize:9, color:T.muted, letterSpacing:2, marginBottom:6, display:"block" }}>MAX SQUAD SIZE</label>
+                <select value={settingsData.maxSquad} onChange={e => setSettingsData(p => ({...p, maxSquad: parseInt(e.target.value)}))}
+                  style={{ width:"100%", background:T.bg, border:`1px solid ${T.border}`, color:T.text, padding:"10px 12px", fontSize:13, fontFamily:fonts.body, outline:"none", boxSizing:"border-box", cursor:"pointer" }}>
+                  {[10,11,12,13,14,15,16,17,18,19,20,22,25,28,30].map(n => <option key={n} value={n}>{n} players</option>)}
+                </select>
+              </div>
+              <div style={{ gridColumn:"1/-1" }}>
+                <label style={{ fontFamily:fonts.display, fontSize:9, color:T.muted, letterSpacing:2, marginBottom:6, display:"block" }}>BID INCREMENT (CR)</label>
+                <select value={settingsData.raiseBy} onChange={e => setSettingsData(p => ({...p, raiseBy: parseInt(e.target.value)}))}
+                  style={{ width:"100%", background:T.bg, border:`1px solid ${T.border}`, color:T.text, padding:"10px 12px", fontSize:13, fontFamily:fonts.body, outline:"none", boxSizing:"border-box", cursor:"pointer" }}>
+                  {[1,2,5,10,25,50,100].map(b => <option key={b} value={b}>+₹{b} Cr per bid</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div style={{ marginBottom:14 }}>
+              <label style={{ fontFamily:fonts.display, fontSize:9, color:T.muted, letterSpacing:2, marginBottom:8, display:"block" }}>BASE PRICE PER CATEGORY (CR)</label>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                {["PLATINUM","GOLD","SILVER","BRONZE"].map(cat => (
+                  <div key={cat} style={{ display:"flex", alignItems:"center", gap:8 }}>
+                    <div style={{ fontSize:9, fontFamily:fonts.display, fontWeight:900, letterSpacing:1, width:60, flexShrink:0,
+                      color: cat==="PLATINUM"?"#E5E4E2":cat==="GOLD"?"#F5A623":cat==="SILVER"?"#94A3B8":"#CD7F32" }}>{cat}</div>
+                    <select value={settingsData.catBase[cat]} onChange={e => setSettingsData(p => ({...p, catBase:{...p.catBase,[cat]:parseFloat(e.target.value)}}))}
+                      style={{ flex:1, background:T.bg, border:`1px solid ${T.border}`, color:T.text, padding:"6px 8px", fontSize:11, fontFamily:fonts.body, outline:"none", cursor:"pointer" }}>
+                      {[0.25,0.5,0.75,1,1.5,2,2.5,3,4,5,7.5,10,15,20,25,50,100].map(v => <option key={v} value={v}>₹{v} Cr</option>)}
+                    </select>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ marginBottom:20 }}>
+              <label style={{ fontFamily:fonts.display, fontSize:9, color:T.muted, letterSpacing:2, marginBottom:8, display:"block" }}>TEAM NAMES & COLORS</label>
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                {settingsData.teams.map((team, i) => (
+                  <div key={i} style={{ display:"flex", gap:8, alignItems:"center" }}>
+                    <input type="color" value={team.color}
+                      onChange={e => { const u=[...settingsData.teams]; u[i]={...u[i],color:e.target.value}; setSettingsData(p=>({...p,teams:u})); }}
+                      style={{ width:36, height:36, border:`1px solid ${T.border}`, background:"transparent", cursor:"pointer", padding:2, flexShrink:0 }} />
+                    <input value={team.name}
+                      onChange={e => { const u=[...settingsData.teams]; u[i]={...u[i],name:e.target.value}; setSettingsData(p=>({...p,teams:u})); }}
+                      style={{ flex:1, background:T.bg, border:`1px solid ${T.border}`, color:T.text, padding:"10px 12px", fontSize:13, fontFamily:fonts.body, outline:"none" }} />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ display:"flex", gap:8 }}>
+              <button onClick={() => setShowSettings(false)}
+                style={{ flex:1, background:"transparent", border:`1px solid ${T.border}`, color:T.muted, padding:"11px", fontFamily:fonts.display, fontWeight:700, fontSize:13, cursor:"pointer" }}>
+                CANCEL
+              </button>
+              <button onClick={async () => {
+                const updatedTeams = settingsData.teams.map(t => ({...t, budget: settingsData.budget}));
+                const updated = { ...auction, name: settingsData.name, budget: settingsData.budget, maxSquad: settingsData.maxSquad, raiseBy: settingsData.raiseBy, catBase: settingsData.catBase, teams: updatedTeams };
+                await saveAuction(updated);
+                setShowSettings(false);
+              }}
+                style={{ flex:2, background:"linear-gradient(135deg,#A855F7,#7C3AED)", border:"none", color:"#fff", padding:"11px", fontFamily:fonts.display, fontWeight:900, fontSize:14, cursor:"pointer", letterSpacing:1 }}>
+                💾 SAVE CHANGES →
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
       {/* ── SETUP SCREEN ── */}
       {screen === "setup" && (
