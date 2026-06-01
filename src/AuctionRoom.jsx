@@ -824,7 +824,70 @@ function LiveAuction({ auction, setAuction, saveAuction, players, categories, is
 function AuctionSummary({ auction, players, onBack, saveAuction }) {
   const [pushing, setPushing] = useState(false);
   const [pushed, setPushed] = useState(false);
+  const [pushedPitchId, setPushedPitchId] = useState(null);
   const [newPitchName, setNewPitchName] = useState(auction.name + " League");
+  const [pushErr, setPushErr] = useState("");
+
+  const handlePushToLeague = async () => {
+    if (!newPitchName.trim()) { setPushErr("Enter a league name"); return; }
+    setPushing(true);
+    setPushErr("");
+    try {
+      // 1. Generate new pitch id
+      const pitchId = "p_auction_" + Date.now();
+
+      // 2. Build teams array (just id, name, color — league format)
+      const leagueTeams = auction.teams.map(t => ({
+        id: t.id,
+        name: t.name,
+        color: t.color,
+      }));
+
+      // 3. Build players array — all players from pool
+      const leaguePlayers = players;
+
+      // 4. Build assignments — { playerId: teamId } for all sold players
+      const assignments = {};
+      for (const team of auction.teams) {
+        for (const p of (team.players || [])) {
+          assignments[p.id] = team.id;
+        }
+      }
+
+      // 5. Save all league data keys
+      await sbSet(pitchId + "_teams", leagueTeams);
+      await sbSet(pitchId + "_players", leaguePlayers);
+      await sbSet(pitchId + "_assignments", assignments);
+      await sbSet(pitchId + "_matches", []);
+      await sbSet(pitchId + "_points", {});
+      await sbSet(pitchId + "_captains", {});
+      await sbSet(pitchId + "_transfers", {});
+      await sbSet(pitchId + "_snatch", {});
+      await sbSet(pitchId + "_ownershipLog", {});
+      await sbSet(pitchId + "_notifications", []);
+
+      // 6. Add pitch to pitches list
+      const existingPitches = await sbGet("pitches") || [];
+      const newPitch = {
+        id: pitchId,
+        name: newPitchName.trim(),
+        hash: "",
+        createdAt: new Date().toISOString(),
+        fromAuction: auction.id,
+        fromAuctionName: auction.name,
+      };
+      await sbSet("pitches", [...existingPitches, newPitch]);
+
+      // 7. Mark auction as pushed
+      await saveAuction({ ...auction, status:"ended", pushedPitchId: pitchId, pushedPitchName: newPitchName.trim() });
+
+      setPushedPitchId(pitchId);
+      setPushed(true);
+    } catch(e) {
+      setPushErr("Error: " + e.message);
+    }
+    setPushing(false);
+  };
 
   return (
     <div style={{ maxWidth:640, margin:"0 auto", padding:"24px 16px" }}>
@@ -869,36 +932,50 @@ function AuctionSummary({ auction, players, onBack, saveAuction }) {
       )}
 
       {/* Push to league */}
-      {!pushed && (
+      {!pushed ? (
         <div style={{ background:T.card, border:"2px solid #A855F744", padding:"20px", marginBottom:16 }}>
-          <div style={{ fontFamily:fonts.display, fontSize:14, fontWeight:900, color:"#A855F7", letterSpacing:1, marginBottom:4 }}>PUSH TO LEAGUE</div>
+          <div style={{ fontFamily:fonts.display, fontSize:14, fontWeight:900, color:"#A855F7", letterSpacing:1, marginBottom:4 }}>🚀 PUSH TO LEAGUE</div>
           <div style={{ fontFamily:fonts.body, fontSize:12, color:T.muted, marginBottom:14 }}>
-            Create a new pitch with these squads. Points, transfers and leaderboard will be active.
+            Creates a new pitch in the Leagues section with all squads pre-assigned. Points, transfers and leaderboard will be live.
           </div>
-          <input value={newPitchName} onChange={e=>setNewPitchName(e.target.value)}
-            placeholder="New pitch name…"
-            style={{ width:"100%", background:T.bg, border:`1px solid ${T.border}`, color:T.text, padding:"10px 12px", fontSize:13, fontFamily:fonts.body, outline:"none", boxSizing:"border-box", marginBottom:12 }} />
+          <input value={newPitchName} onChange={e=>{setNewPitchName(e.target.value);setPushErr("");}}
+            placeholder="League name…"
+            style={{ width:"100%", background:T.bg, border:`1px solid ${pushErr?T.danger:T.border}`, color:T.text, padding:"10px 12px", fontSize:13, fontFamily:fonts.body, outline:"none", boxSizing:"border-box", marginBottom:12 }} />
+
+          {/* Preview what will be created */}
+          <div style={{ background:"rgba(168,85,247,0.06)", border:"1px solid #A855F733", padding:"12px 14px", marginBottom:14 }}>
+            <div style={{ fontFamily:fonts.display, fontSize:9, color:"#A855F7", letterSpacing:2, marginBottom:8 }}>WHAT GETS CREATED</div>
+            <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+              {auction.teams?.map(t => (
+                <div key={t.id} style={{ display:"flex", justifyContent:"space-between", fontFamily:fonts.body, fontSize:11 }}>
+                  <span style={{ color:t.color, fontWeight:700 }}>{t.name}</span>
+                  <span style={{ color:T.muted }}>{t.players?.length || 0} players · ₹{auction.budget - t.budget}Cr spent</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div style={{ fontFamily:fonts.body, fontSize:11, color:T.muted, marginBottom:14 }}>
-            ⚠️ This will create a new pitch. You'll need to set the admin password after.
+            ⚠️ You'll need to set the admin password for the new pitch after creation.
           </div>
-          <button onClick={async () => {
-            setPushing(true);
-            const updated = { ...auction, status:"ended", pushedPitchName: newPitchName };
-            await saveAuction(updated);
-            setPushed(true);
-            setPushing(false);
-            // TODO Phase 3: actual pitch creation
-            alert("Pitch creation coming in Phase 3! For now, auction result is saved.");
-          }} disabled={pushing}
-            style={{ width:"100%", background:"linear-gradient(135deg,#A855F7,#7C3AED)", border:"none", color:"#fff", padding:"12px", fontFamily:fonts.display, fontWeight:900, fontSize:14, cursor:pushing?"not-allowed":"pointer", letterSpacing:2, opacity:pushing?0.7:1 }}>
-            {pushing ? "SAVING…" : "🚀 PUSH TO LEAGUE →"}
+
+          {pushErr && <div style={{ fontFamily:fonts.body, fontSize:11, color:"#EF4444", marginBottom:10 }}>{pushErr}</div>}
+
+          <button onClick={handlePushToLeague} disabled={pushing}
+            style={{ width:"100%", background:"linear-gradient(135deg,#A855F7,#7C3AED)", border:"none", color:"#fff", padding:"14px", fontFamily:fonts.display, fontWeight:900, fontSize:14, cursor:pushing?"not-allowed":"pointer", letterSpacing:2, opacity:pushing?0.7:1 }}>
+            {pushing ? "CREATING LEAGUE…" : "🚀 PUSH TO LEAGUE →"}
           </button>
         </div>
-      )}
-      {pushed && (
-        <div style={{ background:"rgba(168,85,247,0.1)", border:"2px solid #A855F7", padding:"16px 20px", textAlign:"center", marginBottom:16 }}>
-          <div style={{ fontFamily:fonts.display, fontSize:14, fontWeight:900, color:"#A855F7", letterSpacing:2 }}>✓ AUCTION SAVED</div>
-          <div style={{ fontFamily:fonts.body, fontSize:12, color:T.muted, marginTop:4 }}>Phase 3 will auto-create the pitch.</div>
+      ) : (
+        <div style={{ background:"rgba(168,85,247,0.1)", border:"2px solid #A855F7", padding:"20px", textAlign:"center", marginBottom:16 }}>
+          <div style={{ fontSize:32, marginBottom:8 }}>✅</div>
+          <div style={{ fontFamily:fonts.display, fontSize:16, fontWeight:900, color:"#A855F7", letterSpacing:2, marginBottom:4 }}>LEAGUE CREATED!</div>
+          <div style={{ fontFamily:fonts.body, fontSize:12, color:T.muted, marginBottom:4 }}>
+            <span style={{ color:"#fff", fontWeight:700 }}>{newPitchName}</span> is now live in the Leagues section.
+          </div>
+          <div style={{ fontFamily:fonts.body, fontSize:11, color:T.muted }}>
+            Go to Leagues → enter the pitch → set admin password to start managing it.
+          </div>
         </div>
       )}
 
